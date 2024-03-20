@@ -1,0 +1,6 @@
+[submodule "source/_posts/Cppminer"]
+	path = source/_posts/Cppminer
+	url = https://github.com/Mes0903/Cpp-Miner
+[submodule "themes/themes/archer"]
+	path = themes/themes/archer
+	url = https://github.com/Mes0903/Mes-hexo-theme-archer.git

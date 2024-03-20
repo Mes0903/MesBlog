@@ -47,7 +47,10 @@ syntax_highlighter: highlight.js
 highlight:
   line_number: true
   auto_detect: false
+  line_threshold: 0
   tab_replace: ''
+  exclude_languages:
+    - example
   wrap: true
   hljs: false
 prismjs:
