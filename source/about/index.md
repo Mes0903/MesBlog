@@ -2,9 +2,10 @@
 title: 關於我
 layout: about
 ---
+
 <h1 class><center><img src = "https://i.imgur.com/thmVmX6.png?w=1000" height = 50> Mes 的筆記 ── 序<img src = "https://i.imgur.com/thmVmX6.png?w=1000" height = 50></center></h1>
 
-# <span class = "orange">前言</span> <img src = "https://i.imgur.com/thmVmX6.png?w=930" height = 50>
+# 前言 <img src = "https://i.imgur.com/thmVmX6.png?w=930" height = 50>
 
 這裡是我平時讀書所寫下的筆記，可能是被數學系強迫上的課，又或是自己額外讀的東西，用途類似於備忘錄，方便自己能夠於日後忘記時回來查閱，所以會盡可能寫得讓我自己看的懂，如果你的電波和我相同，也歡迎你來閱讀 XD
 
@@ -14,13 +15,13 @@ layout: about
 
 下面基本上是從 C++ Miner 那邊複製過來的了，如果你有興趣也可以逛一下。
 
-# <span class = "orange">關於我</span> <img src = "https://i.imgur.com/thmVmX6.png?w=930" height = 50>
+# 關於我 <img src = "https://i.imgur.com/thmVmX6.png?w=930" height = 50>
 
 我是 Mes，一個喜愛 C++ 的人，寫文的現在(2021/04/02) 就讀中央大學數學系，目前大一，~~成績很差，盡量不要問我數學~~，如果想一起討論程式問題的話可以加我的 Discord、FB 或 IG，我主要用這三個，程式方面的討論我主要都在 Discord 找人問和回答問題
 
 興趣是寫作、看畫、Compiler、OS、C++、Assembly，偶爾會去攝影，會在 IG 上寫雜記和分享家裡的貓咪照片，FB 版上全是分享別人動物的貼文，~~愜意的生活~~。
 
-# <span class = "orange">一些資源</span> <img src = "https://i.imgur.com/thmVmX6.png?w=930" height = 50>
+# 一些資源 <img src = "https://i.imgur.com/thmVmX6.png?w=930" height = 50>
 
 下面這些是我可能會出現的 Discord 群，我通常會在這些群裡面回答問題或問問題：
 
