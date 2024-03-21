@@ -1,6 +1,6 @@
 ---
 title: RVOS OSDI 筆記
-date: 2023/6/17a
+date: 2023/6/17
 abstract: 看 OSDI 網課的筆記，課程內介紹了一些 risc-v 常用的指令，並且小改了金門大學陳鐘誠老師的 [mini-riscv-os](https://github.com/cccriscv/mini-riscv-os) 來當作課程教材，一步一步的帶學生做了一個，我自己上完是覺得還不錯，所以就把整個過程記錄下來了
 tags: OSDI
 categories:
