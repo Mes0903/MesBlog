@@ -415,7 +415,7 @@ roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 
 這代表你電腦中儲存的 Key 跟機器人上的不符合，你就執行他提示的指令
 
-```ssh-keygen -f ...``` 去把它移除，再重新 ssh
+`ssh-keygen -f ...` 去把它移除，再重新 ssh
 
 # catkin
 
