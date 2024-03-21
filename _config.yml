@@ -108,6 +108,11 @@ deploy:
   repo: https://github.com/Mes0903/Mes0903.github.io
   branch: main
 
+algolia:
+  applicationID: 'JNI49E87OH'
+  apiKey: '35168ffd5aef11c69f1626ef7cadb0e1'
+  indexName: 'MesBlog'
+
 jsonContent:
   meta: true
   pages: false
