@@ -1,6 +1,7 @@
 ---
 title: Error Bounds
 date: 2021/10/16
+mathjax: true
 abstract: 數值線代的上課筆記，講的 Error Bounds，老實說我已經忘光了
 tags: numerical_algebra
 categories:

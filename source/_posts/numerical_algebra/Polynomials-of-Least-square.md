@@ -1,6 +1,7 @@
 ---
 title: 最小平方逼近多項式(Polynomials of Least square)
 date: 2021/11/7
+mathjax: true
 abstract: 數值線代的上課筆記，講的 Polynomials of Least square，老實說我已經忘光了
 tags: numerical_algebra
 categories:

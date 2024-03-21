@@ -1,6 +1,7 @@
 ---
 title: ReRAM 與 Smith-Waterman Algorithm 介紹
 date: 2023-11-14a
+mathjax: true
 abstract: 簡單介紹了 ReRAM 與 Smith-Waterman Algorithm，並找了一些論文論證可以在 ReRAM 上結合 systolic array 來實作 Smith-Waterman Algorithm
 tags: memory
 categories:
@@ -431,7 +432,7 @@ Systolic Array 是由孔祥重院士提出的，問題的起因是把東西從 c
 
 $$
 \begin{cases}
-X: \{3, 2, -1, 2, 0, 1\}\\
+X: \{3, 2, -1, 2, 0, 1\}\newline
 w:\{2, -1, 2\}
 \end{cases}
 $$
@@ -485,13 +486,13 @@ $$
 $$
 A =
 \begin{bmatrix}
- 1 & 2 \\
- 3 & 4 \\
+ 1 & 2 \newline
+ 3 & 4 \newline
 \end{bmatrix},\ 
 B =
 \begin{bmatrix}
- 5 & 6 \\
- 7 & 8 \\
+ 5 & 6 \newline
+ 7 & 8 \newline
 \end{bmatrix}
 $$
 
@@ -500,16 +501,16 @@ $$
 $$
 C =
 \begin{bmatrix}
- 1 & 2 \\
- 3 & 4 \\
+ 1 & 2 \newline
+ 3 & 4 \newline
 \end{bmatrix}
 \begin{bmatrix}
- 5 & 6 \\
- 7 & 8 \\
+ 5 & 6 \newline
+ 7 & 8 \newline
 \end{bmatrix}=
 \begin{bmatrix}
- 19 & 22 \\
- 43 & 50 \\
+ 19 & 22 \newline
+ 43 & 50 \newline
 \end{bmatrix} 
 $$
 
@@ -557,14 +558,14 @@ ReRAM 也可以有 Multi-level 的型態，在這種情況寫一個 ReRAM cell �
 
 $$
 \begin{bmatrix}
- 1 & 2 \\
+ 1 & 2 \newline
 \end{bmatrix}
 \begin{bmatrix}
- 3 & 4 \\
- 5 & 6 \\
+ 3 & 4 \newline
+ 5 & 6 \newline
 \end{bmatrix}=
 \begin{bmatrix}
- 13 & 16 \\
+ 13 & 16 \newline
 \end{bmatrix}
 $$
 

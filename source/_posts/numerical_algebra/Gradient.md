@@ -1,6 +1,7 @@
 ---
 title: Gradient Method
 date: 2021/10/31
+mathjax: true
 abstract: 數值線代的上課筆記，講的 Gradient Method，老實說我已經忘光了
 tags: numerical_algebra
 categories:

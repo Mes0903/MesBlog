@@ -1,6 +1,7 @@
 ---
 title: ROS Tutorial Introduction
 date: 2021/11/17
+mathjax: true
 abstract: 中央大學數學系上課所用的 ROS 教材，原文放在 hackmd 上，我會不定期更新過來
 tags: ROS
 categories:
