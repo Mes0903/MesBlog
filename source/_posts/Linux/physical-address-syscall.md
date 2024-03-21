@@ -63,18 +63,6 @@ Process type and features -> Linux guest support -> Support for running PVH gues
 ![image.png](https://hackmd.io/_uploads/SkopsuQQT.png)
 ![image.png](https://hackmd.io/_uploads/SJz8IA4XT.png)
 
-
-<!--
-Cryptographic API -> Certificates for signature checking
-
-```
-File name or PKCS#11 URI of module signing key -> 改為空值
-Additional X.509 keys for default system keyring -> 改為空值
-Provide system-wide ring of blacklisted keys -> unselect
-```
-
--->
-
 然後開始編譯 kernel 
 
 ```bash
