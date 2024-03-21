@@ -1,6 +1,7 @@
 ---
 title: Power Method
 date: 2021/11/15
+abstract: 數值線代的上課筆記，講的 Power Method，老實說我已經忘光了
 tags: numerical_algebra
 categories:
 - numerical_algebra

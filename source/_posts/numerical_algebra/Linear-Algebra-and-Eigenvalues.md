@@ -1,6 +1,7 @@
 ---
 title: Linear Algebra and Eigenvalues
 date: 2021/11/7
+abstract: 數值線代的上課筆記，講的 Linear Algebra and Eigenvalues，老實說我已經忘光了
 tags: numerical_algebra
 categories:
 - numerical_algebra

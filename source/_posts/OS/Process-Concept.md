@@ -1,6 +1,7 @@
 ---
 title: Ch3 Processes Concept
 date: 2022/2/6
+abstract: 簡單介紹了 Process
 tags: OS
 categories:
 - OS
@@ -207,7 +208,7 @@ fork 完之後我們可以使用 `execlp` 這個 system call 來把你要執行�
 
 可以簡單看一下 `fork` 用起來的樣子：
 
-```cpp=
+```cpp
 #include <stdio.h>
 #include <sys/types.h>
 int main()

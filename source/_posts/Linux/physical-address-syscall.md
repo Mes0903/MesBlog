@@ -1,6 +1,7 @@
 ---
 title: 實作一個回傳物理位址的系統呼叫
 date: 2023-11-20
+abstract: 這篇文章會教大家自己新增一個 system call，其作用是將傳入的 virtual address 轉換為 physical address 後回傳，因此文章中會簡單寫一下 linux 中的 page 與 page table，並帶大家簡單操作一次 page table
 tags: Linux
 categories:
 - Linux

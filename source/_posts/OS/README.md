@@ -1,6 +1,7 @@
 ---
 title: 作業系統 ── 序
 date: 2021/12/10
+abstract: 周志遠老師的 OS 筆記，由於當初讀完沒寫，所以是專門為了教人而回來寫的，因此算是有生之年系列
 tags: OS
 categories:
 - OS

@@ -1,6 +1,7 @@
 ---
 title: Ros Install (noetic)
 date: 2023/12/13
+abstract: 當初老師請我在大教室的電腦上面灌 ROS 時寫的紀錄隨筆
 tags: ROS
 categories:
 - ROS

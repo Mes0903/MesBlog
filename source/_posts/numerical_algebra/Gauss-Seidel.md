@@ -1,6 +1,7 @@
 ---
 title: Gauss-Seidel Metheod
 date: 2021/10/13
+abstract: 數值線代的上課筆記，講的 Gauss-Seidel Metheod，老實說我已經忘光了
 tags: numerical_algebra
 categories:
 - numerical_algebra

@@ -1,6 +1,7 @@
 ---
 title: The mind behind Linux 筆記 & 心得
 date: 2021/12/15
+abstract: Linus Torvalds 在 2016 年的 [TED interview](https://www.ted.com/talks/linus_torvalds_the_mind_behind_linux) 裡談到了他自己的工作模式，性格與 Linux 和 Git 出現時的一些心路歷程，講得很好所以就寫了個隨筆
 tags: miscellaneous
 categories:
 - miscellaneous
@@ -23,7 +24,7 @@ Linus Torvalds 舉的例子是移除一筆在 list 裡面的資料，一般的�
 如果要移除的是第一筆資料，那就需要把指標指向第一個 Node；而如果是要移除中間的資料，則須要把指標指向目標的前一個 Node。
 
 Talk 裡面給的 Pseudo Code 長這樣：
-```cpp=
+```cpp
 remove_list_entry(entry)
 {
     prev = NULL;
@@ -49,7 +50,7 @@ remove_list_entry(entry)
 而 Linus Torvalds 的想法則換了一個角度，通過指標的指標來操作，如此一來 branch 就消失了。
 
 Talk 裡面給的 Pseudo Code 長這樣：
-```cpp=
+```cpp
 remove_list_entry(entry)
 {
     // The "indirect" pointer points to the

@@ -1,6 +1,7 @@
 ---
 title: ROS Tutorial Introduction
 date: 2021/11/17
+abstract: 中央大學數學系上課所用的 ROS 教材，原文放在 hackmd 上，我會不定期更新過來
 tags: ROS
 categories:
 - ROS
@@ -131,7 +132,7 @@ Master 是一個特殊的 Node，也就是我們前面所說的 Server，Master 
 
 Message 是一種資料結構，裡面會有 type field，type field 通常指的是一個基類(base class) 裡面的變數，這個變數會拿來當作子類的 type 來使用，舉個例子([來源](https://stackoverflow.com/questions/9147101/what-are-type-fields))：
 
-```cpp=
+```cpp
 #include <iostream>
 
 class Pet {
