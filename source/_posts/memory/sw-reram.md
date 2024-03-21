@@ -1,6 +1,6 @@
 ---
 title: ReRAM 與 Smith-Waterman Algorithm 介紹
-date: 2023-11-14a
+date: 2023-11-14
 mathjax: true
 abstract: 簡單介紹了 ReRAM 與 Smith-Waterman Algorithm，並找了一些論文論證可以在 ReRAM 上結合 systolic array 來實作 Smith-Waterman Algorithm
 tags: memory
