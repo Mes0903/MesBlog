@@ -2,7 +2,7 @@
 title: Norm
 date: 2021/9/19
 mathjax: true
-abstract: 數值線代的上課筆記，講的 Norm，這我再怎麼說還是記得的
+description: 數值線代的上課筆記，講的 Norm，這我再怎麼說還是記得的
 tags: numerical_algebra
 categories:
 - numerical_algebra

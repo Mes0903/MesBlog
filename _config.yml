@@ -4,7 +4,7 @@
 
 # Site
 title: Mes's Studio
-subtitle: ''
+subtitle: 'stop daydreaming, keep pursuing'
 description: ''
 keywords: Mes
 author: Mes
@@ -99,7 +99,7 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: archer
+theme: next
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
@@ -107,27 +107,3 @@ deploy:
   type: git
   repo: https://github.com/Mes0903/Mes0903.github.io
   branch: main
-
-algolia:
-  applicationID: 'JNI49E87OH'
-  apiKey: '35168ffd5aef11c69f1626ef7cadb0e1'
-  indexName: 'MesBlog'
-
-jsonContent:
-  meta: true
-  pages: false
-  posts:
-    title: true
-    date: true
-    path: true
-    text: false
-    raw: false
-    content: false
-    slug: false
-    updated: false
-    comments: false
-    link: false
-    permalink: true
-    excerpt: false
-    categories: true
-    tags: true

@@ -1,7 +1,7 @@
 ---
 title: Ch2 OS Structure
 date: 2021/12/20
-abstract: 簡單介紹了常見的 OS 架構
+description: 簡單介紹了常見的 OS 架構
 tags: OS
 categories:
 - OS

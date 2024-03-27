@@ -1,7 +1,7 @@
 ---
 title: The mind behind Linux 筆記 & 心得
 date: 2021/12/15
-abstract: Linus Torvalds 在 2016 年的 [TED interview](https://www.ted.com/talks/linus_torvalds_the_mind_behind_linux) 裡談到了他自己的工作模式，性格與 Linux 和 Git 出現時的一些心路歷程，講得很好所以就寫了個隨筆
+description: Linus Torvalds 在 2016 年的 [TED interview](https://www.ted.com/talks/linus_torvalds_the_mind_behind_linux) 裡談到了他自己的工作模式，性格與 Linux 和 Git 出現時的一些心路歷程，講得很好所以就寫了個隨筆
 tags: miscellaneous
 categories:
 - miscellaneous

@@ -1,7 +1,7 @@
 ---
 title: Ch3 Processes Concept
 date: 2022/2/6
-abstract: 簡單介紹了 Process
+description: 簡單介紹了 Process
 tags: OS
 categories:
 - OS

@@ -1,7 +1,7 @@
 ---
 title: Ch1 基礎概論
 date: 2021/12/10
-abstract: 簡單介紹了整學期會教到的東西
+description: 簡單介紹了整學期會教到的東西
 tags: OS
 categories:
 - OS

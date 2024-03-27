@@ -1,7 +1,7 @@
 ---
 title: PE file format
 date: 2023/1/9
-abstract: PE 是 Portable Executable 的縮寫，它是根據 UNIX 系統的 COFF 來設計的，在 Windows 下所有的可執行文件都是 PE File，像是 EXE、DLL、SYS、OCX 等等，因為專題無聊就跑來玩這個了
+description: PE 是 Portable Executable 的縮寫，它是根據 UNIX 系統的 COFF 來設計的，在 Windows 下所有的可執行文件都是 PE File，像是 EXE、DLL、SYS、OCX 等等，因為專題無聊就跑來玩這個了
 tags: security
 categories:
 - security

@@ -3,7 +3,7 @@ title: 關於我
 layout: about
 ---
 
-<h1 class><center><img src = "https://i.imgur.com/thmVmX6.png?w=1000" height = 50> Mes 的筆記 ── 序<img src = "https://i.imgur.com/thmVmX6.png?w=1000" height = 50></center></h1>
+# Mes 的筆記 ── 序
 
 # 前言 <img src = "https://i.imgur.com/thmVmX6.png?w=930" height = 50>
 
