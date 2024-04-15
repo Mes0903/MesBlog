@@ -53,7 +53,6 @@ darkmode: true
 favicon:
   small: /uploads/Icon-16x16.png
   medium: /uploads/Icon-32x32.png
-  safari_pinned_tab: /uploads/logo.svg
   #android_manifest: /manifest.json
 
 # Custom Logo (Warning: Do not support scheme Mist)
