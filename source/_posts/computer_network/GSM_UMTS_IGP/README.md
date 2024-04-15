@@ -1,3 +1,13 @@
+---
+title: GSM & UMTS & IGP
+date: 2024/04/16
+mathjax: true
+description: GSM 與 UMTS 的筆記，順便介紹了一下 IGP
+tags: computer-network
+categories:
+- computer-network
+---
+
 # GSM
 
 ## 前言
@@ -28,7 +38,7 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 <center>
 
-<img src = "BTS.png" width = "25%">
+<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/computer_network/GSM_UMTS_IGP/BTS.png?raw=true" width = "25%">
 
 (典型的 BTS)  
 (img src: [wiki](https://zh.wikipedia.org/zh-tw/%E5%9F%BA%E5%9C%B0%E6%94%B6%E5%8F%91%E6%9C%BA%E7%AB%99))
@@ -51,7 +61,7 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 <center>
 
-<img src = "MSC-server.png" width = "50%">
+<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/computer_network/GSM_UMTS_IGP/MSC-server.png?raw=true" width = "50%">
 
 (Lucent 於 2001~2006 部屬在 Ljubljana 的 MSC 服務器)  
 (img src: [wiki](https://en.wikipedia.org/wiki/Mobile_switching_centre_server#/media/File:Lucent_5ESS_GSM_Mobile_Switching_Centre.jpg))
@@ -62,7 +72,7 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 <center>
 
-<img src = "MSC-black.png" width = "65%">
+<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/computer_network/GSM_UMTS_IGP/MSC-black.png?raw=true" width = "65%">
 
 (MSC 與 BSS 關係示意圖)
 
@@ -80,7 +90,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 <center>
 
-<img src = "HLR-black.png" width = "55%">
+<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/computer_network/GSM_UMTS_IGP/HLR-black.png?raw=true" width = "55%">
 
 (HLR 與 VLR 示意圖)
 
@@ -94,7 +104,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 <center>
 
-<img src = "GSM-net-black.png" width = "55%">
+<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/computer_network/GSM_UMTS_IGP/GSM-net-black.png?raw=true" width = "55%">
 
 </center>
 
@@ -102,7 +112,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 <center>
 
-<img src = "GSM-phone-black.png" width = "40%">
+<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/computer_network/GSM_UMTS_IGP/GSM-phone-black.png?raw=true" width = "40%">
 
 </center>
 
@@ -113,6 +123,8 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 ## 前言
 
 GPRS 是 GSM 的延伸，是 2.5G 行動網路，它的主要目的是提供更快的數據傳輸速度，讓用戶可以更快地上網，GPRS 的架構與 GSM 有很多相似之處
+
+# UMTS
 
 # IGP
 
