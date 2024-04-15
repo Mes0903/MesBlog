@@ -51,9 +51,8 @@ darkmode: true
 # ---------------------------------------------------------------
 
 favicon:
-  small: /uploads/Ina-16x16.png
-  medium: /uploads/Ina-32x32.png
-  apple_touch_icon: /uploads/apple-touch-icon-next.png
+  small: /uploads/Icon-16x16.png
+  medium: /uploads/Icon-32x32.png
   safari_pinned_tab: /uploads/logo.svg
   #android_manifest: /manifest.json
 
@@ -141,7 +140,7 @@ sidebar:
 # Sidebar Avatar
 avatar:
   # Replace the default image and set the url here.
-  url: /uploads/Ina.png
+  url: /uploads/Icon.png
   # If true, the avatar will be displayed in circle.
   rounded: true
   # If true, the avatar will be rotated with the cursor.
