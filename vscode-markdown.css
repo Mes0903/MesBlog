@@ -1,0 +1,165 @@
+.green {
+  color:#29E5A9;
+}
+
+.yellow {
+  color:#F1EF78;
+}
+
+.brown {
+  color:#990000;
+}
+
+.pink {
+  color:#DD9FBD;
+}
+
+.red {
+  color:#E71B18 ;
+}
+
+.orange {
+  color:#E8A635;
+}
+
+.purple {
+  color:#AC9FDD;
+}
+
+.blue {
+  color:#20DEE5;
+}
+
+.ivory {
+  color:#FFFFF0;
+}
+
+.pearl {
+  color:#EAE0C8;
+}
+
+.beige {
+  color:#F5F5DC;
+}
+
+.cornsilk {
+  color:#FFF8DC;
+}
+
+.gainsboro {
+  color:#DCDCDC;
+}
+
+.light_grey {
+  color:#D3D3D3;
+}
+
+.silver {
+  color:#C0C0C0;
+}
+
+.dark_grey {
+  color:#A9A9A9;
+}
+
+.wheat {
+  color:#F5DEB3;
+}
+
+.burlywood {
+  color:#DEB887;
+}
+
+.tan {
+  color:#D2B48C;
+}
+
+.post-body {
+  img {
+    margin-bottom: 0px !important;
+  }
+}
+
+.posts-expand .post-title-link {
+  color: #F5DEB3;
+}
+
+img {
+  display: inline;
+  max-width: 100%;
+}
+
+h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+  color: #E8A635;
+}
+
+h2 {
+  color: #29E5A9;
+}
+
+h3 {
+  color: #F5DEB3;
+}
+
+a.redlink {
+  color:#DB1859;
+}
+
+a.redlink:link {
+  color:#DB1859;
+  text-decoration:none;
+}
+
+a.redlink:visiteid {
+  color:#DB1859;
+  text-decoration:none;
+}
+
+a.redlink:hover {
+  color:#19CABC;
+  text-decoration:none;
+}
+
+a.redlink:active {
+  color:#DB1859;
+  text-decoration:underline;
+  background:#FFFFFF;
+}
+
+a.pinklink {
+  color:#DD9FBD;
+  text-decoration:none;
+}
+a.pinklink:visiteid {
+  color:#DD9FBD;
+  text-decoration:none;
+}
+a.pinklink:hover {
+  color:#19CABC;
+  text-decoration:none;
+}
+a.pinklink:active {
+  color:#DD9FBD;
+  text-decoration:underline;
+  background:#FFFFFF;
+}
+
+a.wheatlink {
+  color:#F5DEB3;
+  text-decoration:none;
+}
+a.wheatlink:visiteid {
+  color:#F5DEB3;
+  text-decoration:none;
+}
+a.wheatlink:hover {
+  color:#19CABC;
+  text-decoration:none;
+}
+a.wheatlink:active {
+  color:#F5DEB3;
+  text-decoration:underline;
+  background:#FFFFFF;
+}
