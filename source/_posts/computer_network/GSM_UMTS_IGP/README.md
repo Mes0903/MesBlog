@@ -57,7 +57,7 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 ### MSC
 
-然而只有 BSS 是不夠的，我們肯定還會需要路由器和交換機之類的設備，不然上不了網，因此就需要一個地方來解析 BSS 傳來的訊息，在 GSM 架構下稱這個地方為 MSC (Mobile Switching Center)，是個類似數據中心的場所，可以說是 GSM 架構的心臟
+然而只有 BSS 是不夠的，我們肯定還會需要路由器和交換機之類的設備，不然上不了網，因此就需要一個地方來解析 BSS 傳來的訊息，在 GSM 架構下稱這個地方為 MSC (Mobile Switching Center)，可以說是 GSM 架構的心臟
 
 <center>
 
@@ -77,6 +77,8 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 (MSC 與 BSS 關係示意圖)
 
 </center>
+
+而負責擔任 Gateway 的 MSC 被稱為 GMSC，負責處理來自其他 MSC 的資料，並且將資料轉發到其他的 MSC 或是大眾網路(PSTN) 中
 
 ### HLR & VLR
 
@@ -122,7 +124,11 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 ## 前言
 
-GPRS 是 GSM 的延伸，是 2.5G 行動網路，它的主要目的是提供更快的數據傳輸速度，讓用戶可以更快地上網，GPRS 的架構與 GSM 有很多相似之處
+GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸出了一個可以處理封包的架構，主要是在核心網路的部分新增了 SGSN (Serving GPRS Support Node) 和 GGSN (Gateway GPRS Support Node) 這兩個節點，好讓網路豐寶可以透過 GPRS 上網
+
+因此原先的 MSC 就專注在處理語音通話與簡訊方面，而 SGSN 和 GGSN 就專注在處理網路上的封包，架構圖如下：
+
+
 
 # UMTS
 
