@@ -1,5 +1,5 @@
-[submodule "source/_posts/Cppminer"]
-	path = source/_posts/Cppminer
+[submodule "source/_posts/Cpp-Miner"]
+	path = source/_posts/Cpp-Miner
 	url = https://github.com/Mes0903/Cpp-Miner
 
 [submodule "themes/next"]
