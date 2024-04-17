@@ -98,27 +98,51 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 </center>
 
+另外會有 EIR 與 AUC 來輔助做用戶身份認證，因為與整體架構比較沒關所以就不特別提了，在這裡我沒有畫出來，但在下面的 GPRS 架構圖中我有畫出來
+
 ## PSTN
 
 雖然這樣上網是解決了，但是手機還需要能夠打電話，因此在 GSM 中，我們會將 MSR 與 PSTN (Public Switched Telephone Network) 連接起來，PSTN 是電話專用的電路交換網路，這樣就可以讓手機打電話了
 
-所以假設手機 A 要傳簡訊，或是要打電話給國內的手機 B，而且業者不同(有不同 MSC)，那走的路線會是：
+## GSM 架構圖
+
+所以整個 GSM 的網路看起來會長這樣：
 
 <center>
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/computer_network/GSM_UMTS_IGP/GSM-net-black.png?raw=true" width = "55%">
+<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/computer_network/GSM_UMTS_IGP/GSM-net-black.png?raw=true">
 
 </center>
+![alt text](image.png)
+### 同業者網內互打
 
-而如果是要打電話給一般的家用電話，那走的路線會是：
+如果今天是 User B 要打電話給 User E，由於他們處於同一個 PLMN 內，也就是同一個業者的管轄範圍內，所以就不用經過 GMSC，直接由 MSC 轉接就可以了：
 
 <center>
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/computer_network/GSM_UMTS_IGP/GSM-phone-black.png?raw=true" width = "40%">
+<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/computer_network/GSM_UMTS_IGP/same-plmn-black.png?raw=true">
 
 </center>
 
-國外就自己變通啦，一樣的道理，這裡就不講了
+### 不同業者間的通話
+
+如果今天是 User A 要打電話給 User E，由於他們處於不同的 PLMN 內，也就是不同業者的管轄範圍內，所以就需要經過 GMSC，由 GMSC 轉接到 User E 所在的 MSC：
+
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/computer_network/GSM_UMTS_IGP/cross-plmn-black.png?raw=true">
+
+</center>
+
+### 手機打給家用電話
+
+如果今天是 User A 要打電話給家用電話(User F)，由於家用電話是接在 PSTN 上的，所以就需要經過 GMSC，由 GMSC 轉接到 PSTN：
+
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/computer_network/GSM_UMTS_IGP/to-pstn-black.png?raw=true">
+
+</center>
 
 # GPRS
 
@@ -128,7 +152,11 @@ GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸�
 
 因此原先的 MSC 就專注在處理語音通話與簡訊方面，而 SGSN 和 GGSN 就專注在處理網路上的封包，架構圖如下：
 
+<center>
 
+<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/computer_network/GSM_UMTS_IGP/GPRS-black.png?raw=true">
+
+</center>
 
 # UMTS
 
