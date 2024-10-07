@@ -10,7 +10,11 @@ categories:
 
 # 關於往前這件事
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/essay/AboutMovingForward/Lookback.png?raw=true" width = "50%">
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/essay/AboutMovingForward/Lookback.png?raw=true">
+
+</center>
 
 其實原本應該已經是一個月前就該寫這篇了，那時候跟幾個朋友去看驀然回首，我大概在京本的漫畫出現，藤野買了大量素描本開始一本接一本地畫下去時就開始哭了，結果旁邊有人給我睡著，真的是太不應該了哀。
 

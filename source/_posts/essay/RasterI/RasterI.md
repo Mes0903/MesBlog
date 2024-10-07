@@ -31,7 +31,11 @@ Alan Jian 大神實作了一個基於 TBDR 架構，針對 real-time rasterizati
 ⁡
 因此 TBDR 的優勢主要在於有效使用 on-chip memory，使常見的像速處理於 GPU 內高速完成，不用 access主記憶體。 針對那些只在 render pass 內需要的資料還可以於 Tile 完成時直接捨棄掉，省下更多的記憶體頻寬。   
 ⁡
-<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/essay/RasterI/TBDR.png?raw=true" width = "50%">
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/main/source/_posts/essay/RasterI/TBDR.png?raw=true">
+
+</center>
 
 然而缺點就是，因為必須使用主記憶體來存放處理好的幾何資料，因此針對幾何處理的成本會比 IMR 還要高，因為硬體需要額外的記憶體頻寬跟空間來暫時存放幾何處理後的資料，所以對於那些會增加幾何複雜度的功能，像是 geometry shader，都會比較不適合用於 TBDR 中。   
 ⁡
