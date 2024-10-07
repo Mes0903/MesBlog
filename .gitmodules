@@ -1,7 +1,7 @@
 [submodule "source/_posts/Cpp-Miner"]
 	path = source/_posts/Cpp-Miner
-	url = https://github.com/Mes0903/Cpp-Miner
+	url = git@github.com:Mes0903/Cpp-Miner.git
 
-[submodule "themes/next"]
-	path = themes/next
-	url = https://github.com/next-theme/hexo-theme-next
+[submodule "themes/ShokaX"]
+	path = themes/ShokaX
+	url = git@github.com:Mes0903/Mes-hexo-theme-shokaX.git
