@@ -43,10 +43,10 @@ render_drafts: false
 post_asset_folder: false
 relative_link: false
 future: true
-syntax_highlighter: highlight.js
+syntax_highlighter: false
 highlight:
-  line_number: true
   auto_detect: false
+  line_number: true
   line_threshold: 0
   tab_replace: ''
   exclude_languages:
@@ -96,10 +96,70 @@ include:
 exclude:
 ignore:
 
+markdown:
+  render: # 渲染器设置
+    html: false # 过滤 HTML 标签
+    xhtmlOut: true # 使用 '/' 来闭合单标签 （比如 <br />）。
+    breaks: true # 转换段落里的 '\n' 到 <br>。
+    linkify: true # 将类似 URL 的文本自动转换为链接。
+    typographer:
+    quotes: "“”‘’"
+  plugins: # markdown-it 插件设置
+    - plugin:
+        name: markdown-it-toc-and-anchor
+        enable: true
+        options: # 文章目录以及锚点应用的 class 名称，shoka 系主题必须设置成这样
+          tocClassName: "toc"
+          anchorClassName: "anchor"
+    - plugin:
+        name: markdown-it-multimd-table
+        enable: true
+        options:
+          multiline: true
+          rowspan: true
+          headerless: true
+    - plugin:
+        name: ./markdown-it-furigana
+        enable: true
+        options:
+          fallbackParens: "()"
+    - plugin:
+        name: ./markdown-it-spoiler
+        enable: true
+        options:
+          title: "你知道得太多了"
+
+minify:
+  js:
+    enable: false # ShokaX 自带 esbuild 优化，不建议开启，其他主题建议开启
+    exclude: # 排除文件，接受 string[]，需符合 micromatch 格式
+  css:
+    enable: true # 开启 CSS 优化
+    options:
+      targets: ">= 0.5%" # browserslist 格式的 target
+    exclude: # 排除文件，接受 string[]，需符合 micromatch 格式
+  html:
+    minifier: html-minifier
+    enable: true # 开启 HTML 优化
+    options:
+      comments: false # 是否保留注释内容
+    exclude: # 排除文件，接受 string[]，需符合 micromatch 格式
+  image:
+    enable: false # 开启图片预处理和自动 WebP 化
+    options:
+      avif: false
+      webp: true # 预留配置项，现版本无作用
+      quality: 80 # 质量，支持1-100的整数、lossless或nearLossless
+      effort: 2 # CPU 工作量，0-6之间的整数(越低越快)
+      replaceSrc: false # 自动替换生成html中的本地图片链接为webp链接
+      # 对于使用 CI 工作流部署的用户，请注意本配置可能导致图片 404，如果出现请关闭
+      # 我们更建议使用 Service Worker 来在用户侧实现 replaceSrc 的功能，这将能够以一种侵入式更小的方式实现链接替换
+    exclude:
+
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: next
+theme: shokax
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment

@@ -1,6 +1,6 @@
 [submodule "source/_posts/Cpp-Miner"]
 	path = source/_posts/Cpp-Miner
 	url = git@github.com:Mes0903/Cpp-Miner.git
-[submodule "themes/shokaX"]
-	path = themes/shokaX
+[submodule "themes/shokax"]
+	path = themes/shokax
 	url = git@github.com:Mes0903/Mes-hexo-theme-shokaX.git
