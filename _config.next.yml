@@ -37,9 +37,9 @@ custom_file_path:
 # ---------------------------------------------------------------
 
 # Schemes
-scheme: Gemini
-#scheme: Mist
-#scheme: Pisces
+# scheme: Gemini
+scheme: Mist
+# scheme: Pisces
 #scheme: Gemini
 
 # Dark Mode
@@ -101,7 +101,7 @@ menu:
   archives: /archives/ || fa fa-archive
   #schedule: /schedule/ || fa fa-calendar
   #sitemap: /sitemap.xml || fa fa-sitemap
-  commonweal: /404/ || fa fa-heartbeat
+  # commonweal: /404/ || fa fa-heartbeat
 
 # Enable / Disable menu icons / item badges.
 menu_settings:
@@ -129,7 +129,7 @@ sidebar:
   #  - always  expand for all pages automatically.
   #  - hide    expand only when click on the sidebar toggle icon.
   #  - remove  totally remove sidebar including sidebar toggle.
-  display: post
+  display: always
 
   # Sidebar padding in pixels.
   padding: 18
