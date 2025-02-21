@@ -1,0 +1,4 @@
+[submodule "src/Cpp-Miner"]
+	path = src/Cpp-Miner
+	url = git@github.com:Mes0903/Cpp-Miner.git
+	branch = standard-markdown
