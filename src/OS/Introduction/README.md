@@ -3,6 +3,7 @@ title: Ch1 基礎概論
 date: 2021-12-10
 tag: OS
 category: OS
+order: 1
 ---
 
 # Ch1 基礎概論
@@ -47,7 +48,11 @@ category: OS
 
 我們看一個例子：
 
-![General_Purpose_Operating_Systems](https://github.com/Mes0903/Mes_Note/blob/main/Operating_System/Ch1_Introduction/Image/General_Purpose_Operating_Systems.jpg?raw=true)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/1.png?raw=true">
+
+</center><br>
 
 最下面是硬體，上面則是我們寫的程式，程式大致上可以分成「和作業系統相關的」與「和作業系統無關的」，也就是圖上的 user mode 與 kernel mode，這在後面的章節會再提更多。
 
@@ -103,7 +108,11 @@ OS 主要的考量、需求有二：
 
 電腦系統有很多不同的 Hardware，我們需要把它串起來，你把主機打開來可以看見它有 bus、線，而作業系統的目的就是要控制、協調這些硬體的使用，可以看看下面這張圖：
 
-![Computer_System_Organization](https://github.com/Mes0903/Mes_Note/blob/main/Operating_System/Ch1_Introduction/Image/Computer_System_Organization.jpg?raw=true)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/2.png?raw=true">
+
+</center><br>
 
 簡單來說就會長上圖最下面那樣，執行程式時 instruction 是 run 在 cpu 上的，需要用到的 data 會在 memory 裡面，最後可能寫到某個 Device 上面，看要儲存還是輸出之類的，這些是 control 的部分。
 
@@ -113,7 +122,11 @@ OS 主要的考量、需求有二：
 
 這是一個 OS 基本運作的例子：
 
-![Computer_System_Operations](https://github.com/Mes0903/Mes_Note/blob/main/Operating_System/Ch1_Introduction/Image/Computer_System_Operations.jpg?raw=true)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/3.png?raw=true">
+
+</center><br>
 
 這邊 Cpu 想對一個 I/O Device，像是 Disk 做動作，例如讀寫資料。
 
@@ -171,7 +184,11 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 用這張圖來看：
 
-![Timeline](https://github.com/Mes0903/Mes_Note/blob/main/Operating_System/Ch1_Introduction/Image/Timeline.jpg?raw=true)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/4.png?raw=true">
+
+</center><br>
 
 假設有了 Interrupt，對於 I/O 而言就會像圖上這樣。cpu 在高電位代表他正在做他該做的事，在低電位代表他去處理別的程式的事情；而 I/O 則是反過來的，高電位代表 idle，低電位代表正在傳輸，而且花的時間可能會很長。
 
@@ -181,7 +198,11 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 那我們來看個例子，情境是使用者要執行 `scanf`，而最終當然會到最底層去 call 到 driver：
 
-![Interrupt_Driven_IO](https://github.com/Mes0903/Mes_Note/blob/main/Operating_System/Ch1_Introduction/Image/Interrupt_Driven_IO.jpg?raw=true)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/5.png?raw=true">
+
+</center><br>
 
 一開始 cpu 會下指令給 controller，讓它開始搬資料，cpu 可能還會給個 byte 的長度，像是 100 bytes，然後 controller 搬完後再去通知 cpu。
 
@@ -209,7 +230,11 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 那我們現在來仔細看一下他的流程，首先是 Signal：
 
-![Signal](https://github.com/Mes0903/Mes_Note/blob/main/Operating_System/Ch1_Introduction/Image/Signal.jpg?raw=true)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/6.png?raw=true">
+
+</center><br>
 
 這整條是 memory，下面的是 user 的 Program，上面的是 OS。 
 
@@ -229,7 +254,11 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 接下來是 Trap，一樣看一下它的流程：
 
-![Trap](https://github.com/Mes0903/Mes_Note/blob/main/Operating_System/Ch1_Introduction/Image/Trap.jpg?raw=true)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/7.png?raw=true">
+
+</center><br>
 
 跟前面不一樣的是，Trap 是 Program 主動需要 OS 幫忙的，所以會是一個 program 裡用了某個 system call，或是寫了某些不合法的操作，像是訪問了陣列大小以外的元素，或某個數字除以 0 了，造成 OS 需要來幫你處理後續。
 
@@ -253,7 +282,11 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 接下來要講電腦資料讀取的基本方式，大家應該都很熟悉了，電腦資料在儲存其實是一個 Hierarchy 的架構：
 
-![Storage_Device_Hierarchy](https://github.com/Mes0903/Mes_Note/blob/main/Operating_System/Ch1_Introduction/Image/Storage_Device_Hierarchy.png?raw=true)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/8.png?raw=true">
+
+</center><br>
 
 上面三個分別為暫存器、快取、主記憶體，而後面的則統稱為次級儲存裝置 (Secondary Storage)。 越上層的速度越快，容量越小，反之越下層的速度越慢，但容量越大，價格也比較便宜。
 
@@ -305,7 +338,11 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 這邊看一下 Disk，他不是電子式而是機械式的，它會有讀寫的手臂，手臂上面有很多磁頭可以同時讀寫多個磁盤，磁盤有很多個，可以旋轉：
 
-![Disk_Mechanism](https://github.com/Mes0903/Mes_Note/blob/main/Operating_System/Ch1_Introduction/Image/Disk_Mechanism.png?raw=true)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/9.png?raw=true">
+
+</center><br>
 
 所以可以看見讀取的速度和資料在哪裡就有關係了，如果資料剛好在磁頭的對面，妳就需要轉半圈才會讀到，這樣就會有多一個 access 的時間。
 
@@ -315,7 +352,11 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 而電腦的資料通常最終會儲存在最慢的 Device 裡面，因此我們會把資料 copy 到比較快的 Device 上面，用到的頻率越高，我們就會把它存到越上層，所以才會需要有 L1、L2、L3 的 Cache，加速 cpu 的計算：
 
-![Caching](https://github.com/Mes0903/Mes_Note/blob/main/Operating_System/Ch1_Introduction/Image/Caching.png?raw=true)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/10.png?raw=true">
+
+</center><br>
 
 注意是 copy，不是搬移，如果是搬移，我們不稱它為 Cache。且 Copy 過去的資料是暫時性的資料，我們可以隨時砍掉它且不應該造成儲存資料的遺失。
 
@@ -355,7 +396,11 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 這兩個 mode 在可能就是一個 bit(0 or 1)，我們前面提過，OS 要做任何事都是透過 system call，而 system call 需要透過 Interrupt。
 
-<center><img src="https://github.com/Mes0903/Mes_Note/blob/main/Operating_System/Ch1_Introduction/Image/Dual_mode.png?raw=true"></center><br>
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/11.png?raw=true">
+
+</center><br>
 
 平常某個 Program 在執行時是在 User mode 底下，而當它送 Interrupt 出來後那個 bit 就會 flip，進到 kernel mode，因為只要一發 Interrupt 就代表你 call 了 system call，而 system call 就會執行 OS 的程式。
 
@@ -387,7 +432,11 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 檢查的流程大概就長這樣：
 
-<center><img src = "https://github.com/Mes0903/Mes_Note/blob/main/Operating_System/Ch1_Introduction/Image/memory_protection.png?raw=true"></center>
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/12.png?raw=true">
+
+</center><br>
 
 先去檢查存取的 address 有沒有大於 base address，再去看有沒有小於 base address + limit，都通過慈可以存取 memory。
 
@@ -402,4 +451,3 @@ cpu 的保護主要是要阻止一個程式可以霸佔 cpu，不讓別的程式
 而那個 Load time 到 register 的 instruction 也是 privileged instruction，只有 OS 可以調整 Timer 數的時間。
 
 第一章就到這裡，簡單介紹了整個 OS，下一章會開始進到 OS Structure。
-
