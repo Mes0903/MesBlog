@@ -29,13 +29,13 @@ rv32emu 是針對 32 bit [RISC-V processor model](https://riscv.org/technical/sp
 為了模擬硬體，模擬器主要的邏輯為
 
 1. 將要模擬的軟體載入到記憶體中 (load ELF)
-2. 指令擷取 (Instruction Fetch)：從記憶體中讀取當前 PC 指向的指令。
+2. 指令擷取 (Instruction Fetch)：從記憶體中讀取當前 PC 指向的指令
 3. 指令解碼 (Instruction Decode)：解析指令中的欄位，例如 opcode、rd、rs1、rs2 和立即值 (immediate) 等
 4. 指令執行：根據解碼的結果模擬對應的運算，更新暫存器或記憶體的內容，以及調整 PC 值
 
 > 後面三點可以簡稱為 CPU emulation
 
-依照 RISC-V 的[規格書](https://riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf)定義暫存器的數量與功能，並以不同指令集定義的操作和欄位來實作 CPU decoder 與指令集對應的操作(e.g. 加減乘除)，並將結果存在指定的暫存器，換句話說就是模擬 CPU 的[指令周期](https://en.wikipedia.org/wiki/Instruction_cycle)，這樣一來就能在不同的指令集架構的電腦上模擬 RISC-V 指令集的軟體。
+依照 RISC-V 的[規格書](https://riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf)定義暫存器的數量與功能，並以不同指令集定義的操作和欄位來實作 CPU decoder 與指令集對應的操作(e.g. 加減乘除)，並將結果存在指定的暫存器，換句話說就是模擬 CPU 的[指令周期](https://en.wikipedia.org/wiki/Instruction_cycle)，這樣一來就能在不同的指令集架構的電腦上模擬 RISC-V 指令集的軟體
 
 # 系統模擬的組成
 
@@ -419,8 +419,8 @@ HSM 全名為 Hart State Management，定義了其一系列的 hart 狀態，並
 以下是 [RISC-V SBI HSM Extension](https://github.com/riscv-non-isa/riscv-sbi-doc/blob/master/src/ext-hsm.adoc) 管理 hart 的方式，從下圖片中可以看到 hart 在 HSM 的管理下會有以下七種狀態，分別為：
 - `STARTED`: hart 已物理上電並正常執行
 - `STOPPED`: hart 不在 S mode 或更低特權模式下運行，如果底層平台具有物理斷電 hart 的機制，則它可以會被 SBI 實現斷電
-- `SUSPENDED`: hart 處於低耗電狀態，如等待中斷或特定事件發生，發生時就會回到 `STARTED` 狀態。
-- `STOP_PENDING`、`START_PENDING`、`SUSPEND_PENDING`、`RESUME_PENDING`：代表正在進入下一個狀態，但由於 semu 是模擬器，因此這幾個狀態可以直接忽略，但在實際硬體運作上，作業系統會透過 sbi_hart_get_status 來取得 hart 的狀態，並根據取得的狀態做後續的動作。
+- `SUSPENDED`: hart 處於低耗電狀態，如等待中斷或特定事件發生，發生時就會回到 `STARTED` 狀態
+- `STOP_PENDING`、`START_PENDING`、`SUSPEND_PENDING`、`RESUME_PENDING`：代表正在進入下一個狀態，但由於 semu 是模擬器，因此這幾個狀態可以直接忽略，但在實際硬體運作上，作業系統會透過 sbi_hart_get_status 來取得 hart 的狀態，並根據取得的狀態做後續的動作
 
 ### SBI IPI Extension
 
@@ -449,7 +449,7 @@ void sbi_set_timer(uint64_t stime_value)
 }
 ```
 
-根據 TIMER Extension 的定義，我們所傳入的參數是一個 Absolute time，也就當 Timer 的時間超過所傳入的參數時，就會觸發 timer interrupt。而非呼叫 TIMER Extension 當下的 Timer 時間加上傳入的參數。
+根據 TIMER Extension 的定義，我們所傳入的參數是一個 Absolute time，也就當 Timer 的時間超過所傳入的參數時，就會觸發 timer interrupt。而非呼叫 TIMER Extension 當下的 Timer 時間加上傳入的參數
 > ($\S$ 5.1 in [riscv-sbi-doc](https://github.com/riscv-non-isa/riscv-sbi-doc/tree/master)) Programs the clock for next event after stime_value time. stime_value is in absolute time. This function must clear the pending timer interrupt bit as well.
 
 ### 如何確認多核模擬器正確運作?

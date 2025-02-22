@@ -88,7 +88,7 @@ operation 總共有四種變化：
 
 指令最後會被翻譯為機器指令，裡面的 32 bits 都有對應的意思，以 32 bits 對齊，每個 32 bits 會照上面的圖被劃分為不同的區域(field)
 
-最終的指令類型是由 funct3/funct7 和 opcode 一起決定的，題外話，funct3 中的 "3" 代表佔了 3 個 bit，funct7 同理。
+最終的指令類型是由 funct3/funct7 和 opcode 一起決定的，題外話，funct3 中的 "3" 代表佔了 3 個 bit，funct7 同理
 
 對於 opcode 的部分有另一張表規定了其內容意義：
 
@@ -603,7 +603,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 
 調用函式時地址的計算方法為先對 20 bits 寬的 `IMM` 乘以 2，然後進行 sign-extension，最後與 PC 相加，因此跳躍的範圍是以 PC 為基準，上下加減 1 MB
 
-JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實際在寫時會用 label 給出跳躍的目標，具體 `IMM` 值由組譯器和 linker 負責生成。
+JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實際在寫時會用 label 給出跳躍的目標，具體 `IMM` 值由組譯器和 linker 負責生成
 
 ### JALR (Jump And Link Register)
 
@@ -626,7 +626,7 @@ JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實�
 
 我使用 Qemu 來模擬板子，為了方便先以單核為目標，所以首要目標是怎麼確認當前核心是不是要用的核心
 
-RISC-V 中，每一個 privilege level 都對應到一組特定的暫存器，被稱為控制暫存器，簡稱 CSR，從這個暫存器中我們可以讀取 Hart 的編號，高 level 可以訪問低 level，但反過來不行。
+RISC-V 中，每一個 privilege level 都對應到一組特定的暫存器，被稱為控制暫存器，簡稱 CSR，從這個暫存器中我們可以讀取 Hart 的編號，高 level 可以訪問低 level，但反過來不行
 
 要訪問 CSR，我們需要使用 CSR 擴展指令
 
@@ -1429,9 +1429,9 @@ csrw    mscratch, a0
 
 這裡 WLRL 的意思是「Write/Read Only Legal Values」，表示我們在讀寫的時候需要確保它的值是合法的
 
-+ 當 trap 發生時，hart 會設定該暫存器通知我們 trap 發生的原因。
-+ 最高位元 Interrupt 為 1 時標識了目前 trap 為 interrupt，否則是  exception。
-+ 剩餘的 Exception Code 用來標識具體的 interrupt 或 exception 的種類。
++ 當 trap 發生時，hart 會設定該暫存器通知我們 trap 發生的原因
++ 最高位元 Interrupt 為 1 時標識了目前 trap 為 interrupt，否則是  exception
++ 剩餘的 Exception Code 用來標識具體的 interrupt 或 exception 的種類
 + spec 內有附一張表格
     <center>
 

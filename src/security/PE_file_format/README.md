@@ -9,7 +9,7 @@ category: security
 
 # 前言
 
-PE 是 Portable Executable 的縮寫，它是根據 UNIX 系統的 COFF 來設計的，在 Windows 下所有的可執行文件都是 PE File，像是 EXE、DLL、SYS、OCX 等等。
+PE 是 Portable Executable 的縮寫，它是根據 UNIX 系統的 COFF 來設計的，在 Windows 下所有的可執行文件都是 PE File，像是 EXE、DLL、SYS、OCX 等等
 
 PE File 內部的格式是規定好的，也就是所謂的 PE file format，大致可以分為兩部分，Header 與 Section：
 
@@ -21,7 +21,7 @@ PE File 內部的格式是規定好的，也就是所謂的 PE file format，大
 
 </center><br>
 
-Header 是用來管理 PE file 的，包含了一些執行檔的重要資訊，而 Section 則包含了程式碼、常量、資料和圖片資源等等。
+Header 是用來管理 PE file 的，包含了一些執行檔的重要資訊，而 Section 則包含了程式碼、常量、資料和圖片資源等等
 
 為了後續講解，這邊用 asm 寫了一個很簡單的 Windows Program，執行檔名為 demo.exe：
 ```asm
@@ -72,7 +72,7 @@ start:
 
 </center><br>
 
-可以看見 demo.exe 由 DOS Header, DOS stub, NT Headers, Section Headers 與幾個 Sections 組成，那接下來就會依序介紹這些東西。
+可以看見 demo.exe 由 DOS Header, DOS stub, NT Headers, Section Headers 與幾個 Sections 組成，那接下來就會依序介紹這些東西
 
 # DOS Header
 
@@ -92,7 +92,7 @@ PE file 最一開始的部分是 Dos Header，PE-bear 可以幫我們把這段 b
 
 </center><br>
 
-DOS Header 是 PE File 中的起始位置，以前的功用是用來保持與 DOS 的兼容性與定位 NT Header，而現在的功用只剩下後者。
+DOS Header 是 PE File 中的起始位置，以前的功用是用來保持與 DOS 的兼容性與定位 NT Header，而現在的功用只剩下後者
 
 DOS Header 是一個 C struct，在 `winnt.h` 中的定義如下：
 ```c
@@ -119,11 +119,11 @@ typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header
 } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
 ```
 
-它的大小為 `40h`(h 代表用十六進位表示)，其中 `WORD` 是 2bytes，`LONG` 是 4bytes。 我們關心的只有兩個成員：`e_magic` 與 `e_lfanew`。
+它的大小為 `40h`(h 代表用十六進位表示)，其中 `WORD` 是 2bytes，`LONG` 是 4bytes。 我們關心的只有兩個成員：`e_magic` 與 `e_lfanew`
 
-`e_magic` 是一個簽名，ASCII 的轉換結果為 `MZ`，所有的 PE file 都要以這個 `MZ` 開頭；而 `e_lfanew` 指向 NT Header 的位址。 其它的元素是在 DOS 環境下要使用的，在 Windows 下就無關。
+`e_magic` 是一個簽名，ASCII 的轉換結果為 `MZ`，所有的 PE file 都要以這個 `MZ` 開頭；而 `e_lfanew` 指向 NT Header 的位址。 其它的元素是在 DOS 環境下要使用的，在 Windows 下就無關
 
-而 DOS Stub 也是在 DOS 環境下使用的，主要功能就是拿來報錯，這邊也就不詳細介紹。
+而 DOS Stub 也是在 DOS 環境下使用的，主要功能就是拿來報錯，這邊也就不詳細介紹
 
 # NT Headers (PE Headers)
 
@@ -138,7 +138,7 @@ typedef PIMAGE_NT_HEADERS32                 PIMAGE_NT_HEADERS;
 #endif
 ```
 
-其中的 `32` 與 `64` 就代表 32 位元和 64 位元，在編譯期的時候就會選擇好了。
+其中的 `32` 與 `64` 就代表 32 位元和 64 位元，在編譯期的時候就會選擇好了
 
 而 `IMAGE_NT_HEADERS64` 與 `IMAGE_NT_HEADERS32` 的差異也很小：
 
@@ -156,10 +156,10 @@ typedef struct _IMAGE_NT_HEADERS {
 } IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;
 ```
 
-可以看見基本上一樣的，差異只在 Optional Header。
+可以看見基本上一樣的，差異只在 Optional Header
 
 第一個成員 `Signature` 是 `PE File` 的簽名，簽名為 `PE`，用 PE-bear 可以看見其 binary 為 
-`00 00 45 50`(此 exe 為 little endian)。
+`00 00 45 50`(此 exe 為 little endian)
 
 <center>
 
@@ -228,9 +228,9 @@ typedef struct _IMAGE_FILE_HEADER {
 
 </center><br>
 
-這很長一串，用到的時候再查就好。
+這很長一串，用到的時候再查就好
 
-`TimeDateStamp` 表示編譯日期；`SizeOfOptionalHeader` 表示 Optional Header 的大小，32 bit 的電腦通常為 `0xE0`，64 bit 通常為 `0xF0`。
+`TimeDateStamp` 表示編譯日期；`SizeOfOptionalHeader` 表示 Optional Header 的大小，32 bit 的電腦通常為 `0xE0`，64 bit 通常為 `0xF0`
 
 Characteristics 記錄了這個檔案的屬性，會是以下這些值去做 `or` 運算：
 ```cpp
@@ -344,17 +344,17 @@ typedef struct _IMAGE_SECTION_HEADER {
 
 </center><br>
 
-Section Header 只負責記錄對應 Section 的重要屬性，像是 Section 的名字，大小，RVA 等等。
+Section Header 只負責記錄對應 Section 的重要屬性，像是 Section 的名字，大小，RVA 等等
 
 # Section(區段)
 
-在 Headers 之後接的就是各個 Section，像是大家熟悉的 `.text`、`.data` 等等都是個 Section。
+在 Headers 之後接的就是各個 Section，像是大家熟悉的 `.text`、`.data` 等等都是個 Section
 
-`.text` 通常會是第一個 Section，是你可執行程式碼所在的位置，執行檔的進入點通常也會在這裡。
+`.text` 通常會是第一個 Section，是你可執行程式碼所在的位置，執行檔的進入點通常也會在這裡
 
-`.data` 段則是放你的數據，像是我們 `std::cout << "Hello";`，那麼 `"Hello"` 這個資料就會放在 `.data` 裡面。
+`.data` 段則是放你的數據，像是我們 `std::cout << "Hello";`，那麼 `"Hello"` 這個資料就會放在 `.data` 裡面
 
-其他還有很多，上面的圖也可以大概看到，有興趣的可以查一下，這邊就不贅述。
+其他還有很多，上面的圖也可以大概看到，有興趣的可以查一下，這邊就不贅述
 
 # VA、RVA、FOA
 
@@ -372,8 +372,8 @@ Section Header 只負責記錄對應 Section 的重要屬性，像是 Section �
 
 </center><br>
 
-這邊假設每個 Section 的大小都小於 Alignment 的大小，所以一個 Section 的大小就是一個 Alignment 的大小。x86 下 FileAlignment 通常是 `0x200`，也就是 512 bytes，這也是一個硬碟扇區的大小。而 x86 下 SectionAlignment 通常是 `0x1000`。
+這邊假設每個 Section 的大小都小於 Alignment 的大小，所以一個 Section 的大小就是一個 Alignment 的大小。x86 下 FileAlignment 通常是 `0x200`，也就是 512 bytes，這也是一個硬碟扇區的大小。而 x86 下 SectionAlignment 通常是 `0x1000`
 
-而 Section 開始的位址為 Base 的位址加上其偏移量，在硬碟中，Base 的位址為 0，偏移量則是 `PointerToRawData` 決定的，也就是 FOA。
+而 Section 開始的位址為 Base 的位址加上其偏移量，在硬碟中，Base 的位址為 0，偏移量則是 `PointerToRawData` 決定的，也就是 FOA
 
-在記憶體中，Base 的位址為 Imagebase 的位址，然而這是對第一個載入記憶體的 PE 而言，當 Imagebase 處已經有 PE 載入時，OS 會介入調整載入位址，因此我們常說 Imagebase 為「建議載入」位址，而記憶體中 Section 的偏移量則是 `VirtualAddress` 的數值，也就是 RVA，RVA 的數值加上 Base 的位址則是 Section 在記憶體上的位址，稱為 VA，因此 VA = RVA + Imagebase。
+在記憶體中，Base 的位址為 Imagebase 的位址，然而這是對第一個載入記憶體的 PE 而言，當 Imagebase 處已經有 PE 載入時，OS 會介入調整載入位址，因此我們常說 Imagebase 為「建議載入」位址，而記憶體中 Section 的偏移量則是 `VirtualAddress` 的數值，也就是 RVA，RVA 的數值加上 Base 的位址則是 Section 在記憶體上的位址，稱為 VA，因此 VA = RVA + Imagebase

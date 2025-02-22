@@ -10,27 +10,27 @@ order: 3
 
 ## Process Concept
 
-前面一直看到 Process 和 Program，他們翻成中文都叫程式，但他們是有一些差別的，Program 是一堆儲存在 disk 裡面的 binary，它是死的東西，只是個檔案，等著被執行，簡單來講就是程式碼而已。而 Process 就是跑起來的 Program，在 memory 裡面，因為正在被執行，是活的。
+前面一直看到 Process 和 Program，他們翻成中文都叫程式，但他們是有一些差別的，Program 是一堆儲存在 disk 裡面的 binary，它是死的東西，只是個檔案，等著被執行，簡單來講就是程式碼而已。而 Process 就是跑起來的 Program，在 memory 裡面，因為正在被執行，是活的
 
 一個 Process 會有一個 memory space，裡面會有一些主要的 content：
 
 + Code segment (text section)
     
-    簡單來說就是你的程式碼，原本這些是儲存在 disk 裡面的，但當 Process 要執行時 OS 會把你的 code load 到 memory 裡面，等著被 CPU fetch 進去 instruction。
+    簡單來說就是你的程式碼，原本這些是儲存在 disk 裡面的，但當 Process 要執行時 OS 會把你的 code load 到 memory 裡面，等著被 CPU fetch 進去 instruction
     
-    所以當然這些 code 就不是一般的 code，而是 instruction 了，因為要直接送到 CPU 裡去了。
+    所以當然這些 code 就不是一般的 code，而是 instruction 了，因為要直接送到 CPU 裡去了
 
 + Data section
 
-    全域變數儲存的地方，Process 一開始就存在，所有的 function 都可以 access。
+    全域變數儲存的地方，Process 一開始就存在，所有的 function 都可以 access
 
 + Stack
 
-    local 變數儲存的地方，function call 完後就會消失了。
+    local 變數儲存的地方，function call 完後就會消失了
     
 + Heap
 
-    dynamic allocated 的變數儲存的地方。
+    dynamic allocated 的變數儲存的地方
 
 + Current activity
 
@@ -38,7 +38,7 @@ order: 3
     
 + 一些相關的 resources
 
-    在開檔，使用電腦上的資源時，Process 會需要一個類似 token 的東西，讓 OS 能夠知道你開了哪些檔案，或是用了多少 socket port 等等。
+    在開檔，使用電腦上的資源時，Process 會需要一個類似 token 的東西，讓 OS 能夠知道你開了哪些檔案，或是用了多少 socket port 等等
 
 ## Process in Memory
 
@@ -50,21 +50,21 @@ order: 3
 
 </center><br>
 
-但這只是個例子，每個作業系統的管理方式可能會有些不同。
+但這只是個例子，每個作業系統的管理方式可能會有些不同
 
-heap 和 stack 的大小是會隨 Process 執行而變化的，而 data 段和 code 段則是固定的。
+heap 和 stack 的大小是會隨 Process 執行而變化的，而 data 段和 code 段則是固定的
 
 ## Thread
 
-另一個你可能很常聽到的東西是 thread，thread 和 process 很相似，但也有一些地方不一樣。
+另一個你可能很常聽到的東西是 thread，thread 和 process 很相似，但也有一些地方不一樣
 
-Thread 有另外一個名字叫 lightweight processs，因為它的管理方式跟 process 很像，但很多 thread 是可以共用一些 memory 的，像是之前我們說 shared memory 的溝通我們用 shared programming，因為它本身就有一塊 memory 在預設上是共用的。
+Thread 有另外一個名字叫 lightweight processs，因為它的管理方式跟 process 很像，但很多 thread 是可以共用一些 memory 的，像是之前我們說 shared memory 的溝通我們用 shared programming，因為它本身就有一塊 memory 在預設上是共用的
 
-在建立一個 thread 的時候，這些共用的空間就不用在重複建立了，因為在形成這些 thread 的 parent process 時就已經 allocate 好了，因此在管理上和 memory allocation 上就少了一些動作，我們才會說他是比較 lightweight 的。
+在建立一個 thread 的時候，這些共用的空間就不用在重複建立了，因為在形成這些 thread 的 parent process 時就已經 allocate 好了，因此在管理上和 memory allocation 上就少了一些動作，我們才會說他是比較 lightweight 的
 
-同時，在運作的時候，電腦系統裡面最基本的單位其實是 thread，也就是說 CPU 在執行的單位是 thread，因為 Process 可以被切成很多個 thread，所以 thread 才是 CPU 執行的最小單位。
+同時，在運作的時候，電腦系統裡面最基本的單位其實是 thread，也就是說 CPU 在執行的單位是 thread，因為 Process 可以被切成很多個 thread，所以 thread 才是 CPU 執行的最小單位
 
-下圖可以看的更清楚 thread 和 Process 的差異，其實就在於說在同一個 Process 下的所有 thread，它們有些 memory 是共用的，定義上來說，只要是同一個 Process 下的 thread，它的 code section，data section 和 OS resources 是共用的，某一個 thread 開了一個檔案，另一個 thread 可以直接拿這個檔案的 pointer 跟著去做讀寫。
+下圖可以看的更清楚 thread 和 Process 的差異，其實就在於說在同一個 Process 下的所有 thread，它們有些 memory 是共用的，定義上來說，只要是同一個 Process 下的 thread，它的 code section，data section 和 OS resources 是共用的，某一個 thread 開了一個檔案，另一個 thread 可以直接拿這個檔案的 pointer 跟著去做讀寫
 
 <center>
 
@@ -72,9 +72,9 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 </center><br>
 
-但是可以看見 register、stack 等就沒有共用了，因為每一個 thread 執行的位置可以不一樣，甚至可以執行不同的 function call，所以執行的狀態也是獨立的。
+但是可以看見 register、stack 等就沒有共用了，因為每一個 thread 執行的位置可以不一樣，甚至可以執行不同的 function call，所以執行的狀態也是獨立的
 
-因為要可以獨立執行，所以 thread 會有自己的 ID，program counter，register set 和 stack，讓 OS 知道它是 Process 裡的哪一個 thread。
+因為要可以獨立執行，所以 thread 會有自己的 ID，program counter，register set 和 stack，讓 OS 知道它是 Process 裡的哪一個 thread
 
 ## Process State
 
@@ -82,17 +82,17 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 + New
 
-    Process 被建立起來，這個狀態會做很多事情，要把 Program load 到 memory，把剛剛看到的記憶體配置分配好，並做初始化等等的動作。
+    Process 被建立起來，這個狀態會做很多事情，要把 Program load 到 memory，把剛剛看到的記憶體配置分配好，並做初始化等等的動作
     
-    所以比較早期的電腦 memory 比較小，launch 太多 Process 時，可能會連 New 一個 Process 都會遇到困難，這樣在 New 的過程就會直接把這個 Process kill 掉。
+    所以比較早期的電腦 memory 比較小，launch 太多 Process 時，可能會連 New 一個 Process 都會遇到困難，這樣在 New 的過程就會直接把這個 Process kill 掉
     
 + Ready
 
-    因為在電腦裡面資源需要去分配，Process 需要去競爭 CPU，所以 Process 被 allocate 完存在記憶體裡，等著使用 CPU 之前的狀態就是 Ready，Process 此時會被放到一個 queue 裡面等著 OS 做排程，此時 Process 可以立刻被執行。
+    因為在電腦裡面資源需要去分配，Process 需要去競爭 CPU，所以 Process 被 allocate 完存在記憶體裡，等著使用 CPU 之前的狀態就是 Ready，Process 此時會被放到一個 queue 裡面等著 OS 做排程，此時 Process 可以立刻被執行
 
 + Running
 
-    當 Process 被選中，能夠送 instruction 進 CPU 執行時的狀態就是 Running。
+    當 Process 被選中，能夠送 instruction 進 CPU 執行時的狀態就是 Running
     
 + Waiting
 
@@ -100,7 +100,7 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 + Terminated
 
-    Process 執行完畢，所有資源會被釋放回去。
+    Process 執行完畢，所有資源會被釋放回去
 
 可以看下圖，更好記憶：
 
@@ -120,21 +120,21 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 </center><br>
 
-PCB 是 OS 建立的一個物件，前面提到 Process 會被放到 Queue 裡面，這是一個抽象的概念，實際上是 PCB 被放到 Queue 裡面，實作的方法通常是 linked list，所以 PCB 裡面會有一個 pointer 指向下一個 PCB。
+PCB 是 OS 建立的一個物件，前面提到 Process 會被放到 Queue 裡面，這是一個抽象的概念，實際上是 PCB 被放到 Queue 裡面，實作的方法通常是 linked list，所以 PCB 裡面會有一個 pointer 指向下一個 PCB
 
-另外 PCB 裡面還會有 Process State，Program counter，CPU register 等資訊，這些東西是放在 memory 裡面，而且是 kernel space，是 OS 自己的 memory 裡面。
+另外 PCB 裡面還會有 Process State，Program counter，CPU register 等資訊，這些東西是放在 memory 裡面，而且是 kernel space，是 OS 自己的 memory 裡面
 
 ## Context Switch
 
-前面有提到 Process 需要在 CPU 與 memory 間，與其它的 Process 交換，這動作有個專有名詞叫 Context Switch，這部分也是利用了 PCB 來完成。
+前面有提到 Process 需要在 CPU 與 memory 間，與其它的 Process 交換，這動作有個專有名詞叫 Context Switch，這部分也是利用了 PCB 來完成
 
-我們前面有提到 Context Switch 會發生一定是因為有 interrupt 進來，或者是自己 call 了一個 system call，所以才會切換到其他的程式。
+我們前面有提到 Context Switch 會發生一定是因為有 interrupt 進來，或者是自己 call 了一個 system call，所以才會切換到其他的程式
 
-下面有張簡單的圖，假設 Process P0 是一開始在執行的，所有的東西都 load 到 CPU 的 register，然後有一個 interrupt 進來，所以 P0 就進了 idle，當 P0 要把 CPU 讓出來時，就需要做 Context Switch。
+下面有張簡單的圖，假設 Process P0 是一開始在執行的，所有的東西都 load 到 CPU 的 register，然後有一個 interrupt 進來，所以 P0 就進了 idle，當 P0 要把 CPU 讓出來時，就需要做 Context Switch
 
-動作其實很單純，就是要把 CPU 裡面的 state 全部存到 P0 的 PCB 裡面，記完後再去執行 P1，P1 可能是 OS 或是別的 Process，為了讓它執行，需要把 P1 的 PCB 的資訊 load 到 CPU 的 register，此時的 P0 和 P1 都是在 idle 的。
+動作其實很單純，就是要把 CPU 裡面的 state 全部存到 P0 的 PCB 裡面，記完後再去執行 P1，P1 可能是 OS 或是別的 Process，為了讓它執行，需要把 P1 的 PCB 的資訊 load 到 CPU 的 register，此時的 P0 和 P1 都是在 idle 的
 
-Context Switch 完成後就會開始執行 P1，所以會把 program counter 設到該執行的位置，做 fetching 的動作。
+Context Switch 完成後就會開始執行 P1，所以會把 program counter 設到該執行的位置，做 fetching 的動作
 
 下圖裡面 P1 執行完後又做了一次 Context Switch 回 P0，一樣的意思，會 save 和 reload PCB：
 
@@ -144,7 +144,7 @@ Context Switch 完成後就會開始執行 P1，所以會把 program counter 設
 
 </center><br>
 
-簡單來說 Context Switch 就是在做 Process 的 load 和 save，但要注意 Context Switch 的時間是 overhead 的，也就是多餘的時間，上圖可以看見在做 Context Switch 時 P0 和 P1 都是在 idle 的，等於是在浪費 cpu cycle，純粹是為了管理與 sharing。
+簡單來說 Context Switch 就是在做 Process 的 load 和 save，但要注意 Context Switch 的時間是 overhead 的，也就是多餘的時間，上圖可以看見在做 Context Switch 時 P0 和 P1 都是在 idle 的，等於是在浪費 cpu cycle，純粹是為了管理與 sharing
 
 所以其實我們有時候應該要去避免 Context Switch
 

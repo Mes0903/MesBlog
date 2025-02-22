@@ -196,7 +196,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 </center><br>
 
-在 Linux 中的邏輯地址對應於線性地址，也就是說 Intel 為了相容過往架構，把硬體設計搞得很複雜，Linux 核心的實作則予以簡化，並且在支援其他處理器架構時，儘量保持該原則。
+在 Linux 中的邏輯地址對應於線性地址，也就是說 Intel 為了相容過往架構，把硬體設計搞得很複雜，Linux 核心的實作則予以簡化，並且在支援其他處理器架構時，儘量保持該原則
 
 ### page in linux
 
@@ -351,7 +351,7 @@ struct page {
 ```
 :::::
 
-有關 `list_head` 的解說可以閱讀 [你所不知道的 C 語言: linked list 和非連續記憶體](https://hackmd.io/@sysprog/c-linked-list)。
+有關 `list_head` 的解說可以閱讀 [你所不知道的 C 語言: linked list 和非連續記憶體](https://hackmd.io/@sysprog/c-linked-list)
 
 struct page 本身就會佔有一定的記憶體空間，而在 [How many page flags do we really have?](https://lwn.net/Articles/335768/) 一文中有提到，於一個 4GB 的系統中將會有一百萬個 page 結構體實例，因此 struct page 內的每一個 byte 都需要做嚴格的把控
 

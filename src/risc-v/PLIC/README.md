@@ -104,7 +104,7 @@ If the global interrupt source was edge-triggered, the gateway will convert the 
 
 如果全域中斷來源是邊緣觸發（edge-triggered）的中斷，閘道會將首次符合的訊號邊緣轉換為中斷請求。 根據設備和中斷處理程序的設計，在發送中斷請求與接收到其中斷完成通知之間，閘道可能會忽略額外的符合邊緣，或者會將其計入待處理中斷的計數器中
 
-不論是哪種情況，在上一個完成通知被接收到之前，下一個中斷請求都不會被轉發到 PLIC 核心。 如果閘道具有待處理中斷計數器，當中斷請求被 PLIC 核心接受時，計數器會遞減。
+不論是哪種情況，在上一個完成通知被接收到之前，下一個中斷請求都不會被轉發到 PLIC 核心。 如果閘道具有待處理中斷計數器，當中斷請求被 PLIC 核心接受時，計數器會遞減
 
 與專用線中斷訊號（dedicated-wire interrupt signals）不同，訊息信號中斷（Message-Signalled Interrupts, MSIs）是通過系統互聯（interconnect）以描述中斷的訊息封包形式傳送的。訊息會被解碼以選擇對應的中斷閘道，而相關的閘道會以類似邊緣觸發中斷的方式處理 MSI
 

@@ -121,7 +121,7 @@ category: risc-v
   - MTIMER 將從 0 開始分配 index 給所連接的 HART
   - index 與 RISC-V 特權架構分配的 HART ID 不一定有關
 - `MTIME` 暫存器共享
-  - 多個 MTIMER 設備可以共用一個物理上的 `MTIME` 暫存器。
+  - 多個 MTIMER 設備可以共用一個物理上的 `MTIME` 暫存器
   - 但 MTIMER 設備仍擁有獨立的 `MTIMECMP` 暫存器，確保每個 HART 的比較和中斷處理是分開的
 - `MTIMECMP` 的比較規則
   - `MTIMECMP` 暫存器只能與同一 MTIMER 設備的 `MTIME` 暫存器進行比較
@@ -193,7 +193,7 @@ ACLINT MTIMER Compare Register Map：
 :::
 
 - 中斷觸發條件：
-  - 當 `MTIME >= MTIMECMP` 時，對應 HART 的 Machine-level timer 中斷處於 pending 狀態。
+  - 當 `MTIME >= MTIMECMP` 時，對應 HART 的 Machine-level timer 中斷處於 pending 狀態
 - 中斷清除條件：
   - 當 `MTIME < MTIMECMP` 時，對應 HART 的 Machine-level timer 中斷被清除
 - 中斷狀態會反映在每個 HART 的 `mip` CSR 的 MTIP bit

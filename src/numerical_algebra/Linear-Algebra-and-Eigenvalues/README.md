@@ -24,9 +24,9 @@ A 的特徵值(eigen value) 會被包含在這些圓( $R = \cup_{i=1}^n R_i$ ) �
 
 </center><br>
 
-然後如果有 k 個圓的聯集和剩下的 n-k 個圓聯集沒有交集，那麼前者會包含 k 個特徵值，而後者則恰有 n-k 個特徵值。
+然後如果有 k 個圓的聯集和剩下的 n-k 個圓聯集沒有交集，那麼前者會包含 k 個特徵值，而後者則恰有 n-k 個特徵值
 
-要逼近特徵值的我們很常使用迭代法，所以先用 Gershgorin circle 找到一個範圍，拿來讓 initial guess 參考是很不錯的選擇，可以提供很好的 initial guess。
+要逼近特徵值的我們很常使用迭代法，所以先用 Gershgorin circle 找到一個範圍，拿來讓 initial guess 參考是很不錯的選擇，可以提供很好的 initial guess
 
 ## 例子
 

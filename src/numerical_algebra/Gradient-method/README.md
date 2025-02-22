@@ -10,7 +10,7 @@ order: 5
 
 ### Thm 7.31
 
-給定一個 $\mathbb{R}^{n\times n}$ 裡的 symmetric postive matrix $A$，當我們想解 $A\vec x = \vec b$ 的 $\vec x$ 時，等價於找到能 minimizes $\Phi(\vec y) = \frac{1}{2}<A\vec y, \vec y> - <\vec b, \vec y>$ 的 $\vec x$。
+給定一個 $\mathbb{R}^{n\times n}$ 裡的 symmetric postive matrix $A$，當我們想解 $A\vec x = \vec b$ 的 $\vec x$ 時，等價於找到能 minimizes $\Phi(\vec y) = \frac{1}{2}<A\vec y, \vec y> - <\vec b, \vec y>$ 的 $\vec x$
 
 <center>
 
@@ -50,7 +50,7 @@ order: 5
 
 </center><br>
 
-所以 $\vec p^{(k-1)} = -\nabla\Phi(\vec x^{(k-1)})$ 就會是 $\vec x^{(k-1)}$ 那點的最大遞減方向，那麼 $\vec x^{(k-1)}$ 加上 $-\alpha_{k-1}\nabla\Phi(\vec x^{(k-1)})$ 就可以保證越來越小。
+所以 $\vec p^{(k-1)} = -\nabla\Phi(\vec x^{(k-1)})$ 就會是 $\vec x^{(k-1)}$ 那點的最大遞減方向，那麼 $\vec x^{(k-1)}$ 加上 $-\alpha_{k-1}\nabla\Phi(\vec x^{(k-1)})$ 就可以保證越來越小
 
 這個 $\vec r^{(k-1)}$ 是之前說的那個 residual vector，通常定義是 $\vec r^{(k-1)} = \vec b - A\vec x^{(k-1)}$
 

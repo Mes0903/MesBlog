@@ -78,7 +78,7 @@ operation 總共有四種變化：
 
 指令最後會被翻譯為機器指令，裡面的 32 bits 都有對應的意思，以 32 bits 對齊，每個 32 bits 會照上面的圖被劃分為不同的區域(field)
 
-最終的指令類型是由 funct3/funct7 和 opcode 一起決定的，題外話，funct3 中的 "3" 代表佔了 3 個 bit，funct7 同理。
+最終的指令類型是由 funct3/funct7 和 opcode 一起決定的，題外話，funct3 中的 "3" 代表佔了 3 個 bit，funct7 同理
 
 對於 opcode 的部分有另一張表規定了其內容意義：
 
@@ -593,7 +593,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 
 調用函式時地址的計算方法為先對 20 bits 寬的 `IMM` 乘以 2，然後進行 sign-extension，最後與 PC 相加，因此跳躍的範圍是以 PC 為基準，上下加減 1 MB
 
-JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實際在寫時會用 label 給出跳躍的目標，具體 `IMM` 值由組譯器和 linker 負責生成。
+JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實際在寫時會用 label 給出跳躍的目標，具體 `IMM` 值由組譯器和 linker 負責生成
 
 ### JALR (Jump And Link Register)
 

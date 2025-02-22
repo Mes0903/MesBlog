@@ -18,7 +18,7 @@ order: 10
 
 </center><br>
 
-在這個例子裏面，我們觀察到 eigenvector、eigenvalue 跟長期的外顯行為有關。
+在這個例子裏面，我們觀察到 eigenvector、eigenvalue 跟長期的外顯行為有關
 
 ### Example
 
@@ -56,7 +56,7 @@ order: 10
 
 </center><br>
 
-我們希望這個數列能很好的幫助我們去逼近 dominant eigenvalue。
+我們希望這個數列能很好的幫助我們去逼近 dominant eigenvalue
 
 ### Example 
 
