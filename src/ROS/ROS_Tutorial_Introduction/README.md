@@ -491,33 +491,33 @@ gedit ~/.bashrc
 
 
 <!-- ### minibot
-```bash=
+```bash
 #ssh連接機器人
 ssh pi@10.0.0.1 ##passward=mrlrobot 
 roslaunch hypharos_minibot project_sample.launch# 這是啟動機器人的指令，一定要在機器人上執行！！！
 ```
 起動 rviz 視覺化套件
-```bash=
+```bash
 rviz
 ```
 遙控機器人
-```bash=
+```bash
 #Extra moving !!!
 ssh pi@10.0.0.1 ##passward=mrlrobot 
 rosrun hypharos_minibot teleop_keyboard.py # 在機器人上執行
 ```
 ### turtlebot
-```bash=
+```bash
 #ssh連接機器人
 ssh pi@10.0.0.1 ##passward=mrlrobot  
 roslaunch turtlebot3_sample sample.launch # 這是啟動機器人的指令，一定要在機器人上執行！！！
 ```
 起動 rviz 視覺化套件
-```bash=
+```bash
 rviz
 ```
 遙控機器人
-```bash=
+```bash
 #Extra moving !!!
 roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 ``` -->

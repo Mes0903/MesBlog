@@ -108,7 +108,7 @@ Linus Torvalds 在 15:25 時說
 
 首先先把 `Node` 與 `List` 的 struct 寫好：
 
-```c=
+```c
 typedef struct Node {
     int data;
     struct Node *next;
@@ -123,7 +123,7 @@ typedef struct List {
 
 再來是一個幫忙尋找目標 Node 的函式，後面會透過這個 function 來幫助我們實作別的函式：
 
-```c=
+```c
 Node **find(List *list, Node *target)
 {
     Node **indirect = &list->head;
@@ -148,7 +148,7 @@ Node **find(List *list, Node *target)
 
 接下來就是刪除 Node 的函式：
 
-```c=
+```c
 void erase(List *list, Node *target)
 {
     Node **indirect = find(list, target);
@@ -166,7 +166,7 @@ void erase(List *list, Node *target)
 
 然後是插入 Node 的函式：
 
-```c=
+```c
 void insert_before(List *list, Node *target, Node *item)
 {
     Node **indirect = find(list, target);
@@ -186,7 +186,7 @@ void insert_before(List *list, Node *target, Node *item)
 
 最後就是把整個 List 輸出的函式：
 
-```c=
+```c
 void output(List *list)
 {
     Node **indirect = &list->head;
@@ -204,7 +204,7 @@ void output(List *list)
 
 main function 裡面我寫了簡單的測試：
 
-```c=
+```c
 int main()
 {
     Node items[N];

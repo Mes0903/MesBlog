@@ -2,8 +2,12 @@
 title: RVOS OSDI 筆記
 date: 2023-06-01
 mathjax: true
-tag: risc-v
-category: risc-v, OS
+tag: 
+- risc-v
+- OS
+category: 
+- risc-v
+- OS
 ---
 
 # RVOS OSDI 筆記
