@@ -113,9 +113,12 @@ export default hopeTheme({
     blog: {
       excerptLength: 0,
     },
-    slimsearch: true,
-    // searchPro: true,
     catalog: false,
+    docsearch: {
+      appId: "KE4NHPCNHW",
+      apiKey: "eeb47bb06c7dbde84c9127afea73ebc5",
+      indexName: "mes0903io",
+    },
 
     // Install @waline/client before enabling it
     // Note: This is for testing ONLY!
