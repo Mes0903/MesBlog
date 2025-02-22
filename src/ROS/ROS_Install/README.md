@@ -1,11 +1,11 @@
 ---
 title: Ros Install (noetic)
 date: 2023-12-13
-tag: ROS
-category: ROS
+tag: ROS1
+category: ROS1
 ---
 
-# Ros Install (noetic)
+# ROS1 Install (noetic)
 
 當初老師請我在大教室的電腦上面灌 ROS，因為我當初沒有使用 Ansible 之類的軟體，所以就寫了個 script，每台開起來 clone 下來跑，這是當初的紀錄，也許可以幫到某位有緣人(?
 
