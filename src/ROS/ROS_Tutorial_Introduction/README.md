@@ -19,7 +19,7 @@ ROS 全名叫 Robot Operating System，但它其實是一種中介軟體(Middlew
 
 <center>
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/middleware.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/middleware.png?raw=true" width="200px">
 
 </center>
 
@@ -365,7 +365,7 @@ roslaunch hypharos_minibot project_sample.launch
 
 在 rosnode 中提供以下幾種動作可以使用
 
-```shell
+```bash
 rosnode info <node_name>       # print information about node
 rosnode kill <node_name>       # kill a running node
 rosnode list                   # list active nodes
@@ -378,7 +378,7 @@ rosnode cleanup                # purge registration information of unreachable n
 
 在 rostopic 中提供以下幾種動作可以使用
 
-```shell
+```bash
 rostopic bw <topic_name>                          # display bandwidth used by topic
 rostopic delay <topic_name>                       # display delay for topic which has header
 rostopic echo <topic_name>                        # print messages to screen
@@ -394,7 +394,7 @@ rostopic type <topic-name>                        # print topic type
 
 ## Turtlesim
 
-```shell
+```bash
 # initialize ros master
 roscore
 
@@ -419,7 +419,7 @@ rosrun turtlesim turtle_teleop_key
 
 **-->ipv4-->ip :10.0.0.2-->mask :255.255.255.0-->store**
 
-```shell
+```bash
 gedit ~/.bashrc
 ```
 
@@ -429,7 +429,7 @@ gedit ~/.bashrc
 
 </center><br>
 
-```shell
+```bash
 source ~/.bashrc
 ```
 
@@ -445,7 +445,7 @@ source ~/.bashrc
 
 啟動機器人的指令，一定要在機器人上執行!!
 
-```shell
+```bash
 # ssh連接機器人
 ssh pi@10.0.0.1 ##passward=mrlrobot
 
@@ -458,13 +458,13 @@ roslaunch turtlebot3_bringup turtlebot3_robot.launch
 
 起動 rviz 視覺化套件
 
-```shell
+```bash
 rviz
 ```
 
 遙控機器人
 
-```shell
+```bash
 # Extra moving !!!
 # 假如是minibot下
 roslaunch teleop teleop_key.launch model:=minibot
@@ -475,7 +475,7 @@ roslaunch teleop teleop_key.launch model:=turtlebot
 
 如果你長時間都會使用某一台機器人，你可以透過更改環境變數來設定預設機器人
 
-```shell
+```bash
 gedit ~/.bashrc
 ```
 
@@ -491,33 +491,33 @@ gedit ~/.bashrc
 
 
 <!-- ### minibot
-```shell=
+```bash=
 #ssh連接機器人
 ssh pi@10.0.0.1 ##passward=mrlrobot 
 roslaunch hypharos_minibot project_sample.launch# 這是啟動機器人的指令，一定要在機器人上執行！！！
 ```
 起動 rviz 視覺化套件
-```shell=
+```bash=
 rviz
 ```
 遙控機器人
-```shell=
+```bash=
 #Extra moving !!!
 ssh pi@10.0.0.1 ##passward=mrlrobot 
 rosrun hypharos_minibot teleop_keyboard.py # 在機器人上執行
 ```
 ### turtlebot
-```shell=
+```bash=
 #ssh連接機器人
 ssh pi@10.0.0.1 ##passward=mrlrobot  
 roslaunch turtlebot3_sample sample.launch # 這是啟動機器人的指令，一定要在機器人上執行！！！
 ```
 起動 rviz 視覺化套件
-```shell=
+```bash=
 rviz
 ```
 遙控機器人
-```shell=
+```bash=
 #Extra moving !!!
 roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 ``` -->
@@ -591,7 +591,7 @@ catkin 大致上把一個工作區劃分為以下三個區塊
 
 ### package的建立
 
-```shell
+```bash
 catkin_create_pkg test_pkg roscpp rospy std_msgs
 ```
 
@@ -604,7 +604,7 @@ catkin_create_pkg test_pkg roscpp rospy std_msgs
 
 回到 catkin workspace(catkin_ws) 這層後輸入
 
-```shell
+```bash
 catkin_make
 ```
 
@@ -618,7 +618,7 @@ catkin_make
 
 編譯完後記得執行以下指令加入環境變數，不然你在 Terminal 上找不到你要執行的 code 喔
 
-```shell
+```bash
 source ~/catkin_ws/devel/setup.bash
 ```
 
@@ -643,7 +643,7 @@ ROS 中的 CPP 檔是放置在 package 中的 src
 
 ## node simple sample
 
-```shell
+```bash
 cd ~/catkin_ws/src/<your_pkg>/src # 到你的 project 中的 src 中，src 是用來存放 source code 的地方
 gedit file_name.cpp # 新增一個 cpp 檔，並編輯。就是開始打 code 啦
 ```
@@ -661,7 +661,7 @@ int main(int argc, char** argv){
 cpp 檔不像 python 檔一樣可以直接被執行，需要經過編譯以後才能轉成執行檔，因此我們需要修改 `beginner_tutorial` 內的 CMakeLists.txt ，為其設定好連結的函式庫
 由於他的 CMakeLists.txt 太長了，在此擷取片段做為參考:
 
-```shell
+```bash
 cd ~/catkin_ws/src/<your_pkg> # 到你的project中
 gedit CMakeLists.txt # 修改當中的 CMakeLists.txt，這是編譯的設定檔
 ```
@@ -792,7 +792,7 @@ while not rospy.is_shutdown():           # 在 rospy 還沒結束前，執行下
 
 編輯完code後幫code加權限
 
-```shell
+```bash
 chmod +x file_name.py
 ```
 
