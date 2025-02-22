@@ -1,8 +1,8 @@
 ---
 title: The mind behind Linux 筆記 & 心得
 date: 2021-12-15
-tag: miscellaneous
-category: miscellaneous
+tag: Linux
+category: Linux
 ---
 
 # The mind behind Linux 筆記 & 心得
@@ -22,6 +22,7 @@ Linus Torvalds 舉的例子是移除一筆在 list 裡面的資料，一般的�
 如果要移除的是第一筆資料，那就需要把指標指向第一個 Node；而如果是要移除中間的資料，則須要把指標指向目標的前一個 Node。
 
 Talk 裡面給的 Pseudo Code 長這樣：
+
 ```cpp
 remove_list_entry(entry)
 {
@@ -48,6 +49,7 @@ remove_list_entry(entry)
 而 Linus Torvalds 的想法則換了一個角度，通過指標的指標來操作，如此一來 branch 就消失了。
 
 Talk 裡面給的 Pseudo Code 長這樣：
+
 ```cpp
 remove_list_entry(entry)
 {
@@ -66,7 +68,6 @@ remove_list_entry(entry)
 
     *indirect = entry->next;
 }
-
 ```
 
 如果 Pseudo Code 有點難看，那你可以先跳過，往後看解釋和簡單的實作。
@@ -83,13 +84,21 @@ Linus Torvalds 在 15:25 時說
 
 然後會有一個 branch 判斷 `prev` 是否為空指標，如果是空指標就代表 target 是 list 的 head，因此需要把 list 的 head 指向下一個元素；若非空就把前一個元素的 next Node 設為目前的下一個 Node：
 
-![](https://i.imgur.com/0EHTGG0.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/The_mind_behind_Linux/image/link_list1.png?raw=true">
+
+</center><br>
 
 而 Linus Torvalds 的想法則是拿一個指標指向「Node 裡面指向下一個 Node 的指標」，以「要更新的位址」為思考點來操作。
 
 有一個指標的指標 `indirect`，一開始指向 head，之後一樣走訪 list，解指標看是不是我們要的 target，如果 `*indirect` 就是我們要刪除的元素，代表 `indirect` 現在指向前一個 Node 裡面的 next pointer，因此把 `*indirect` 設為 target 的下一個 Node 就完成整個操作了：
 
-![](https://i.imgur.com/OopvzWM.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/The_mind_behind_Linux/image/link_list2.png?raw=true">
+
+</center><br>
 
 ## 簡單的實作
 
@@ -99,7 +108,7 @@ Linus Torvalds 在 15:25 時說
 
 首先先把 `Node` 與 `List` 的 struct 寫好：
 
-```c
+```c=
 typedef struct Node {
     int data;
     struct Node *next;
@@ -114,7 +123,7 @@ typedef struct List {
 
 再來是一個幫忙尋找目標 Node 的函式，後面會透過這個 function 來幫助我們實作別的函式：
 
-```c
+```c=
 Node **find(List *list, Node *target)
 {
     Node **indirect = &list->head;
@@ -139,7 +148,7 @@ Node **find(List *list, Node *target)
 
 接下來就是刪除 Node 的函式：
 
-```c
+```c=
 void erase(List *list, Node *target)
 {
     Node **indirect = find(list, target);
@@ -157,7 +166,7 @@ void erase(List *list, Node *target)
 
 然後是插入 Node 的函式：
 
-```c
+```c=
 void insert_before(List *list, Node *target, Node *item)
 {
     Node **indirect = find(list, target);
@@ -177,7 +186,7 @@ void insert_before(List *list, Node *target, Node *item)
 
 最後就是把整個 List 輸出的函式：
 
-```c
+```c=
 void output(List *list)
 {
     Node **indirect = &list->head;
@@ -195,7 +204,7 @@ void output(List *list)
 
 main function 裡面我寫了簡單的測試：
 
-```c
+```c=
 int main()
 {
     Node items[N];
@@ -242,4 +251,3 @@ int main()
 題目是給兩個已經排序好的 linked list，然後把他們 merge 起來，元素的順序要一樣由小到大或由大到小，實作上可以利用 indirect pointer 來省一些空間。
 
 而如果你還有接著讀老師文章後方 [LeetCode 23. Merge k Sorted Lists](https://leetcode.com/problems/merge-k-sorted-lists/) 的例子，那可以去看一下 Lambert Wu 寫的 [Merge Sort 與它的變化](https://hackmd.io/@nk8mC3QoR3yxmNf5DvbQXw/modified-merge-sort)，裡面有多做一些解釋且有測試不同方法的速度。
-

@@ -56,10 +56,28 @@ Process type and features -> Linux guest support -> Support for running PVH gues
 
 下面是輸入 `make menuconfig` 後會出現的選單，把上面列出來的選項都勾起來：
 
-![image.png](https://hackmd.io/_uploads/S13PsdmmT.png)
-![image.png](https://hackmd.io/_uploads/r1sFiumQp.png)
-![image.png](https://hackmd.io/_uploads/SkopsuQQT.png)
-![image.png](https://hackmd.io/_uploads/SJz8IA4XT.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build1.png?raw=true">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build2.png?raw=true">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build3.png?raw=true">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build4.png?raw=true">
+
+</center><br>
+
+<!--
+Cryptographic API -> Certificates for signature checking
+
+```
+File name or PKCS#11 URI of module signing key -> 改為空值
+Additional X.509 keys for default system keyring -> 改為空值
+Provide system-wide ring of blacklisted keys -> unselect
+```
+
+-->
 
 然後開始編譯 kernel 
 
@@ -76,6 +94,7 @@ make -j <num_cpu>
 這邊我們使用 busybox，它提供了一些常用的指令，像是 `cd` 和 `ls` 等等
 
 首先下載 busybox 並編譯：
+
 ```bash
 wget https://busybox.net/downloads/busybox-1.36.1.tar.bz2
 tar -xf busybox-1.36.1.tar.bz2
@@ -84,7 +103,8 @@ make menuconfig # Select build static binary
 make install
 ```
 
-接著要製作等等要 mount 進 kernel 的 filesystem 本體，就是幾個簡單的資料夾
+接著要製作等等要 mount 進 kernel 的 filesystem 本體，就是幾個簡單的資料夾：
+
 ```bash
 cd _install
 mkdir -p lib lib64 proc sys etc etc/init.d
@@ -101,8 +121,11 @@ chmod +x etc/init.d/rcS
 find . | cpio -o --format=newc | gzip > ../../linux-6.6/rootfs.img.gz
 ```
 
-![image.png](https://hackmd.io/_uploads/ryin_pmQa.png)
+<center>
 
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/rootfs.png?raw=true">
+
+</center><br>
 
 ## Run Kernel
 
@@ -122,11 +145,15 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 首先我們要新增自己的 system call，打開 `arch/x86/entry/syscalls/syscall_64.tbl`
 
 在第 377 行後面新增我們自己的 system call：
-```c
+```clike
 454 common  my_get_physical_addresses   sys_my_get_physical_addresses   
 ```
 
-![image](https://hackmd.io/_uploads/rkEPEJtNT.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/add_system_call1.png?raw=true">
+
+</center><br>
 
 這行有四個部分，每項之間由空白或 tab 隔開，它們代表的意義是：
 
@@ -143,7 +170,11 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 檔案位於 `arch/x86/include/generated/asm/syscalls_64.h`：
 
-![image](https://hackmd.io/_uploads/BJDhSyY4T.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/add_system_call2.png?raw=true">
+
+</center><br>
 
 ## 實作自己的 system call
 
@@ -152,18 +183,18 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 在 Linux 內部的記憶體地址映射過程為邏輯地址 –> 線性地址–> 實體地址 (PA)，實體地址最簡單：在匯流排中傳輸的數位信號，而線性地址和邏輯地址所表示的意涵則是種轉換規則，線性地址規則如下：
 
 <center>
-    
-![image](https://hackmd.io/_uploads/S1x4HSM8p.png)
-   
-</center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call1.png?raw=true">
+
+</center><br>
 
 這部分由 MMU 完成，其中在 IA32 架構下，涉及到主要的暫存器有 CR0, CR3。機器指令中出現的是邏輯地址，邏輯地址規則如下：
 
 <center>
 
-![image](https://hackmd.io/_uploads/Hks4SrfUa.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call2.png?raw=true">
 
-</center>
+</center><br>
 
 在 Linux 中的邏輯地址對應於線性地址，也就是說 Intel 為了相容過往架構，把硬體設計搞得很複雜，Linux 核心的實作則予以簡化，並且在支援其他處理器架構時，儘量保持該原則。
 
@@ -171,8 +202,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 page 在 v6.6.5 linux 中定義在 [mm_type.h](https://elixir.bootlin.com/linux/v6.6.5/source/include/linux/mm_types.h#L74) 的第 74 行：
 
-<details><summary>> (可以點開) <span class = "yellow">`struct page` definition</span> <</summary>
-
+::::: spoiler <span class = "yellow">`struct page` definition</span>
 ```cpp
 struct page {
 	unsigned long flags;		/* Atomic flags, some possibly
@@ -319,7 +349,7 @@ struct page {
 #endif
 } _struct_page_alignment;
 ```
-</details>
+:::::
 
 有關 `list_head` 的解說可以閱讀 [你所不知道的 C 語言: linked list 和非連續記憶體](https://hackmd.io/@sysprog/c-linked-list)。
 
@@ -339,7 +369,7 @@ struct 的詳細內容可以看看這篇：[linux内核那些事之struct page](
 
 <center>
 
-![image](https://hackmd.io/_uploads/SkzZ6kzIa.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/page_table.png?raw=true">
 
 圖源：[關於Linux記憶體尋址與頁表處理的一些細節](https://www.cnblogs.com/QiQi-Robotics/p/15630380.html)   
 (圖很小，可以用新分頁打開來看一下)
@@ -453,16 +483,20 @@ static inline pud_t *pud_offset(p4d_t *p4d, unsigned long address)
 打開 `include/linux/syscalls.h`
 
 在第 942 行後新增
+
 ```c
 asmlinkage long sys_my_get_physical_addresses(void *);
 ```
 
-![image](https://hackmd.io/_uploads/HyMiUkFVT.png)
+<center>
 
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call3.png?raw=true">
+
+</center><br>
 
 新增一個檔案叫 `project1.c`，路徑是 `kernel/project1.c`
 
-<details><summary>> (可以點開) <span class = "yellow">範例 code</span> <</summary>
+:::::spoiler <span class = "yellow">範例 code</span>
 
 ```c
 #include <linux/syscalls.h>
@@ -543,7 +577,7 @@ SYSCALL_DEFINE1(my_get_physical_addresses, void *, addr_p)
 }
 ```
 
-</details>
+:::::
 
 > `virt_to_phys` 只能轉 kernel space 的 virtual address，因此必須從頭用 page table 查找
 
@@ -565,9 +599,13 @@ obj-y     = fork.o exec_domain.o panic.o \
 
 接下來要寫一個 user program 來使用這個 system call，在 kernel 資料夾的外面新增一個檔案叫 `project1.c`
 
-![image](https://hackmd.io/_uploads/S196vktET.png)
+<center>
 
-<details><summary>> (可以點開) <span class = "yellow">範例 code</span> <</summary>
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build_test.png?raw=true">
+
+</center><br>
+
+:::::spoiler <span class = "yellow">範例 code</span>
 
 ```c
 #include <stdio.h>
@@ -681,7 +719,7 @@ int main()
 }
 ```
 
-</details>
+:::::
 
 然後編譯它
 
@@ -706,20 +744,31 @@ cd linux-6.6
 qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "root=/dev/ram rdinit=/sbin/init console=ttyS0"
 ```
 
-![image](https://hackmd.io/_uploads/rJfCO1KNa.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run1.png?raw=true">
+
+</center><br>
 
 按 enter 可以開始下指令，可以先 `ls` 看看：
 
-![image](https://hackmd.io/_uploads/B1GftyYV6.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run2.png?raw=true">
+
+</center><br>
 
 這裡面就有我們編譯好的執行檔了，直接執行它：
 
-![image](https://hackmd.io/_uploads/BJRQt1Y4a.png)
+<center>
 
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run3.png?raw=true">
+
+</center><br>
 
 ## 輸出：
 
-<details><summary>> (可以點開) <span class = "yellow">輸出</span> <</summary>
+:::::spoiler <span class = "yellow">輸出</span>
 
 ```bash
 [PID 26]: I am thread with ID 26 executing func1().
@@ -780,9 +829,9 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 [PID 26]: the physical address of library function printf is 0x25f5bb0
 [PID 25]: the physical address of library function printf is 0x25f5bb0
 ```
-</details>
+:::::
 
-<details><summary>> (可以點開) <span class = "yellow">將順序手動整理後的版本：</span> <</summary>
+::::: spoiler <span class = "yellow">將順序手動整理後的版本：</span>
 
 ```bash
 [PID 26]: I am thread with ID 26 executing func1().
@@ -846,7 +895,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 [PID 25]: the physical address of library function printf is 0x25f5bb0
 ```
 
-</details>
+:::::
 
 整理成表格
 
@@ -880,11 +929,19 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 hackmd 的排版讓表格不太好看，所以這邊截一下圖：
 
-![image](https://hackmd.io/_uploads/rkOUKEG8T.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/out1.png?raw=true">
+
+</center><br>
 
 把 memory layout 簡單畫出來：
 
-![image](https://hackmd.io/_uploads/SyCr2-KET.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/out2.png?raw=true">
+
+</center><br>
 
 字很醜不好意思
 

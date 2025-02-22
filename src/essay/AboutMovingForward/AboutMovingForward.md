@@ -9,7 +9,7 @@ category: essay
 
 <center>
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/essay/AboutMovingForward/Lookback.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/essay/AboutMovingForward/image/Lookback.png?raw=true">
 
 </center><br>
 

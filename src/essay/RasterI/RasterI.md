@@ -31,7 +31,7 @@ Alan Jian 大神實作了一個基於 TBDR 架構，針對 real-time rasterizati
 ⁡
 <center>
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/essay/RasterI/TBDR.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/essay/RasterI/image/TBDR.png?raw=true">
 
 </center>
 
