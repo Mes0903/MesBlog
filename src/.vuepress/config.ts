@@ -7,7 +7,7 @@ export default defineUserConfig({
 
   lang: "en-US",
   title: "Mes's Blog",
-  description: "Being Towards Death",
+  description: "Being  Towards  Death",
 
   theme,
 

@@ -10,6 +10,7 @@ export default hopeTheme({
   },
 
   logo: "/flame.jpg",
+  favicon: "/flame.ico",
 
   repo: "Mes0903/Mes0903.github.io",
   repoDisplay: false,
