@@ -5,7 +5,7 @@ tag: memory
 category: memory
 ---
 
-# 前言
+# ReRAM 與 Smith-Waterman Algorithm 介紹
 
 這學期(大四上) 修了一門課叫新興記憶儲存系統元件設計，主要在講一些現代 Non-volatile memory，如 FRAM 和 ReRAM，還有一些較新的 Disk 的設計，如 Open-channel SSD 和 ZNS 等等的
 
@@ -385,7 +385,8 @@ Score Matrix 填充完畢後，開始從最大值的位置回溯，找到最佳�
 回溯路徑如下圖：
 
 <center>    
-<img src="https://hackmd.io/_uploads/S1RAWmZ4T.png">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/sw.png?raw=true">
 
 圖源：[Smith-Waterman算法、Needleman-Wunsch算法的算法原理及算法比较](https://blog.csdn.net/yohjob/article/details/89144032)
 
@@ -413,7 +414,7 @@ Systolic Array 是由孔祥重院士提出的，問題的起因是把東西從 c
 
 <center>
     
-<img src="https://hackmd.io/_uploads/rJwygdG4a.png">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic1.png?raw=true">
 
 圖源：[Kung, "Why systolic architectures?," in Computer, vol. 15, no. 1, pp. 37-46, Jan. 1982, doi: 10.1109/MC.1982.1653825.](https://ieeexplore.ieee.org/document/1653825)
     
@@ -429,7 +430,7 @@ Systolic Array 是由孔祥重院士提出的，問題的起因是把東西從 c
 
 $$
 \begin{cases}
-X: \{3, 2, -1, 2, 0, 1\}\newline
+X: \{3, 2, -1, 2, 0, 1\}\\
 w:\{2, -1, 2\}
 \end{cases}
 $$
@@ -448,19 +449,27 @@ $$
 
 假設一個開始 `t = 0`，則當 `t = 3` 時整個架構會長得像這樣：
 
-<center><img src="https://hackmd.io/_uploads/SJj_n_GEa.png"></center><br>
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic2.png?raw=true">
+
+</center><br>
 
 上圖中有三個 PE，每個 PE 內有一個 register 用來存進來的 $X_i$，而每個 PE 的上方會有固定的 $w_i$ 數據傳入，PE 的內部有一個乘法器負責做乘法運算，運算完的結果會傳出來跟其他 PE 的運算結果做加法，整個做完後就是我們要的 $Y_1$ 了
 
 可以再多看一個 $Y_2$ 的樣子：
 
-<center><img src="https://hackmd.io/_uploads/H1sMyYMVT.png"></center><br>
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic3.png?raw=true">
+
+</center><br>
 
 而還有其他的方法，如孔院士提出的 broadcast inputs, move results, weights stay：
 
 <center>
     
-<img src="https://hackmd.io/_uploads/Sy_SlYfNp.png">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic4.png?raw=true">
 
 圖源：[Kung, "Why systolic architectures?," in Computer, vol. 15, no. 1, pp. 37-46, Jan. 1982, doi: 10.1109/MC.1982.1653825.](https://ieeexplore.ieee.org/document/1653825)
     
@@ -483,13 +492,13 @@ $$
 $$
 A =
 \begin{bmatrix}
- 1 & 2 \newline
- 3 & 4 \newline
+ 1 & 2 \\
+ 3 & 4 \\
 \end{bmatrix},\ 
 B =
 \begin{bmatrix}
- 5 & 6 \newline
- 7 & 8 \newline
+ 5 & 6 \\
+ 7 & 8 \\
 \end{bmatrix}
 $$
 
@@ -498,22 +507,26 @@ $$
 $$
 C =
 \begin{bmatrix}
- 1 & 2 \newline
- 3 & 4 \newline
+ 1 & 2 \\
+ 3 & 4 \\
 \end{bmatrix}
 \begin{bmatrix}
- 5 & 6 \newline
- 7 & 8 \newline
+ 5 & 6 \\
+ 7 & 8 \\
 \end{bmatrix}=
 \begin{bmatrix}
- 19 & 22 \newline
- 43 & 50 \newline
+ 19 & 22 \\
+ 43 & 50 \\
 \end{bmatrix} 
 $$
 
 這個的 Systolic Array 會有四個 PE，整體步驟如下圖所示：
 
-<center><img src="https://github.com/Mes0903/Mes_Note/blob/main/SystolicArrayOnRRAM/img/SystolicArrayForMatrix.jpg?raw=true"></center><br>
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic5.png?raw=true">
+
+</center><br>
 
 原先的矩陣乘法，一個 $N\times N$ 的矩陣，會需要做 $N\times N\times N$ 次的乘法，透過 Systolic Array，可以將運算降低至 $3N - 1$ 個 cycles
 
@@ -531,8 +544,8 @@ ReRAM 是一種新型的非揮發性記憶體，所謂的「非揮發性」表�
 
 <center>
 
-<img src="https://hackmd.io/_uploads/HJlB2l7VT.png">
-    
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/reram1.png?raw=true">
+
 圖源：[R. Liu, D. Mahalanabis, H. J. Barnaby and S. Yu, "Investigation of Single-Bit and Multiple-Bit Upsets in Oxide RRAM-Based 1T1R and Crossbar Memory Arrays," in IEEE Transactions on Nuclear Science, vol. 62, no. 5, pp. 2294-2301, Oct. 2015, doi: 10.1109/TNS.2015.2465164.](https://ieeexplore.ieee.org/document/7274484)
 
 </center>
@@ -547,7 +560,11 @@ ReRAM 也可以有 Multi-level 的型態，在這種情況寫一個 ReRAM cell �
 
 至於該如何計算，這邊舉個例子，假設我們現在有四個 ReRAM cell：
 
-<center><img src="https://hackmd.io/_uploads/Hktr0lQ4T.png"></center><br>
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/reram2.png?raw=true">
+
+</center><br>
 
 當我們設定 WL 上的電壓 $V_i$ 與對應的可變電阻 $G_i$ 時，BL 會產生對應的電流 $I_i$，以圖中的例子來說，利用歐姆定律，我們可以算出 $I_1 = V_1G_1 + V_2G_2$，$I_2$ 同理
 
@@ -555,20 +572,24 @@ ReRAM 也可以有 Multi-level 的型態，在這種情況寫一個 ReRAM cell �
 
 $$
 \begin{bmatrix}
- 1 & 2 \newline
+ 1 & 2 \\
 \end{bmatrix}
 \begin{bmatrix}
- 3 & 4 \newline
- 5 & 6 \newline
+ 3 & 4 \\
+ 5 & 6 \\
 \end{bmatrix}=
 \begin{bmatrix}
- 13 & 16 \newline
+ 13 & 16 \\
 \end{bmatrix}
 $$
 
 我們就可以將電壓與電阻設為特殊的數值來計算出我們要的結果：
 
-<center><img src="https://hackmd.io/_uploads/r1hOy-X4a.png"></center><br>
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/reram3.png?raw=true">
+
+</center><br>
 
 如此一來就完成了一個矩陣運算，另外，這種一個 Vector 與 Matrix 的乘法操作有個名字稱為 matrix-vector-multiplication，簡寫為 MVM，常出現在論文裡面
 
@@ -598,7 +619,11 @@ T -8  -5  -2  -3  -1   2
 
 他的 Systolic Array 應該要是以下形式：
 
-![image](https://hackmd.io/_uploads/r1GwNzmu6.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp1.png?raw=true">
+
+</center><br>
 
 可以看見他將整個矩陣的運算優化到了 7 個 cycle
 
@@ -606,7 +631,11 @@ T -8  -5  -2  -3  -1   2
 
 而每個 PE 的設計也很簡單：
 
-![image](https://hackmd.io/_uploads/SJyjVzQd6.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp2.png?raw=true">
+
+</center><br>
 
 其中，當 `Sequence\#1` 等於 `Sequence\#2` 時，$S_{i,j}$ 為 match score，否則為 mismatch score
 
@@ -614,20 +643,22 @@ T -8  -5  -2  -3  -1   2
 
 <center>
 
-![image](https://hackmd.io/_uploads/SyrbHzQdp.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp3.png?raw=true">
+
 Reference：[8-Bit Identity Comparator](https://www.renesas.com/us/en/products/memory-logic/standard-logic/fast-cmos-ttl-compatible-fct/74fct521t-8-bit-identity-comparator)
     
-</center>
+</center><br>
     
 其中的 XOR 可以用 NOR 實作出來：
 
 <center>
-    
-![image](https://hackmd.io/_uploads/S10Urf7OT.png)
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp4.png?raw=true">
+
 Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)
-    
-</center>
-    
+
+</center><br>
+
 ## NOR gate on ReRAM
 
 所以我們接下來需要確認 ReRAM 上是否能實作出 NOR gate 的功能，這邊有兩篇我覺得寫得蠻清楚的論文，各提了一種方法來實作，這邊就把兩篇論文的想法都很簡化的講解一下
@@ -647,37 +678,37 @@ Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)
 
 <center>
 
-![image](https://hackmd.io/_uploads/ryBCIGQdp.png)
-    
-</center>
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp5.png?raw=true">
+
+</center><br>
 
 A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給定電壓，讓電流從左邊通過時，其電流如下：
 
 <center>
 
-![image](https://hackmd.io/_uploads/S1LQPG7dT.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp6.png?raw=true">
 
-</center>
-    
+</center><br>
+
 首先假設 CC 電流為 1mA：
 
 + 當 A、B 都為 0 時，由於都是高電阻，因此流過兩個 cell 的電流都不會大於 CC 電流
 + 當 A、B 為 0、1 時，由於 B 被設為低電阻了，因此經過此 cell 時電流大於 CC 電流，進行 SET 操作，將 OUT 設為 1，也因此會輸出 1
 + 當 A、B 為 1、0 時，由於 A 被設為低電阻了，接下來同上
 + 當 A、B 為 1、1 時同理
-    
+
 如此一來便完成了 OR gate，接下來的 NOT gate 更簡單了：
 
 <center>
 
-![image](https://hackmd.io/_uploads/SJ0I_zmuT.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp7.png?raw=true">
 
-</center>
-    
+</center><br>
+
 ### Truth table
 
 這個是「[Efficient in-memory computing architecture based on crossbar arrays](https://ieeexplore.ieee.org/document/7409720)」這篇論文提出的方法
-    
+
 重點為：
 
 + 以電壓傳遞變數
@@ -686,11 +717,12 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 
 <center>
 
-![image](https://hackmd.io/_uploads/Sy01Fz7_a.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp8.png?raw=true">
+
 (我也不知道為什麼論文內的圖這麼糊)
-    
-</center>
-    
+
+</center><br>
+
 上圖是 NOR gate 的例子，電阻塗黃表示 1，塗白則為 0
 
 我們會將變數的 0、1 分別以低、高電壓表示，至於多低、多高則自己定義，論文內舉了 2V 與 4V 為例子
@@ -754,5 +786,3 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 8. [What is In-Memory Computing?](https://www.youtube.com/watch?v=BTnr8z-ePR4)
 9. [Systolic Array for Smith-Waterman](https://github.com/jasonlin316/Systolic-Array-for-Smith-Waterman?fbclid=IwAR2qFLuicMqMjJ32VNw6Mq17xU4Hdr-9PgvOKxyqzowLCqV_HpImmMkJqg0)
 10. [EE Research Talk—Next generation memory technology: a Resistive Random-Access (ReRAM) Memory](https://www.youtube.com/watch?v=P9kcbGvToFU&t=133s)
-
-
