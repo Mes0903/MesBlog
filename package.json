@@ -11,7 +11,7 @@
     "dev:vite-clean": "vuepress-vite dev src --clean-cache",
     "dev:webpack": "vuepress-webpack dev src",
     "dev:webpack-clean": "vuepress-webpack dev src --clean-cache",
-    "deploy": "npm run build:vite && gh-pages -d ./src/.vuepress/dist -r git@github.com:Mes0903/Mes0903.github.io.git"
+    "deploy": "pnpm run build:vite && gh-pages -d ./src/.vuepress/dist -r git@github.com:Mes0903/Mes0903.github.io.git"
   },
   "devDependencies": {
     "@vuepress/bundler-vite": "2.0.0-rc.20",
