@@ -13,9 +13,11 @@ category: risc-v
 # Introduction
 
 1. 功能
-    :::spoiler 原文
+    <details> <summary>原文</summary>
+
     > This RISC-V ACLINT specification defines a set of memory mapped devices which provide inter-processor interrupts (IPI) and timer functionalities for each HART on a multi-HART RISC-V platform.
-    :::
+    
+    </details>
 
     ACLINT 是一組 memory mapped devices，用於在 multi-hart 的 RISC-V 平台上提供
 
@@ -23,11 +25,13 @@ category: risc-v
     - 定時器功能 (Timer functionalities)
 
 2. CLINT 的局限性
-    :::spoiler 原文
+    <details> <summary>原文</summary>
+
     > The SiFive Core-Local Interruptor (CLINT) device has been widely adopted in the RISC-V world to provide machine-level IPI and timer functionalities.
     >
     > Unfortunately, the SiFive CLINT has a unified register map for both IPI and timer functionalities and it does not provide supervisor-level IPI functionality.
-    :::
+    
+    </details>
 
     - CLINT 在 RISC-V 平台上廣泛用於提供 Machine-level 的 IPI 和定時器功能
     - 局限性
@@ -36,13 +40,15 @@ category: risc-v
       - 缺乏 supervisor-level IPI
 
 3. ACLINT 的改進
-    :::spoiler 原文
+    <details> <summary>原文</summary>
+
     > The RISC-V ACLINT specification takes a more modular approach by defining separate memory mapped devices for IPI and timer functionalities.
     > 
     > This modularity allows RISC-V platforms to omit some of the RISC-V ACLINT devices for when the platform has an alternate mechanism.
     > 
     > In addition to modularity, the RISC-V ACLINT specification also defines a dedicated memory mapped device for supervisor-level IPIs.
-    :::
+    
+    </details>
 
     - modularity
       - ACLINT 將 IPI 和定時器功能分別定義為獨立的 memory mapped device
@@ -57,11 +63,13 @@ category: risc-v
     | SSWI   | Supervisor      | Inter-processor (or software) interrupts |
 
 5. 與 SiFive CLINT 的兼容性
-    :::spoiler 原文
+    <details> <summary>原文</summary>
+
     > The RISC-V ACLINT specification is defined to be backward compatible with the SiFive CLINT specification.
     > 
     > The register definitions and register offsets of the MTIMER and MSWI devices are compatible with the timer and IPI registers defined by the SiFive CLINT specification.
-    :::
+    
+    </details>
 
     - ACLINT 的 MTIMER 和 MSWI 設備的暫存器定義和偏移量與 SiFive CLINT 中的定時器和 IPI 暫存器保持一致
 
@@ -81,13 +89,15 @@ category: risc-v
 
 ## Introduction
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > The MTIMER device provides machine-level timer functionality for a set of HARTs on a RISC-V platform.
 > 
 > It has a single fixed-frequency monotonic time counter (`MTIME`) register and a time compare register (`MTIMECMP`) for each HART connected to the MTIMER device.
 > 
 > A MTIMER device not connected to any HART should only have a `MTIME` register and no `MTIMECMP` registers.
-:::
+
+</details>
 
 - MTIMER 為一組 HART 提供 Machine-level 的定時器功能，用於支持計時和產生定時器中斷
 - `MTIME` Register 
@@ -99,7 +109,8 @@ category: risc-v
   - 它應該只包含 `MTIME` 暫存器
   - 不需要包含任何 `MTIMECMP` 暫存器，因為沒有 HART 需要時間比較功能
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > On a RISC-V platform with multiple MTIMER devices:
 > 
 > * Each MTIMER device provides machine-level timer functionality for a different
@@ -114,7 +125,8 @@ category: risc-v
 > * The MTIMECMP registers of a MTIMER device must only compare against the MTIME register of the same MTIMER device for generating machine-level timer interrupt.
 > 
 > The maximum number of HARTs supported by a single MTIMER device is 4095 which is equivalent to the maximum number of MTIMECMP registers.
-:::
+
+</details>
 
 - 每個 MTIMER 設備只負責一組不同（或不相交）的 HART 的 machine-level 定時器功能
 - HART Index
@@ -131,11 +143,13 @@ category: risc-v
 
 ## Register Map
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > A MTIMER device has two separate base addresses: one for the MTIME register and another for the MTIMECMP registers.
 > 
 > These separate base addresses of a single MTIMER device allows multiple MTIMER devices to share the same physical MTIME register.
-:::
+
+</details>
 
 - MTIMER 設備有兩個 base addresses
   - `MTIME` Register Base Address：提供 Machine-level 的時間計數功能
@@ -159,11 +173,13 @@ ACLINT MTIMER Compare Register Map：
 
 ## MTIME Register (Offset: 0x00000000)
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > The `MTIME` register is a 64-bit read-write register that contains the number of cycles counted based on a fixed reference frequency.
 > 
 > On MTIMER device reset, the MTIME register is cleared to zero.
-:::
+
+</details>
 
 - `MTIME` 為 64-bit Read-Write 暫存器
 - 用於存儲基於固定參考頻率（fixed reference frequency）的計數器值
@@ -173,16 +189,19 @@ ACLINT MTIMER Compare Register Map：
 
 ## MTIMECMP Registers (Offsets: 0x00000000 - 0x00007FF0)
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > The `MTIMECMP` registers are per-HART 64-bit read-write registers.  
 > 
 > It contains the `MTIME` register value at which machine-level timer interrupt is to be triggered for the corresponding HART.
-:::
+
+</details>
 
 - 每個 HART 分配一個對應的 64-bit Read-Write `MTIMECMP` 暫存器
 - 存儲一個 Target Value，當 `MTIME` 的值達到或超過此值時，對應的 HART 會觸發 Machine-level timer 中斷
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > The machine-level timer interrupt of a HART is pending whenever `MTIME` is greater than or equal to the value in the corresponding `MTIMECMP` register.
 > 
 > The machine-level timer interrupt of a HART is cleared whenever `MTIME` is less than the value of the corresponding `MTIMECMP` register.
@@ -190,7 +209,8 @@ ACLINT MTIMER Compare Register Map：
 > The machine-level timer interrupt is reflected in the MTIP bit of the `mip` CSR.
 >
 > On MTIMER device reset, the `MTIMECMP` registers are in unknown state.
-:::
+
+</details>
 
 - 中斷觸發條件：
   - 當 `MTIME >= MTIMECMP` 時，對應 HART 的 Machine-level timer 中斷處於 pending 狀態
@@ -201,36 +221,43 @@ ACLINT MTIMER Compare Register Map：
 
 ## Synchronizing Multiple MTIME Registers
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > A RISC-V platform can have multiple HARTs grouped into hierarchical topology groups (such as clusters, nodes, or sockets) where each topology group has its own MTIMER device.
 >
 > Further, such RISC-V platforms can also allow clock-gating or powering off for a topology group (including the MTIMER device) at runtime.
-:::
+
+</details>
 
 - 在多 HART 的 RISC-V 平台上，HART 可以按照 clusters、nodes 或 sockets 劃分為拓撲組，每個拓撲組可以擁有獨立的 MTIMER 設備 
 - 平台可以允許對整個拓撲組（包括 MTIMER 設備）進行 clock-gating 或關機的操作
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > On a RISC-V platform with multiple MTIMER devices residing on the same die, each device must satisfy the RISC-V architectural requirement that all the `MTIME` registers with respect to each other, and all the per-HART time CSRs with respect to each other, are synchronized to within one `MTIME` tick period.
 > 
 > For example, if the `MTIME` tick period is 10ns, then the `MTIME` registers, and their associated `time` CSRs, should respectively be synchronized to within 10ns of each other.
-:::
+
+</details>
 
 - 同一晶片內
   - 所有 `MTIME` Registers 和每個 HART 的 `time` CSRs 必須在一個 MTIME tick 週期內同步
   - 舉例來說，若 `MTIME` tick period 為 10ns，則同步偏差應限制在 10ns 內
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > On a RISC-V platform with multiple MTIMER devices on different die, the `MTIME` registers (and their associated time CSRs) on different die may be synchronized to only within a specified interval of each other that is larger than the `MTIME` tick period. 
 > 
 > A platform may define a maximum allowed interval.
-:::
+
+</details>
 
 - 不同晶片中
   - 各晶片的 `MTIME` Registers 和 `time` CSRs 可以允許更大的同步偏差
   - 平台可定義允許的最大同步間隔
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > To satisfy the preceding `MTIME` synchronization requirements:
 > 
 > - All `MTIME` registers should have the same input clock so as to avoid runtime drift between separate `MTIME` registers (and their associated `time` CSRs)
@@ -238,23 +265,28 @@ ACLINT MTIMER Compare Register Map：
 > - Upon system reset, the hardware must initialize and synchronize all `MTIME` registers to zero
 > 
 > - When a MTIMER device is stopped and started again due to, say, power management actions, the software should re-synchronize this `MTIME` register with all other `MTIME` registers
-:::
+
+</details>
 
 - 所有 `MTIME` Registers 應使用相同的輸入時鐘，避免運行時的時鐘有誤差
 - 系統重置時，硬體需初始化並同步所有 `MTIME` Registers 為零
 - 當 MTIMER 因功耗管理等原因停止並重新啟動時，軟體需重新將該 `MTIME` Register 與其他 `MTIME` Registers 同步
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > When software updates one, multiple, or all `MTIME` registers, it must maintain the preceding synchronization requirements (through measuring and then taking into account the differing latencies of performing reads or writes to the different MTIME registers).
-:::
+
+</details>
 
 - 當軟體更新 `MTIME` Registers 時，需測量並補償不同暫存器的讀寫延遲以滿足前面的同步要求
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > As an example, the below RISC-V 64-bit assembly sequence can be used by software to synchronize a `MTIME` register with reference to another `MTIME` register.
 >
 > **NOTE:** On some RISC-V platforms, the MTIME synchronization sequence (i.e. the aclint_mtime_sync() function above) will need to be repeated few times until delta between target MTIME register and reference MTIME register is zero (or very close to zero).
-:::
+
+</details>
 
 以下為一範例 asm code，將目標 `MTIME` Register 與參考 `MTIME` Register 進行同步：
 
@@ -303,7 +335,8 @@ aclint_mtime_sync:
 
 ## Introduction
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > The MSWI device provides machine-level IPI functionality for a set of HARTs on a RISC-V platform.
 > 
 > It has an IPI register (`MSIP`) for each HART connected to the MSWI device.
@@ -315,7 +348,8 @@ aclint_mtime_sync:
 > The HART index assigned to a HART by the MSWI device may or may not have any relationship with the unique HART identifier (hart ID) that the RISC-V Privileged Architecture assigns to the HART.
 >
 > The maximum number of HARTs supported by a single MSWI device is 4095 which is equivalent to the maximum number of `MSIP` registers.
-:::
+
+</details>
 
 - MSWI 設備為一組 HART 提供 Machine-level IPI 的功能
 - 對於連接到 MSWI 設備的每個 HART，它都有一個對應的 IPI 暫存器（MSIP）
@@ -344,7 +378,8 @@ ACLINT MSWI Device Register Map：
 
 ## MSIP Registers (Offsets: 0x00000000 - 0x00003FF8)
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > Each MSIP register is a 32-bit wide WARL register where the upper 31 bits are wired to zero.
 > 
 > The least significant bit is reflected in MSIP of the `mip` CSR.
@@ -352,7 +387,8 @@ ACLINT MSWI Device Register Map：
 > A machine-level software interrupt for a HART is pending or cleared by writing `1` or `0` respectively to the corresponding MSIP register.
 >
 > On MSWI device reset, each MSIP register is cleared to zero.
-:::
+
+</details>
 
 - 每個 `MSIP` 暫存器都是一個 32 位元寬的 WARL 暫存器
 - 高 31 位硬接線為 0
@@ -365,16 +401,19 @@ ACLINT MSWI Device Register Map：
 
 ## Introduction
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > The SSWI device provides supervisor-level IPI functionality for a set of HARTs on a RISC-V platform.
 > 
 > It provides a register to set an IPI (`SETSSIP`) for each HART connected to the SSWI device.
-:::
+
+</details>
 
 - SSWI 設備為一組 HART 提供 Supervisor-level IPI 功能
 - 對於連接到 SSWI 設備的每個 HART，它都有一個對應的 IPI 暫存器（`SETSSIP`）
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > On a RISC-V platform with multiple SSWI devices, each SSWI device provides supervisor-level IPI functionality for a different (or disjoint) set of HARTs.
 > 
 > A SSWI device assigns a HART index starting from zero to each HART associated with it.
@@ -382,7 +421,8 @@ ACLINT MSWI Device Register Map：
 > The HART index assigned to a HART by the SSWI device may or may not have any relationship with the unique HART identifier (hart ID) that the RISC-V Privileged Architecture assigns to the HART.
 >
 > The maximum number of HARTs supported by a single SSWI device is 4095 which is equivalent to the maximum number of `SETSSIP` registers.
-:::
+
+</details>
 
 - 在具有多個 SSWI 設備的 RISC-V 平台上，每個 SSWI 設備為不同（或不相交）的一組 HART 提供 Supervisor-level IPI 功能
 - HART Index
@@ -409,13 +449,15 @@ ACLINT SSWI Device Register Map：
 
 ## SETSSIP Registers (Offsets: 0x00000000 - 0x00003FF8)
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > Each `SETSSIP` register is a 32-bit wide WARL register where the upper 31 bits are wired to zero. 
 > 
 > The least significant bit of a SETSSIP register always reads 0. Writing 0 to the least significant bit of a `SETSSIP` register has no effect whereas writing 1 to the least significant bit sends an edge-sensitive interrupt signal to the corresponding HART causing the HART to set SSIP in the `mip` CSR. 
 > 
 > Writes to a `SETSSIP` register are guaranteed to be reflected in SSIP of the corresponding HART but not necessarily immediately.
-:::
+
+</details>
 
 - 每個 `SETSSIP` 暫存器都是一個 32 位元寬的 WARL 暫存器
 - 高 31 位硬接線為 0
@@ -424,9 +466,11 @@ ACLINT SSWI Device Register Map：
 - 將 `1` 寫入最低有效位元會向對應的 HART 發送 edge-sensitive 中斷訊號，導致 HART 在 `mip` CSR 中設定 SSIP
 - 對 `SETSSIP` 暫存器的寫入操作保證會反映在對應 HART 的 SSIP 中，但不一定會立即反映
 
-:::spoiler 原文
+<details> <summary>原文</summary>
+
 > **NOTE**: The RISC-V Privileged Architecture defines SSIP in `mip` and `sip` CSRs as a <span class = "yellow">writeable</span> bit so the M-mode or S-mode software can directly clear SSIP.
-:::
+
+</details>
 
 - RISC-V 特權架構中定義 SSIP `mip` 和 `sip` CSR 作為可寫位，因此 M mode 或 S mode 中軟體可以直接清除 SSIP
 - 黃色部分不確定是拼錯還是有意為之

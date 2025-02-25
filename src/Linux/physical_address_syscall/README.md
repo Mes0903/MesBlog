@@ -202,7 +202,8 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 page 在 v6.6.5 linux 中定義在 [mm_type.h](https://elixir.bootlin.com/linux/v6.6.5/source/include/linux/mm_types.h#L74) 的第 74 行：
 
-::::: spoiler <span class = "yellow">`struct page` definition</span>
+<details> <summary><span class = "yellow">`struct page` definition</span></summary>
+
 ```cpp
 struct page {
 	unsigned long flags;		/* Atomic flags, some possibly
@@ -349,7 +350,8 @@ struct page {
 #endif
 } _struct_page_alignment;
 ```
-:::::
+
+</details>
 
 有關 `list_head` 的解說可以閱讀 [你所不知道的 C 語言: linked list 和非連續記憶體](https://hackmd.io/@sysprog/c-linked-list)
 
@@ -496,7 +498,8 @@ asmlinkage long sys_my_get_physical_addresses(void *);
 
 新增一個檔案叫 `project1.c`，路徑是 `kernel/project1.c`
 
-:::::spoiler <span class = "yellow">範例 code</span>
+<details> <summary><span class = "yellow">範例 code</span></summary>
+
 
 ```c
 #include <linux/syscalls.h>
@@ -577,7 +580,7 @@ SYSCALL_DEFINE1(my_get_physical_addresses, void *, addr_p)
 }
 ```
 
-:::::
+</details>
 
 > `virt_to_phys` 只能轉 kernel space 的 virtual address，因此必須從頭用 page table 查找
 
@@ -605,7 +608,8 @@ obj-y     = fork.o exec_domain.o panic.o \
 
 </center><br>
 
-:::::spoiler <span class = "yellow">範例 code</span>
+<details> <summary><span class = "yellow">範例 code</span></summary>
+
 
 ```c
 #include <stdio.h>
@@ -719,7 +723,7 @@ int main()
 }
 ```
 
-:::::
+</details>
 
 然後編譯它
 
@@ -768,7 +772,8 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 ## 輸出：
 
-:::::spoiler <span class = "yellow">輸出</span>
+<details> <summary><span class = "yellow">輸出</span></summary>
+
 
 ```bash
 [PID 26]: I am thread with ID 26 executing func1().
@@ -829,9 +834,11 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 [PID 26]: the physical address of library function printf is 0x25f5bb0
 [PID 25]: the physical address of library function printf is 0x25f5bb0
 ```
-:::::
 
-::::: spoiler <span class = "yellow">將順序手動整理後的版本：</span>
+</details>
+
+<details> <summary><span class = "yellow">將順序手動整理後的版本：</span></summary>
+
 
 ```bash
 [PID 26]: I am thread with ID 26 executing func1().
@@ -895,7 +902,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 [PID 25]: the physical address of library function printf is 0x25f5bb0
 ```
 
-:::::
+</details>
 
 整理成表格
 
