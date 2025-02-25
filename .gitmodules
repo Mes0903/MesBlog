@@ -2,3 +2,6 @@
 	path = src/Cpp-Miner
 	url = git@github.com:Mes0903/Cpp-Miner.git
 	branch = standard-markdown
+[submodule "vuepress-theme-hope"]
+	path = vuepress-theme-hope
+	url = git@github.com:Mes0903/vuepress-theme-hope.git
