@@ -1,7 +1,6 @@
 ---
-title: rv32emu Introduction
-date: 2024-12-15
-mathjax: true
+title: (WIP) Supervisor-Level ISA
+date: 2025-02-25
 tag: risc-v
 category: risc-v
 ---
@@ -16,13 +15,17 @@ category: risc-v
 
 <center>
 
-![](image/sstatus1.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sstatus1.png?raw=true">
 
-</center>
+</center><br>
 
 當 `SXLEN` 為 64 時格式如下圖：
 
-![](image/sstatus2.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sstatus2.png?raw=true">
+
+</center><br>
 
 - `SPP` 
   - `SPP` 位元表示 hart 在進入 S-mode 之前執行的特權等級
@@ -127,7 +130,11 @@ HINT 指令是沒有實際運算效果，但可能被用來提供某些優化或
 
 page table entry 可以參考下圖(Sv32 page table entry)
 
-![](image/sv32_page_table_entry.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv32_page_table_entry.png?raw=true">
+
+</center><br>
 
 `SUM` 的機制可以防止 S-mode 下的軟體意外存取 user memory，作業系統可以在 `SUM=0` 的情況下執行大部分的程式碼，並在少數需要訪問 user memory 的情況下再暫時設定 `SUM`
 
