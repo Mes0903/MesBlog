@@ -5,9 +5,9 @@ tag: security
 category: security
 ---
 
-# PE file format
+## PE file format
 
-# 前言
+## 前言
 
 PE 是 Portable Executable 的縮寫，它是根據 UNIX 系統的 COFF 來設計的，在 Windows 下所有的可執行文件都是 PE File，像是 EXE、DLL、SYS、OCX 等等
 
@@ -74,7 +74,7 @@ start:
 
 可以看見 demo.exe 由 DOS Header, DOS stub, NT Headers, Section Headers 與幾個 Sections 組成，那接下來就會依序介紹這些東西
 
-# DOS Header
+## DOS Header
 
 PE file 最一開始的部分是 Dos Header，PE-bear 可以幫我們把這段 binary：
 
@@ -125,7 +125,7 @@ typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header
 
 而 DOS Stub 也是在 DOS 環境下使用的，主要功能就是拿來報錯，這邊也就不詳細介紹
 
-# NT Headers (PE Headers)
+## NT Headers (PE Headers)
 
 NT Headers 也是一個 C struct，它在 `winnt.h` 的定義如下：
 ```cpp
@@ -167,7 +167,7 @@ typedef struct _IMAGE_NT_HEADERS {
 
 </center><br>
 
-## FileHeader
+### FileHeader
 
 FileHeader 的定義如下：
 
@@ -259,7 +259,7 @@ Characteristics 記錄了這個檔案的屬性，會是以下這些值去做 `or
 
 </center><br>
 
-## Optional Header (可選頭)
+### Optional Header (可選頭)
 
 Optional Header 雖然有 `Optional` 這詞在裡面，但它是一定要有的，其定義如下：
 
@@ -308,7 +308,7 @@ typedef struct _IMAGE_OPTIONAL_HEADER {
 } IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;
 ```
 
-# Section Headers (區段頭)
+## Section Headers (區段頭)
 
 Section Header 會記錄每個 Section 的資訊，定義如下：
 
@@ -346,7 +346,7 @@ typedef struct _IMAGE_SECTION_HEADER {
 
 Section Header 只負責記錄對應 Section 的重要屬性，像是 Section 的名字，大小，RVA 等等
 
-# Section(區段)
+## Section(區段)
 
 在 Headers 之後接的就是各個 Section，像是大家熟悉的 `.text`、`.data` 等等都是個 Section
 
@@ -356,7 +356,7 @@ Section Header 只負責記錄對應 Section 的重要屬性，像是 Section �
 
 其他還有很多，上面的圖也可以大概看到，有興趣的可以查一下，這邊就不贅述
 
-# VA、RVA、FOA
+## VA、RVA、FOA
 
 而一個 PE 在硬碟與在記憶體中的偏移量會有所不同，這邊會有三個名詞先介紹一下：
 

@@ -6,9 +6,9 @@ category: numerical-algebra
 order: 8
 ---
 
-# 最小平方逼近多項式(Polynomials of Least square)
+## 最小平方逼近多項式(Polynomials of Least square)
 
-## 目的
+### 目的
 
 我們想要用一個多項式來逼近另一個 function $f\in C[a,b]$，這個多項式我們寫成 
 
@@ -22,7 +22,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 </center><br>
 
-## 推導
+### 推導
 
 而我們要最小化這個 $E$ 就要用到 gradient 了，也就是說 $\nabla E(a_0,\ ...\ ,a_n) = 0$，或妳也可以說 $\frac{\partial E}{\partial a_j} = 0,\ j = 0,1,\ ...\ , n$
 
@@ -56,9 +56,9 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 </center><br>
 
-## 例子
+### 例子
 
-### Example 1. 勒壤得多項式 Legendre Function
+#### Example 1. 勒壤得多項式 Legendre Function
 
 <center>
 
@@ -68,7 +68,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 那個 $L_0$、$L_1$... 是我們取的 $\phi$
 
-### Example 2. 柴比雪夫多項式 Chebyshev polynomials
+#### Example 2. 柴比雪夫多項式 Chebyshev polynomials
 
 <center>
 

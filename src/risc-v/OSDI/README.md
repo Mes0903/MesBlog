@@ -10,15 +10,15 @@ category:
 - OS
 ---
 
-# RVOS OSDI 筆記
+## RVOS OSDI 筆記
 
 這是我在 bilibili 上面看一門叫做「[循序渐进，学习开发一个RISC-V上的操作系统 - 汪辰 - 2021春](https://www.bilibili.com/video/BV1Q5411w7z5/?spm_id_from=333.999.0.0&vd_source=493154d46ef9c42825a755d6b7857b3c)」的課的筆記
 
 課程內介紹了一些 risc-v 常用的指令，並且小改了金門大學陳鐘誠老師的 [mini-riscv-os](https://github.com/cccriscv/mini-riscv-os) 來當作課程教材，一步一步的帶學生做了一個，我自己上完是覺得還不錯，所以就把整個過程記錄下來了
 
-# 常用的 RISC-V 筆記
+## 常用的 RISC-V 筆記
 
-## 基本架構
+### 基本架構
 
 一條典型的 RISC-V 語句由 3 部分組成：
 
@@ -26,7 +26,7 @@ category:
 
 三個都是可選的，因此可接受空行。 label 後面需接上冒號；operation 是比較重要的部分，真正的操作在這裡，裡面還可以分解；comment 是註釋。 
 
-### label(標籤)
+#### label(標籤)
 
 任何以冒號結尾的標示符都會被認為是一個標籤，看個例子
 
@@ -52,7 +52,7 @@ stop:	j stop		# statement in one line
 
 label 可以想成幫一段位址取了一個名字，方便我們後續使用
 
-### operation
+#### operation
 
 operation 總共有四種變化：
 
@@ -65,7 +65,7 @@ operation 總共有四種變化：
 + macro
     採用 .macro/.endm 自定義的 macro
 
-## 指令的操作對象
+### 指令的操作對象
 
 指令的操作對象可以分兩大類：
 
@@ -78,7 +78,7 @@ operation 總共有四種變化：
     + 讀寫操作使用 Byte 為基本單位尋址
     + RV32 可以存取最多 $2^{32}$ 個 Byte 的記憶體空間
 
-## 指令編碼格式
+### 指令編碼格式
 
 <center>
 
@@ -132,9 +132,9 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
     每條指令內有一個暫存器參數和一個常數參數 (寬度為 20 bits)
 
 
-## 算術運算指令(Arithmetic Instruction)
+### 算術運算指令(Arithmetic Instruction)
 
-### ADD
+#### ADD
 
 功能：將兩暫存器的值相加
 語法：`ADD RD, RS1, RS2`
@@ -155,7 +155,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 + rs2(5)：第二個 operand (source register 2)
 + rd(5)：destination register，用於存放加出來的結果
 
-### SUB
+#### SUB
 
 功能：將兩暫存器的值相減
 語法：`SUB RD, RS1, RS2`
@@ -163,7 +163,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式同為 R-type
 
-### ADDI (ADD Immediate)
+#### ADDI (ADD Immediate)
 
 功能：將暫存器中的值與一常數相加
 語法： `ADDI RD, RS1, IMM`
@@ -187,7 +187,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 在運算前 `imm` 會被 sign-extension 為一個 32 位的數，可以表達的範圍為 $-2^{11} ~ 2^{11}$，也就是 $[-2048, 2047)$
 
-### LUI (Load Upper Immediate)
+#### LUI (Load Upper Immediate)
 
 為了要加超過 12 bits 的常數，risc-v 引入了一個新的指令來「載入一個 32 bits 的常數」，作法是把一個 32 bits 的數切為高 20 位與低 12 位，之後先將高 20 位放到一個暫存器內，在利用 `ADDI` 將低 12 位的部分加上去
 
@@ -225,7 +225,7 @@ lui x1, 0x12346    # x1 = 0x12346000
 addi x1, x1, -1    # x1 = 0x12345FFF
 ```
 
-### AUIPC
+#### AUIPC
 
 我們在構造一個位址的流程其實和建構一個普通的數值沒有太大的區別，可以用 `LUI` 和 `ADDI` 來做，但這樣建構出的會是一個直接指定好的常數，但在構造位址的時候我們還會希望有相對位址，所以就需要 `AUIPC`，名字中的 `PC` 指的是 program counter
 
@@ -234,23 +234,23 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 > 例：auipc x5, 0x12345 為 x5 = 0x12345 << 12 + PC
 
 
-### 相關的 pseudo-instruction
+#### 相關的 pseudo-instruction
 
-#### NEG
+##### NEG
 
 功能：對 RS 取負號，將結果存在 RD 中
 語法：`NEG RD, RS`
 等價指令：`SUB RD, x0, RS`
 > 例：neg x5, x6
 
-#### MV
+##### MV
 
 功能：將 RS 中的值複製到 RD 中
 語法：`MV RD, RS`
 等價指令：`ADDI RD, RS, 0`
 > 例：mv x5, x6
 
-#### LI (Load Immediate)
+##### LI (Load Immediate)
 
 因為用 `LUI` 在載入一個數時還要考慮提前借位的問題太麻煩了，所以就有了 `LI`
 
@@ -258,7 +258,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 語法：`LI RD, IMM`
 > 例：li x5, 0x12345678 為 x5 = 0x12345678
 
-#### LA (Load Address)
+##### LA (Load Address)
 
 在寫 code 的時候給出需要載入的 label，組譯器會根據實際情況利用 `AUIPC` 和其他指令自動生成正確的指令來載入記憶體位址，常用於載入一個函式或變數的位址
 
@@ -266,69 +266,69 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 語法：`LA RD, LABEL`
 > 例：la x5, foo
 
-#### NOP (空指令)
+##### NOP (空指令)
 
 功能：不做任何事
 語法：`NOP`
 等價指令：`ADDI x0, 0, 0`
 > 例：nop
 
-## 邏輯運算指令 (Logical Instructions)
+### 邏輯運算指令 (Logical Instructions)
 
-### AND
+#### AND
 
 功能：`RD = RS1 & RS2`
 語法：`AND RD, RS1, RS2`
 格式：R-type
 > 例：and x5, x6, x7
 
-### OR
+#### OR
 
 功能：`RD = RS1 | RS2`
 語法：`OR RD, RS1, RS2`
 格式：R-type
 > 例：or x5, x6, x7
 
-### XOR
+#### XOR
 
 功能：`RD = RS1 ^ RS2`
 語法：`XOR RD, RS1, RS2`
 格式：R-type
 > 例：xor x5, x6, x7
 
-### ANDI
+#### ANDI
 
 功能：`RD = RS1 & IMM`
 語法：`ANDI RD, RS1, IMM`
 格式：I-type
 > 例：`andi x5, x6, 20`
 
-### ORI
+#### ORI
 
 功能：`RD = RS1 | IMM`
 語法：`ORI RD, RS1, IMM`
 格式：I-type
 > 例：`ori x5, x6, 20`
 
-### XORI
+#### XORI
 
 功能：`RD = RS1 ^ IMM`
 語法：`XORI RD, RS1, IMM`
 格式：I-type
 > 例：`xori x5, x6, 20`
 
-### 相關的 pseudo-instruction
+#### 相關的 pseudo-instruction
 
-#### NOT
+##### NOT
 
 功能：對 RS 做 Bitwise Complement，將結果存在 RD 中
 語法：`NOT RD, RS`
 等價指令：`XORI RD, RS, -1`
 > 例：not x5, x6
 
-## 移位運算指令 (Shifting Instructions)
+### 移位運算指令 (Shifting Instructions)
 
-### SLL (邏輯左移)
+#### SLL (邏輯左移)
 
 補 0
 
@@ -337,7 +337,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：R-type
 > 例：sll x5, x6, x7
 
-### SRL (邏輯右移)
+#### SRL (邏輯右移)
 
 補 0
 
@@ -346,7 +346,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：R-type
 > 例：srl x5, x6, x7
 
-### SLLI (邏輯左移常數)
+#### SLLI (邏輯左移常數)
 
 補 0
 
@@ -355,7 +355,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：slli x5, x6, 3
 
-### SRLI (邏輯右移常數)
+#### SRLI (邏輯右移常數)
 
 補 0
 
@@ -364,7 +364,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：srli x5, x6, 3
 
-### SRA (算術右移)
+#### SRA (算術右移)
 
 按符號位補足
 
@@ -373,7 +373,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：R-type
 > 例：sra x5, x6, x7
 
-### SRAI (算術右移常數)
+#### SRAI (算術右移常數)
 
 按符號位補足
 
@@ -382,9 +382,9 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：srai x5, x6, 3
 
-## 記憶體讀寫指令 (Load and Store Instructions)
+### 記憶體讀寫指令 (Load and Store Instructions)
 
-### LB
+#### LB
 
 `IMM` 範圍為 $[-2048, 2047]$，資料在保存到 RD 前會執行 sign-extension
 
@@ -393,7 +393,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：lb x5, 40(x6)
 
-### LBU
+#### LBU
 
 `IMM` 範圍為 $[-2048, 2047]$，資料在保存到 RD 前會執行 zero-extension
 
@@ -402,7 +402,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：lbu x5, 40(x6)
 
-### LH
+#### LH
 
 `IMM` 範圍為 $[-2048, 2047]$，資料在保存到 RD 前會執行 sign-extension
 
@@ -411,7 +411,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：lh x5, 40(x6)
 
-### LHU
+#### LHU
 
 `IMM` 範圍為 $[-2048, 2047]$，資料在保存到 RD 前會執行 zero-extension
 
@@ -420,7 +420,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：lhu x5, 40(x6)
 
-### LW
+#### LW
 
 `IMM` 範圍為 $[-2048, 2047]$
 
@@ -429,7 +429,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：lw x5, 40(x6)
 
-### SB
+#### SB
 
 `IMM` 範圍為 $[-2048, 2047]$
 
@@ -438,7 +438,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：S-type
 > 例：sb x5, 40(x6)
 
-### SH
+#### SH
 
 `IMM` 範圍為 $[-2048, 2047]$
 
@@ -447,7 +447,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：S-type
 > 例：sh x5, 40(x6)
 
-### SW
+#### SW
 
 `IMM` 範圍為 $[-2048, 2047]$
 
@@ -456,9 +456,9 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：S-type
 > 例：sw x5, 40(x6)
 
-## 分支指令 (Conditional Branch Instructions)
+### 分支指令 (Conditional Branch Instructions)
 
-### BEQ
+#### BEQ
 
 跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
 
@@ -469,7 +469,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：B-type
 > 例：beq x5, x6, 100
 
-### BNE
+#### BNE
 
 跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
 
@@ -480,7 +480,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：B-type
 > 例：bne x5, x6, 100
 
-### BLT
+#### BLT
 
 跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
 
@@ -491,7 +491,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：B-type
 > 例：blt x5, x6, 100
 
-### BLTU
+#### BLTU
 
 跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
 
@@ -502,7 +502,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：B-type
 > 例：bltu x5, x6, 100
 
-### BGE
+#### BGE
 
 跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
 
@@ -513,7 +513,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：B-type
 > 例：bge x5, x6, 100
 
-### BGEU
+#### BGEU
 
 跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
 
@@ -524,71 +524,71 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：B-type
 > 例：bgeu x5, x6, 100
 
-### 相關的 pseudo-instruction
+#### 相關的 pseudo-instruction
 
-### BLE
+#### BLE
 
 功能：Branch if Less and Equal，有號方式比較，如果 RS <= RT，跳躍到 OFFSET
 語法：`BLE RS, RT, OFFSET`
 等價指令：`BGE RT, RS, OFFSET`
 
-### BLEU
+#### BLEU
 
 功能：Branch if Less or Equal Unsigned，無號方式比較，如果 RS <= RT，跳躍到 OFFSET
 語法：`BLEU RS, RT, OFFSET`
 等價指令：`BGEU RT, RS, OFFSET`
 
-### BGT
+#### BGT
 
 功能：Branch if Greater Than，有號方式比較，如果 RS > RT，跳躍到 OFFSET
 語法：`BGT RS, RT, OFFSET`
 等價指令：`BLT RT, RS, OFFSET`
 
-### BGTU
+#### BGTU
 
 功能：Branch if Greator Than Unsigned，無號方式比較，如果 RS > RT，跳躍到 OFFSET
 語法：`BGTU RS, RT, OFFSET`
 等價指令：`BLTU RT, RS, OFFSET`
 
-### BEQZ
+#### BEQZ
 
 功能：Branch if Equal Zero，如果 RS == 0，跳躍到 OFFSET
 語法：`BEQZ RS, OFFSET`
 等價指令：`BEQ RS, x0, OFFSET`
 
-### BNEZ
+#### BNEZ
 
 功能：Branch if Not Equal Zero，如果 RS != 0，跳躍到 OFFSET
 語法：`BNEZ RS, OFFSET`
 等價指令：`BNE RS, x0, OFFSET`
 
-### BLTZ
+#### BLTZ
 
 功能：Branch if Less Than Zero，如果 RS < 0，跳躍到 OFFSET
 語法：`BLT RS, x0, OFFSET`
 等價指令：`BLT RS, x0, OFFSET`
 
-### BLEZ
+#### BLEZ
 
 功能：Branch if Less or Equal Than Zero，如果 RS <= 0，跳躍到 OFFSET
 語法：`BLEZ RS, OFFSET`
 等價指令：`BGE x0, RS, OFFSET`
 
-### BGTZ
+#### BGTZ
 
 功能：Branch if Greater Than Zero，如果 RS > 0，跳躍到 OFFSET
 語法：`BGTZ RS, OFFSET`
 等價指令：`BLT x0, RS, OFFSET`
 
-### BGEZ
+#### BGEZ
 
 功能：Branch if Greater or Equal Zero，如果 RS >= 0，跳躍到 OFFSET
 語法：`BGEZ RS, OFFSET`
 等價指令：`BGE RS, x0, OFFSET`
 
-## 無條件跳躍 (Unconditional Jump Instructions)
+### 無條件跳躍 (Unconditional Jump Instructions)
 
-### JAL (Jump And Link)
+#### JAL (Jump And Link)
 
 功能：跳躍到目標位址，用於呼叫函式 
 語法：`JAL RD, LABEL`
@@ -605,7 +605,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 
 JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實際在寫時會用 label 給出跳躍的目標，具體 `IMM` 值由組譯器和 linker 負責生成
 
-### JALR (Jump And Link Register)
+#### JALR (Jump And Link Register)
 
 功能：跳躍到目標位址，用於呼叫函式
 語法：`JALR RD, IMM (RS1)`
@@ -620,9 +620,9 @@ JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實�
 
 調用函式時地址的計算方法為先對 12 bits 寬的 `IMM` 進行 sign-extension，然後將其與 RS1 的值相加，得到最終的結果後將其最低位設為 0 (用以確保對齊)，因此跳躍的範圍是以 RS1 為基準，上下加減 2KB
 
-# OS Development
+## OS Development
 
-## 讀取 CSR
+### 讀取 CSR
 
 我使用 Qemu 來模擬板子，為了方便先以單核為目標，所以首要目標是怎麼確認當前核心是不是要用的核心
 
@@ -727,7 +727,7 @@ stacks:
 	.end				# End of file
 ```
 
-## 設定 UART
+### 設定 UART
 
 為了方便後面 Debug，接下來的目標是要能夠顯示訊息在螢幕上，我們這邊使用 uart 來傳輸數據，將訊息從板子上傳送到主機上，並在主機上顯示出來
 
@@ -828,7 +828,7 @@ void uart_puts(char *s)
 }
 ```
 
-## 記憶體管理
+### 記憶體管理
 
 這樣資料的傳輸就搞定了，接下來要處理記憶體，實現動態的記憶體分配和釋放，還有簡單的 page
 
@@ -1069,9 +1069,9 @@ void page_free(void *p)
 }
 ```
 
-## multitask and context switch
+### multitask and context switch
 
-### multitask
+#### multitask
 
 一個 task 的本質是函式的執行過程，也就是一個指令的 flow；假如我們今天不同的 Hart 上面都有跑一個函式與對應的子函式，這種情況就可以算是一個最簡單的多任務了
 
@@ -1124,7 +1124,7 @@ struct context {
 
 這邊因為 `x0` 的值是不變的所以就忽略它了
 
-### type of multitask
+#### type of multitask
 
 多任務可以分成兩種實現方式：協作式與搶占式的多任務，兩者的差別在於交換 context 的方法不一樣
 
@@ -1140,7 +1140,7 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 
 但由於實作上較為簡單，因此我們這邊就先實作 Cooperative Multitasking，後面再實作 Preemtive Multitasking
 
-### Cooperative Multitasking
+#### Cooperative Multitasking
 
 前面提到了一個 task 的本質是一堆指令的序列，假設這邊有 Task A 和 B，在 Cooperative Multitasking 的情況下他們會長這樣：
 
@@ -1219,8 +1219,8 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 看完了邏輯，就來看一下 code 該怎麼寫，因為 `switch_to` 這個函式執行效率需要非常高，因此這邊就用 asm 來寫：
 
 ```asm
-# void switch_to(struct context *next);
-# a0: pointer to the context of the next task
+## void switch_to(struct context *next);
+## a0: pointer to the context of the next task
 .globl switch_to
 .balign 4
 switch_to:
@@ -1335,11 +1335,11 @@ csrw    mscratch, a0
 
 接下來只要在 user program 裡面呼叫 `switch_to` 就可以進行 context switch 了，這邊就不寫出來了
 
-## Trap & Exception
+### Trap & Exception
 
 既然要講 Preemtive Multitasking，那就需要中斷的概念
 
-### 異常控制流(Exceptional Control Flow)
+#### 異常控制流(Exceptional Control Flow)
 
 控制流(Control Flow) 這個名詞代表程式執行的過程，正常的控制流代表著使用者自己寫的指令
 
@@ -1347,7 +1347,7 @@ csrw    mscratch, a0
 
 這樣的過程被稱為異常控制流，簡稱為 ECP，分為兩種：異常(Exception) 與中斷(Interrupt)；在 risc-v 內統一把 ECP 稱為 Trap
 
-### Machine mode 下的 CSR
+#### Machine mode 下的 CSR
 
 因為我們這邊 OS 是寫在 Machine mode 下的，因此就看 Machine mode 下的 CSR：
 
@@ -1383,7 +1383,7 @@ csrw    mscratch, a0
 
 現在看不懂沒關係，後面會慢慢用到，接下來我們先看一下每個暫存器對應的 bit 的意義
 
-### mtvec (Machine Trap-Vector Base-Address)
+#### mtvec (Machine Trap-Vector Base-Address)
 
 <center>
 
@@ -1407,7 +1407,7 @@ csrw    mscratch, a0
 
     </center><br>
 
-### mepc (Machine Exception Program Counter)
+#### mepc (Machine Exception Program Counter)
 
 <center>
 
@@ -1419,7 +1419,7 @@ csrw    mscratch, a0
 
 + 在處理 trap 的程式中我們可以修改 mepc 的值達到改變 mret 回傳位址的目的
 
-### mcause (Machine Cause)
+#### mcause (Machine Cause)
 
 <center>
 
@@ -1439,7 +1439,7 @@ csrw    mscratch, a0
 
     </center><br>
 
-### mtval (Machine Trap Value)
+#### mtval (Machine Trap Value)
 
 用來輔助 mcause 用的暫存器
 
@@ -1453,7 +1453,7 @@ csrw    mscratch, a0
 
 + 具體的輔助資訊由特定的硬體實作定義，RISC-V 規範沒有定義具體的值。 但規範定義了一些行為，譬如訪問地址出錯時的地址資訊、或執行非法指令時的指令本身等
 
-### mstatus (Machine Status)
+#### mstatus (Machine Status)
 
 用來描述一些狀態信息的，分得很細
 
@@ -1479,7 +1479,7 @@ WPRL 的意思是「Reserved Writes Preserve Values，Reads Ignore Values」，�
     + 注意沒有 UPP
         + 因為異常發生時通常都是要從低權限往高權限跳，或是維持原權限，因此不需要 UPP
 
-## Trap 處理流程
+### Trap 處理流程
 
 Trap 處理的流程主要如下
 
@@ -1493,7 +1493,7 @@ Trap 處理的流程主要如下
 
 那接下來就細看一下這四個部分
 
-### Trap 初始化
+#### Trap 初始化
 
 首先我們要設置入口函數，也就是把 Bottom Half 的位址告訴 CPU，它才會跑到這個位址去執行我們的 Trap 下半部
 
@@ -1511,7 +1511,7 @@ void trap_init()
 
 這裡的 `trap_vector` 是我們寫好的一段邏輯，後面會提到
 
-### top half 
+#### top half 
 
 雖然我們沒辦法對這部分做更動，但還是可以看一下硬體部分具體做了什麼
 
@@ -1527,7 +1527,7 @@ void trap_init()
 3. 根據 trap 的種類設定 mcause，並根據需要為 mtval 設定附加資訊
 4. 將 trap 發生之前的權限模式保存在 mstatus 的 MPP 域中，再把 hart 權限模式改為 M（也就是說無論在任何 Level 下觸發 trap，hart 首先切換到 Machine 模式）
 
-### Bottom half
+#### Bottom half
 
 這邊寫的是一段異常的處理函式，可以把過程總結為五步：
 
@@ -1542,9 +1542,9 @@ void trap_init()
 下面這段是對應的函式 `trap_vector`：
 
 ```asm
-# interrupts and exceptions while in machine mode come here.
+## interrupts and exceptions while in machine mode come here.
 .globl trap_vector
-# the trap vector base address must always be aligned on a 4-byte boundary
+## the trap vector base address must always be aligned on a 4-byte boundary
 .balign 4
 trap_vector:
     # save context(registers).
@@ -1615,7 +1615,7 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 因此將其與 `0x80000000` 進行 and 操作，如果結果非 0 的話表示進來的是一個中斷，否則為一個異常
 
-### 從 Trap 返回
+#### 從 Trap 返回
 
 從 trap 返回的話我們需要 MRET 這個指令
 
@@ -1638,9 +1638,9 @@ reg_t trap_handler(reg_t epc, reg_t cause)
     + pc 設為 mepc
         + 也就是離開 trap
 
-## Interrupt
+### Interrupt
 
-### Interrupt 分類
+#### Interrupt 分類
 
 中斷有分兩種：
 
@@ -1658,7 +1658,7 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 </center><br>
 
-### mie 與 mip
+#### mie 與 mip
 
 前面講跟 Trap 有關的暫存器時還剩 mie 和 mip 兩個沒講，這兩個跟 Interrupt 有關，所以在這邊補一下
 
@@ -1678,7 +1678,7 @@ mie 用於控制 Interrupt 的開或關；前面有提到一個 mstatus，那個
 
 </center><br>
 
-### PLIC
+#### PLIC
 
 外部中斷代表的是外部設備所產生的中斷，通常一個 Hart 會有一根引腳來傳遞外部中斷的訊號，然而外部設備很多，那該怎麼辦呢?
 
@@ -1751,7 +1751,7 @@ static const MemMapEntry virt_memmap[] = {
 };
 ```
 
-### Priority
+#### Priority
 
 至於 PLIC 有哪些 Programmable 的暫存器呢? 剛剛有提到 PLIC 的功能是根據中斷的優先級來篩選一個中斷進來，因此每個中斷源的優先級我們是可以單獨進行設定的：
 
@@ -1762,7 +1762,7 @@ static const MemMapEntry virt_memmap[] = {
     + 7 最高
 + 如果優先級相同，則根據中斷源的 ID 篩選，ID 較小的優先值較高
 
-### Pending
+#### Pending
 
 下一個暫存器是 Pending，這個暫存器可以讓我們知道某一個中斷源是不是發生了
 
@@ -1775,7 +1775,7 @@ static const MemMapEntry virt_memmap[] = {
     + 可以利用 claim 清 0
 + 第一個 Pending 的第 0 位永遠為 0
 
-### Enable
+#### Enable
 
 我們也可以將中斷源設為關閉的，使用的是 Enable 暫存器
 
@@ -1786,7 +1786,7 @@ static const MemMapEntry virt_memmap[] = {
     + 1 表示 enable 此中斷源，反之則表示關閉了該中斷源
 + MMIO 的記憶體映射位址為 `BASE + 0x2000 + (hart*0x80)`
 
-### Threshold
+#### Threshold
 
 用來針對某個 Hart 設置中斷源優先級的閥值，如果優先級小於等於這個閥值的話，就算發生了中斷也會被扔掉
 
@@ -1795,14 +1795,14 @@ static const MemMapEntry virt_memmap[] = {
 + 設為 7 表示丟棄所有中斷源上的中斷
 + MMIO 的記憶體映射位址為 `BASE + 0x200000 + (hart*0x1000)`
 
-### Claim/Complete
+#### Claim/Complete
 
 + Claim 和 Complete 是同一個暫存器，每個 Hart 有一個
 + 對這個暫存器進行讀操作稱為 Claim，即獲取當前發生的最高優先級的中斷源 ID
     + Claim 成功後會清除對應的 Pending 位
 + 對這個暫存器進行寫操作稱為 Complete，用來通知 PLIC 對該路中斷的處理已經結束
 
-### PLIC 操作流程
+#### PLIC 操作流程
 
 這邊通過一張圖來了解一下設置這些暫存器到底起到了什麼作用
 
@@ -1854,7 +1854,7 @@ static const MemMapEntry virt_memmap[] = {
 
 </center><br>
 
-### UART 的例子
+#### UART 的例子
 
 前面我們用 UART 實現了一個字串的輸出，那這邊我們可以利用中斷與 UART 實現一個字串的輸入
 
@@ -2020,7 +2020,7 @@ void uart_init()
 
 最後這兩行是將讀資料的 Interrupt 給打開
 
-## timer interrupt
+### timer interrupt
 
 一個 Hart 會有三個 Interrupt 的引腳，剛剛講的屬於 External Interrupt，這邊來講 Timer Interrupt
 
@@ -2063,7 +2063,7 @@ static const MemMapEntry virt_memmap[] = {
 
 接下來看定義好的暫存器
 
-### mtime
+#### mtime
 
 這是一個 real-time counter，實際上就是一個由石英振盪器觸發的時鐘，會按照一個固定的頻率遞增
 
@@ -2072,7 +2072,7 @@ static const MemMapEntry virt_memmap[] = {
 + RESET 的時候，硬體會自動將 mtime 初始化為 0
 + MMIO 的位址為 `BASE + 0xbff8`
 
-### mtimecmp
+#### mtimecmp
 
 + timer comapre register
 + 每個 Hart 一個
@@ -2098,7 +2098,7 @@ void timer_load(int interval)
 
 `interval` 是想要間隔的數，例如想要間隔一秒鐘，那 `interval` 就是 1
 
-### MSIP
+#### MSIP
 
 其他還有一些這裡不會用到的，跟 software interrupt 相關的暫存器，這邊也一起紀錄一下
 
@@ -2111,7 +2111,7 @@ void timer_load(int interval)
         + 需要將 MSIP 再寫入 0，對中斷進行回應，否則此軟中斷會一直發生
 + MMIO 的位址為 `BASE + (4*hart)`
 
-### CLINT Time Interrupt
+#### CLINT Time Interrupt
 
 mtime 會按照一定的頻率不停地增加，而 CLINT 會去判斷 mtime，當其每增加一個值的時候，他會去確認 `mtime` 是否大於等於 `mtimecmp`，如果為真，那麼 CLINT 就會產生一個 timer interrupt
 
@@ -2138,7 +2138,7 @@ w_mie(r_mie() | MIE_MTIE);
 7. 將 mtimecmp 加上 interval
 8. 回到 4.
 
-### 例子
+#### 例子
 
 OS 裡面的時間管理就是利用硬體的 time counter 完成的
 
@@ -2149,7 +2149,7 @@ OS 裡面的時間管理就是利用硬體的 time counter 完成的
     + 但相對的開銷越大(因為 Interrupt 數量比較多)
 + OS 中通常會維護一個自己的 tick 值，紀錄系統啟動到現在發生的 tick 總數
 
-## Preemtive Multitasking
+### Preemtive Multitasking
 
 雖然協作式的多任務實作比較簡單，但缺點也很明顯，需要使用者自己去放棄 CPU 的使用，進而衍生出不少的問題，因此已經被慢慢淘汰掉了
 
@@ -2208,9 +2208,9 @@ struct context {
 另外在 `trap_vector` 和 `switch_to` 內也要多加一些邏輯：
 
 ```asm
-# interrupts and exceptions while in machine mode come here.
+## interrupts and exceptions while in machine mode come here.
 .globl trap_vector
-# the trap vector base address must always be aligned on a 4-byte boundary
+## the trap vector base address must always be aligned on a 4-byte boundary
 .balign 4
 trap_vector:
     # save context(registers).
@@ -2239,8 +2239,8 @@ trap_vector:
 
 而 `switch_to` 則是要多把 mepc 載入到 CPU，並且原本 save context 的邏輯因為在上面做過了，所以可以刪掉了：
 ```c
-# void switch_to(struct context *next);
-# a0: pointer to the context of the next task
+## void switch_to(struct context *next);
+## a0: pointer to the context of the next task
 .globl switch_to
 .balign 4
 switch_to:

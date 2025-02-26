@@ -6,11 +6,11 @@ tag: risc-v
 category: risc-v
 ---
 
-# RISC-V ACLINT
+## RISC-V ACLINT
 
 - spec：https://github.com/riscv/riscv-aclint/blob/main/riscv-aclint.adoc
 
-# Introduction
+## Introduction
 
 1. 功能
     <details> <summary>原文</summary>
@@ -85,9 +85,9 @@ category: risc-v
     - MSWI：對應 CLINT 地址範圍 0x0000_0000 - 0x0000_3fff，提供 Machine-level  IPI
     - MTIMER：對應 CLINT 地址範圍 0x0000_4000 - 0x0000_bfff，提供 Machine-level 定時器功能
 
-# Machine-level Timer Device (MTIMER)
+## Machine-level Timer Device (MTIMER)
 
-## Introduction
+### Introduction
 
 <details> <summary>原文</summary>
 
@@ -141,7 +141,7 @@ category: risc-v
 - 每個 MTIMER 設備最多支持 4095 個 HART
   - 這與最多支持 4095 個 MTIMECMP 暫存器相對應
 
-## Register Map
+### Register Map
 
 <details> <summary>原文</summary>
 
@@ -171,7 +171,7 @@ ACLINT MTIMER Compare Register Map：
 | ...         | ...   | ...  | ...          | ... |
 | 0x0000_7FF0 | 8B    | RW   | MTIMECMP4094 | HART index 4094 machine-level time compare |
 
-## MTIME Register (Offset: 0x00000000)
+### MTIME Register (Offset: 0x00000000)
 
 <details> <summary>原文</summary>
 
@@ -187,7 +187,7 @@ ACLINT MTIMER Compare Register Map：
 - 提供單調遞增的時間基準，供 `MTIMECMP` 暫存器進行比較
 - 用於觸發 Machine-level timer 中斷
 
-## MTIMECMP Registers (Offsets: 0x00000000 - 0x00007FF0)
+### MTIMECMP Registers (Offsets: 0x00000000 - 0x00007FF0)
 
 <details> <summary>原文</summary>
 
@@ -219,7 +219,7 @@ ACLINT MTIMER Compare Register Map：
 - 中斷狀態會反映在每個 HART 的 `mip` CSR 的 MTIP bit
 - MTIMER 設備重置後，所有 `MTIMECMP` 暫存器處於未知狀態
 
-## Synchronizing Multiple MTIME Registers
+### Synchronizing Multiple MTIME Registers
 
 <details> <summary>原文</summary>
 
@@ -331,9 +331,9 @@ aclint_mtime_sync:
 
 某些平台可能需要多次重複同步過程，直到目標與參考 `MTIME` Register 之間的偏差接近零
 
-# Machine-level Software Interrupt Device (MSWI)
+## Machine-level Software Interrupt Device (MSWI)
 
-## Introduction
+### Introduction
 
 <details> <summary>原文</summary>
 
@@ -359,7 +359,7 @@ aclint_mtime_sync:
   - 該 index 用於標識 HART，但不一定與 RISC-V 特權架構分配的 HART ID 有關
 - 每個 MSWI 設備最多支持 4095 個 HART，這與最多支持 4095 個 `MSIP` Registers 相對應
 
-## Register Map
+### Register Map
 
 ACLINT MSWI Device Register Map：
 
@@ -376,7 +376,7 @@ ACLINT MSWI Device Register Map：
   - 依此類推，每個暫存器占用 4 字節（32 位）
 - 地址範圍 0x0000_3FFC 為保留區域，用於未來擴展
 
-## MSIP Registers (Offsets: 0x00000000 - 0x00003FF8)
+### MSIP Registers (Offsets: 0x00000000 - 0x00003FF8)
 
 <details> <summary>原文</summary>
 
@@ -397,9 +397,9 @@ ACLINT MSWI Device Register Map：
 - 寫入 `0` 可清除中斷
 - MSWI 設備重設時，每個 `MSIP` 暫存器都清零
 
-# Supervisor-level Software Interrupt Device (SSWI)
+## Supervisor-level Software Interrupt Device (SSWI)
 
-## Introduction
+### Introduction
 
 <details> <summary>原文</summary>
 
@@ -430,7 +430,7 @@ ACLINT MSWI Device Register Map：
   - 該 index 用於標識 HART，但不一定與 RISC-V 特權架構分配的 HART ID 有關
 - 每個 SSWI 設備最多支持 4095 個 HART，對應到 4095 個 `SETSSIP` Registers
 
-## Register Map
+### Register Map
 
 ACLINT SSWI Device Register Map：
 
@@ -447,7 +447,7 @@ ACLINT SSWI Device Register Map：
   - 依此類推，每個暫存器占用 4 字節（32 位）
 - 地址範圍 0x0000_3FFC 為保留區域，用於未來擴展
 
-## SETSSIP Registers (Offsets: 0x00000000 - 0x00003FF8)
+### SETSSIP Registers (Offsets: 0x00000000 - 0x00003FF8)
 
 <details> <summary>原文</summary>
 

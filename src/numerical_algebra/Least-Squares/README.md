@@ -6,9 +6,9 @@ category: numerical-algebra
 order: 7
 ---
 
-# Least Squares
+## Least Squares
 
-## 最小絕對偏差法 Least absolute deviation
+### 最小絕對偏差法 Least absolute deviation
 
 假設現在給你這些點
 
@@ -50,7 +50,7 @@ $E_1(a_0, a_1) = \Sigma_{i=1}^{10} |y_i - (a_1x_i + a_0)|$
 
 這個方法叫做最小絕對偏差法(least absolute deviation)，但問題是這兩條有絕對值，微分的處理很麻煩，所以下一個方法就出來了
 
-## 最小平方法 Least Square
+### 最小平方法 Least Square
 
 剛剛是因為絕對值微分很麻煩，所以這邊就把誤差平方：
 
@@ -58,7 +58,7 @@ $E_2(a_0, a_1) = \Sigma_{i=1}^{10} [\ y_i - (a_1x_i + a_0)\ ]^2$
 
 這樣的話就解決了微分的問題，這樣一來不但微分好算，而且還是 convex 可以找到最佳解
 
-## 正規方程式 Normal Equations
+### 正規方程式 Normal Equations
 
 我們繼續找最小值，對上方的 $E_2$ 做偏微：
 
@@ -78,7 +78,7 @@ $E_2(a_0, a_1) = \Sigma_{i=1}^{10} [\ y_i - (a_1x_i + a_0)\ ]^2$
 
 這兩個等式就叫 normal equation
 
-## Polynomial Least Squares
+### Polynomial Least Squares
 
 然而妳拿到的資料很有可能不是一個用 $ax + b$ 就能表達的資料分布，像是這樣：
 
@@ -117,7 +117,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 </center><br>
 
-## 用矩陣表示
+### 用矩陣表示
 
 我們的目的是找到一條線 $y = a_1x + a_0$，或一個曲線，可以很好的表示資料 $\{(x_i, y_i)\}_{i=1}^m$ 的走向，後面可能會用 b 來代表 $a_0$，畢竟比較習慣用 b 來寫
 
@@ -155,7 +155,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 因為我們拿到的資料通常都不會在平面 $C(A)$ 上，也就是剛剛說的通常 $\vec b \notin C(A)$，尤其是在妳資料點很多的時候 A 就會很長一坨，像上面就有 m 個資料點，所以 A 就是個 $m\times 2$ 的矩陣，如果 m 遠遠大於 2，那 $A\vec x = \vec b$ 基本上都沒有解，所以我們才會在這邊用這個方法找到誤差最小的解
 
-### 多維的 normal equation
+#### 多維的 normal equation
 
 多維代表不只有 $a_0$、$a_1$，還有其他的 $a_2$、$a_3$ 等等，所以你的 $A$ 的 column 數就會增加，以 $y = a_2x^2 + a_1x + a_0$ 來說就會長這樣：
 
@@ -167,7 +167,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 那麼 $\vec x = (A^TA)^{-1}A^T \vec b$ 大家應該就會求了
 
-## 自然對數相關
+### 自然對數相關
 
 有時候資料的表示式可能是 $y = be^{ax}$ 這類的形式，那麼我們可以這樣寫：
 

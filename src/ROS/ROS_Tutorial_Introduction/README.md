@@ -5,13 +5,13 @@ tag: ROS1
 category: ROS1
 ---
 
-# ROS1 Tutorial Introduction
+## ROS1 Tutorial Introduction
 
 此篇為中央大學數學系上課所用的 ROS 教材，若非修課生，Demo 部分需要注意一下自己的機器人設定。 若發現教材有誤，歡迎直接修改
 
 主要更新以 hackmd 為主：https://hackmd.io/@Mes/RosTutorial_Intro
 
-# 什麼是 ROS?
+## 什麼是 ROS?
 
 ROS 全名叫 Robot Operating System，但它其實是一種中介軟體(Middleware)，妳也可以說它是一個軟體框架(Software Framework)，所以他是一種抽象化的概念，不是應用程式，也不是作業系統
 
@@ -23,9 +23,9 @@ ROS 全名叫 Robot Operating System，但它其實是一種中介軟體(Middlew
 
 </center>
 
-# 為什麼需要 ROS?
+## 為什麼需要 ROS?
 
-## 最一開始的狀況
+### 最一開始的狀況
 
 最一開始大家都各寫各的，但要寫機器人是一件非常困難的事，妳需要熟知如何撰寫每種零件的 code，當然，有大神克服了，完成了很多作品
 
@@ -33,7 +33,7 @@ ROS 全名叫 Robot Operating System，但它其實是一種中介軟體(Middlew
 
 這會造成一個問題，就算是同樣的功能的 code，由於每個人的零件不同，所以都還要再重寫一次，這就導致了代碼的重用性很低(重造輪子)，而且這類 code 的規模很大，而且還是需要從驅動層級開始寫的，因此非常不方便，且需要非常高的專業能力
 
-## 框架
+### 框架
 
 因此就有人提出了框架的想法，什麼是框架? 框架是一種規則(思想)，其實就是某種半成品，框架提供了一個基礎的架構，就好像房子的地基和骨架一樣，必須配合妳自己寫的 code 才能生出一個完整的應用程式
 
@@ -41,9 +41,9 @@ ROS 全名叫 Robot Operating System，但它其實是一種中介軟體(Middlew
 
 而前面也提到 ROS 算是一種軟體框架，ROS 幫我們把硬體與軟體之間的溝通都做好了，我們只需要寫我們「溝通的過程/效用」就好，而不用再從「溝通的原理」開始寫，也因此我們可以專注於開發演算法及其應用，同時也降低了高度專業能力的限制
 
-# ROS 的架構
+## ROS 的架構
 
-## Peer to peer (P2P)
+### Peer to peer (P2P)
 
 ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理解一下簡單的主從式架構：
 
@@ -129,11 +129,11 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 我們會有一片樹梅派來跑 server 的 code，或是像我們一樣用主機來跑 server 的 code，然後各個零件能夠互相傳遞、存取資料
 
-## 架構及名詞解釋
+### 架構及名詞解釋
 
 現在我們已經知道 ROS 是用 P2P 來實作的了，那麼現在我們要來簡單看一下這些東西在 ROS 裡面的名詞及概念
 
-### Node
+#### Node
 
 在 ROS 裡面，P2P 架構裡面的一個節點我們叫他 Node，Node 是一個你跑起來的程序(Process)，一個完整的系統會有很多個 Node
 
@@ -143,13 +143,13 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 所以你可以看見它其實就是很多個 Process 組合起來的，那麼這些 code 妳可以用 roscpp 或 rospy 來寫，好像還有其他另外支援的語言套件，但我只熟這兩個了
 
-### Master
+#### Master
 
 Master 是一個特殊的 Node，也就是我們前面所說的 Server，Master 會幫忙查找 Node，紀錄妳想傳遞的訊息的種類等等
 
 如果沒有 Master，<span class = "yellow">Node 與 Node 間會找不到對方</span>，妳的資料傳遞、設備呼叫請求等等的溝通就會失效
 
-### Messages
+#### Messages
 
 上面有說一個完整的系統會有很多個 Node，那麼 <span class = "yellow">Node 間要傳遞資料需要靠 Messages 來溝通</span>
 
@@ -203,13 +203,13 @@ int main() {
 
 Messeage 裡面可以有標準的基本型態，整數、浮點數、布林值之類的，也可以是基本型態的陣列，且 Message 內可以包含巢狀類(nested class)
 
-### Topic
+#### Topic
 
 Message 在發布時我們會給它加上 Topic，妳可以把 Message 想像成一個箱子，Node 間要傳遞資料時會把資料放到這個箱子裡面，並在這個箱子上面貼上一個標籤，這個標籤就是 Topic
 
 覺得太抽象的話可以看下面那個小節的圖
 
-### Publisher & Subscriber 
+#### Publisher & Subscriber 
 
 讓我們先小整理一下，Message 是 Node 間拿來溝通的工具，因此 Message 由 Node 發布，也由 Node 接收
 
@@ -249,7 +249,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 如果一個 Node 同時在收資料與發資料，那這個 Node 就同時是 Subcriber 與 Publisher
 
-### 資訊的傳遞
+#### 資訊的傳遞
 
 實際上在傳遞資訊時還會需要 Master 來幫忙 Node 之間的通訊，那麼 ROS 的訊息傳送時是使用 TCP/IP 協定的連線，且一旦兩個訊息接起來後就不會再經過 Master 了：
 
@@ -265,21 +265,21 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 而因為 Middleware 會做序列化(Serialization)，所以你 C\+\+ 寫出來的 Node 和 Python 寫出來的 Node 也可以溝通
 
-### Package
+#### Package
 
 Package 是一個 ROS 軟體的基本單位，Package 會有裡面會有很多個 Node，然後可能會包含有相關的函式庫、資料集(dataset)、配置文件(configuration file)，或其他能幫助你整合、規劃專案的檔案
 
 換句話說，Package 是妳在建立和發布專案時最基本的單位，因為妳的專案很可能是程式與程式之間在溝通的，妳把那些 Node 整合起來，配合妳自己寫的函式庫，蒐集的資料等等的，整個包裝起來成一個能讓別人使用的程式，這樣的東西就是一個 Package
 
-# Demo (By OG)
+## Demo (By OG)
 
 [VB image](https://drive.google.com/file/d/1nWaeKfHHkiT3zIVUx9jwq7ZCGFq6MHf3/view?usp=share_link)
 
-# Ubuntu & Linux
+## Ubuntu & Linux
 
 Ubuntu 是基於 Debian，以桌面應用為主的 Linux 發行版。Ubuntu 有三個正式版本，包括電腦版、伺服器版及用於物聯網裝置和機器人的 Core 版。前述三個版本既能安裝於實體電腦，也能安裝於虛擬電腦
 
-## Terminal & CLI
+### Terminal & CLI
 
 <center>
 
@@ -287,7 +287,7 @@ Ubuntu 是基於 Debian，以桌面應用為主的 Linux 發行版。Ubuntu 有�
 
 </center><br>
 
-### linux 基本指令 ：
+#### linux 基本指令 ：
 
 - cd：用以移動到目標路徑
 - cp：複製檔案到指定路徑
@@ -297,7 +297,7 @@ Ubuntu 是基於 Debian，以桌面應用為主的 Linux 發行版。Ubuntu 有�
 - nano：一種 CLI 的編輯軟體
 - vim：一種 CLI 的編輯軟體
 
-### SSH ：
+#### SSH ：
 
 Secure Shell 是一種加密的網路傳輸協定，可在不安全的網路中為網路服務提供安全的傳輸環境。 SSH 通過在網路中建立安全隧道來實現 SSH 客戶端與伺服器之間的連接。**SSH最常見的用途是遠端登入系統**，人們通常利用 SSH 來傳輸命令列介面和遠端執行命令
 
@@ -317,13 +317,13 @@ ssh username@server_location -p port
 
 請留意你到底是在哪台機器上操作！！！
 
-# ROS
+## ROS
 
-# roscore & rosrun & roslaunch
+## roscore & rosrun & roslaunch
 
 在運行 node 之前都必須先啟動 master，master 就是 ROS 系統中負責管理 Node 的一個功能，他負責 node 與 node 之間的溝通橋樑，因此在執行 node 之前一定要先把 master 開啟。 然後在 ros 中提供兩種方法去執行你的 Node，一種是 rosrun、一種是 roslaunch
 
-## [roscore](http://wiki.ros.org/roscore)
+### [roscore](http://wiki.ros.org/roscore)
 
 roscore 可以讓你啟動 master
 
@@ -331,37 +331,37 @@ roscore 可以讓你啟動 master
 roscore
 ```
 
-## [rosrun](http://wiki.ros.org/rosbash#rosrun) 
+### [rosrun](http://wiki.ros.org/rosbash#rosrun) 
 
 rosrun可以讓你去執行特定package下的code，使用方法如下
 
 ```bash
 rosrun <package> <executable>
 
-# example
+## example
 rosrun hypharos_minibot main
 ```
 
-## [roslaunch](http://wiki.ros.org/roslaunch)
+### [roslaunch](http://wiki.ros.org/roslaunch)
 
 roslaunch 則透過預先設定的 launch file 幫你一次開啟很多程式
 
 ```bash
-# 因為launch file 是放在某個package底下，還是要加package
+## 因為launch file 是放在某個package底下，還是要加package
 roslaunch <package> <launch file>
 
-# example
+## example
 roslaunch hypharos_minibot project_sample.launch
 ```
 
-# rosnode & rostopic
+## rosnode & rostopic
 
 在 ros 中你可以使用以下兩種指令去檢視正在運行的 node 及 topic
 
 - `rosnode` 動作 參數
 - `rostopic` 動作 參數
 
-## [rosnode](http://wiki.ros.org/rosnode)
+### [rosnode](http://wiki.ros.org/rosnode)
 
 在 rosnode 中提供以下幾種動作可以使用
 
@@ -374,7 +374,7 @@ rosnode ping <node_name>       # test connectivity to node
 rosnode cleanup                # purge registration information of unreachable nodes
 ```
 
-## [rostopic](http://wiki.ros.org/rostopic)
+### [rostopic](http://wiki.ros.org/rostopic)
 
 在 rostopic 中提供以下幾種動作可以使用
 
@@ -390,18 +390,18 @@ rostopic pub <topic-name> <msg-type> [data...]    # publish data to topic
 rostopic type <topic-name>                        # print topic type
 ```
 
-# 機器人初連接
+## 機器人初連接
 
-## Turtlesim
+### Turtlesim
 
 ```bash
-# initialize ros master
+## initialize ros master
 roscore
 
-# launch turtlesim_node
+## launch turtlesim_node
 rosrun turtlesim turtlesim_node
 
-# using keyboard to control the turtle
+## using keyboard to control the turtle
 rosrun turtlesim turtle_teleop_key
 ```
 
@@ -411,9 +411,9 @@ rosrun turtlesim turtle_teleop_key
 
 </center><br>
 
-## Minibot & Turtlebot
+### Minibot & Turtlebot
 
-### 網路設定
+#### 網路設定
 
 筆電網卡設定
 
@@ -439,20 +439,20 @@ source ~/.bashrc
 
 </center><br>
 
-### 連線
+#### 連線
 
 使用新版VM
 
 啟動機器人的指令，一定要在機器人上執行!!
 
 ```bash
-# ssh連接機器人
+## ssh連接機器人
 ssh pi@10.0.0.1 ##passward=mrlrobot
 
-# 假如是minibot下
+## 假如是minibot下
 roslaunch hypharos_minibot project_sample.launch
 
-# 假如是turtlebot下
+## 假如是turtlebot下
 roslaunch turtlebot3_bringup turtlebot3_robot.launch
 ```
 
@@ -465,11 +465,11 @@ rviz
 遙控機器人
 
 ```bash
-# Extra moving !!!
-# 假如是minibot下
+## Extra moving !!!
+## 假如是minibot下
 roslaunch teleop teleop_key.launch model:=minibot
 
-# 假如是turtlebot下
+## 假如是turtlebot下
 roslaunch teleop teleop_key.launch model:=turtlebot
 ```
 
@@ -506,7 +506,7 @@ rviz
 ssh pi@10.0.0.1 ##passward=mrlrobot 
 rosrun hypharos_minibot teleop_keyboard.py # 在機器人上執行
 ```
-### turtlebot
+#### turtlebot
 ```bash
 #ssh連接機器人
 ssh pi@10.0.0.1 ##passward=mrlrobot  
@@ -522,7 +522,7 @@ rviz
 roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 ``` -->
 
-### 你一定會遇到的問題
+#### 你一定會遇到的問題
 
 <center>
 
@@ -538,9 +538,9 @@ ssh-keygen -f ...
 
 去把它移除，再重新 ssh
 
-# catkin
+## catkin
 
-## 簡介
+### 簡介
 
 catkin 是一個開發環境整合套件，C\+\+ 中的 make 幫我們做到在編譯這個層級做整合。在不使用 IDE 的情況下，我們如果要編譯一個 c code 或一個 c project 時需要手動透過指令執行，而當這你的 code import 的函式庫很多或你的 project 很大時需要輸入的指令就會變得十分的複雜
 
@@ -548,7 +548,7 @@ catkin 是一個開發環境整合套件，C\+\+ 中的 make 幫我們做到在�
 
 而 catkin 這個套件則在 make 的基礎上加入了空間上的整合，讓你整個專案的開發有個統一的格式
 
-## 使用
+### 使用
 
 catkin 大致上把一個工作區劃分為以下三個區塊
 - src  
@@ -574,7 +574,7 @@ catkin 大致上把一個工作區劃分為以下三個區塊
 
 </center><br>
 
-### package結構
+#### package結構
 
 ```
 ├── CMakeLists.txt    # package的編譯規則(必須)
@@ -589,7 +589,7 @@ catkin 大致上把一個工作區劃分為以下三個區塊
 ├── launch/           # launch檔案
 ```
 
-### package的建立
+#### package的建立
 
 ```bash
 catkin_create_pkg test_pkg roscpp rospy std_msgs
@@ -600,7 +600,7 @@ catkin_create_pkg test_pkg roscpp rospy std_msgs
 例如，新建一個 package 叫做 test_pkg，依賴 roscpp、rospy、std_msgs(常用依賴)
 新建完後就可在 `src` 中撰寫你的程式碼嘍
 
-### 編譯package
+#### 編譯package
 
 回到 catkin workspace(catkin_ws) 這層後輸入
 
@@ -622,11 +622,11 @@ catkin_make
 source ~/catkin_ws/devel/setup.bash
 ```
 
-# roscpp
+## roscpp
 
 ROS 中的 CPP 檔是放置在 package 中的 src
 
-### package結構
+#### package結構
 
 ```
 ├── CMakeLists.txt    #package的編譯規則(必須)
@@ -641,7 +641,7 @@ ROS 中的 CPP 檔是放置在 package 中的 src
 ├── launch/           #launch檔案
 ```
 
-## node simple sample
+### node simple sample
 
 ```bash
 cd ~/catkin_ws/src/<your_pkg>/src # 到你的 project 中的 src 中，src 是用來存放 source code 的地方
@@ -668,15 +668,15 @@ gedit CMakeLists.txt # 修改當中的 CMakeLists.txt，這是編譯的設定檔
 
 ```cmake
 //...上略
-## Declare a C++ executable
-## ...
-## ...
-## ...
+### Declare a C++ executable
+### ...
+### ...
+### ...
 
 add_executable(file_name src/file_name.cpp)
 target_link_libraries(file_name ${catkin_LIBRARIES})
 
-## Rename C++ executable without prefix
+### Rename C++ executable without prefix
 //...下略
 ```
 
@@ -699,9 +699,9 @@ int main(int argc, char** argv){
 
 修改完 `file_name.cpp` 後，因為 CMakeLists.txt 已經改好了，只要再回去執行一次 `catkin_make`，就可以重新編譯出一個新的 `file_name` 囉!
 
-### [教學傳送門](https://ithelp.ithome.com.tw/articles/10204122)
+#### [教學傳送門](https://ithelp.ithome.com.tw/articles/10204122)
 
-## [Publisher](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers) simple sample
+### [Publisher](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers) simple sample
 
 ```c
 #include "ros/ros.h"
@@ -733,9 +733,9 @@ int main(int argc, char **argv)
 }
 ```
 
-### [教學傳送門](https://ithelp.ithome.com.tw/articles/10205657)
+#### [教學傳送門](https://ithelp.ithome.com.tw/articles/10205657)
 
-## [Subscriber](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers) simple sample
+### [Subscriber](http://wiki.ros.org/roscpp/Overview/Publishers%20and%20Subscribers) simple sample
 
 ```c
 #include "ros/ros.h"
@@ -756,13 +756,13 @@ int main(int argc, char **argv)
 }
 ```
 
-### [教學傳送門](https://ithelp.ithome.com.tw/articles/10205877)
+#### [教學傳送門](https://ithelp.ithome.com.tw/articles/10205877)
 
-# rospy
+## rospy
 
 ROS 中的 Python 檔是放置在 package 中的 scripts！！！
 
-### package結構
+#### package結構
 
 ```
 ├── CMakeLists.txt    # package的編譯規則(必須)
@@ -777,7 +777,7 @@ ROS 中的 Python 檔是放置在 package 中的 scripts！！！
 ├── launch/           # launch檔案
 ```
 
-## node simple sample
+### node simple sample
 
 ```python
 #!/usr/bin/env python
@@ -796,13 +796,13 @@ while not rospy.is_shutdown():           # 在 rospy 還沒結束前，執行下
 chmod +x file_name.py
 ```
 
-### [教學傳送門](https://ithelp.ithome.com.tw/articles/10203798)
+#### [教學傳送門](https://ithelp.ithome.com.tw/articles/10203798)
 
-## [Publisher](http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers) simple sample
+### [Publisher](http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers) simple sample
 
 ```python
 #!/usr/bin/env python
-# license removed for brevity
+## license removed for brevity
 import rospy
 from std_msgs.msg import String
 
@@ -823,9 +823,9 @@ if __name__ == '__main__':
         pass
 ```
 
-### [教學傳送門](https://ithelp.ithome.com.tw/articles/10205008)
+#### [教學傳送門](https://ithelp.ithome.com.tw/articles/10205008)
 
-## [Subscriber](http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers) simple sample
+### [Subscriber](http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers) simple sample
 
 ```python
 #!/usr/bin/env python
@@ -845,23 +845,23 @@ if __name__ == '__main__':
     listener()
 ```
 
-### [教學傳送門](https://ithelp.ithome.com.tw/articles/10205362)
+#### [教學傳送門](https://ithelp.ithome.com.tw/articles/10205362)
 
-# Robot source code on github
+## Robot source code on github
 
-## minibot sample code
+### minibot sample code
 
 https://github.com/kuoshih/hypharos_minibot
 
-## turtlebot sample code
+### turtlebot sample code
 
 https://github.com/MathRoboticsLab/turtlebot3_sample
 
-## Python for TB3 & minibot:
+### Python for TB3 & minibot:
 
 https://github.com/MathRoboticsLab/hypharos_minibot_turtlebot_python_sample
 
-# 參考資料
+## 參考資料
 
 **<a href="https://www.youtube.com/playlist?list=PL6S9AqLQkFprxJW18z1Nu9P2bnWCK4KmC" class="redlink">1. jserv ROS 教學</a>**
 

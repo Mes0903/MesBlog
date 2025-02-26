@@ -6,9 +6,9 @@ category: numerical-algebra
 order: 9
 ---
 
-# Linear Algebra and Eigenvalues
+## Linear Algebra and Eigenvalues
 
-## Gershgorin circle
+### Gershgorin circle
 
 給定一個 $A\in \mathbb{R}^{n\times n}$ 矩陣，$R_i$ 記為一個在複數平面上的圓，圓心是 $a_{ii}$，半徑是 $\Sigma_{j=1,\ i\neq j}^n \ |a_{ij}|$，也就是同一個 row 裡面除了圓心以外的其他元素的總和，所以
 
@@ -28,7 +28,7 @@ A 的特徵值(eigen value) 會被包含在這些圓( $R = \cup_{i=1}^n R_i$ ) �
 
 要逼近特徵值的我們很常使用迭代法，所以先用 Gershgorin circle 找到一個範圍，拿來讓 initial guess 參考是很不錯的選擇，可以提供很好的 initial guess
 
-## 例子
+### 例子
 
 <center>
 

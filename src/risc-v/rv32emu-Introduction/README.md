@@ -6,7 +6,7 @@ tag: risc-v
 category: risc-v
 ---
 
-# rv32emu Introduction
+## rv32emu Introduction
 
 本篇撰寫於 12/12，rv32emu 以 Commit `451f8c0` 為主，semu 以 PR `#66` 為主，由於於 semu 上實作的特性之後會移植到 rv32emu 上，因此本文的範例 code 先以 semu 為例，少了 JIT 的部分較易理解
 
@@ -14,7 +14,7 @@ category: risc-v
 
 rv32emu 是針對 32 bit [RISC-V processor model](https://riscv.org/technical/specifications/) 開發的精簡高效模擬器，實作了 RISC-V ISA，支援 RV32I 與 M、A、F、C extension 以 C99 撰寫
 
-# 模擬器的運作原理
+## 模擬器的運作原理
 
 模擬器是一種用軟體來模擬硬體的工具，其目的是在不同架構的電腦上運行特定架構的軟體，以我們的例子來說就是要在不同架構的電腦上運行 RISC-V 的軟體
 
@@ -37,7 +37,7 @@ rv32emu 是針對 32 bit [RISC-V processor model](https://riscv.org/technical/sp
 
 依照 RISC-V 的[規格書](https://riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf)定義暫存器的數量與功能，並以不同指令集定義的操作和欄位來實作 CPU decoder 與指令集對應的操作(e.g. 加減乘除)，並將結果存在指定的暫存器，換句話說就是模擬 CPU 的[指令周期](https://en.wikipedia.org/wiki/Instruction_cycle)，這樣一來就能在不同的指令集架構的電腦上模擬 RISC-V 指令集的軟體
 
-# 系統模擬的組成
+## 系統模擬的組成
 
 為了達成上面的目的，至少需要實作以下三個單元：
 
@@ -69,11 +69,11 @@ rv32emu 是針對 32 bit [RISC-V processor model](https://riscv.org/technical/sp
   - risc-v 架構上的 linux kernel 中透過 SBI 與底層溝通
   - 若要使用 SMP，則需要有 HSM extension 支援
 
-## CPU emulator
+### CPU emulator
 
 要實現 CPU emulation 最基本的功能，我們只需要將會用到的暫存器，解碼的邏輯與指令執行的邏輯實作完成就好了，這邊以 semu 為例看一下簡單的 code，就可以理解到所謂的實作是怎麼一回事了
 
-### Register
+#### Register
 
 在 riscv.h 中的 struct `__hart_internal` 定義了會用到的暫存器：
 
@@ -117,7 +117,7 @@ struct __hart_internal {
 
 由於模擬器目前是實作在 S mode 下的，所以這邊還有 S mode 下模擬器會用到的暫存器
 
-### Instruction Fetch
+#### Instruction Fetch
 
 ```c
 #define PRIV(x) ((emu_state_t *) x->priv)
@@ -140,7 +140,7 @@ void vm_step(hart_t *vm)
 
 就是從 memory 中 PC 指向的位址提取出 `insn_opcode`
 
-### Decode
+#### Decode
 
 提取出 `insn_opcode` 後按照 Instruction Set 裡面給的表去做一一對應，你可以在 [RISCV ISA MANUAL](https://github.com/riscv/riscv-isa-manual/blob/main/src/rv-32-64g.adoc) 中看到這張表
 
@@ -205,7 +205,7 @@ void vm_step(hart_t *vm)
 
 因為是以 ADDI 為例，所以這邊就會進到 `RV32_OP_IMM` 的部分，再其中會再以類似的方法將其餘的欄位，如 `rd`、`rs1`、`imm` 與 `func3`，給解析出來，得到確切的指令
 
-### Execute
+#### Execute
 
 在知道實際上要執行的是哪個指令後就可以直接於我們 host 端的平台上實作該指令的功能了，以 ADDI 來說其行為是將 `rs1` 加上 `imm` 的值寫入 `rd`，因此實作上直接利用 uint32_t 的加法就可以了：
 
@@ -251,9 +251,9 @@ static inline void set_dest(hart_t *vm, uint32_t insn, uint32_t x)
 
 可以看見這邊將計算的值寫入到了 `rd`，如此一來就完成了 `ADDI` 的執行
 
-## PLIC & ACLINT/CLINT
+### PLIC & ACLINT/CLINT
 
-### PLIC
+#### PLIC
 
 對於 PLIC，詳見 [RISC-V PLIC](https://hackmd.io/@Mes/plic) 與 [spec](https://github.com/riscv/riscv-plic-spec/blob/master/riscv-plic.adoc)
 
@@ -289,7 +289,7 @@ PLIC 內主要分為 PLIC Gateway 與 PLIC Core，當中斷源（Interrupt Sourc
 - 在目標處理完該中斷後，會向相關的中斷閘道發送中斷完成消息
 - 之後中斷閘道便可以再為相同的來源向 PLIC 轉發另一個中斷請求了
 
-### ACLINT
+#### ACLINT
 
 對於 ACLINT，詳見 [RISC-V ACLINT](https://hackmd.io/@Mes/ACLINT) 與 [spec](https://github.com/riscv/riscv-aclint/blob/main/riscv-aclint.adoc)
 
@@ -347,36 +347,36 @@ mswi@2000000 {
 };
 ```
 
-#### timer interrupt
+##### timer interrupt
 
 `MTIMER` 負責 timer interrupt，其內部有兩個暫存器，`MTIMECMP` 負責存儲著目標時間值，而 `MTIME` 會持續遞增。 當 `MTIME` 的值大於等於 `MTIMECMP` 時，就會觸發 timer interrupt，中斷狀態會反映在每個 HART 的 `mip` 暫存器的 MTIP bit
 
-#### IPI
+##### IPI
 
 若要觸發 IPI，只須往對應的 `sip` 暫存器寫入 1 就好，以 M mode 來說就是 `MSIP`，S mode 來說就是 `SSIP`
 
-### ACLINT/CLINT 與 PLIC 的差異
+#### ACLINT/CLINT 與 PLIC 的差異
 
-#### 中斷種類
+##### 中斷種類
 
 - PLIC 負責外部中斷，如 peripheral devices 與 I/O 設備的中斷
 - ACLINT/CLINT 負責內部中斷，如 timer 與 IPI
   - CLINT 僅支援 machine-mode
   - ACLINT 多支援了 supervisor mode
 
-#### 數量
+##### 數量
 
 - PLIC 是所有 hart 共用一個的
 - ACLINT/CLINT 是每個 hart 都各自有一個的
 
-#### register
+##### register
 
 - CLINT 將 IPI 和 timer 功能的暫存器放在一個統一的地址空間中
 - ACLINT 將 IPI 和 timer 功能分別定義為獨立的 memory mapped device
 
-## 多核系統模擬
+### 多核系統模擬
 
-### SBI
+#### SBI
 
 SBI 是 RISC-V 定義的一個位於 OS 和 Firmware 之間的介面，用來提供 OS 需要的功能的介面，像是上面提到的 IPI 與 timer interrupt 的設定。 SBI 的實作被稱為 SEE，因此模擬器會需要提供 SEE（實作 SBI），才有辦法在上面運行 linux kernel
 
@@ -388,7 +388,7 @@ SBI 是 RISC-V 定義的一個位於 OS 和 Firmware 之間的介面，用來提
 
 </center><br>
 
-### SBI HSM Extension
+#### SBI HSM Extension
 
 HSM 全名為 Hart State Management，定義了其一系列的 hart 狀態，並提供 S mode 下的軟體一系列用來改變 hart 狀態的函式介面
 
@@ -422,7 +422,7 @@ HSM 全名為 Hart State Management，定義了其一系列的 hart 狀態，並
 - `SUSPENDED`: hart 處於低耗電狀態，如等待中斷或特定事件發生，發生時就會回到 `STARTED` 狀態
 - `STOP_PENDING`、`START_PENDING`、`SUSPEND_PENDING`、`RESUME_PENDING`：代表正在進入下一個狀態，但由於 semu 是模擬器，因此這幾個狀態可以直接忽略，但在實際硬體運作上，作業系統會透過 sbi_hart_get_status 來取得 hart 的狀態，並根據取得的狀態做後續的動作
 
-### SBI IPI Extension
+#### SBI IPI Extension
 
 在 spec 裡面提到，當 hart 處於 `SUSPENDED` 的狀態，hart 會在收到中斷後切回 `STARTED` 模式，因此我們必須要有一個方式能夠讓 hart 之間能夠把對方叫起來，此時就要用到 [IPI Extension](https://github.com/riscv-non-isa/riscv-sbi-doc/blob/master/src/ext-ipi.adoc) 了
 
@@ -430,7 +430,7 @@ HSM 全名為 Hart State Management，定義了其一系列的 hart 狀態，並
 
 > ($\S$ 7.1 in [riscv-sbi-doc](https://github.com/riscv-non-isa/riscv-sbi-doc/tree/master)) Send an inter-processor interrupt to all the harts defined in hart_mask. Interprocessor interrupts manifest at the receiving harts as the supervisor software interrupts.
 
-### SBI TIMER Extension
+#### SBI TIMER Extension
 
 Linux kernel 會不斷設定 timer 來設定下一次的 timer 中斷來達到現代作業系統所需的一些功能，像是排程。 而 [RISC-V SBI TIMER Extension](https://github.com/riscv-non-isa/riscv-sbi-doc/blob/master/src/ext-time.adoc) 定義了上述所需的界面。 Linux kernel 會透過讀取 hart 上的暫存器 time 後根據 time 的數值呼叫 `sbi_set_timer` 設定下一次的 timer interrupt：
 
@@ -452,12 +452,12 @@ void sbi_set_timer(uint64_t stime_value)
 根據 TIMER Extension 的定義，我們所傳入的參數是一個 Absolute time，也就當 Timer 的時間超過所傳入的參數時，就會觸發 timer interrupt。而非呼叫 TIMER Extension 當下的 Timer 時間加上傳入的參數
 > ($\S$ 5.1 in [riscv-sbi-doc](https://github.com/riscv-non-isa/riscv-sbi-doc/tree/master)) Programs the clock for next event after stime_value time. stime_value is in absolute time. This function must clear the pending timer interrupt bit as well.
 
-### 如何確認多核模擬器正確運作?
+#### 如何確認多核模擬器正確運作?
 
 由於 linux 依賴於 HSM extension，因此我們可以在 Linux 中透過 `/proc/cpuinfo` 來驗證多核是否正確運作及 HSM 的實作是否正確，並可利用 `/proc/interrupts` 檢查 timer interrupt 的運作，還有透過查看 `/proc/device-tree` 來確認 ACLINT 是否有被正確識別：
 
 ```
-# cat /proc/cpuinfo 
+## cat /proc/cpuinfo 
 processor       : 0
 hart            : 0
 isa             : rv32ima
@@ -490,7 +490,7 @@ mvendorid       : 0x12345678
 marchid         : 0x80000001
 mimpid          : 0x1
 
-# cat /proc/interrupts 
+## cat /proc/interrupts 
            CPU0       CPU1       CPU2       CPU3       
   1:         81          0          0          0  SiFive PLIC   1 Edge      ttyS0
   2:          1          0          0          0  SiFive PLIC   3 Edge      virtio1
@@ -502,7 +502,7 @@ IPI2:         0          0          0          0  CPU stop interrupts
 IPI3:         0          0          0          0  CPU stop (for crash dump) interrupts
 IPI4:         0          0          0          0  IRQ work interrupts
 IPI5:         0          0          0          0  Timer broadcast interrupts
-# ls /proc/device-tree/soc@F0000000/
+## ls /proc/device-tree/soc@F0000000/
 #address-cells          mswi@4400000            sswi@4500000
 #size-cells             mtimer@4300000          virtio@4100000
 compatible              name                    virtio@4200000
@@ -510,6 +510,6 @@ interrupt-controller@0  ranges
 interrupt-parent        serial@4000000
 ```
 
-# Reference
+## Reference
 
 - [Linux 核心專題: 多核 RISC-V 模擬和 Linux 驗證](https://hackmd.io/@sysprog/HyQ9UQ2E0)

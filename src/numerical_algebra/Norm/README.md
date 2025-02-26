@@ -6,11 +6,11 @@ category: numerical-algebra
 order: 1
 ---
 
-# 7-1：Norm
+## 7-1：Norm
 
-## 向量 Norm
+### 向量 Norm
 
-### Def 7.1
+#### Def 7.1
 
 我們現在隨便給一個向量，我們需要定義怎麼測量他的長度，這個就叫做 norm，中文叫做「範」
 
@@ -27,7 +27,7 @@ order: 1
 
 </center><br>
 
-### Def 7.2
+#### Def 7.2
 
 那常見的 norm 有三個，這邊我們給一個 $R^n$ 裡面的向量 x，那它裡面的元素就叫 $x_1$, $x_2$ ... $x_n$：
 
@@ -49,7 +49,7 @@ order: 1
 
 </center><br>
 
-### Def 7.5
+#### Def 7.5
 
 另外，一個在 $R^n$ 裡面的向量 $x^{(k)}$ 的數列，k 從一到無窮大，我們說在下面這個條件下，這個數列在相對應的 norm 下收斂到一個 x 向量：
 
@@ -61,7 +61,7 @@ order: 1
 
 不一定要 two norm，N 通常是跟 epilson 有關的函數
 
-### Thm 7.3：柯西不等式
+#### Thm 7.3：柯西不等式
 
 給兩個 $R^n$ 裡的向量 x, y，我們可以寫下這個關係式：
 
@@ -71,7 +71,7 @@ order: 1
 
 </center><br>
 
-## Matrix norm
+### Matrix norm
 
 我們也可以對矩陣取 norm，這邊我們給一個在 $R^{n\times n}$ 下的矩陣 A，A 的 norm 定義為：
 
@@ -105,7 +105,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 </center><br>
 
-### Def 7.16
+#### Def 7.16
 
 如果 A 自己一直乘下去會是一個零矩陣，我們說矩陣 A 收斂：
 
@@ -123,9 +123,9 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 </center><br>
 
-# Chapter 7-2：特徵值與特徵向量
+## Chapter 7-2：特徵值與特徵向量
 
-### Def 7.13
+#### Def 7.13
 
 定義相信大家都很清楚了，長這樣：
 
@@ -135,7 +135,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 </center><br>
 
-### Def 7.14
+#### Def 7.14
 
 但接下來這個大家可能就沒看過了，一個矩陣 A 的譜半徑(spectral radius) 定義為， 一個矩陣的特徵值掛上絕對值，再去取最大的那個，就是我們 A 矩陣的譜半徑：
 
@@ -145,7 +145,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 </center><br>
 
-### Thm 7.15
+#### Thm 7.15
 
 接下來有一個很重要的定理，我們說 A 是一個在 $R^{n\times n}$ 下的矩陣：
 
@@ -160,7 +160,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 </center><br>
 
-# Chapter 7-3 Jacobi 和 Gauss-Siedel 迭代法
+## Chapter 7-3 Jacobi 和 Gauss-Siedel 迭代法
 
 什麼是一個迭代法呢? 我們可以想像說我們要解一個 $A\vec x = \vec b$ 的問題，接著看這張圖：
 
@@ -183,7 +183,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi1.png?raw=true">
 
 </center><br>
-## Jacobi's Method
+### Jacobi's Method
 
 先給一個 A 矩陣：
 
@@ -230,7 +230,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 </center><br>
 
-## Matrix expression of Jacobi's method
+### Matrix expression of Jacobi's method
 
 前面我們推出來的公式，如果要用電腦來計算，可能得寫一堆判斷條件，為了方便寫程式來算，我們需要新的表示方式
 

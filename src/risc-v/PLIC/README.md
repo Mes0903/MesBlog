@@ -6,13 +6,13 @@ tag: risc-v
 category: risc-v
 ---
 
-# RISC-V PLIC
+## RISC-V PLIC
 
 - spec：https://github.com/riscv/riscv-plic-spec/blob/master/riscv-plic.adoc
 
-# Introduction
+## Introduction
 
-## 1. Interrupt Targets and Hart Contexts
+### 1. Interrupt Targets and Hart Contexts
 
 <details> <summary>原文</summary>
 
@@ -76,7 +76,7 @@ PLIC 會獨立處理每個中斷目標，不會考慮不同中斷目標的元件
   
 </center>
 
-## 2. Interrupt Gateways （中斷閘道）
+### 2. Interrupt Gateways （中斷閘道）
 
 <details> <summary>原文</summary>
 
@@ -108,7 +108,7 @@ If the global interrupt source was edge-triggered, the gateway will convert the 
 
 與專用線中斷訊號（dedicated-wire interrupt signals）不同，訊息信號中斷（Message-Signalled Interrupts, MSIs）是通過系統互聯（interconnect）以描述中斷的訊息封包形式傳送的。訊息會被解碼以選擇對應的中斷閘道，而相關的閘道會以類似邊緣觸發中斷的方式處理 MSI
 
-## 3. Interrupt Notifications 3. 中斷通知
+### 3. Interrupt Notifications 3. 中斷通知
 
 <details> <summary>原文</summary>
 
@@ -148,7 +148,7 @@ Depending on the platform architecture and the method used to transport interrup
 
 中斷通知中的值僅保證表示某個過去時刻的有效 EIP 值，特別是當第一個目標的中斷通知尚未到達時，另一個目標可能已經響應並認領了該中斷，這會導致當第一個目標嘗試認領中斷時，發現 PLIC 核心中已沒有活躍的中斷
 
-## 4. Interrupt Identifiers (IDs)
+### 4. Interrupt Identifiers (IDs)
 
 <details> <summary>原文</summary>
 
@@ -160,7 +160,7 @@ Interrupt identifiers are also used to break ties when two or more interrupt sou
 
 每個全域中斷來源會被分配到一個小的 unsigned integer 作為識別碼，值從 1 開始，識別碼 0 被保留用來表示「無中斷」。 另外，在兩個或多個中斷來源具有相同優先級時，小的 IDs 會比大的 IDs 有較高的優先權
 
-## 5. Interrupt Flow （中斷流程）
+### 5. Interrupt Flow （中斷流程）
 
 <details> <summary>原文</summary>
 
@@ -194,13 +194,13 @@ Below figure shows the messages flowing between agents when handling interrupts 
 
 </center>
 
-# Details
+## Details
 
-## 1. RISC-V PLIC Operation Parameters
-## 2. Memory Map
-## 3. Interrupt Priorities
-## 4. Interrupt Pending Bits
-## 5. Interrupt Enables
-## 6. Priority Thresholds
-## 7. Interrupt Claim Process
-## 8. Interrupt Completion
+### 1. RISC-V PLIC Operation Parameters
+### 2. Memory Map
+### 3. Interrupt Priorities
+### 4. Interrupt Pending Bits
+### 5. Interrupt Enables
+### 6. Priority Thresholds
+### 7. Interrupt Claim Process
+### 8. Interrupt Completion

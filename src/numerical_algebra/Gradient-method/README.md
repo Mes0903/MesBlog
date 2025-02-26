@@ -6,9 +6,9 @@ category: numerical-algebra
 order: 5
 ---
 
-# Gradient Method
+## Gradient Method
 
-### Thm 7.31
+#### Thm 7.31
 
 給定一個 $\mathbb{R}^{n\times n}$ 裡的 symmetric postive matrix $A$，當我們想解 $A\vec x = \vec b$ 的 $\vec x$ 時，等價於找到能 minimizes $\Phi(\vec y) = \frac{1}{2}<A\vec y, \vec y> - <\vec b, \vec y>$ 的 $\vec x$
 
@@ -40,7 +40,7 @@ order: 5
 
 所以我們需要知道 $\vec p^{(k-1)}$ 長怎樣，另外一個就是要知道每一步要跨多大，所以要知道 $\alpha_{k-1}$ 的值是多少，要注意 $\alpha_{k-1}$ 需要大於 0，這樣才會是我們要的方向
 
-### 為什叫 Gradient Method
+#### 為什叫 Gradient Method
 
 因為之前有說過如果一個函數可微的話，那麼這個函數的負的 gradient 方向就會指出它最大的遞減方向
 
@@ -56,7 +56,7 @@ order: 5
 
 所以這樣我們就可以推出我們下一步的解要沿著 residual vector 的方向來做變化
 
-### 找 alpha
+#### 找 alpha
 
 接下來要來決定 $\alpha_{k-1}$，推導：
 
@@ -74,7 +74,7 @@ order: 5
 
 </center><br>
 
-### Pseudo Code
+#### Pseudo Code
 
 <center>
 

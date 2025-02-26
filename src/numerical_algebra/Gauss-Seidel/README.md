@@ -6,9 +6,9 @@ category: numerical-algebra
 order: 2
 ---
 
-# Gauss-Seidel Metheod
-
 ## Gauss-Seidel Metheod
+
+### Gauss-Seidel Metheod
 
 上次我們用了 Jacobi's method，它操作起來長這樣：
 
@@ -30,7 +30,7 @@ order: 2
 
 這個方法我們就稱它為 Gauss-Seidel Method，是一種 Jacobi's 的優化
 
-## Gauss-Seidel Metheod 的矩陣表示法
+### Gauss-Seidel Metheod 的矩陣表示法
 
 上次我們把原本的矩陣分成 D、L、U：
 
@@ -64,7 +64,7 @@ $\quad$ $\vec {x_0} = x$
 }
 :::
 
-## Lemma7.18
+### Lemma7.18
 
 如果 T 的譜半徑($\rho(T)$) 小於 1，那麼會存在 $(I-T)^{-1} = I + T + T^2 + ... = \Sigma_{j=0}^{\infty}T^j$ 
 
@@ -78,7 +78,7 @@ $\quad$ $\vec {x_0} = x$
 
 </center><br>
 
-## Thm 7.19
+### Thm 7.19
 
 隨便猜一個初始值 $\vec x^{(0)}$，定義為 $\vec x^{(k)} = T\vec x^{(k-1)} + \vec C$ for $k \ge 1$ 的數列 $\{\vec x ^ {(k)}\}_{k=0}^{\infty}$ 會收斂到某個特殊的解 $\vec x = T\vec x + \vec C$ iff $\rho(T) < 1$
 

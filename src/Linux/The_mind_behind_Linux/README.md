@@ -5,9 +5,9 @@ tag: Linux
 category: Linux
 ---
 
-# The mind behind Linux 筆記 & 心得
+## The mind behind Linux 筆記 & 心得
 
-## 前言
+### 前言
 
 Linus Torvalds 在 2016 年的 [TED interview](https://www.ted.com/talks/linus_torvalds_the_mind_behind_linux) 裡談到了他自己的工作模式，性格與 Linux 和 Git 出現時的一些心路歷程
 
@@ -15,7 +15,7 @@ Linus Torvalds 在 2016 年的 [TED interview](https://www.ted.com/talks/linus_t
 
 若文章內容有謬誤，或您有什麼建議，都很歡迎私訊告訴我~
 
-## 概念
+### 概念
 
 Linus Torvalds 舉的例子是移除一筆在 list 裡面的資料，一般的寫法會有 special case，第一筆資料與中間的資料的移除方法有點不太一樣
 
@@ -72,7 +72,7 @@ remove_list_entry(entry)
 
 如果 Pseudo Code 有點難看，那你可以先跳過，往後看解釋和簡單的實作
 
-## 解釋
+### 解釋
 
 Linus Torvalds 在 15:25 時說
 
@@ -100,11 +100,11 @@ Linus Torvalds 在 15:25 時說
 
 </center><br>
 
-## 簡單的實作
+### 簡單的實作
 
 這邊我先用 C 來實作，參考了 [felipec](https://github.com/felipec/linked-list-good-taste) 的寫法，下面這些 code 的 github [在這](https://github.com/Mes0903/Mes_Note/blob/main/The_mind_behind_Linux_Note/Elegant_Linked_List.c)
 
-### struct 定義
+#### struct 定義
 
 首先先把 `Node` 與 `List` 的 struct 寫好：
 
@@ -119,7 +119,7 @@ typedef struct List {
 } List;
 ```
 
-### find
+#### find
 
 再來是一個幫忙尋找目標 Node 的函式，後面會透過這個 function 來幫助我們實作別的函式：
 
@@ -144,7 +144,7 @@ Node **find(List *list, Node *target)
 
 而如果元素不在 List 裡面，則會回傳指向最後一個 Node 的 next 指標的指標，也就是 `&Node->next`，同時也是指 `*indirect == NULL`
 
-### erase
+#### erase
 
 接下來就是刪除 Node 的函式：
 
@@ -162,7 +162,7 @@ void erase(List *list, Node *target)
 
 這邊並沒有去 call `free`，如果要呼叫 `free`，那就要再改一下寫法了
 
-### insert_before
+#### insert_before
 
 然後是插入 Node 的函式：
 
@@ -182,7 +182,7 @@ void insert_before(List *list, Node *target, Node *item)
 
 特別的是如果 target 是傳 `NULL` 或一些非法、不在 List 裡面的指標進去，那麼元素會被加到 List 的最後面，因為如果 target 不在 List 裡面，`find` 回傳的會是最後一個元素的 next 指標的位址
 
-### output
+#### output
 
 最後就是把整個 List 輸出的函式：
 
@@ -200,7 +200,7 @@ void output(List *list)
 
 這個就跟一般的走訪輸出差不多，但因為是用 indirect pointer 實作，所以不用再去看 List 是否為空，變得非常漂亮優雅
 
-### main function
+#### main function
 
 main function 裡面我寫了簡單的測試：
 
@@ -234,7 +234,7 @@ int main()
 
 `items` 是所有的 Node，這裡用 array 存起來方便我們測試
 
-## Cpp 實作
+### Cpp 實作
 
 我也用 Cpp 寫了一次，有兩種版本，一種是傳統 Raw Pointer 的版本，另一種是 Smart Pointer 的版本：
 
@@ -244,7 +244,7 @@ int main()
 
 整體的設計概念都一樣，但我有做一些小調整，讓使用的時候可以直接傳 `data` 進 user API，還有多處理了記憶體釋放的問題
 
-# 延伸閱讀
+## 延伸閱讀
 
 看到這裡後建議可以去看一下 Jserv 老師提到的 [Merge Two Sorted Lists](https://hackmd.io/@sysprog/c-linked-list?fbclid=IwAR2dELWav-gGwBZHOnXBDnpywQQhEUtMcYdLPRKum99rdiz8QsVqrhYpKCM#%E6%A1%88%E4%BE%8B%E6%8E%A2%E8%A8%8E-LeetCode-21-Merge-Two-Sorted-Lists) 這個案例，題目連結在這裡：[LeetCode 21. Merge Two Sorted Lists](https://leetcode.com/problems/merge-two-sorted-lists/)
 

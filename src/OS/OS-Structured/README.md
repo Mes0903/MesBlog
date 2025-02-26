@@ -6,13 +6,13 @@ category: OS
 order: 2
 ---
 
-# Ch2 OS Structure
+## Ch2 OS Structure
 
-## OS Services
+### OS Services
 
 OS 就在幫 user 做事，有很多事一定要 OS 才能做，所以我們稱 OS 為 services
 
-### User Interface
+#### User Interface
 
 Interface 大家應該都很熟悉，其實只分兩個：
 
@@ -30,7 +30,7 @@ Interface 大家應該都很熟悉，其實只分兩個：
     
 現在大多數的作業系統都同時有 CLI 和 GUI
 
-### Communication Models
+#### Communication Models
 
 這邊只是很簡單的講個基本概念，這裡的 Communication 指的不只是 Process 與 Process 之間，也可以是跨電腦的 level
 
@@ -64,11 +64,11 @@ Interface 大家應該都很熟悉，其實只分兩個：
 
 用 memory 來分的理由應該顯而易見，因為 cpu 能直接 access 的就是 memory，但兩種都一樣要透過 OS
 
-## OS-Application Interface
+### OS-Application Interface
 
 一開始說 OS 提供了各式各樣的 service，這些服務提供的方式就是 function call，或我們叫它 API，這邊指的是 Program 層面，而不是剛剛說的 CLI 與 GUI 那些的
 
-### System Call
+#### System Call
 
 由 OS 提供的 function call 就是 system call，他是唯一的 interface，所以在 OS 上面會有一個 system call layer，因為它是直接與 OS 緊密連接在一起的，所以通常認為他是 OS 的一部份，處於最外層 interface 的那邊
 
@@ -82,7 +82,7 @@ Interface 大家應該都很熟悉，其實只分兩個：
 
     在上層還有 shell 等其他東西，所以有其他東西會解決方便性的問題
 
-### API
+#### API
 
 因為 system call 不好用，所以通常在上面會再多一層 API layer，全名叫 Application Program Interface，顧名思義就是為 Programming 方便而設計的，與 OS 沒有那麼緊密的關係
 
@@ -106,7 +106,7 @@ API 的目的是方便使用者使用，所以像 `abs()`，取絕對值的 func
 
 </center><br>
 
-### Parameters Passing
+#### Parameters Passing
 
 system call 一樣是 function，所以也會有參數需要傳遞，一般來說會有三種方法來傳遞參數：
 
@@ -122,9 +122,9 @@ system call 一樣是 function，所以也會有參數需要傳遞，一般來�
 
     每個 Process 都有一塊 memory 叫 stack，可以把東西 push 進去和 pop 出來，有時參數也會 push 進 stack，然後透過 OS pop 出來，這樣來傳遞參數
 
-## OS Structure
+### OS Structure
 
-### Simple OS Architecture
+#### Simple OS Architecture
 
 最早期的 OS 幾乎沒有架構，除了 Driver 與 OS，其他東西都混在一起，因為那時候最重要的是 User friendly，例如早期的 MS-DOS 與 Unix
 
@@ -136,7 +136,7 @@ system call 一樣是 function，所以也會有參數需要傳遞，一般來�
 
 </center><br>
 
-### Layered OS Architecture
+#### Layered OS Architecture
 
 很快地大家就發現上面那個不是一個很好的 solution，至少以系統的角度不是，所以就有人提出了 Layer 的概念
 
@@ -154,7 +154,7 @@ system call 一樣是 function，所以也會有參數需要傳遞，一般來�
 
 但缺點是比較沒有效率，因為有 layer，所以就跟 socket programming 的缺點類似，可能會有很多 memory copy，沒辦法直接跳到某一個地方去 call function，另外有些時候 layer 會很難定義，像是上面那個例子，Memory 可能也會 call 到 I/O
 
-### Microkernel OS Architecture
+#### Microkernel OS Architecture
 
 Microkernel 主要的想法是 kernel 的程式碼應該要越少越好，因為這樣比較 reliable，因為只要那些 code 沒有 bug 就好
 
@@ -174,7 +174,7 @@ Microkernel 主要的想法是 kernel 的程式碼應該要越少越好，因為
 
 另外因為有 Synchronization 的問題，所以她溝通的方法是 message passing，這樣參數一定要傳遞，所以會有 memory copy，就會變慢
 
-### Modular OS Architecture
+#### Modular OS Architecture
 
 這是現在最常見的一個，因為就像 OO 概念一樣，跟剛剛一樣，會有很多 subsystem，用 OO 的方式去寫 OS，差別是這些全部都在 kernel space，所以彈性就會比較高，至少在溝通就不需要透過 message passing
 
@@ -192,7 +192,7 @@ kernel module 的運作可以看上圖中間右邊，只要是 system call 就�
 
 但最常見的做法其實是 replace，例如本來有個 system call 叫 `fopen`，然後我們 insert 一個 override，去覆寫那個 entry，第一行可能偷偷加上個 `print file name`，然後後面再把原本 open file 的 code 貼上去，這樣就不會影響到系統運作，且成功改寫 system call 了，這個技巧可以攔截 system call，幫助我們 debug
 
-## Virtual Machine
+### Virtual Machine
 
 VM 的概念其實很早就出來了，因為早在大家思考 OS 設計前就有一台電腦多使用者的需求了，所以就有人想要用 VM 的方式來解決這個問題
 
@@ -214,7 +214,7 @@ VM 可以把底層的架構抽象化，在底層已經灌了一個 OS 的情況�
 
 解決方法有很多種，最常見的方法，在 VM 的 kernel 要執行時因為是在整個電腦的 user space，所以會丟出 exception 告訴我們這是一個非法的指令，所以會被擋掉，但在被檔的時候，這個 interrupt 會先回到 OS，這時他就知道上面那個 VM 要執行 privileged instruction，此時 OS 就可以幫他執行，所以 OS 就再 call 一次剛剛 VM 想執行的 interrupt，但這次就會過了
 
-### Usage of Virtual Machine
+#### Usage of Virtual Machine
 
 使用 VM 有很多好處，像是
 
@@ -238,7 +238,7 @@ VM 可以把底層的架構抽象化，在底層已經灌了一個 OS 的情況�
 
     現在大家講求的是資源的共享，自己的電腦資源有限，這個技術的重點是 resource sharing，一台機器會被切成很多台 VM 供大家使用，然後也方便管理
 
-### Virtualization
+#### Virtualization
 
 1. Full Virtualization
 

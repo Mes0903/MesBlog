@@ -6,9 +6,9 @@ tag: risc-v
 category: risc-v
 ---
 
-# 常用的 RISC-V 筆記
+## 常用的 RISC-V 筆記
 
-## 基本架構
+### 基本架構
 
 一條典型的 RISC-V 語句由 3 部分組成：
 
@@ -16,7 +16,7 @@ category: risc-v
 
 三個都是可選的，因此可接受空行。 label 後面需接上冒號；operation 是比較重要的部分，真正的操作在這裡，裡面還可以分解；comment 是註釋。 
 
-### label(標籤)
+#### label(標籤)
 
 任何以冒號結尾的標示符都會被認為是一個標籤，看個例子
 
@@ -42,7 +42,7 @@ stop:	j stop		# statement in one line
 
 label 可以想成幫一段位址取了一個名字，方便我們後續使用
 
-### operation
+#### operation
 
 operation 總共有四種變化：
 
@@ -55,7 +55,7 @@ operation 總共有四種變化：
 + macro
     採用 .macro/.endm 自定義的 macro
 
-## 指令的操作對象
+### 指令的操作對象
 
 指令的操作對象可以分兩大類：
 
@@ -68,7 +68,7 @@ operation 總共有四種變化：
     + 讀寫操作使用 Byte 為基本單位尋址
     + RV32 可以存取最多 $2^{32}$ 個 Byte 的記憶體空間
 
-## 指令編碼格式
+### 指令編碼格式
 
 <center>
 
@@ -122,9 +122,9 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
     每條指令內有一個暫存器參數和一個常數參數 (寬度為 20 bits)
 
 
-## 算術運算指令(Arithmetic Instruction)
+### 算術運算指令(Arithmetic Instruction)
 
-### ADD
+#### ADD
 
 功能：將兩暫存器的值相加
 語法：`ADD RD, RS1, RS2`
@@ -145,7 +145,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 + rs2(5)：第二個 operand (source register 2)
 + rd(5)：destination register，用於存放加出來的結果
 
-### SUB
+#### SUB
 
 功能：將兩暫存器的值相減
 語法：`SUB RD, RS1, RS2`
@@ -153,7 +153,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式同為 R-type
 
-### ADDI (ADD Immediate)
+#### ADDI (ADD Immediate)
 
 功能：將暫存器中的值與一常數相加
 語法： `ADDI RD, RS1, IMM`
@@ -177,7 +177,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 在運算前 `imm` 會被 sign-extension 為一個 32 位的數，可以表達的範圍為 $-2^{11} ~ 2^{11}$，也就是 $[-2048, 2047)$
 
-### LUI (Load Upper Immediate)
+#### LUI (Load Upper Immediate)
 
 為了要加超過 12 bits 的常數，risc-v 引入了一個新的指令來「載入一個 32 bits 的常數」，作法是把一個 32 bits 的數切為高 20 位與低 12 位，之後先將高 20 位放到一個暫存器內，在利用 `ADDI` 將低 12 位的部分加上去
 
@@ -215,7 +215,7 @@ lui x1, 0x12346    # x1 = 0x12346000
 addi x1, x1, -1    # x1 = 0x12345FFF
 ```
 
-### AUIPC
+#### AUIPC
 
 我們在構造一個位址的流程其實和建構一個普通的數值沒有太大的區別，可以用 `LUI` 和 `ADDI` 來做，但這樣建構出的會是一個直接指定好的常數，但在構造位址的時候我們還會希望有相對位址，所以就需要 `AUIPC`，名字中的 `PC` 指的是 program counter
 
@@ -224,23 +224,23 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 > 例：auipc x5, 0x12345 為 x5 = 0x12345 << 12 + PC
 
 
-### 相關的 pseudo-instruction
+#### 相關的 pseudo-instruction
 
-#### NEG
+##### NEG
 
 功能：對 RS 取負號，將結果存在 RD 中
 語法：`NEG RD, RS`
 等價指令：`SUB RD, x0, RS`
 > 例：neg x5, x6
 
-#### MV
+##### MV
 
 功能：將 RS 中的值複製到 RD 中
 語法：`MV RD, RS`
 等價指令：`ADDI RD, RS, 0`
 > 例：mv x5, x6
 
-#### LI (Load Immediate)
+##### LI (Load Immediate)
 
 因為用 `LUI` 在載入一個數時還要考慮提前借位的問題太麻煩了，所以就有了 `LI`
 
@@ -248,7 +248,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 語法：`LI RD, IMM`
 > 例：li x5, 0x12345678 為 x5 = 0x12345678
 
-#### LA (Load Address)
+##### LA (Load Address)
 
 在寫 code 的時候給出需要載入的 label，組譯器會根據實際情況利用 `AUIPC` 和其他指令自動生成正確的指令來載入記憶體位址，常用於載入一個函式或變數的位址
 
@@ -256,69 +256,69 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 語法：`LA RD, LABEL`
 > 例：la x5, foo
 
-#### NOP (空指令)
+##### NOP (空指令)
 
 功能：不做任何事
 語法：`NOP`
 等價指令：`ADDI x0, 0, 0`
 > 例：nop
 
-## 邏輯運算指令 (Logical Instructions)
+### 邏輯運算指令 (Logical Instructions)
 
-### AND
+#### AND
 
 功能：`RD = RS1 & RS2`
 語法：`AND RD, RS1, RS2`
 格式：R-type
 > 例：and x5, x6, x7
 
-### OR
+#### OR
 
 功能：`RD = RS1 | RS2`
 語法：`OR RD, RS1, RS2`
 格式：R-type
 > 例：or x5, x6, x7
 
-### XOR
+#### XOR
 
 功能：`RD = RS1 ^ RS2`
 語法：`XOR RD, RS1, RS2`
 格式：R-type
 > 例：xor x5, x6, x7
 
-### ANDI
+#### ANDI
 
 功能：`RD = RS1 & IMM`
 語法：`ANDI RD, RS1, IMM`
 格式：I-type
 > 例：`andi x5, x6, 20`
 
-### ORI
+#### ORI
 
 功能：`RD = RS1 | IMM`
 語法：`ORI RD, RS1, IMM`
 格式：I-type
 > 例：`ori x5, x6, 20`
 
-### XORI
+#### XORI
 
 功能：`RD = RS1 ^ IMM`
 語法：`XORI RD, RS1, IMM`
 格式：I-type
 > 例：`xori x5, x6, 20`
 
-### 相關的 pseudo-instruction
+#### 相關的 pseudo-instruction
 
-#### NOT
+##### NOT
 
 功能：對 RS 做 Bitwise Complement，將結果存在 RD 中
 語法：`NOT RD, RS`
 等價指令：`XORI RD, RS, -1`
 > 例：not x5, x6
 
-## 移位運算指令 (Shifting Instructions)
+### 移位運算指令 (Shifting Instructions)
 
-### SLL (邏輯左移)
+#### SLL (邏輯左移)
 
 補 0
 
@@ -327,7 +327,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：R-type
 > 例：sll x5, x6, x7
 
-### SRL (邏輯右移)
+#### SRL (邏輯右移)
 
 補 0
 
@@ -336,7 +336,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：R-type
 > 例：srl x5, x6, x7
 
-### SLLI (邏輯左移常數)
+#### SLLI (邏輯左移常數)
 
 補 0
 
@@ -345,7 +345,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：slli x5, x6, 3
 
-### SRLI (邏輯右移常數)
+#### SRLI (邏輯右移常數)
 
 補 0
 
@@ -354,7 +354,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：srli x5, x6, 3
 
-### SRA (算術右移)
+#### SRA (算術右移)
 
 按符號位補足
 
@@ -363,7 +363,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：R-type
 > 例：sra x5, x6, x7
 
-### SRAI (算術右移常數)
+#### SRAI (算術右移常數)
 
 按符號位補足
 
@@ -372,9 +372,9 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：srai x5, x6, 3
 
-## 記憶體讀寫指令 (Load and Store Instructions)
+### 記憶體讀寫指令 (Load and Store Instructions)
 
-### LB
+#### LB
 
 `IMM` 範圍為 $[-2048, 2047]$，資料在保存到 RD 前會執行 sign-extension
 
@@ -383,7 +383,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：lb x5, 40(x6)
 
-### LBU
+#### LBU
 
 `IMM` 範圍為 $[-2048, 2047]$，資料在保存到 RD 前會執行 zero-extension
 
@@ -392,7 +392,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：lbu x5, 40(x6)
 
-### LH
+#### LH
 
 `IMM` 範圍為 $[-2048, 2047]$，資料在保存到 RD 前會執行 sign-extension
 
@@ -401,7 +401,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：lh x5, 40(x6)
 
-### LHU
+#### LHU
 
 `IMM` 範圍為 $[-2048, 2047]$，資料在保存到 RD 前會執行 zero-extension
 
@@ -410,7 +410,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：lhu x5, 40(x6)
 
-### LW
+#### LW
 
 `IMM` 範圍為 $[-2048, 2047]$
 
@@ -419,7 +419,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：lw x5, 40(x6)
 
-### SB
+#### SB
 
 `IMM` 範圍為 $[-2048, 2047]$
 
@@ -428,7 +428,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：S-type
 > 例：sb x5, 40(x6)
 
-### SH
+#### SH
 
 `IMM` 範圍為 $[-2048, 2047]$
 
@@ -437,7 +437,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：S-type
 > 例：sh x5, 40(x6)
 
-### SW
+#### SW
 
 `IMM` 範圍為 $[-2048, 2047]$
 
@@ -446,9 +446,9 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：S-type
 > 例：sw x5, 40(x6)
 
-## 分支指令 (Conditional Branch Instructions)
+### 分支指令 (Conditional Branch Instructions)
 
-### BEQ
+#### BEQ
 
 跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
 
@@ -459,7 +459,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：B-type
 > 例：beq x5, x6, 100
 
-### BNE
+#### BNE
 
 跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
 
@@ -470,7 +470,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：B-type
 > 例：bne x5, x6, 100
 
-### BLT
+#### BLT
 
 跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
 
@@ -481,7 +481,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：B-type
 > 例：blt x5, x6, 100
 
-### BLTU
+#### BLTU
 
 跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
 
@@ -492,7 +492,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：B-type
 > 例：bltu x5, x6, 100
 
-### BGE
+#### BGE
 
 跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
 
@@ -503,7 +503,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：B-type
 > 例：bge x5, x6, 100
 
-### BGEU
+#### BGEU
 
 跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
 
@@ -514,71 +514,71 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：B-type
 > 例：bgeu x5, x6, 100
 
-### 相關的 pseudo-instruction
+#### 相關的 pseudo-instruction
 
-### BLE
+#### BLE
 
 功能：Branch if Less and Equal，有號方式比較，如果 RS <= RT，跳躍到 OFFSET
 語法：`BLE RS, RT, OFFSET`
 等價指令：`BGE RT, RS, OFFSET`
 
-### BLEU
+#### BLEU
 
 功能：Branch if Less or Equal Unsigned，無號方式比較，如果 RS <= RT，跳躍到 OFFSET
 語法：`BLEU RS, RT, OFFSET`
 等價指令：`BGEU RT, RS, OFFSET`
 
-### BGT
+#### BGT
 
 功能：Branch if Greater Than，有號方式比較，如果 RS > RT，跳躍到 OFFSET
 語法：`BGT RS, RT, OFFSET`
 等價指令：`BLT RT, RS, OFFSET`
 
-### BGTU
+#### BGTU
 
 功能：Branch if Greator Than Unsigned，無號方式比較，如果 RS > RT，跳躍到 OFFSET
 語法：`BGTU RS, RT, OFFSET`
 等價指令：`BLTU RT, RS, OFFSET`
 
-### BEQZ
+#### BEQZ
 
 功能：Branch if Equal Zero，如果 RS == 0，跳躍到 OFFSET
 語法：`BEQZ RS, OFFSET`
 等價指令：`BEQ RS, x0, OFFSET`
 
-### BNEZ
+#### BNEZ
 
 功能：Branch if Not Equal Zero，如果 RS != 0，跳躍到 OFFSET
 語法：`BNEZ RS, OFFSET`
 等價指令：`BNE RS, x0, OFFSET`
 
-### BLTZ
+#### BLTZ
 
 功能：Branch if Less Than Zero，如果 RS < 0，跳躍到 OFFSET
 語法：`BLT RS, x0, OFFSET`
 等價指令：`BLT RS, x0, OFFSET`
 
-### BLEZ
+#### BLEZ
 
 功能：Branch if Less or Equal Than Zero，如果 RS <= 0，跳躍到 OFFSET
 語法：`BLEZ RS, OFFSET`
 等價指令：`BGE x0, RS, OFFSET`
 
-### BGTZ
+#### BGTZ
 
 功能：Branch if Greater Than Zero，如果 RS > 0，跳躍到 OFFSET
 語法：`BGTZ RS, OFFSET`
 等價指令：`BLT x0, RS, OFFSET`
 
-### BGEZ
+#### BGEZ
 
 功能：Branch if Greater or Equal Zero，如果 RS >= 0，跳躍到 OFFSET
 語法：`BGEZ RS, OFFSET`
 等價指令：`BGE RS, x0, OFFSET`
 
-## 無條件跳躍 (Unconditional Jump Instructions)
+### 無條件跳躍 (Unconditional Jump Instructions)
 
-### JAL (Jump And Link)
+#### JAL (Jump And Link)
 
 功能：跳躍到目標位址，用於呼叫函式 
 語法：`JAL RD, LABEL`
@@ -595,7 +595,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 
 JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實際在寫時會用 label 給出跳躍的目標，具體 `IMM` 值由組譯器和 linker 負責生成
 
-### JALR (Jump And Link Register)
+#### JALR (Jump And Link Register)
 
 功能：跳躍到目標位址，用於呼叫函式
 語法：`JALR RD, IMM (RS1)`

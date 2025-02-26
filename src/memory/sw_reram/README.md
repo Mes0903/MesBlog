@@ -5,7 +5,7 @@ tag: memory
 category: memory
 ---
 
-# ReRAM 與 Smith-Waterman Algorithm 介紹
+## ReRAM 與 Smith-Waterman Algorithm 介紹
 
 這學期(大四上) 修了一門課叫新興記憶儲存系統元件設計，主要在講一些現代 Non-volatile memory，如 FRAM 和 ReRAM，還有一些較新的 Disk 的設計，如 Open-channel SSD 和 ZNS 等等的
 
@@ -32,13 +32,13 @@ category: memory
 
 Smith-Waterman Algorithm 是一個用在生物工程的演算法，由 Needleman-Wunsch 變化而來，用來做基因序列的比對，所以我們這篇文就從基因序列比對開始介紹起吧~
 
-# 基因序列比對
+## 基因序列比對
 
 這一段介紹轉載自[基因序列比對演算法](https://hackmd.io/@UlvydjoQQKafa4iwBkJ9lg/BkGumVZtu)，寫得很好，我只小改了一些用詞，有興趣的可以去看看原文
 
 一般而言，我們會把 DNA 和蛋白質分別看成是由 4 和 20 個英文字母所組成的序列或字串，因為他們分別是由 4 種核苷酸和 20 種胺基酸所組成的。對 DNA 而言，突變是非常平常的事情，也是自然的演化過程。藉由基因的突變，生物可以適應自然環境的改變
 
-## DNA突變的類型
+### DNA突變的類型
 
 常見的DNA突變有3種，分別是取代、插入及刪除
 
@@ -48,7 +48,7 @@ Smith-Waterman Algorithm 是一個用在生物工程的演算法，由 Needleman
 | 插入        | 在 DNA 序列的某一個位置插入一個字母 |
 | 刪除        | 在 DNA 序列的某一個位置刪除一個字母 |
 
-## 編輯距離
+### 編輯距離
 
 通常生物學家會利用所謂的**編輯距離**，來衡量兩條 DNA 序列之間的相異程度。生命總是朝著最短路徑進行演化，所以兩條序列之間的編輯距離被定義為：把其中一條序列編輯轉成另外一條序列，所需最少的編輯運算個數。兩條 DNA 序列之間的編輯距離越小，代表它們之間的相似程度越高。從演化的觀點來說，這意味著它們演化自同一個祖先（即所謂的同源），所以彼此間應該會有相似的結構及功能
 
@@ -68,7 +68,7 @@ Smith-Waterman Algorithm 是一個用在生物工程的演算法，由 Needleman
 1. 字母與字母的對齊
 2. 字母與空白字的對齊
 
-# 對齊(Alignment)
+## 對齊(Alignment)
 
 我們可以把 Alignment 的演算法分為 Global 與 Local 兩種
 
@@ -82,9 +82,9 @@ Smith-Waterman Algorithm 是一個用在生物工程的演算法，由 Needleman
     + 特點： 局部比對專注於找到序列中的局部相似區域，而不要求整個序列的相似性。這種比對通常用於比較兩個相對較不相似的序列，以尋找局部相似的區域，如同源基因的某一片段
     + 應用： 常見的局部比對算法包括 Smith-Waterman 算法
 
-## Needleman-Wunsch
+### Needleman-Wunsch
 
-### 步驟
+#### 步驟
 
 Needleman-Wunsch 的步驟如下
 
@@ -110,7 +110,7 @@ Needleman-Wunsch 的步驟如下
     + 如果回溯到上面的格子，將 $M_i$ 添加到 $M'$，將空格 `_` 添加到 $N'$ 中
     + 如果回溯到左邊的格子，將空格 `_` 添加到 $M'$ 中，將 $N_j$ 添加到 $N'$ 中
 
-### 例子
+#### 例子
 
 這邊給一個例子，我們考慮兩個 sequence：
 
@@ -223,11 +223,11 @@ N': ATGCT
 M': A-GCT
 ```
 
-## Smith-Waterman
+### Smith-Waterman
 
 與全局比對算法（如 Needleman-Wunsch）不同，Smith-Waterman 專注於找到序列中的局部相似區域，並計算這些區域的最大得分
 
-### 步驟
+#### 步驟
 
 Smith-Waterman 的步驟如下：
 
@@ -258,7 +258,7 @@ Smith-Waterman 的步驟如下：
     + 如果回溯到上面的格子，將 $M_i$ 添加到 $M'$，將空格 `_` 添加到 $N'$ 中
     + 如果回溯到左邊的格子，將空格 `_` 添加到 $M'$ 中，將 $N_j$ 添加到 $N'$ 中
 
-### 例子
+#### 例子
 
 這邊我使用一篇 [CSDN](https://blog.csdn.net/yohjob/article/details/89144032) 裡面的例子，我們考慮兩個 sequence：
 
@@ -399,7 +399,7 @@ N': GTT_AC
 M': GTTGAC
 ```
 
-# Systolic Array
+## Systolic Array
 
 這邊使用一下清大林永隆教授數邏的上課內容來介紹 Systolic Array，建議大家也可以去看看上課影片：
 
@@ -422,7 +422,7 @@ Systolic Array 是由孔祥重院士提出的，問題的起因是把東西從 c
 
 所以你可以猜到並不是所有的運算都適合利用 systolic array 來運算，因為數據並不一定符合「能一次性地做很多很多的運算」的這個特性
 
-### 例子 1
+#### 例子 1
 
 那麼有什麼樣的運算符合呢? 在孔祥重院士的論文中舉了一個例子：捲積(Convolution)
 
@@ -481,7 +481,7 @@ $$
 
 這樣的電路架構我們稱它為 Systolic Array，你可以看見它的結構非常的簡單且 Regular，每個 PE 做的操作都一樣，操作也不複雜，然而也因此導致其 Systolic Array 泛用性不高，很難同一組 Systolic Array 拿去做不同場合的運算，需要針對不同的場合設計不同的 Systolic Array
 
-### 例子 2
+#### 例子 2
 
 接下來我們看一下二維的例子：矩陣運算
 
@@ -532,7 +532,7 @@ $$
 
 註：`t = 0` 還沒開始運算，所以不算在 cycle 內，以這個例子來說 $3\times 2 - 1$ 算起來有 5 個 cycles，對應到圖中的`t = 1` 到 `t = 5`
 
-# ReRAM (RRAM)
+## ReRAM (RRAM)
 
 ReRAM 是一種新型的非揮發性記憶體，所謂的「非揮發性」表示斷電後 memory 內的數據並不會消失，會被保存下來，跟目前主流的 DRAM、SRAM 不一樣
 
@@ -593,7 +593,7 @@ $$
 
 如此一來就完成了一個矩陣運算，另外，這種一個 Vector 與 Matrix 的乘法操作有個名字稱為 matrix-vector-multiplication，簡寫為 MVM，常出現在論文裡面
 
-# 實作思路
+## 實作思路
 
 我們的思路主要如下：
 
@@ -602,7 +602,7 @@ $$
 3. 確認使用到的 gate 是否可以在 ReRAM 上實現
 4. 如果可以，那理論上就可以在 ReRAM 上實作出 SW 演算法的 Systolic Array
 
-## 設計出 SW 演算法的 Systolic Array
+### 設計出 SW 演算法的 Systolic Array
 
 這邊以「[A Systolic Array Architecture for the Smith-Waterman Algorithm with High Performance Cell Design](https://www.researchgate.net/publication/220969330_A_Systolic_Array_Architecture_for_the_Smith-Waterman_Algorithm_with_High_Performance_Cell_Design)」這篇論文內的設計為主，這篇論文使用的是比較直觀的設計方法，因此非常簡單易懂
 
@@ -627,7 +627,7 @@ T -8  -5  -2  -3  -1   2
 
 可以看見他將整個矩陣的運算優化到了 7 個 cycle
 
-## Systolic Array 內部的 PE 樣貌
+### Systolic Array 內部的 PE 樣貌
 
 而每個 PE 的設計也很簡單：
 
@@ -659,11 +659,11 @@ Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)
 
 </center><br>
 
-## NOR gate on ReRAM
+### NOR gate on ReRAM
 
 所以我們接下來需要確認 ReRAM 上是否能實作出 NOR gate 的功能，這邊有兩篇我覺得寫得蠻清楚的論文，各提了一種方法來實作，這邊就把兩篇論文的想法都很簡化的講解一下
 
-### OR gate + NOT gate
+#### OR gate + NOT gate
 
 這個是「[Nonvolatile Logic and In Situ Data Transfer Demonstrated in Crossbar Resistive RAM Array](https://ieeexplore.ieee.org/document/7274656?fbclid=IwAR0FbBya8bvQGYidy7Qwe1Trx-M2BCN5amA1--3DZrVneUQu1Dq2-Fmwxyw)」這篇論文提出來的方法
 
@@ -705,7 +705,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 
 </center><br>
 
-### Truth table
+#### Truth table
 
 這個是「[Efficient in-memory computing architecture based on crossbar arrays](https://ieeexplore.ieee.org/document/7409720)」這篇論文提出的方法
 
@@ -729,7 +729,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 
 因此當 2V 與 4V 傳入圖中對應的 WL(直行) 時，等我們傳入 readout 電壓，便只有第三列的電流會小於我們所設定的限制電流，我們就可以讀取對應的電阻值，得到的輸出了
 
-## 結論
+### 結論
 
 透過簡單閱讀上面這兩篇論文，我們已經確認了 NOR gate 可以在 ReRAM 上被實作出來，而 NOR gate 是 functional complete 的，因此基本上想組什麼出來都是沒問題的，但 performance 怎麼樣就不好說了XD
 
@@ -739,7 +739,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 
 另外「[Protein Alignment Systolic Array Throughput Optimization](https://ieeexplore.ieee.org/document/6734689)」這篇論文對 SW 的 Systolic Array 進行了改良，Systolic Array 變得很小，而且使用率變得更好了，但 PE 的內部電路相對就變得複雜了起來，有興趣的也可以看看
 
-# Survey of related paper
+## Survey of related paper
 
 「對齊」的演算法的加速仍受到現有的硬體架構限制，因其資料量大，register 容量相對來說有限，因此需要頻繁的移動資料，導致計算成本高昂，另外對齊演算法並不是單純的矩陣運算，這也會導致難以優化
 
@@ -774,7 +774,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 + [Nonvolatile Logic and In Situ Data Transfer Demonstrated in Crossbar Resistive RAM Array](https://ieeexplore.ieee.org/document/7274656?fbclid=IwAR0FbBya8bvQGYidy7Qwe1Trx-M2BCN5amA1--3DZrVneUQu1Dq2-Fmwxyw)
     + 在 ReRAM 實作了 NOR gate
 
-# 論文外的參考資料
+## 論文外的參考資料
 
 1. [基因序列比對演算法](https://hackmd.io/@UlvydjoQQKafa4iwBkJ9lg/BkGumVZtu)
 2. [Global alignment vs. Local alignment vs. Semi-global alignment](https://bio.libretexts.org/Bookshelves/Computational_Biology/Book%3A_Computational_Biology_-_Genomes_Networks_and_Evolution_(Kellis_et_al.)/03%3A_Rapid_Sequence_Alignment_and_Database_Search/3.03%3A_Global_alignment_vs._Local_alignment_vs._Semi-global_alignment)

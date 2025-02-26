@@ -6,9 +6,9 @@ category: numerical-algebra
 order: 3
 ---
 
-# Relaxation Method
+## Relaxation Method
 
-## Relaxation method
+### Relaxation method
 
 這個方法顧名思義就是把原本的方法做一點放鬆，他的概念用到外插法 (extrapolate) 來產生他迭代的方法，像這樣：
 

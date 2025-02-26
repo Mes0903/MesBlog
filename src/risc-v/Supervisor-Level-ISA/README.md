@@ -5,9 +5,9 @@ tag: risc-v
 category: risc-v
 ---
 
-# 12. Supervisor-Level ISA, Version 1.13
+## 12. Supervisor-Level ISA, Version 1.13
 
-## 12.1.1. Supervisor Status (`sstatus`) Register
+### 12.1.1. Supervisor Status (`sstatus`) Register
 
 `sstatus` 暫存器是一個 SXLEN-bit read/write 的暫存器，用來追蹤處理器目前的狀態，為 `mstatus` 的子集
 
@@ -43,7 +43,7 @@ category: risc-v
   - 當 Trap 進入 S-mode 時，`SPIE` 被設為 `SIE`，並且 `SIE` 被設為 0
   - 執行 `SRET` 指令時，`SIE` 被設為 `SPIE`，然後 `SPIE` 被設為 1
 
-### 12.1.1.1. Base ISA Control in `sstatus` Register
+#### 12.1.1.1. Base ISA Control in `sstatus` Register
 
 `UXL` 欄位控制 U-mode 的 `XLEN` 值，稱為 `UXLEN`，其可能與 S-mode 的 `XLEN` 值不同(稱為 `SXLEN`)。 簡單來說：
 
@@ -72,7 +72,7 @@ category: risc-v
 
 > $2^{32}$ = 4GiB
 
-#### HINT 相關
+##### HINT 相關
 
 HINT 指令是沒有實際運算效果，但可能被用來提供某些優化或調整的指令。 某些 HINT 指令會被編碼為整數計算指令，其會利用當下的值覆蓋目標暫存器值
 
@@ -105,7 +105,7 @@ HINT 指令是沒有實際運算效果，但可能被用來提供某些優化或
 
 但對於 HINT 指令，CPU 可以選擇「完全不寫回 `x8`」，因為它不影響計算結果
 
-### 12.1.1.2. Memory Privilege in `sstatus` Register (`MXR` 與 `SUM`)
+#### 12.1.1.2. Memory Privilege in `sstatus` Register (`MXR` 與 `SUM`)
 
 `MXR`(Make eXecutable Readable) 位元控制讀取(load) 虛擬記憶體的權限
 
@@ -142,7 +142,7 @@ page table entry 可以參考下圖(Sv32 page table entry)
 
 但是有些 non-POSIX 的單一位址空間(Single Address Space) 作業系統允許部分軟體在 S-mode 下執行 U-mode program，其大部分程式都運行在 U-mode 下，並和 kernel 共用同一個位址空間。 在這種情況下，可以通過映射相同的物理記憶體到不同的虛擬記憶體頁面，並設定不同的權限來允許 S-mode 軟體部分執行 U-mode 的程式碼
 
-### 12.1.1.3. Endianness Control in `sstatus` Register (`UBE`)
+#### 12.1.1.3. Endianness Control in `sstatus` Register (`UBE`)
 
 `UBE` 為原是個 WARL 的字段，用來控制 U-mode 下記憶體存取的位元組順序(Endianness)，其可能與 S-mode 下的位元組順序不同。 實作上可能會把 UBE 設成一個唯讀的字段，使其始終與 S-mode 的位元組順序相同
 
@@ -158,14 +158,14 @@ page table entry 可以參考下圖(Sv32 page table entry)
 
 標準的 RISC-V ABI 只能是純小端 (Little-Endian, LE) 或純大端 (Big-Endian, BE)，不允許混合大小端(mixing endianness)。 儘管標準 ABI 只能是純 LE 或純 BE，但 RISC-V 還是允許作業系統支援與自身大小端不同的 U-mode 應用程式
 
-### 12.1.1.4. Previous Expected Landing Pad (ELP) State in `sstatus` Register
+#### 12.1.1.4. Previous Expected Landing Pad (ELP) State in `sstatus` Register
 
 `SPELP` 欄位由 Zicflip 擴充指令集引入，用途與控制流完整性(CFI) 有關。 在 S-mode 下存取 `SPELP` 欄位時，會根據 `V` 位元的狀態來決定要存取 `mstatus.SPELP` 還是 `vsstatus.SPELP`：
 
 - `V=0`(非虛擬化模式)：存取 `mstatus.SPELP`
 - `V=1`(虛擬化模式)：存取 `vsttatus.SPELP`
 
-### 12.1.1.5. Double Trap Control in `sstatus` Register
+#### 12.1.1.5. Double Trap Control in `sstatus` Register
 
 `SDT`(S-mode-disable-trap) 是一個 WARL 的欄位，由 Ssdbltrp 擴充指令集引入，用來解決 S-mode 以下 double trap 的問題
 

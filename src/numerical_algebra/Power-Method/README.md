@@ -6,9 +6,9 @@ category: numerical-algebra
 order: 10
 ---
 
-# Power Method
+## Power Method
 
-### Example
+#### Example
 
 看一下費波那契數列 $F_n = F_{n-1} + F_{n-2}$，這個數列長 $\{0,1,1,2,3,5,8,13,21,34,\ ...\}$，我們可以透過矩陣來重寫這個數列：
 
@@ -20,7 +20,7 @@ order: 10
 
 在這個例子裏面，我們觀察到 eigenvector、eigenvalue 跟長期的外顯行為有關
 
-### Example
+#### Example
 
 看第二個例子，假設這邊有四個網頁，然後我們常像這樣去瀏覽她：
 
@@ -38,7 +38,7 @@ order: 10
 
 </center><br>
 
-### Thm dominant eigenvalue
+#### Thm dominant eigenvalue
 
 <center>
 
@@ -46,7 +46,7 @@ order: 10
 
 </center><br>
 
-### Prop Power Method
+#### Prop Power Method
 
 假設 $A \in \mathbb{R}^{n \times n}$ 有 dominant eigenvalue。 給定 initial guess $\vec x$ 且製造一個數列長這樣：
 
@@ -58,7 +58,7 @@ order: 10
 
 我們希望這個數列能很好的幫助我們去逼近 dominant eigenvalue
 
-### Example 
+#### Example 
 
 <center>
 
@@ -74,7 +74,7 @@ order: 10
 
 </center><br>
 
-### Thm dominant eigenvalue
+#### Thm dominant eigenvalue
 
 <center>
 

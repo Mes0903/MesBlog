@@ -5,7 +5,7 @@ tag: Linux
 category: Linux
 ---
 
-# 前言
+## 前言
 
 這是 2023 NCU Linux Project 1 的 Demo，Demo 完後又花了一小段時間把報告補的更完整了一點
 
@@ -23,7 +23,7 @@ Source Version: 6.6
 
 但因為是用 QEMU 跑，照理說應該不太會有環境的問題
 
-# Build Linux Kernel
+## Build Linux Kernel
 
 首先要先把 kernel Build 起來，這邊有錄一個 Demo 的影片：[Linux HW1 Demo](https://www.youtube.com/watch?v=6j7QreGqAmY)
 
@@ -32,11 +32,11 @@ Source Version: 6.6
 先下載 kernel 的 source code：
 
 ```bash
-# download the kernel code
+## download the kernel code
 wget https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.6.tar.xz
 tar -xvf linux-6.6.tar.xz
 cd linux-6.6
-# Install required dependencies
+## Install required dependencies
 sudo apt update && sudo apt install make gcc libncurses-dev flex bison
 make allnoconfig
 ```
@@ -44,7 +44,7 @@ make allnoconfig
 接著將 config 設定好
 
 ```bash
-# Initialize kernel config
+## Initialize kernel config
 make menuconfig
 64-bit kernel -> Enable
 Executable file formats -> Enable all
@@ -82,12 +82,12 @@ Provide system-wide ring of blacklisted keys -> unselect
 然後開始編譯 kernel 
 
 ```bash
-# Install required dependencies
+## Install required dependencies
 sudo apt install libssl-dev libelf-dev
 make -j <num_cpu>
 ```
 
-# Build Root FS
+## Build Root FS
 
 由於 kernel 只寫好的 filesystem 的運作邏輯，例如要如何操作 ext4 的 filesystem，filesystem 本體是需要我們自己 mount 進去 kernel 的
 
@@ -110,10 +110,10 @@ cd _install
 mkdir -p lib lib64 proc sys etc etc/init.d
 cat > ./etc/init.d/rcS << EOF
 #!/bin/sh
-# Mount the /proc and /sys filesystems
+## Mount the /proc and /sys filesystems
 mount -t proc none /proc
 mount -t sysfs none /sys
-# Populate /dev
+## Populate /dev
 /sbin/mdev -s
 EOF
 
@@ -127,7 +127,7 @@ find . | cpio -o --format=newc | gzip > ../../linux-6.6/rootfs.img.gz
 
 </center><br>
 
-## Run Kernel
+### Run Kernel
 
 可以先簡單測一下 kernel 能不跑得起來
 
@@ -138,9 +138,9 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 沒問題的話我們就開始新增 system call 了
 
-# Add System Call
+## Add System Call
 
-## 修改 `syscall_64.tbl`
+### 修改 `syscall_64.tbl`
 
 首先我們要新增自己的 system call，打開 `arch/x86/entry/syscalls/syscall_64.tbl`
 
@@ -176,7 +176,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 </center><br>
 
-## 實作自己的 system call
+### 實作自己的 system call
 
 接下來要新增對應的 system call 實作，我們這裡要實作的是回傳 physical address 的 system call，所以先講一下要怎麼做到這件事
 
@@ -198,7 +198,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 在 Linux 中的邏輯地址對應於線性地址，也就是說 Intel 為了相容過往架構，把硬體設計搞得很複雜，Linux 核心的實作則予以簡化，並且在支援其他處理器架構時，儘量保持該原則
 
-### page in linux
+#### page in linux
 
 page 在 v6.6.5 linux 中定義在 [mm_type.h](https://elixir.bootlin.com/linux/v6.6.5/source/include/linux/mm_types.h#L74) 的第 74 行：
 
@@ -363,7 +363,7 @@ struct 的詳細內容可以看看這篇：[linux内核那些事之struct page](
 
 或是查一下 struct page 應該就蠻多不錯的文章可以看了
 
-### page table in linux
+#### page table in linux
 
 一般來說，x86 的架構使用 2-level 的 page table(10-10-12)，而 x86-64 的架構則使用 4-level(9-9-9-9-12) 或 5-level(`pgd_t` 和 `pud_t` 間多了一層 `p4d_t`) 的 page table，但也有 3-level 的，這可以透過 config 內的 `CONFIG_PGTABLE_LEVELS` 設定，基本上是 base on 處理器架構在設定的
 
@@ -480,7 +480,7 @@ static inline pud_t *pud_offset(p4d_t *p4d, unsigned long address)
 
 也就是 `pgd == p4d == pud`，其他的也是同理
 
-### 開始實作 system call
+#### 開始實作 system call
 
 打開 `include/linux/syscalls.h`
 
@@ -598,7 +598,7 @@ obj-y     = fork.o exec_domain.o panic.o \
 	    project1.o
 ```
 
-# Build Test Binary
+## Build Test Binary
 
 接下來要寫一個 user program 來使用這個 system call，在 kernel 資料夾的外面新增一個檔案叫 `project1.c`
 
@@ -739,7 +739,7 @@ cp ../../project1 .
 find . | cpio -o --format=newc | gzip > ../../linux-6.6/rootfs.img.gz
 ```
 
-# Run User Program
+## Run User Program
 
 到 `linux-6.6` 下再執行一次 qemu：
 
@@ -770,7 +770,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 </center><br>
 
-## 輸出：
+### 輸出：
 
 <details> <summary><span class = "yellow">輸出</span></summary>
 
@@ -953,7 +953,7 @@ hackmd 的排版讓表格不太好看，所以這邊截一下圖：
 字很醜不好意思
 
 
-# References
+## References
 
 + [Linux kernel on QEMU](https://blog.austint.in/2022/01/16/run-and-debug-linux-kernel-in-qemu-vm.html)
 + [Minimal kernel on QEMU](https://www.subrat.info/build-kernel-and-userspace/)

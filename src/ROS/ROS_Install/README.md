@@ -5,17 +5,17 @@ tag: ROS1
 category: ROS1
 ---
 
-# ROS1 Install (noetic)
+## ROS1 Install (noetic)
 
 當初老師請我在大教室的電腦上面灌 ROS，因為我當初沒有使用 Ansible 之類的軟體，所以就寫了個 script，每台開起來 clone 下來跑，這是當初的紀錄，也許可以幫到某位有緣人(?
 
-# github
+## github
 
 ```bash
 git clone https://github.com/NcuMathRoboticsLab/MRLRosInstall.git
 ```
 
-# 手動操作
+## 手動操作
 
 > 沒有 vim 的話看你要裝還是用 nano
 
@@ -78,16 +78,16 @@ chmod +x install.sh
 
 過程中會有需要輸入 `Y` 與 enter 的地方
 
-# 測試
+## 測試
 
-## Turtlebot simulator
+### Turtlebot simulator
 
 ```bash
 export TURTLEBOT3_MODEL=waffle
 roslaunch turtlebot3_gazebo turtlebot3_world.launch
 ```
 
-## SLAM
+### SLAM
 
 ```bash
 roslaunch turtlebot3_gazebo turtlebot3_world.launch
@@ -96,7 +96,7 @@ roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 rosrun map_server map_saver -f ~/map
 ```
 
-## Navigation
+### Navigation
 
 > 上面那個要先做完這個才能跑
 

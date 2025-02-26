@@ -5,9 +5,9 @@ tag: computer-network
 category: computer-network
 ---
 
-# GSM & UMTS & IGP
+## GSM & UMTS & IGP
 
-## 前言
+### 前言
 
 UMTS 是所謂的 3G 行動網路，它的前身為 GSM 與 GPRS，GSM 為 2G 行動網路，而 GPRS 為 2.5G 行動網路； GSM/GPRS 奠定了現今行動網路的架構基礎，後日 3G、4G 及 5G 的架構中我們都能發現其與 GSM/GPRS 的架構有很多相似之處，因此這裡就先將 GSM 的架構淺談一下
 
@@ -25,11 +25,11 @@ UMTS 是所謂的 3G 行動網路，它的前身為 GSM 與 GPRS，GSM 為 2G �
 
 GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)，另一個是 BSS (Base Station Subsystem)。 NSS 主要負責網路的控制，在 UMTS 中對應到核心網路(Core Network)，而 BSS 則是負責無線訊號的傳輸，在 UMTS 中對應到 RAN (Radio Access Network)
 
-## BSS
+### BSS
 
 在行動網路中，我們會將地圖以蜂窩狀來劃分為區域，因此行動網路又稱為蜂窩式網路。 每個蜂巢都有一個基地台系統，在 GSM 架構中我們將這個系統稱為 BSS (Base Station Subsystem)，而 BSS 又以 BTS (Base Transceiver Station) 和 BSC (Base Station Controller) 兩個部分組成
 
-### BTS
+#### BTS
 
 基地台的內部通常會有 Transceiver 負責進行訊號的收發，除此之外還會需要諸如功率放大器、雙工器、合錄器和天線等設備，這些設備在 GSM 中統稱為 BTS (Base Transceiver Station)，BTS 是基地台系統的核心部分，負責將手機的訊號轉換為無線訊號，並將無線訊號轉換為手機的訊號
 
@@ -42,7 +42,7 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 </center>
 
-### BSC
+#### BSC
 
 由於 BTS 這樣的設備眾多，我們直接將它的訊號接到數據中心的話難免會有些雜亂，因此我們還需要一個控制器來控制基地台，相當於將 BTS 進行分組，這個控制器稱為 BSC (Base Station Controller)
 
@@ -50,9 +50,9 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 > BSS = BTS + BSC
 
-## NSS
+### NSS
 
-### MSC
+#### MSC
 
 然而只有 BSS 是不夠的，我們肯定還會需要路由器和交換機之類的設備，不然上不了網，因此就需要一個地方來解析 BSS 傳來的訊息，在 GSM 架構下稱這個地方為 MSC (Mobile Switching Center)，可以說是 GSM 架構的心臟
 
@@ -77,7 +77,7 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 而負責擔任 Gateway 的 MSC 被稱為 GMSC，負責處理來自其他 MSC 的資料，並且將資料轉發到其他的 MSC 或是大眾網路(PSTN) 中
 
-### HLR & VLR
+#### HLR & VLR
 
 由於 MSC 還需要處理手機的用戶的資料，如用戶的方案、申請的位置等等，因此會需要有一個資料庫來存放這些資料，這個資料庫在階級上還有分大的和小的，分別為 HLR (Home Location Register) 與 VLR (Visitor Location Register)，都是拿來存放本地用戶的資料的
 
@@ -97,11 +97,11 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 另外會有 EIR 與 AUC 來輔助做用戶身份認證，因為與整體架構比較沒關所以就不特別提了，在這裡我沒有畫出來，但在下面的 GPRS 架構圖中我有畫出來
 
-## PSTN
+### PSTN
 
 雖然這樣上網是解決了，但是手機還需要能夠打電話，因此在 GSM 中，我們會將 MSR 與 PSTN (Public Switched Telephone Network) 連接起來，PSTN 是電話專用的電路交換網路，這樣就可以讓手機打電話了
 
-## GSM 架構圖
+### GSM 架構圖
 
 所以整個 GSM 的網路看起來會長這樣：
 
@@ -111,7 +111,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 </center>
 
-### 同業者網內互打
+#### 同業者網內互打
 
 如果今天是 User B 要打電話給 User E，由於他們處於同一個 PLMN 內，也就是同一個業者的管轄範圍內，所以就不用經過 GMSC，直接由 MSC 轉接就可以了：
 
@@ -121,7 +121,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 </center>
 
-### 不同業者間的通話
+#### 不同業者間的通話
 
 如果今天是 User A 要打電話給 User E，由於他們處於不同的 PLMN 內，也就是不同業者的管轄範圍內，所以就需要經過 GMSC，由 GMSC 轉接到 User E 所在的 MSC：
 
@@ -131,7 +131,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 </center>
 
-### 手機打給家用電話
+#### 手機打給家用電話
 
 如果今天是 User A 要打電話給家用電話(User F)，由於家用電話是接在 PSTN 上的，所以就需要經過 GMSC，由 GMSC 轉接到 PSTN：
 
@@ -141,7 +141,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 </center>
 
-# GPRS
+## GPRS
 
 GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸出了一個可以處理封包的架構，主要是在核心網路的部分新增了 SGSN (Serving GPRS Support Node) 和 GGSN (Gateway GPRS Support Node) 這兩個節點，好讓網路封包可以透過 GPRS 上網
 
@@ -153,9 +153,9 @@ GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸�
 
 </center>
 
-# UMTS
+## UMTS
 
-## 前言
+### 前言
 
 在 UMTS 中，BTS 被改稱為了 Node B，BSC 被改稱為 RNC (Radio Network Controller)
 
@@ -165,21 +165,19 @@ GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸�
 
 </center>
 
-# IGP
+## IGP Background
 
 後面主要是在介紹 IGP (Interior Gateway Protocol) 會先介紹一些背景知識，再來講解兩者的差異與相關的協定
 
 每個協定的說明會給一個例子，但要注意例子中的封包內容我有做過簡化，只是幫助理解用的，實際的封包內容還要去查協定的規範
 
-# Background
-
-## Autonomous System (AS)
+### Autonomous System (AS)
 
 自治系統（Autonomous System，AS）是互聯網中的一個獨立的路由區域，通常由一個或多個路由器和連接到這些路由器的網絡組成。AS 通常由一個組織管理，例如一家企業、一個網絡服務提供商或一個大學。 在公共互聯網上，每個 AS 都有一個唯一的識別號稱為 AS 號（ASN），用於區分不同的AS
 
 AS 被劃分為兩種類型：內部自治系統（Internal AS）和外部自治系統（External AS），分別用於內部路由和外部路由
 
-## IGP & EGP
+### IGP & EGP
 
 - IGP (Interior Gateway Protocol)  
   IGP 是內部網絡路由協定，用於在單一自治系統（AS）內部交換路由信息。IGP 通常用於在單一組織內部的路由選擇，例如在企業內部網絡中。IGP 通常有較短的路由更新時間和較小的路由表，因為它們只需要處理單一 AS 內部的路由
@@ -187,7 +185,7 @@ AS 被劃分為兩種類型：內部自治系統（Internal AS）和外部自治
 - EGP (Exterior Gateway Protocol) 
   EGP 是用於不同自治系統之間交換路由信息的協定。EGP 通常用於在不同組織之間的路由選擇，例如在不同網絡服務提供商之間。EGP 通常有較長的路由更新時間和較大的路由表，因為它們需要處理不同 AS 之間的路由
 
-## Distance Vector(DV) & Link State(LS)
+### Distance Vector(DV) & Link State(LS)
 
 路由協定可以分為兩大類：Distance Vector 和 Link State：
 
@@ -197,7 +195,7 @@ AS 被劃分為兩種類型：內部自治系統（Internal AS）和外部自治
 - 鏈路狀態（LS）算法  
   每台路由器學習整個網絡的拓撲結構，並獨立計算到達網絡中每個節點的最短路徑，通常使用 Dijkstra 算法。LS 算法能提供更快的收斂和更好的路由迴路預防，但它需要更多的 CPU 和記憶體資源
 
-## Classful & Classless
+### Classful & Classless
 
 在網絡早期，為了簡化 IP 地址的分配和路由選擇，引入了類別化網絡（Classful Networking）概念。 這種方法將 IP 地址空間劃分為五類（A、B、C、D 和 E），每類有固定的網絡和主機數量。A 類地址支持大量主機（16,777,214 個），而 C 類地址則適用於少量主機（254 個）
 
@@ -211,7 +209,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
 一般來說，Classless Routing 更加靈活和高效，因為它可以更好地支持 VLSM 和 CIDR，並減少地址浪費，因此現在通常都會傾向使用 Classless 的協定
 
-## Hop Count & Metric
+### Hop Count & Metric
 
 在路由協定中，路由器選擇路由的標準通常是基於「距離」或「度量」。距離是一個抽象的概念，通常用來表示到達目的地的成本，例如跳數、延遲、頻寬等。度量則是具體的數值，用來表示路由的成本
 
@@ -219,13 +217,13 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
 在後面的文章中，我們會看到不同的路由協定使用不同的度量標準，例如 RIP 使用跳數作為度量，OSPF 使用頻寬和延遲作為度量
 
-# IGP
+## IGP
 
-## RIP (Routing Information Protocol)
+### RIP (Routing Information Protocol)
 
 最早的 RIP 版本（即 RIPv1）是在 1988 年通過 RFC 1058 標準化的，但它的概念和實現可以追溯到更早的時候，大約是在互聯網創始時期的 1980 年代初期。 RIP 的設計是為了小型網絡，並且它很快就因為簡單和易於實現而變得流行
 
-### RIPv1
+#### RIPv1
 
 - 歷史簡介  
   RIPv1，全稱為路由信息協議第一版，於 1988 年定義於 [RFC 1058](https://datatracker.ietf.org/doc/html/rfc2453)。作為一種內部網關協議（IGP），它主要用於小型到中型網絡中。RIPv1 的設計目的是為了簡單和自動的路由選擇
@@ -288,7 +286,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
   - 計數到無窮大  
     當 R2 和 R3 最終意識到到達網段 D 的路徑不再可用時，它們開始通過增加跳數的方式來表示網段 D 的不可達性。在 RIPv1中，16 跳被認為是無窮大，表示網絡不可達。問題是，在所有路由器達成一致之前，這個信息需要時間在網絡中傳播，期間數據包可能仍在網絡中無效傳遞
 
-### RIPv2
+#### RIPv2
 
 - 歷史簡介  
   RIPv2（路由信息協議第二版）於 1998 年定義於 [RFC 2453](https://datatracker.ietf.org/doc/html/rfc1058)，是 RIPv1 的改進版本。 它在 RIPv1 的基礎上增加了對 CIDR（無類別域間路由）的支持、路由認證功能和多播更新，解決了 RIPv1 中的一些問題，如缺乏路由認證和無法有效利用IP地址空間
@@ -317,7 +315,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
   
   RIPv2的更新是通過多播地址 224.0.0.9 發送的，這減少了不必要的網絡流量
 
-## IGRP (Interior Gateway Routing Protocol)
+### IGRP (Interior Gateway Routing Protocol)
 
 - 歷史簡介  
   內部網關路由協議（IGRP）是由思科系統在 1980 年代開發的一種距離向量路由協議。它被設計來克服 RIPv1 協議在大型網絡中的不足，如路由迴路和網絡流量問題
@@ -401,7 +399,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
   當 R2 收到來自 R1 的這個更新時，它會根據 IGRP 的複合度量標準（包括頻寬和延遲）來計算到達 10.0.0.0/24 網段的最佳路徑。 隨後，R2 會更新自己的路由表，以反映通過 R1 到達 10.0.0.0/24 網段的最佳路徑
 
-## EIGRP (Enhanced Interior Gateway Routing Protocol)
+### EIGRP (Enhanced Interior Gateway Routing Protocol)
 
 - 歷史簡介  
   增強內部網關路由協議（Enhanced Interior Gateway Routing Protocol，EIGRP）於 1992 年由思科系統開發，作為 IGRP 的後續版本，結合了距離向量協議和鏈路狀態協議的特點，擁有快速收斂、低網絡開銷和路由迴路防護等優點
@@ -538,7 +536,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
   - 負載：1（最低負載）
   - MTU：1500 字節
 
-## OSPF (Open Shortest Path First)
+### OSPF (Open Shortest Path First)
 
 - 歷史簡介  
   開放最短路徑優先（Open Shortest Path First，OSPF）是一種鏈路狀態路由協議，於 1989 年推出。OSPF 被設計來替代 RIP協議，適用於更大型和更複雜的網絡環境
@@ -570,7 +568,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
   當其他路由器收到這個 LSA 時，它們將更新自己的鏈路狀態數據庫（LSDB）並使用 Dijkstra 算法計算到達所有已知網絡的最短路徑
 
-## IS-IS (Intermediate System to Intermediate System)
+### IS-IS (Intermediate System to Intermediate System)
 
 - 歷史簡介  
   中間系統到中間系統（Intermediate System to Intermediate System，IS-IS）協議最初是為 OSI（開放系統互聯）參考模型而開發，後來被擴展以支持 IP 網絡。IS-IS 於 1980 年代後期被引入
