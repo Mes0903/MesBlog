@@ -404,12 +404,12 @@ HSM 全名為 Hart State Management，定義了其一系列的 hart 狀態，並
 
 在 Commit `cfafe26` ([link](https://github.com/torvalds/linux/commit/cfafe260137418d0265d0df3bb18dc494af2b43e)) 中引入了第二種方法：
 
-> RISC-V: Add supported for ordered booting method using HSM
+> RISC-V: Add supported for ordered booting method using HSM<br><br>
 >
-> Currently, all harts have to jump Linux in RISC-V. This complicates the multi-stage boot process as every transient stage also has to ensure all harts enter to that stage and jump to Linux afterwards. It also obstructs a clean Kexec implementation.
+> Currently, all harts have to jump Linux in RISC-V. This complicates the multi-stage boot process as every transient stage also has to ensure all harts enter to that stage and jump to Linux afterwards. It also obstructs a clean Kexec implementation.<br><br>
 >
-> SBI HSM extension provides alternate solutions where only a single hart need to boot and enter Linux. The booting hart can bring up secondary harts one by one afterwards.
-> 
+> SBI HSM extension provides alternate solutions where only a single hart need to boot and enter Linux. The booting hart can bring up secondary harts one by one afterwards.<br><br>
+>
 > Add SBI HSM based cpu_ops that implements an ordered booting method in RISC-V. This change is also backward compatible with older firmware not implementing HSM extension. If a latest kernel is used with older firmware, it will continue to use the default spinning booting method.
 
 這裡提到以前每個 hart 在啟動的過程中都必須直接引導到 Linux，這讓 multi-stage 的啟動變得很麻煩，因為每個中間的階段都必須要管理所有的 hart，確保他們正確的轉換到 Linux 中
