@@ -1,60 +1,149 @@
 import { sidebar } from "vuepress-theme-hope";
 
 export default sidebar([
-  // "/",
-  // {
-  //   text: "雜項",
-  //   children: [
-  //     {
-  //       text: "網路",
-  //       prefix: "/computer_network/",
-  //       children: "structure",
-  //     },
-  //     {
-  //       text: "memory",
-  //       prefix: "/memory/",
-  //       children: "structure",
-  //     },
-  //     {
-  //       text: "OS",
-  //       prefix: "/OS/",
-  //       children: "structure",
-  //     },
-  //     {
-  //       text: "ROS",
-  //       prefix: "/ROS/",
-  //       children: "structure",
-  //     },
-  //     {
-  //       text: "security",
-  //       prefix: "/security/",
-  //       children: "structure",
-  //     }
-  //   ],
-  // },
-  // {
-  //   text: "Cpp-Miner",
-  //   prefix: "/Cpp-Miner/",
-  //   children: "structure",
-  // },
-  // {
-  //   text: "risc-v",
-  //   prefix: "/risc-v/",
-  //   children: "structure",
-  // },
-  // {
-  //   text: "Linux",
-  //   prefix: "/Linux/",
-  //   children: "structure",
-  // },
-  // {
-  //   text: "數值線代",
-  //   prefix: "/numerical_linear_algebra/",
-  //   children: "structure",
-  // },
-  // {
-  //   text: "雜記",
-  //   prefix: "/essay/",
-  //   children: "structure",
-  // },
+  "/",
+  {
+    text: "雜項",
+    collapsible: true,
+    children: [
+      {
+        text: "網路",
+        collapsible: true,
+        prefix: "/computer_network/",
+        children: [
+          "GSM_UMTS_IGP/",
+        ],
+      },
+      {
+        text: "memory",
+        collapsible: true,
+        prefix: "/memory/",
+        children: [
+          "sw_reram/",
+        ],
+      },
+      {
+        text: "OS",
+        collapsible: true,
+        prefix: "/OS/",
+        children: [
+          "",
+          "Introduction/",
+          "OS-Structured/",
+          "Process-Concept/",
+        ],
+      },
+      {
+        text: "ROS",
+        collapsible: true,
+        prefix: "/ROS/",
+        children: [
+          "ROS_Install/",
+          "ROS_Tutorial_Introduction/",
+        ],
+      },
+      {
+        text: "security",
+        collapsible: true,
+        prefix: "/security/",
+        children: [
+          "PE_file_format/",
+        ],
+      }
+    ],
+  },
+  {
+    text: "Cpp-Miner",
+    collapsible: true,
+    children: [
+      {
+        text: "Miner 新手教學",
+        collapsible: true,
+        prefix: "/Cpp-Miner/Miner_Tutorial/",
+        children: [
+          "Computer_Introduction/",
+          "Environment_Building/",
+          "Object_Expression_Statement/",
+          "Array_Pointer/",
+          "Function_Memory/",
+          "Class/",
+          "OO/",
+        ]
+      },
+      {
+        text: "Miner 本篇",
+        collapsible: true,
+        prefix: "/Cpp-Miner/Miner_main/",
+        children: [
+          "",
+          "Value_Categories/",
+          "malloc_new_POD/",
+          "Std_Function/",
+          "Structured_Binding/",
+          "Concept_SFINAE_DetectionIdiom/",
+          "Dependent_Name/",
+        ]
+      },
+      {
+        text: "Miner 黑魔法",
+        collapsible: true,
+        prefix: "/Cpp-Miner/Miner_BlackMagic/",
+        children: [
+          "",
+          "NoConst/",
+          "Explicit_Detect_Copy/",
+          "SSO/",
+          "Indirect_through_null_pointer/",
+        ]
+      }
+    ],
+  },
+  {
+    text: "risc-v",
+    collapsible: true,
+    prefix: "/risc-v/",
+    children: [
+      "OSDI/",
+      "risc-v-note/",
+      "ACLINT/",
+      "PLIC/",
+      "Supervisor-Level-ISA/",
+      "rv32emu-Introduction/",
+    ],
+  },
+  {
+    text: "Linux",
+    collapsible: true,
+    prefix: "/Linux/",
+    children: [
+      "The_mind_behind_Linux/",
+      "physical_address_syscall/",
+    ],
+  },
+  {
+    text: "數值線代",
+    collapsible: true,
+    prefix: "/numerical_algebra/",
+    children: [
+      "Norm/",
+      "Gauss-Seidel/",
+      "Relaxation/",
+      "Error-Bound/",
+      "Gradient-method/",
+      "Conjugate-Gradient/",
+      "Least-Squares/",
+      "Polynomials-of-Least-square/",
+      "Linear-Algebra-and-Eigenvalues/",
+      "Power-Method/",
+    ],
+  },
+  {
+    text: "雜記",
+    collapsible: true,
+    prefix: "/essay/",
+    children: [
+      "AboutMovingForward/",
+      "RasterI/",
+    ],
+  },
 ]);
