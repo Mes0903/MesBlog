@@ -6,7 +6,7 @@ category: numerical-algebra
 order: 10
 ---
 
-## Power Method
+# Power Method
 
 #### Example
 

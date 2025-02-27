@@ -6,7 +6,7 @@ tag: risc-v
 category: risc-v
 ---
 
-## rv32emu Introduction
+# rv32emu Introduction
 
 本篇撰寫於 12/12，rv32emu 以 Commit `451f8c0` 為主，semu 以 PR `#66` 為主，由於於 semu 上實作的特性之後會移植到 rv32emu 上，因此本文的範例 code 先以 semu 為例，少了 JIT 的部分較易理解
 

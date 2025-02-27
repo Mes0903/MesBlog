@@ -5,7 +5,7 @@ tag: memory
 category: memory
 ---
 
-## ReRAM 與 Smith-Waterman Algorithm 介紹
+# ReRAM 與 Smith-Waterman Algorithm 介紹
 
 這學期(大四上) 修了一門課叫新興記憶儲存系統元件設計，主要在講一些現代 Non-volatile memory，如 FRAM 和 ReRAM，還有一些較新的 Disk 的設計，如 Open-channel SSD 和 ZNS 等等的
 

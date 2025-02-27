@@ -6,7 +6,7 @@ category: numerical-algebra
 order: 5
 ---
 
-## Gradient Method
+# Gradient Method
 
 #### Thm 7.31
 

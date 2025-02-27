@@ -5,9 +5,9 @@ tag: computer-network
 category: computer-network
 ---
 
-## GSM & UMTS & IGP
+# GSM & UMTS & IGP
 
-### 前言
+## 前言
 
 UMTS 是所謂的 3G 行動網路，它的前身為 GSM 與 GPRS，GSM 為 2G 行動網路，而 GPRS 為 2.5G 行動網路； GSM/GPRS 奠定了現今行動網路的架構基礎，後日 3G、4G 及 5G 的架構中我們都能發現其與 GSM/GPRS 的架構有很多相似之處，因此這裡就先將 GSM 的架構淺談一下
 

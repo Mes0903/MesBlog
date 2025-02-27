@@ -5,7 +5,7 @@ tag: risc-v
 category: risc-v
 ---
 
-## 12. Supervisor-Level ISA, Version 1.13
+# 12. Supervisor-Level ISA, Version 1.13
 
 ### 12.1.1. Supervisor Status (`sstatus`) Register
 

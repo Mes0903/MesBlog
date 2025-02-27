@@ -6,7 +6,7 @@ category: OS
 order: 2
 ---
 
-## Ch2 OS Structure
+# Ch2 OS Structure
 
 ### OS Services
 

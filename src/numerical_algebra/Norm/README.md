@@ -6,7 +6,7 @@ category: numerical-algebra
 order: 1
 ---
 
-## 7-1：Norm
+# 7-1：Norm
 
 ### 向量 Norm
 

@@ -6,7 +6,7 @@ category: numerical-algebra
 order: 2
 ---
 
-## Gauss-Seidel Metheod
+# Gauss-Seidel Metheod
 
 ### Gauss-Seidel Metheod
 

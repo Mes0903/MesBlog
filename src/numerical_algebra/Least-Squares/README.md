@@ -6,7 +6,7 @@ category: numerical-algebra
 order: 7
 ---
 
-## Least Squares
+# Least Squares
 
 ### 最小絕對偏差法 Least absolute deviation
 

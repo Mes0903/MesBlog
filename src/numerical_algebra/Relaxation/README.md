@@ -6,7 +6,7 @@ category: numerical-algebra
 order: 3
 ---
 
-## Relaxation Method
+# Relaxation Method
 
 ### Relaxation method
 

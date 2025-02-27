@@ -6,7 +6,7 @@ tag: risc-v
 category: risc-v
 ---
 
-## 常用的 RISC-V 筆記
+# 常用的 RISC-V 筆記
 
 ### 基本架構
 

@@ -6,7 +6,7 @@ category: numerical-algebra
 order: 6
 ---
 
-## Conjugate Gradient Method
+# Conjugate Gradient Method
 
 #### Conjugate Gradient Method
 

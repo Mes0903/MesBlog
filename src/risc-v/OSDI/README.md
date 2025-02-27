@@ -10,7 +10,7 @@ category:
 - OS
 ---
 
-## RVOS OSDI 筆記
+# RVOS OSDI 筆記
 
 這是我在 bilibili 上面看一門叫做「[循序渐进，学习开发一个RISC-V上的操作系统 - 汪辰 - 2021春](https://www.bilibili.com/video/BV1Q5411w7z5/?spm_id_from=333.999.0.0&vd_source=493154d46ef9c42825a755d6b7857b3c)」的課的筆記
 

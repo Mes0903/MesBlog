@@ -6,7 +6,7 @@ category: numerical-algebra
 order: 4
 ---
 
-## Error Bounds
+# Error Bounds
 
 電腦裡面要表達一個數字，像是 $\pi$，是無法沒有誤差表達出來的。在電腦裡面我們能表達的數大概在 $10^{-300}$ ~ $10^{300}$ 之間
 

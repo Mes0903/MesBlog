@@ -6,7 +6,7 @@ category: numerical-algebra
 order: 9
 ---
 
-## Linear Algebra and Eigenvalues
+# Linear Algebra and Eigenvalues
 
 ### Gershgorin circle
 

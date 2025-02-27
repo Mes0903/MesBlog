@@ -6,7 +6,7 @@ tag: risc-v
 category: risc-v
 ---
 
-## RISC-V PLIC
+# RISC-V PLIC
 
 - spec：https://github.com/riscv/riscv-plic-spec/blob/master/riscv-plic.adoc
 

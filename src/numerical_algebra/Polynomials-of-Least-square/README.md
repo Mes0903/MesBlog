@@ -6,7 +6,7 @@ category: numerical-algebra
 order: 8
 ---
 
-## 最小平方逼近多項式(Polynomials of Least square)
+# 最小平方逼近多項式(Polynomials of Least square)
 
 ### 目的
 

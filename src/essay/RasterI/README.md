@@ -5,6 +5,8 @@ tag: essay
 category: essay
 ---
 
+# TBDR 簡介
+
 Alan Jian 大神實作了一個基於 TBDR 架構，針對 real-time rasterization 的硬體算繪器，簡單來說 Raster I 是一個能在 Arty A7 等 FPGA 平台上運作的簡易 GPU，目前能順暢地畫出 3000 個平面的 Stanford Lucy 模型，且能透過 Phong shading model 計算光影並對頂點資料進行插值。   
 ⁡
 最近大神正在申請大學，因此很需要星星，如果各位願意順手幫忙按顆星星，分享出去就太感謝了，有興趣的也歡迎點進去看看大神的 README，XD    

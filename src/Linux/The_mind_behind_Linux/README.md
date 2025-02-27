@@ -5,7 +5,7 @@ tag: Linux
 category: Linux
 ---
 
-## The mind behind Linux 筆記 & 心得
+# The mind behind Linux 筆記 & 心得
 
 ### 前言
 
