@@ -144,6 +144,7 @@ export default sidebar([
     children: [
       "AboutMovingForward/",
       "RasterI/",
+      "ShionGraduate/"
     ],
   },
 ]);
