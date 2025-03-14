@@ -109,15 +109,13 @@ z_{\hat g \times \hat t} & z_t & z_{-g} & 0\\
 0\\
 -1\\
 0\\
-\end{bmatrix}
-=
+\end{bmatrix}=
 \begin{bmatrix}
 -x_{-g}\\
 -y_{-g}\\
 -z_{-g}\\
 0\\
-\end{bmatrix}
-=
+\end{bmatrix}=
 \begin{bmatrix}
 x_{g}\\
 y_{g}\\
@@ -175,7 +173,8 @@ $$
 
 <center>
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/projection2.png?raw=true">  
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/projection2.png?raw=true">
+ 
 (img src: [From perspective picture to orthographic picture](https://stackoverflow.com/questions/36573283/from-perspective-picture-to-orthographic-picture))
 
 </center>
@@ -187,7 +186,6 @@ $$
 而對於正交投影，其實就是假設相機離的無限遠。 假設我們從透視投影那個例子中，將相機拿得越來越遠，此時近平面與遠平面看起來就會越來越接近，當我們把相機拿到無限遠時，就會發現近平面與遠平面變的一樣大了。 因此在投影出來的結果就會看到，無論物體有多遠，投影到近平面上是不會有近大遠小的效果的
 
 ### 正交投影
-
 
 那我們就從正交投影開始講，其非常好理解，只要不管遠近，統一將物體擠到某個平面上去就可以了，那這要怎麼做呢?
 
@@ -271,6 +269,7 @@ $$
 <center>
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/orthographic4.png?raw=true">  
+
 (n 為近平面距離相機的距離，z 為遠平面距離相機的距離)
 
 </center>
@@ -305,8 +304,7 @@ nx/z\\
 ny/z\\
 \text{unknown}\\
 1\\
-\end{bmatrix}
-==
+\end{bmatrix}==
 \begin{bmatrix}
 nx\\
 ny\\
@@ -327,7 +325,7 @@ n & 0 & 0 & 0\\
 0 & n & 0 & 0\\
 ? & ? & ? & ?\\
 0 & 0 & 1 & 0
-\end{bmatrix}\ 
+\end{bmatrix}
 $$
 
 現在回頭來處理 $z$ 的問題，把不知道的那個 row 填上，根據前面相似三角形的性質，我們只能知道 $x$ 與 $y$ 如何變化，要處理 $z$，需要用到更前面提到的性質：
@@ -345,8 +343,7 @@ x\\
 y\\
 z\\
 1\\
-\end{bmatrix}
-=
+\end{bmatrix}=
 \begin{bmatrix}
 nx\\
 ny\\
@@ -364,14 +361,13 @@ x'\\
 y'\\
 n\\
 1\\
-\end{bmatrix}
-=
+\end{bmatrix}=
 \begin{bmatrix}
 nx'\\
 ny'\\
 n^2\\
 n\\
-\end{bmatrix}\
+\end{bmatrix}
 $$
 
 這個 $n^2$ 顯然與 $x$ 和 $y$ 都沒有關係，所以我們可以第三個 row 的左邊兩個元素為 $0$：
