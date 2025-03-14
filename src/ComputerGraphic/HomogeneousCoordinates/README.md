@@ -207,6 +207,24 @@ $$
     \end{bmatrix}
     $$
 
+其中有一點很重要的是 $R(\alpha)$ 是正交矩陣：
+
+$$
+R_{-\theta} =
+\begin{bmatrix}
+cos\theta & sin\theta & 0\\
+-sin\theta & cos\theta & 0\\
+0 & 0 & 1
+\end{bmatrix}
+= R^{T}_{\theta}\\
+$$
+
+By definition：
+
+$$
+R_{-\theta} = R^{-1}_{\theta}
+$$
+
 ## Inverse Transform(逆轉換)
 
 如果我們對一個點進行仿射操作後想要讓他回到操作前的樣子，那可以直接將點乘上原先的逆矩陣，舉個例子，將 $(1,1)^T$ 平移到 $(3,4)^T$：
