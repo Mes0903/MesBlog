@@ -566,3 +566,30 @@ if (text)
 ```cpp
 glfwSetClipboardString(NULL, "A string with words in it");
 ```
+
+## Path drop input 拖曳檔案輸入
+
+如果你希望在使用者拖曳檔案或目錄到視窗時收到路徑資訊，可以設定檔案拖曳回調函數（file drop callback）：
+
+```cpp
+glfwSetDropCallback(window, drop_callback);
+```
+
+上例中，當使用者將檔案或資料夾拖曳到 `window` 時，GLFW 會呼叫 `drop_callback`
+
+回調函數會接收到一個 UTF-8 編碼的路徑陣列：
+
+```cpp
+void drop_callback(GLFWwindow* window, int count, const char** paths)
+{
+    int i;
+    for (i = 0; i < count; i++)
+        handle_dropped_file(paths[i]);
+}
+```
+
+路徑陣列（`paths`）及其內的字串只在回調函數執行期間有效，因為這些字串可能是臨時生成的，僅適用於當次事件。 如果你需要在回調函數結束後仍然使用這些路徑，你必須手動建立深拷貝（deep copy）
+
+# 後記
+
+文件中還有 Joystick 和 Gamepad 相關的 API 解釋，但我暫時沒用到所以先不記錄了，未來如果用到了再來繼續填上吧
