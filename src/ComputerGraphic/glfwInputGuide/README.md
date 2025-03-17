@@ -280,3 +280,240 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 ```
 
+## Mouse input
+
+滑鼠輸入有多種形式，包括滑鼠移動、按鈕按下和滾輪滾動。 遊標的外觀也可以改變，可以更改為自訂圖像或系統主題的標準遊標形狀
+
+### Cursor position
+
+如果你希望游標（cursor）在視窗內移動時收到通知，可以設定游標位置回調函數（cursor position callback）：
+
+```cpp
+glfwSetCursorPosCallback(window, cursor_position_callback);
+```
+
+這個回調函數會接收到游標的位置，該位置是相對於視窗內容區域的左上角測量的。 在支援次像素精度（sub-pixel precision）的平台上，游標的位置會以完整的次像素精度傳遞：
+
+```cpp
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {}
+```
+
+> 次像素精度：在某些平台上（如高 DPI 螢幕），游標位置可能會有小數點精度，而不是整數像素
+
+游標的位置也會儲存在每個視窗的內部狀態中，可以透過 `glfwGetCursorPos` 來查詢：
+
+```cpp
+double xpos, ypos;
+glfwGetCursorPos(window, &xpos, &ypos);
+```
+
+### Cursor mode
+
+`GLFW_CURSOR` 輸入模式提供了幾種特殊的游標模式，以應對不同的滑鼠移動需求。 預設情況下，游標模式為 `GLFW_CURSOR_NORMAL`，這表示使用一般的箭頭游標(arrow cursor)，或透過 `glfwSetCursor` 設定的其他游標，並且游標的移動不受限制
+
+如果你想基於滑鼠移動來實作相機的控制或其他需要無限滑鼠移動(unlimited mouse movement) 的輸入方式，可以將游標模式設為 `GLFW_CURSOR_DISABLED`：
+
+```cpp
+glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+```
+
+這會把游標隱藏起來，並將其鎖定在指定的視窗內。 GLFW 會自動處理游標重新置中（re-centering）和偏移量計算，並提供應用程式一個虛擬游標位置（virtual cursor position）。 這個虛擬游標位置可以透過游標位置回調（callback）和輪詢（polling）取得
+
+> unlimmited mouse movement 是像 FPS 遊戲那樣，當游標移動時，它會重新置中並計算偏移量，這樣即使滑鼠移動超過螢幕邊界，也可以持續接收滑鼠的移動資訊的模式<br><br>
+> 另外，不要嘗試使用 GLFW 的其他功能來手動實作這種功能。 這種做法不受官方支援，並且不會像 `GLFW_CURSOR_DISABLED` 那樣穩定運作
+
+如果你只想讓游標在視窗內部隱藏，但仍希望它能夠正常移動，可以將游標模式設為 `GLFW_CURSOR_HIDDEN`，這種模式不會限制游標的移動：
+
+```cpp
+glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+```
+
+要退出這些特殊模式（`GLFW_CURSOR_DISABLED` 或 `GLFW_CURSOR_HIDDEN`），可以將游標模式還原為 `GLFW_CURSOR_NORMAL`：
+
+```cpp
+glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+```
+
+### Raw mouse motion
+
+當游標被禁用時，如果系統支援，可以啟用原始滑鼠移動（raw mouse motion），這種輸入方式不經過縮放（unscaled）和加速（unaccelerated）處理。 原始滑鼠移動模式更接近滑鼠在表面上移動的實際情況，不會受到作業系統施加的滑鼠移動縮放與加速的影響
+
+這種縮放與加速的處理適用於游標控制，而原始滑鼠移動則更適合控制 3D 相機等應用。 因此，只有在游標被禁用時(`GLFW_CURSOR_DISABLED`)，GLFW 才提供原始滑鼠移動
+
+你可以利用 `glfwRawMouseMotionSupported` 來檢查當前系統是否支援原始滑鼠移動，如果支援，可以設定 `GLFW_RAW_MOUSE_MOTION` 來啟用它：
+
+```cpp
+if (glfwRawMouseMotionSupported())
+    glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+```
+
+預設情況下，這個功能是關閉的。 如果系統支援，原始滑鼠移動可以在不同視窗中分別啟用或禁用，也可以在程式運行期間隨時開啟或關閉，但記得這個功能只有在游標被禁用時才能使用
+
+### Cursor objects
+
+GLFW 支援自訂游標（custom cursors）和系統主題游標（system theme cursors），這些游標被封裝為 `GLFWcursor` 物件。 你可以使用 `glfwCreateCursor` 或 `glfwCreateStandardCursor` 來建立游標，並透過 `glfwDestroyCursor` 銷毀游標，或者在 `glfwTerminate` 時，自動銷毀所有剩餘的游標
+
+#### Custom cursor creation
+
+你可以使用 `glfwCreateCursor` 來建立自訂游標，這個函數會回傳一個指向游標物件的指標，如果游標建立失敗，函數會回傳 NULL，因此需要檢查回傳
+
+下面是建立了一個 16×16 的白色方形游標，並將熱點（hot-spot） 設置在左上角的例子：
+
+```cpp
+unsigned char pixels[16 * 16 * 4];
+memset(pixels, 0xff, sizeof(pixels));
+ 
+GLFWimage image;
+image.width = 16;
+image.height = 16;
+image.pixels = pixels;
+ 
+GLFWcursor* cursor = glfwCreateCursor(&image, 0, 0);
+```
+
+其中
+
+- 圖像數據的格式：
+  - 32 位：每個像素佔 4 byte
+  - 小端序：在多 byte 數據中，低位 byte 在前（適用於大多數現代 CPU，如 x86）
+  - 非預乘（non-premultiplied）RGBA：紅（R）、綠（G）、藍（B）、透明度（A）各 8 位，且透明度未與 RGB 值預先相乘（即原始值）
+  - 通道順序：R（紅）第一，然後 G、B、A
+- 像素排列：從左上角開始，按行順序儲存，例如
+  - 第 1 行：像素 (0,0) 到 (15,0)
+  - 第 2 行：像素 (0,1) 到 (15,1)
+  - 依此類推
+
+例如上例中 `pixels` 內的數據順序是 `[R0, G0, B0, A0, R1, G1, B1, A1, ...]`，表示一連串像素
+
+#### Standard cursor creation
+
+可以使用 `glfwCreateStandardCursor` 建立一個系統內建樣式的標準游標，這些游標來自目前系統的游標主題：
+
+```cpp
+GLFWcursor* cursor = glfwCreateStandardCursor(GLFW_HRESIZE_CURSOR);
+```
+
+這些游標物件的行為與 `glfwCreateCursor` 建立的自訂游標完全相同，唯一的區別是游標圖像來自作業系統的游標主題
+
+#### Cursor destruction
+
+當不再需要鼠標時，可以使用 `glfwDestroyCursor` 銷毀它：
+
+```cpp
+glfwDestroyCursor(cursor);
+```
+
+游標的銷毀一定會成功，如果某個視窗中正在使用該鼠標，則該視窗將自動恢復為預設游標。 銷毀游標不會影響游標模式。 當 `glfwTerminate` 被呼叫時，所有尚未銷毀的游標都會自動被清除
+
+#### Cursor Setting
+
+你可以使用 `glfwSetCursor` 為某個視窗設定游標：
+
+```cpp
+glfwSetCursor(window, cursor);
+```
+
+設定完成後，只要游標位於視窗內容區域內，並且游標模式為 `GLFW_CURSOR_NORMAL`，該游標圖像就會持續生效。 同一個游標物件可以被多個視窗使用，你不需要為每個視窗分別建立游標：
+
+```cpp
+GLFWcursor* cursor = glfwCreateStandardCursor(GLFW_CROSSHAIR_CURSOR);
+glfwSetCursor(window1, cursor);
+glfwSetCursor(window2, cursor);
+```
+
+如果要恢復視窗的預設游標，可以將該視窗的游標設為 `NULL`，這會將視窗的游標重置為系統預設游標：
+
+```cpp
+glfwSetCursor(window, NULL);
+```
+
+### Cursor enter/leave events
+
+如果你希望在游標進入或離開視窗內容區域時收到通知，可以設定游標進入/離開回調函數（cursor enter/leave callback）：
+
+```cpp
+glfwSetCursorEnterCallback(window, cursor_enter_callback);
+```
+
+回調函數會收到游標的新狀態（進入或離開）：
+
+```cpp
+void cursor_enter_callback(GLFWwindow* window, int entered)
+{
+    if (entered)
+    {
+        // The cursor entered the content area of the window
+    }
+    else
+    {
+        // The cursor left the content area of the window
+    }
+}
+```
+
+你可以使用 `GLFW_HOVERED` 視窗屬性來查詢游標目前是否位於視窗內容區域內：
+
+```cpp
+if (glfwGetWindowAttrib(window, GLFW_HOVERED))
+{
+    highlight_interface();
+}
+```
+
+### Mouse button input
+
+如果你希望在滑鼠按鍵被按下或釋放時收到通知，可以設定滑鼠按鍵回調函數（mouse button callback）：
+
+```cpp
+glfwSetMouseButtonCallback(window, mouse_button_callback);
+```
+
+回調函數會接收滑鼠按鍵編號（button）、按鍵行為（action）和修飾鍵（mods）：
+
+```cpp
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+        popup_menu();
+}
+```
+
+action 的值可能是：
+
+- `GLFW_PRESS`（按鍵被按下）
+- `GLFW_RELEASE`（按鍵被釋放）
+
+每個支援的滑鼠按鍵的最近狀態，都會儲存在視窗的內部狀態陣列中，可以使用 `glfwGetMouseButton` 查詢：
+
+```cpp
+int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+if (state == GLFW_PRESS)
+{
+    upgrade_cow();
+}
+```
+
+`glfwGetMouseButton` 只會回傳快取的滑鼠按鍵狀態，不會即時查詢系統目前的按鍵狀態
+
+當你查詢滑鼠按鍵狀態時，有可能會錯過按鍵的狀態變化。如果滑鼠按鍵在查詢前被按下又釋放，你將會錯過該按鍵事件。 建議的解決方案是使用滑鼠按鍵回調函數，但你也可以使用 `GLFW_STICKY_MOUSE_BUTTONS` 輸入模式：
+
+```cpp
+glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
+```
+
+`GLFW_MOUSE_BUTTON_LAST` 代表支援的最高滑鼠按鍵值
+
+### Scroll input
+
+如果你希望在使用者滾動（scroll）時收到通知，無論是透過滑鼠滾輪（mouse wheel）還是觸控板手勢（touchpad gesture），可以設定滾動回調函數（scroll callback）：
+
+```cpp
+glfwSetScrollCallback(window, scroll_callback);
+```
+
+回調函數會收到二維滾動偏移量（scroll offsets）：
+
+```cpp
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {}
+```
+
