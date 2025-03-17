@@ -517,3 +517,33 @@ glfwSetScrollCallback(window, scroll_callback);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {}
 ```
 
+## Time input
+
+GLFW 提供高解析度的時間輸入，單位為秒（seconds），可以使用 `glfwGetTime` 來獲取當前時間：
+
+```cpp
+double seconds = glfwGetTime();
+```
+
+這個函數會回傳自 `glfwInit` 被呼叫後經過的秒數。 不同平台使用的計時來源（time sources）通常具有微秒（microseconds）或奈秒（nanoseconds）解析度
+
+`glfwGetTime` 的時間計算是相對的，你可以使用 `glfwSetTime` 來重置計時器：
+
+```cpp
+glfwSetTime(4.0);
+```
+
+這會將當前時間設為 4.0 秒，之後 `glfwGetTime` 會從 4.0 秒開始計數
+
+`glfwGetTime()` 是經過換算的秒數，你可以使用 `glfwGetTimerValue` 來存取 GLFW 內部的計時器的原始數值：
+
+```cpp
+uint64_t value = glfwGetTimerValue();
+```
+
+這個數值的單位是 1/frequency 秒。 原始計時器的頻率取決於作業系統與硬體。 你可以使用 `glfwGetTimerFrequency` 查詢計時器的頻率（以 Hz 為單位）：
+
+```cpp
+uint64_t frequency = glfwGetTimerFrequency();
+```
+
