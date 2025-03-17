@@ -547,3 +547,22 @@ uint64_t value = glfwGetTimerValue();
 uint64_t frequency = glfwGetTimerFrequency();
 ```
 
+## Clipboard input and output
+
+如果系統剪貼簿（clipboard）內包含一個UTF-8 編碼的字串，或者它可以被轉換為 UTF-8，你可以使用 `glfwGetClipboardString` 來取得該字串。 請參閱官方文件，了解回傳字串的生命週期（lifetime）
+
+```cpp
+const char* text = glfwGetClipboardString(NULL);
+if (text)
+{
+    insert_text(text);
+}
+```
+
+如果剪貼簿為空，或其內容無法轉換為 UTF-8，則 `glfwGetClipboardString` 會回傳 `NULL`
+
+你可以使用 `glfwSetClipboardString` 將系統剪貼簿的內容設為 UTF-8 編碼的字串：
+
+```cpp
+glfwSetClipboardString(NULL, "A string with words in it");
+```
