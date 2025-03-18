@@ -43,6 +43,10 @@ category: risc-v
   - 當 Trap 進入 S-mode 時，`SPIE` 被設為 `SIE`，並且 `SIE` 被設為 0
   - 執行 `SRET` 指令時，`SIE` 被設為 `SPIE`，然後 `SPIE` 被設為 1
 
+:::info  
+在較簡單的實作中，讀取或寫入 `sstatus` 中的任何字段相當於讀取或寫入 `mstatus` 中的同名字段  
+:::
+
 #### 12.1.1.1. Base ISA Control in `sstatus` Register
 
 `UXL` 欄位控制 U-mode 的 `XLEN` 值，稱為 `UXLEN`，其可能與 S-mode 的 `XLEN` 值不同(稱為 `SXLEN`)。 簡單來說：
@@ -197,3 +201,114 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 當發生 double trap 時，HS-mode 和 M-mode 可以使用 SSE 機制來啟動 critical-error handler 以處理對應的 VS-mode 或 S/HS-mode 中發生的異常。 此外，實作 SSE protocol 也可以做為一個選項，幫助系統從這類 critical errors 中恢復
 
+### 12.1.2. Supervisor Trap Vector Base Address (`stvec`) Register
+
+`stvec` 是一個 SXLEN-bit 的可讀寫暫存器，用來存 trap vector 的設定，包含：
+
+- vector base address (`BASE`)
+- vetor mode (`MODE`)
+
+決定進入 S-mode 下的異常 (Exception) 和中斷 (Interrupt) 後 PC 該跳轉到哪裡，配置方式如下圖：
+
+<center>
+
+![alt text](image/stvec.png)
+
+</center>
+
+`BASE` 欄位可以存放任何有效的虛擬位址或實體位址，但需符合以下對齊限制：
+- 該位址必須以 4-byte 對齊 (最低兩個位元為 0)
+- 若 `MODE` 不是 **Direct**，可能還會有更嚴格的對齊限制作用在 `BASE` 的值上
+    - 在 **VECTORED** 模式下，因為 trap vector 會根據中斷號 (cause) 來做位址計算 (例如 `BASE + 4×cause`)，因此地址可能要符合更高的要求
+
+下表為 `stvec.MODE` 的編碼方式：
+
+| Value | Name     | Description                                     |
+| ----- | -------- | ----------------------------------------------- |
+| 0     | Direct   | All exceptions set pc to BASE.                  |
+| 1     | Vectored | Asynchronous interrupts set pc to BASE+4×cause. |
+| ≥2    |          | Reserved                                        |
+
+當 `MODE=Direct` 時，所有 traps 進入 S-mode 都會將 pc 設為 `BASE` 欄位中的位址
+
+而當 `MODE=Vectored` 時，所有同步異常 (synchronous exceptions) 在進入 S-mode 後，pc 依舊會設為 BASE； 但如果是中斷 ，則 pc 會設為 `BASE + 4×cause`
+
+例如 Supervisor-mode 計時器中斷在 RISC-V 中通常是 cause = 5 (參考具體標準)，所以 `pc = BASE + (4×5) = BASE + 0x14`
+
+為了讓 `pc = BASE + 4×cause` 不越界或錯亂，一般會要求 `BASE` 有更高的對齊要求，比如 16-byte 或 128-byte 對齊，具體要看實作和規範版本
+
+### 12.1.3. Supervisor Interrupt (`sip` and `sie`) Registers
+
+`sip` 暫存器是一個 SXLEN-bit 的可讀寫寄存器，其內容代表當前等待處理 (pending) 的中斷資訊
+
+`sie` 暫存器則是對應的 SXLEN 位元可讀寫寄存器，其中紀錄啟用中斷的位元
+
+在 `scause` CSR 裏面所報告的中斷原因編號 `i`（參考第 12.1.8 節）對應到 `sip` 與 `sie` 的第 i 個位元
+
+位元 0~15 (bits 15:0) 保留給標準中斷原因（例如軟體中斷、計時器中斷等），16 以上的位元則留給平台自行使用
+
+<center>
+
+![alt text](image/sipsie.png)
+
+</center>
+
+一個編號為 `i` 的中斷，只有在以下兩個條件都成立時，才會陷入到 S-mode 進行處理：
+
+- (a)
+    - 當前特權模式是 S-mode，並且 `sstatus` 寄存器裡的 `SIE` 位元為 1
+    - 或是當前特權模式低於 S-mode（也就是 U-mode 等更低特權模式）
+- (b) 
+    - `sip[i]` 與 `sie[i]` 都為 1，也就是該中斷 `i` 正在等待處理 並且已被啟用
+
+硬體 (或實作) 在偵測到 `sip[i]` 發生變化（例如 `0→1`）時，應該在 合理且有限的時間內檢查是否要觸發中斷，不能無限制地拖延，否則中斷就失去意義
+
+同時，也必須在執行 `SRET` 指令之後，以及對任何會影響中斷陷阱條件的 CSR（例如 `sip`, `sie`, `sstatus`）進行「顯式寫入 (explicit write)」後，立即重新評估這些條件
+
+對 S-mode 的中斷優先於對任何更低特權模式（例如 U-mode）的中斷
+
+在 `sip` 寄存器中，每個位元都可能是可寫，也可能是唯讀的，當第 `i` 位元是可寫的時，如果中斷 `i` 處於 pending 狀態，可以透過寫入 0 到此位元的方式來清除該中斷
+
+如果一個中斷 `i` 可能處於等待狀態，但是 `sip` 中該位元是唯讀的，那麼必須由實作提供其他機制來清除該 pending 中斷（可能需要透過呼叫執行環境 (execution environment) 的某種方法）
+
+在 `sie` 寄存器中，如果對應的中斷可能變成 pending 的，那麼該位元就必須是可寫的。 若某些位元是不可寫的，那它們就會是唯讀的，且永遠為 0（該中斷永遠不會發生）
+
+`sip` 與 `sie` 的 標準部分(bits 15:0)，格式如下圖所示：
+
+<center>
+
+![alt text](image/sipsie2.png)
+
+</center>
+
+`sip.SEIP` 與 `sie.SEIE` 對應到 S-mode 外部中斷 (supervisor-level external interrupts) 的「等待 (pending)」與「啟用 (enable)」位。 若實作了此功能，則 `sip` 中的 `SEIP` 是唯讀的，它的設置和清除由執行環境（通常透過平台特定的中斷控制器）來完成
+
+`sip.STIP` 與 `sie.STIE` 對應到 S-mode 計時器中斷 (timer interrupt) 的「等待」與「啟用」位。 若實作了此功能，則 `sip` 中的 `STIP` 是 唯讀，由執行環境來設置或清除
+
+`sip.SSIP` 與 `sie.SSIE` 對應到 S-mode 軟體中斷 (software interrupt) 的「等待」與「啟用」位。 若系統實作該功能，`sip` 中的 `SSIP` 是 可寫的，也可能由平台特定的中斷控制器設置為 1
+
+> 外部中斷往往是由硬體控制器 (PIC, PLIC, etc.) 來管理，S-mode 只能透過平台特定的方法去清除 pending。 計時器中斷通常也是由硬體或韌體自動管理，軟體無法直接清除 pending，故 STIP 是唯讀
+
+若系統實作了 Sscofpmf 擴充，則 `sip.LCOFIP` 與 `sie.LCOFIE` 這些位元對應到 local counter-overflow interrupt 的等待與啟用。 `sip.LCOFIP` 在 `sip` 中是可讀寫 (read-write)，當 `mhpmeventn.OF` 中任何一個位元被設置（表示計數器溢出）時，就會反映成一個 local counter-overflow interrupt。 如果 Sscofpmf 未實作，那麼 `sip.LCOFIP` 與 `sie.LCOFIE` 是唯讀的且永遠為 0
+
+> Sscofpmf (Supervisor Software Counter Overflow Performance Monitoring)：一種專門的擴充，用於監測計數器溢出事件
+
+:::info  
+跨處理器中斷 (Interprocessor interrupts) 是透過特定的實作方式發送到其他 hart，最終會使接收端 hart 的 `sip` 寄存器中的 `SSIP` 位元被設為 1  
+:::
+
+每一種標準中斷類型（`SEI`、`STI`、`SSI`、或 `LCOFI`）都可能不被實作；如果沒有實作，對應的等待與啟用位就會是唯讀且為 0 的
+
+`sip` 與 `sie` 中的所有位元都是 WARL 欄位，可透過在 `sie` 寄存器的每個位元都寫入 1，然後再讀回來檢查哪個位元真的保持在 1，就能得知系統實際實作了哪些中斷
+
+:::info  
+`sip` 與 `sie` 是 `mip` 與 `mie` 的子集，讀取或寫入 `sip/sie` 的任何已實作欄位，同時也會對應到 `mip/mie` 裡的相同欄位，也就是說當你寫 `sip.SSIP=1`，實際硬體也會把 `mip.SSIP` 做相應設定
+
+在 `sip` 與 `sie` 中的第 3、7 和 11 個 bit，分別對應 M-mode 的軟體、計時器與外部中斷。 由於大多數平台都選擇不將這些中斷從 M-mode 委派(delegate) 到 S-mode，所以在圖 54 與圖 55 中，這些位元顯示為 0  
+:::
+
+當同時有多個要進入 S-mode 的中斷發生時，其處理順序（由高至低優先權）如下：  
+- SEI (Supervisor External Interrupt)
+- SSI (Supervisor Software Interrupt)
+- STI (Supervisor Timer Interrupt)
+- LCOFI (Local Counter Overflow Interrupt)
