@@ -312,3 +312,9 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 - SSI (Supervisor Software Interrupt)
 - STI (Supervisor Timer Interrupt)
 - LCOFI (Local Counter Overflow Interrupt)
+
+### 12.1.4. Supervisor Timers and Performance Counters
+
+S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance monitoring facility)，其中包含 `time`、`cycle` 和 `instret` 這些 CSR，實作應提供機制來修改這些計數器的值
+
+另外，實作必須提供一種機制，讓系統能夠依據真實時間計數器來 schedule 計時器中斷
