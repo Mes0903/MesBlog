@@ -639,6 +639,6 @@ void drop_callback(GLFWwindow* window, int count, const char** paths)
 
 路徑陣列(`paths`) 及其內的字串只在回調函式執行期間有效，因為這些字串可能是臨時生成的，僅適用於當次事件。 如果你需要在回調函式結束後仍然使用這些路徑，你需要另外把它存起來(記得用 deep copy)
 
-# 後記
+## 後記
 
 文件中還有 Joystick 和 Gamepad 相關的 API 解釋，但我暫時沒用到所以先不記錄了，未來如果用到了再來繼續填上吧
