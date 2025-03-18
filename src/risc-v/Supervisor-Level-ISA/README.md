@@ -342,7 +342,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 不過，若 U-mode 想要讀取某個計數器，`scounteren` 與 `mcounteren` 中的對應位元都必須為 1  
 :::
 
-### 12.1.7. Supervisor Exception Program Counter (sepc) Register
+### 12.1.7. Supervisor Exception Program Counter (`sepc`) Register
 
 `sepc` 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
 
@@ -354,4 +354,70 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `sepc` 是一個 WARL 類型的寄存器，必須能夠存放所有合法虛擬位址，但不需要能存放「所有可能的無效位址」。 在寫入 `sepc` 之前，處理器實作可能會把某個無效位址轉換成另一個它可以容納的無效位址，然後再存進 `sepc`
 
-當透過 trap 進入 S-mode 時，硬體會把被中斷的指令(或遇到異常的指令) 的虛擬位址寫入 `sepc`。 除此之外，硬體不會自行寫入 `sepc`，但軟體可以顯式地對它進行寫入
+當透過 trap 進入 S-mode 時，硬體會把被中斷的指令(或遇到異常的指令) 的虛擬位址寫入 `sepc`。 除此之外，硬體不會自行寫入 `sepc`，但軟體可以顯式地對它寫入
+
+### 12.1.8. Supervisor Cause (`scause`) Register
+
+`scause`(Supervisor Cause) 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
+
+![alt text](image/scause.png)
+
+當透過 trap 進入 S-mode 時，硬體會將造成 trap 的事件代碼(code) 寫入 `scause`。 除此之外，硬體不會 任何時候自行改寫 `scause`，但軟體可以顯式地對它寫入
+
+在 `scause` 寄存器中，有一個稱作 Interrupt bit 的位元，如果 trap 是由中斷(interrupt) 造成，這個位元就會被設為 1。 `scause` 中還有一個 Exception Code(異常碼) 的欄位，用來標示最後一次異常或中斷的代碼
+
+異常碼是一個 WLRL 欄位，它至少需要支援 0~31 的取值（也就是位元 `4-0` 必須實作），超過 31 的值，硬體可自行決定是否支援，或以其他方式處理
+
+下表列出了目前標準定義的 S-mode 指令集中可能出現的異常碼
+
+- Supervisor cause (`scause`) register values after trap：  
+  | Interrupt | Exception Code | Description |
+  |-----------|---------------|-------------|
+  | 1 | 0 | *Reserved* |
+  | 1 | 1 | Supervisor software interrupt |
+  | 1 | 2-4 | *Reserved* |
+  | 1 | 5 | Supervisor timer interrupt |
+  | 1 | 6-8 | *Reserved* |
+  | 1 | 9 | Supervisor external interrupt |
+  | 1 | 10-12 | *Reserved* |
+  | 1 | 13 | Counter-overflow interrupt |
+  | 1 | 14-15 | *Reserved* |
+  | 1 | ≥16 | *Designated for platform use* |
+  | 0 | 0 | Instruction address misaligned |
+  | 0 | 1 | Instruction access fault |
+  | 0 | 2 | Illegal instruction |
+  | 0 | 3 | Breakpoint |
+  | 0 | 4 | Load address misaligned |
+  | 0 | 5 | Load access fault |
+  | 0 | 6 | Store/AMO address misaligned |
+  | 0 | 7 | Store/AMO access fault |
+  | 0 | 8 | Environment call from U-mode |
+  | 0 | 9 | Environment call from S-mode |
+  | 0 | 10-11 | *Reserved* |
+  | 0 | 12 | Instruction page fault |
+  | 0 | 13 | Load page fault |
+  | 0 | 14 | *Reserved* |
+  | 0 | 15 | Store/AMO page fault |
+  | 0 | 16-17 | *Reserved* |
+  | 0 | 18 | Software check |
+  | 0 | 19 | Hardware error |
+  | 0 | 20-23 | *Reserved* |
+  | 0 | 24-31 | *Designated for custom use* |
+  | 0 | 32-47 | *Reserved* |
+  | 0 | 48-63 | *Designated for custom use* |
+  | 0 | ≥64 | *Reserved* |
+- Synchronous Exception Priority：  
+  | Priority | Exc. Code | Description |
+  |----------|----------|-------------|
+  | **Highest** | 3 | Instruction address breakpoint |
+  | | 12, 1 | During instruction address translation: First encountered page fault or access fault |
+  | | 1 | With physical address for instruction: Instruction access fault |
+  | | 2 | Illegal instruction |
+  | | 0 | Instruction address misaligned |
+  | | 8, 9, 11 | Environment call |
+  | | 3 | Environment break |
+  | | 3 | Load/store/AMO address breakpoint |
+  | | 4, 6 | *Optionally*: Load/store/AMO address misaligned |
+  | | 13, 15, 5, 7 | During address translation for an explicit memory access: First encountered page fault or access fault |
+  | | 5, 7 | With physical address for an explicit memory access: Load/store/AMO access fault |
+  | **Lowest** | 4, 6 | If not higher priority: Load/store/AMO address misaligned |
