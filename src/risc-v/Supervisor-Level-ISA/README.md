@@ -328,10 +328,11 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 如果在 `scounteren` 寄存器中，`CY`、`TM`、`IR` 或 `HPMn` 其中任意一個位元被清為 0，那麼當 U-mode 嘗試讀取對應的 `cycle`、`time`、`instret` 或 `hpmcountern` 寄存器時，將會觸發非法指令 (illegal-instruction) 異常。 若當中有位元為 1，則允許 U-mode 讀取對應的計數器
 
 對應關係：
-- CY bit：控制 cycle 寄存器 (CPU 週期計數器)
-- TM bit：控制 time 寄存器 (實時計數器)
-- IR bit：控制 instret 寄存器 (指令完成數計數器)
-- HPMn bits：控制 hpmcountern (高階性能計數器)
+
+- `CY` bit：控制 cycle 寄存器 (CPU 週期計數器)
+- `TM` bit：控制 time 寄存器 (實時計數器)
+- `IR` bit：控制 instret 寄存器 (指令完成數計數器)
+- `HPMn` bits：控制 hpmcountern (高階性能計數器)
 
 系統必須實作 `scounteren` 寄存器，但其內的任何位元都可以為唯讀的 0，表示在 U-mode 下讀取對應計數器時會產生異常。 因此，這些位元等同於 WARL 欄位
 
@@ -340,3 +341,17 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 不過，若 U-mode 想要讀取某個計數器，`scounteren` 與 `mcounteren` 中的對應位元都必須為 1  
 :::
+
+### 12.1.7. Supervisor Exception Program Counter (sepc) Register
+
+`sepc` 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
+
+![alt text](image/sepc.png)
+
+`sepc` 的最低位元(`sepc[0]`) 永遠為 0。 如果某個處理器實作只支援 `IALIGN=32` (指令對齊為 32 位元)，那麼 `sepc` 的最低兩個位元 (`sepc[1:0]`) 都會是 0
+
+如果某個處理器支援 `IALIGN=16` 或 `IALIGN=32`（例如透過修改 `misa` CSR 來切換），那麼在 `IALIGN=32` 的狀態時，`sepc[1]` 在讀取時會被遮罩(mask) 為 0，因此看起來總是為 0。 這種遮罩行為也包含`SRET` 指令內對 `sepc` 的隱式讀取時。 另外，即便在 `IALIGN=32` 模式下被遮罩，`sepc[1]` 仍然是可寫的
+
+`sepc` 是一個 WARL 類型的寄存器，必須能夠存放所有合法虛擬位址，但不需要能存放「所有可能的無效位址」。 在寫入 `sepc` 之前，處理器實作可能會把某個無效位址轉換成另一個它可以容納的無效位址，然後再存進 `sepc`
+
+當透過 trap 進入 S-mode 時，硬體會把被中斷的指令(或遇到異常的指令) 的虛擬位址寫入 `sepc`。 除此之外，硬體不會自行寫入 `sepc`，但軟體可以顯式地對它進行寫入
