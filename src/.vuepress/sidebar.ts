@@ -121,6 +121,16 @@ export default sidebar([
     ],
   },
   {
+    text: "Computer Graphic",
+    collapsible: true,
+    prefix: "/ComputerGraphic/",
+    children: [
+      "glfwInputGuide/",
+      "HomogeneousCoordinates/",
+      "MVPTransformation/",
+    ],
+  },
+  {
     text: "數值線代",
     collapsible: true,
     prefix: "/numerical_algebra/",
