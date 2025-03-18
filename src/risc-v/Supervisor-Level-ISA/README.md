@@ -212,7 +212,7 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 <center>
 
-![alt text](image/stvec.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/stvec.png?raw=true">
 
 </center>
 
@@ -249,7 +249,7 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 <center>
 
-![alt text](image/sipsie.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sipsie.png?raw=true">
 
 </center>
 
@@ -277,7 +277,7 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 <center>
 
-![alt text](image/sipsie2.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sipsie2.png?raw=true">
 
 </center>
 
