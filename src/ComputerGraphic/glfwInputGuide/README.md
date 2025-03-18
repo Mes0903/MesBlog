@@ -92,7 +92,9 @@ glfwPostEmptyEvent();
 舉例來說，在 Windows 上，`glfwSetWindowSize` 所使用的系統函式，會直接將視窗大小變更事件發送到每個視窗都有的事件回調函式，而這個回調函式是 GLFW 為該視窗實作的。 
 
 > `glfwSetWindowSize` 這個函式在 Windows 內部是透過 Windows API 來調整視窗大小的，例如 `SetWindowPos` 或 `MoveWindow`<br><br>
+> 
 > 而 Windows 系統本身會自動產生視窗大小變更的事件，然後把這個事件發送給視窗的事件回調函式，換句話說視窗大小變更事件是由系統自動觸發的，GLFW 只是負責處理這些事件<br><br>
+> 
 > 每個視窗在 Windows 中都有一個事件回調函式(例如 `WndProc`)，GLFW 會幫我們實作函式來處理這個視窗事件
 
 如果你有設定視窗大小回調函式(window size callback)，那麼 GLFW 會在 `glfwSetWindowSize` 返回之前，直接用新的視窗大小來調用你的回調函式
@@ -367,6 +369,7 @@ glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 這會把鼠標隱藏起來，並將其鎖定在指定的視窗內。 此時 GLFW 會自動處理鼠標重新置中(re-centering) 和偏移量計算，並提供應用程式一個虛擬鼠標位置(virtual cursor position)。 這個虛擬鼠標位置可以透過鼠標位置回調和輪詢取得
 
 > unlimmited mouse movement 是像 FPS 遊戲那樣，當鼠標移動時，它會重新置中並計算偏移量，這樣即使滑鼠移動超過螢幕邊界，也可以持續接收滑鼠的移動資訊<br><br>
+> 
 > 另外，建議不要用 GLFW 的其他功能來手動實作這種功能，因為其不受官方支援，所以通常不會像 `GLFW_CURSOR_DISABLED` 那樣穩定
 
 如果你只想讓鼠標在視窗內部隱藏，但仍希望它能夠正常移動，可以將鼠標模式設為 `GLFW_CURSOR_HIDDEN`，這種模式不會限制鼠標的移動：
