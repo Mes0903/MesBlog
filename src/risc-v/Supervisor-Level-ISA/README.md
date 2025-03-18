@@ -421,3 +421,44 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
   | | 13, 15, 5, 7 | During address translation for an explicit memory access: First encountered page fault or access fault |
   | | 5, 7 | With physical address for an explicit memory access: Load/store/AMO access fault |
   | **Lowest** | 4, 6 | If not higher priority: Load/store/AMO address misaligned |
+
+### 12.1.9. Supervisor Trap Value (`stval`) Register
+
+`stval` 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
+
+![alt text](image/stval.png)
+
+當透過 trap 進入 S-mode 時，硬體會將與該異常(exception) 相關的特定資訊寫入 `stval`，以協助軟體處理該 trap。 在其他情況下，硬體不會對 `stval` 做任何寫入，不過軟體可以顯式地寫入它。
+
+硬體平台會規定有哪些異常需要在 `stval` 中填入具體資訊、哪些異常會一律將其清為 0、以及哪些異常需要視實際導致異常的底層事件而定
+
+若在指令擷取(instruction fetch)、讀取(load) 或寫入(store) 時，發生 breakpoint、地址未對齊(address-misaligned)、存取錯誤(access-fault) 或 page-fault，而且 `stval` 被寫入的值不為 0，則該 `stval` 內會存放導致錯誤的虛擬位址(faulting virtual address)
+
+假設未對齊(misaligned) 的讀取或寫入觸發了 access-fault 或 page-fault 異常，而且此時 `stval` 被寫入的值不為 0，則 `stval` 會包含造成故障的那一部份存取(access) 的虛擬位址。 例如一次讀取 4 word，卻對齊在奇數位址，其可能會拆分成兩次記憶體操作(部分對齊於第一個 page，部分對齊於第二個 page)。 假設其中某個 page 發生訪問錯誤，硬體可能只在 `stval` 中記錄真正發生錯誤的那個分段位址
+
+若系統支援可變長度(variable-length) 指令，並且在 instruction access-fault 或 page-fault 時 `stval` 被寫入的值不為 0，則：
+
+- `stval` 會存放導致錯誤的那個指令片段(portion) 所在的虛擬位址
+- 而 `sepc` 會指向該指令的起始位址
+
+硬體實作可以選擇是否要在發生 illegal-instruction 異常時，讓 `stval` 用來返回造成錯誤的那條指令的位元內容，同時 `sepc` 會指向該指令在記憶體中的位址
+
+如果在 illegal-instruction 異常發生時，`stval` 被寫入的值不為 0，則 `stval` 的內容會是以下三者中最短的那個：
+
+- 實際錯誤指令（完整指令位元）
+- 該錯誤指令的前 `ILEN` 位元
+- 該錯誤指令的前 `SXLEN` 位元
+
+取最小者能確保 `stval` 的內容不會超過自己能表示的位寬，而寫入到 `stval` 中的位元會右對齊(right-justified)，而未用到的高位元則清為 0，換句話說若實際指令不足 `SXLEN` 位元，則 `stval` 的低位元保存指令位元，高位填 0
+
+如果 trap 由 software check exception 所引起，則 `stval` 寄存器會保存觸發該異常的原因(cause)。 下面列出了一些定義好的編碼：
+
+- 0：無額外資訊
+- 2：Landing Pad Fault（由 Zicfilp 擴充定義，見第 22.1 節）
+- 3：Shadow Stack Fault（由 Zicfiss 擴充定義，見第 22.2 節）
+
+對於其他陷阱而言，預設將 `stval` 設為 0，但未來標準可能會擴充某些陷阱對 `stval` 的使用方式
+
+`stval` 是一個 WARL 型態的寄存器，必須能夠存放所有合法虛擬位址與 0，但不需要能夠表示所有「無效」位址。 在寫入 `stval` 之前，硬體實作可能會把一個無效位址轉換成另一個 `stval` 可以表示的無效位址
+
+如果實作支援「將錯誤指令位元載入 `stval`」的功能，那麼 `stval` 還必須能夠存下所有小於 $2^{(min(SXLEN, ILEN))}$ 的值，其中 $min(SXLEN, ILEN)$ 表示 `SXLEN` 與 `ILEN` 中較小的值
