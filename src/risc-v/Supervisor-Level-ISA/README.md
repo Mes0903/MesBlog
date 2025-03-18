@@ -428,7 +428,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 ![alt text](image/stval.png)
 
-當透過 trap 進入 S-mode 時，硬體會將與該異常(exception) 相關的特定資訊寫入 `stval`，以協助軟體處理該 trap。 在其他情況下，硬體不會對 `stval` 做任何寫入，不過軟體可以顯式地寫入它。
+當透過 trap 進入 S-mode 時，硬體會將與該異常(exception) 相關的特定資訊寫入 `stval`，以協助軟體處理該 trap。 在其他情況下，硬體不會對 `stval` 做任何寫入，不過軟體可以顯式地寫入它
 
 硬體平台會規定有哪些異常需要在 `stval` 中填入具體資訊、哪些異常會一律將其清為 0、以及哪些異常需要視實際導致異常的底層事件而定
 
@@ -462,3 +462,74 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 `stval` 是一個 WARL 型態的寄存器，必須能夠存放所有合法虛擬位址與 0，但不需要能夠表示所有「無效」位址。 在寫入 `stval` 之前，硬體實作可能會把一個無效位址轉換成另一個 `stval` 可以表示的無效位址
 
 如果實作支援「將錯誤指令位元載入 `stval`」的功能，那麼 `stval` 還必須能夠存下所有小於 $2^{(min(SXLEN, ILEN))}$ 的值，其中 $min(SXLEN, ILEN)$ 表示 `SXLEN` 與 `ILEN` 中較小的值
+
+### 12.1.10. Supervisor Environment Configuration (`senvcfg`) Register
+
+`senvcfg` 是一個 SXLEN 位元的可讀寫 CSR，用來控制 U-mode 執行環境的某些特性，它的格式如下圖所示：
+
+![alt text](image/senvcfg.png)
+
+如果在 `senvcfg` 中的 FIOM (Fence of I/O implies Memory) 位元被設為 1，則在 U-mode 執行的 FENCE 指令會被修改，原先只在對裝置 I/O 要求順序(order) 保證的地方，現在也同時要求主記憶體的順序保證
+
+同樣地，當 `FIOM=1` 且在 U-mode 下時，如果某個原子指令(atomic instruction) 存取到被標記為 device I/O 的區域，而且該指令帶有 `aq`(acquire) 和/或 `rl`(release) 位元，那麼該指令會被視為同時存取了 device I/O 與主記憶體，因此需要對二者都進行順序保證
+
+下表說明了在 U-mode 下 `FIOM=1` 時，FENCE 指令中 `PI`、`PO`、`SI`、`SO` 這些位元的修改：
+
+| Instruction bit	| Meaning when set |  
+|-|-|
+| PI<br> PO| Predecessor device input and memory reads (PR implied)<br >Predecessor device output and memory writes (PW implied)|
+| SI<br>SO | Successor device input and memory reads (SR implied)<br> Successor device output and memory writes (SW implied)|
+
+> 當 `FIOM=1`，在 U-mode 下：  
+> - `PI=1` → 表示 fence 要確保「之前(predecessor) 的裝置輸入以及記憶體讀取」都已完成 (PR：predecessor reads)
+> - `PO=1` → 確保「之前的裝置輸出以及記憶體寫入」都已完成 (PW：predecessor writes)
+> - `SI=1` → 確保「之後(successor) 的裝置輸入以及記憶體讀取」的順序 (SR：successor reads)
+> - `SO=1` → 確保「之後的裝置輸出以及記憶體寫入」的順序 (SW：successor writes)  
+>
+> 由於 `FIOM=1`，因此 I/O fence 同時會涵蓋 memory fence
+
+如果 `satp.MODE` 是只讀且永遠是 0（表示系統處於 Bare 模式，無 page 功能），那麼硬體可以讓 `FIOM` 位元也成為唯讀的，且永遠 0（無法啟用 `FIOM`）
+
+> 換句話說在沒有 page 的情況下，若實作者覺得不需要對 I/O 或 memory 做額外的順序處理，可將其鎖死成 0
+
+:::info  
+`FIOM` 位元是為了特定情況而設計的：
+- 環境正在 U-mode 中「模擬 (emulate) 一個 I/O 裝置」
+- 該裝置有記憶體緩衝區，理論上應該屬於 I/O 空間 (不在一般主記憶體中)，但由於位址轉譯(address translation) 的關係，實際上映射到主記憶體
+- 多個實體 hart 同時在 U-mode 下存取這個模擬裝置
+
+在一般情況下，「I/O fence」只保證對 I/O 動作 (例如對 I/O port 或 MMIO) 的順序，不一定包含對主記憶體的同步。 但若「I/O 區」實際上是主記憶體的一塊，就有可能造成同步問題，所以需要讓「I/O fence」也涵蓋主記憶體存取
+
+spec 的第 21 章為「Hypervisor extension (H-extension)」，當環境中沒有使用這套 H-extension（也就是沒有硬體級別的虛擬化支援），且如果無法使用「半虛擬化 (paravirtualization)」，它就可能需要在 U-mode 中模擬目標裝置
+
+換句話說那種環境下只能用 S-mode 的方式實作 “hypervisor-like” 功能，而在這種情況下，要在 U-mode 模擬裝置時，通常不能使用一些現有的硬體輔助(e.g. 2-level page table、虛擬化功能)，因此需更複雜的軟體方案
+
+一個 Hypervisor 可以提供數個虛擬 hart (vCPU)，各自對應到實體 hart，此時可能會有多個實體 hart 同時存取該被模擬的裝置
+
+例如：
+
+1. Guest OS 在 VM 內將裝置的中斷處理指派給某個 hart，但是在中斷處理以外，別的 hart 也去存取了這個裝置  
+2. 裝置的控制權（或部分控制）在多個 hart 之間移轉，例如為了平衡 VM 內的中斷負載，把裝置從一個 hart 移交給另一個 hart
+
+在這種情況下，guest software 需要使用 mutex 或 IPI(interprocessor interrupt) 等機制來協調多個 hart 對該模擬裝置的存取，並且經常會執行 I/O fence 以保證裝置存取的順序
+
+然而，如果這個裝置的 I/O 其實部分是主記憶體（guest 不知道這件事），那麼原本只針對 I/O 的 fence 就有可能不足。 把 `FIOM=1` 設成 1 可以改變這些 fence（包括 U-mode 中執行的所有 I/O fence），使它們也涵蓋對「主記憶體」的順序保證
+
+軟體其實可以不啟用 FIOM，前提是它絕對不會使用主記憶體來模擬原本屬於 I/O 空間的記憶體緩衝區，但這麼做通常會需要攔截 (trap) 所有 U-mode 對該模擬緩衝區的存取，這可能對效能產生明顯影響，相較之下，FIOM 提供的替代方案在實作難度和開銷上都相對低，因此即使它不常被使用，我們仍認為值得支援  
+:::
+
+接下來是一些其他較少敘述的欄位，所以我用列點的方式表達：
+
+- `CBZE` 欄位由 Zicboz extension 定義：這可能與 cache-block zero 指令相關  
+- `CBCFE` 與 `CBIE` 欄位由 Zicbom extension 定義：這些則與 cache-block manage 指令 (block fill，block invalidate) 相關
+- `PMM` 欄位由 Ssnpm extension 定義：可能與「page modification monitor」或「nested paging」之類功能相關
+- Zicfilp 擴充在 `senvcfg` 中新增了名為 `LPE` 與 `SSE` 的欄位：  
+    -  當 `LPE` 欄位被設定為 1 時，Zicfilp 擴充會在 VU/U-mode 下啟用
+    -  當 `LPE` 欄位為 0 時，Zicfilp 擴充不會在 VU/U-mode 下啟用，並且在 VU/U-mode 中會套用以下規則：
+        - 這個 hart 不會更新 ELP state（它會一直維持在 `NO_LP_EXPECTED` 狀態）
+        - `LPAD` 指令的行為相當於 no-op
+    - 當 `SSE` 欄位設定為 1 時，Zicfiss 擴充在 VU/U-mode 下被啟用
+    - 當 `SSE` 欄位為 0 時，Zicfiss 擴充在 VU/U-mode 下維持停用狀態，並且以下規則將生效：
+        - 32-bit 的 Zicfiss 指令會回退(revert) 到 Zimop 擴充所定義的行為
+        - 16-bit 的 Zicfiss 指令會回退到 Zcmop 擴充所定義的行為
+        - 此外，當 `menvcfg.SSE` 被設為 1 時，`SSAMOSWAP.W/D` 指令在 U-mode 會產生 illegal-instruction 異常，而在 VU-mode 會產生 virtual instruction 異常
