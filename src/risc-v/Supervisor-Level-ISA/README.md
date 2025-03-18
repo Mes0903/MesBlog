@@ -321,7 +321,11 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 ### 12.1.5. Counter-Enable (`scounteren`) Register
 
-![alt text](image/scounteren.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/scounteren.png?raw=true">
+
+</center>
 
 `scounteren` 是一個 32 位元 的 CSR，控制 U-mode 是否能存取硬體效能監控計數器(hardware performance monitoring counters)
 
@@ -346,7 +350,11 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `sepc` 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
 
-![alt text](image/sepc.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sepc.png?raw=true">
+
+</center>
 
 `sepc` 的最低位元(`sepc[0]`) 永遠為 0。 如果某個處理器實作只支援 `IALIGN=32` (指令對齊為 32 位元)，那麼 `sepc` 的最低兩個位元 (`sepc[1:0]`) 都會是 0
 
@@ -360,7 +368,11 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `scause`(Supervisor Cause) 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
 
-![alt text](image/scause.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/scause.png?raw=true">
+
+</center>
 
 當透過 trap 進入 S-mode 時，硬體會將造成 trap 的事件代碼(code) 寫入 `scause`。 除此之外，硬體不會 任何時候自行改寫 `scause`，但軟體可以顯式地對它寫入
 
@@ -426,7 +438,11 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `stval` 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
 
-![alt text](image/stval.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/stval.png?raw=true">
+
+</center>
 
 當透過 trap 進入 S-mode 時，硬體會將與該異常(exception) 相關的特定資訊寫入 `stval`，以協助軟體處理該 trap。 在其他情況下，硬體不會對 `stval` 做任何寫入，不過軟體可以顯式地寫入它
 
@@ -467,7 +483,11 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `senvcfg` 是一個 SXLEN 位元的可讀寫 CSR，用來控制 U-mode 執行環境的某些特性，它的格式如下圖所示：
 
-![alt text](image/senvcfg.png)
+<center>
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/senvcfg.png?raw=true">
+
+</center>
 
 如果在 `senvcfg` 中的 FIOM (Fence of I/O implies Memory) 位元被設為 1，則在 U-mode 執行的 FENCE 指令會被修改，原先只在對裝置 I/O 要求順序(order) 保證的地方，現在也同時要求主記憶體的順序保證
 
