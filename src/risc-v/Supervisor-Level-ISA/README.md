@@ -318,3 +318,25 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance monitoring facility)，其中包含 `time`、`cycle` 和 `instret` 這些 CSR，實作應提供機制來修改這些計數器的值
 
 另外，實作必須提供一種機制，讓系統能夠依據真實時間計數器來 schedule 計時器中斷
+
+### 12.1.5. Counter-Enable (`scounteren`) Register
+
+![alt text](image/scounteren.png)
+
+`scounteren` 是一個 32 位元 的 CSR，控制 U-mode 是否能存取硬體效能監控計數器(hardware performance monitoring counters)
+
+如果在 `scounteren` 寄存器中，`CY`、`TM`、`IR` 或 `HPMn` 其中任意一個位元被清為 0，那麼當 U-mode 嘗試讀取對應的 `cycle`、`time`、`instret` 或 `hpmcountern` 寄存器時，將會觸發非法指令 (illegal-instruction) 異常。 若當中有位元為 1，則允許 U-mode 讀取對應的計數器
+
+對應關係：
+- CY bit：控制 cycle 寄存器 (CPU 週期計數器)
+- TM bit：控制 time 寄存器 (實時計數器)
+- IR bit：控制 instret 寄存器 (指令完成數計數器)
+- HPMn bits：控制 hpmcountern (高階性能計數器)
+
+系統必須實作 `scounteren` 寄存器，但其內的任何位元都可以為唯讀的 0，表示在 U-mode 下讀取對應計數器時會產生異常。 因此，這些位元等同於 WARL 欄位
+
+:::info  
+在 `mcounteren`（M-mode 的 counter-enable）中某一個位元的設定，並不會影響對應的 `scounteren` 位元是否可寫
+
+不過，若 U-mode 想要讀取某個計數器，`scounteren` 與 `mcounteren` 中的對應位元都必須為 1  
+:::
