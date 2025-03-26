@@ -72,7 +72,7 @@ category: risc-v
 
 如果 `UXLEN < SXLEN`，U-mode 下的 instruction-fetch 位址，和 load/store 的有效位址以 $2^{\text{UXLEN}}$ 模除。 換句話說，因為此時 U-mode 的指令和記憶體存取位址的有效位元數比 S-mode 的位址還短，因此只能存取較低範圍的記憶體
 
-舉個例子，當 `UXLEN` 為 32，`SXLEN` 為 64 的情況下，U-mode 下的程式無論怎麼操作記憶體，都只能看到低 4GiB 的記憶體範圍，換句話說 U-mode 的記憶體存取是 32 位元地址空間內的操作，而不是完整的 64 位元地址空間
+舉個例子，當 `UXLEN` 為 32，`SXLEN` 為 64 的情況下，U-mode 下的程式無論怎麼操作記憶體，都只能看到低 4GiB 的記憶體範圍，換句話說 U-mode 的記憶體存取是 32 位元位址空間內的操作，而不是完整的 64 位元位址空間
 
 > $2^{32}$ = 4GiB
 
@@ -185,7 +185,7 @@ page table entry 可以參考下圖(Sv32 page table entry)
 
 Trap handler 需要在儲存好 `scause`、`sepc`、`stval` 等狀態，並且可重入(reentrant) 後清除 `SDT` 位元，這表示在 Trap handler 的尾聲，如果在恢復系統狀態時又發生了新的異常，`SDT` 可以幫助 M-mode 檢測到這種情況
 
-如果 guest OS 發生 page-fault，而這個異常觸發了 double trap，那麼當其被遞交到 M-mode 時，`mtval2` 暫存器將不會包含 Guest Physical Address (GPA)，這代表 Hypervisor 無法直接從 `mtval2` 取得 guest 的物理地址。 這會發生在 HS-mode 下執行虛擬機內的存取指令(load 或 store)，且
+如果 guest OS 發生 page-fault，而這個異常觸發了 double trap，那麼當其被遞交到 M-mode 時，`mtval2` 暫存器將不會包含 Guest Physical Address (GPA)，這代表 Hypervisor 無法直接從 `mtval2` 取得 guest 的物理位址。 這會發生在 HS-mode 下執行虛擬機內的存取指令(load 或 store)，且
 
 - `SDT=1`
 - 該存取指令導致了 guest page-fault
@@ -219,7 +219,7 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 `BASE` 欄位可以存放任何有效的虛擬位址或實體位址，但需符合以下對齊限制：
 - 該位址必須以 4-byte 對齊 (最低兩個位元為 0)
 - 若 `MODE` 不是 **Direct**，可能還會有更嚴格的對齊限制作用在 `BASE` 的值上
-    - 在 **VECTORED** 模式下，因為 trap vector 會根據中斷號 (cause) 來做位址計算 (例如 `BASE + 4×cause`)，因此地址可能要符合更高的要求
+    - 在 **VECTORED** 模式下，因為 trap vector 會根據中斷號 (cause) 來做位址計算 (例如 `BASE + 4×cause`)，因此位址可能要符合更高的要求
 
 下表為 `stvec.MODE` 的編碼方式：
 
@@ -382,57 +382,68 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 下表列出了目前標準定義的 S-mode 指令集中可能出現的異常碼
 
-- Supervisor cause (`scause`) register values after trap：  
-  | Interrupt | Exception Code | Description |
-  |-----------|---------------|-------------|
-  | 1 | 0 | *Reserved* |
-  | 1 | 1 | Supervisor software interrupt |
-  | 1 | 2-4 | *Reserved* |
-  | 1 | 5 | Supervisor timer interrupt |
-  | 1 | 6-8 | *Reserved* |
-  | 1 | 9 | Supervisor external interrupt |
-  | 1 | 10-12 | *Reserved* |
-  | 1 | 13 | Counter-overflow interrupt |
-  | 1 | 14-15 | *Reserved* |
-  | 1 | ≥16 | *Designated for platform use* |
-  | 0 | 0 | Instruction address misaligned |
-  | 0 | 1 | Instruction access fault |
-  | 0 | 2 | Illegal instruction |
-  | 0 | 3 | Breakpoint |
-  | 0 | 4 | Load address misaligned |
-  | 0 | 5 | Load access fault |
-  | 0 | 6 | Store/AMO address misaligned |
-  | 0 | 7 | Store/AMO access fault |
-  | 0 | 8 | Environment call from U-mode |
-  | 0 | 9 | Environment call from S-mode |
-  | 0 | 10-11 | *Reserved* |
-  | 0 | 12 | Instruction page fault |
-  | 0 | 13 | Load page fault |
-  | 0 | 14 | *Reserved* |
-  | 0 | 15 | Store/AMO page fault |
-  | 0 | 16-17 | *Reserved* |
-  | 0 | 18 | Software check |
-  | 0 | 19 | Hardware error |
-  | 0 | 20-23 | *Reserved* |
-  | 0 | 24-31 | *Designated for custom use* |
-  | 0 | 32-47 | *Reserved* |
-  | 0 | 48-63 | *Designated for custom use* |
-  | 0 | ≥64 | *Reserved* |
-- Synchronous Exception Priority：  
-  | Priority | Exc. Code | Description |
-  |----------|----------|-------------|
-  | **Highest** | 3 | Instruction address breakpoint |
-  | | 12, 1 | During instruction address translation: First encountered page fault or access fault |
-  | | 1 | With physical address for instruction: Instruction access fault |
-  | | 2 | Illegal instruction |
-  | | 0 | Instruction address misaligned |
-  | | 8, 9, 11 | Environment call |
-  | | 3 | Environment break |
-  | | 3 | Load/store/AMO address breakpoint |
-  | | 4, 6 | *Optionally*: Load/store/AMO address misaligned |
-  | | 13, 15, 5, 7 | During address translation for an explicit memory access: First encountered page fault or access fault |
-  | | 5, 7 | With physical address for an explicit memory access: Load/store/AMO access fault |
-  | **Lowest** | 4, 6 | If not higher priority: Load/store/AMO address misaligned |
+<span class = "blue">**Supervisor cause (`scause`) register values after trap**</span>：
+
+<center>
+
+| Interrupt | Exception Code | Description |
+|-----------|---------------|-------------|
+| 1 | 0 | *Reserved* |
+| 1 | 1 | Supervisor software interrupt |
+| 1 | 2-4 | *Reserved* |
+| 1 | 5 | Supervisor timer interrupt |
+| 1 | 6-8 | *Reserved* |
+| 1 | 9 | Supervisor external interrupt |
+| 1 | 10-12 | *Reserved* |
+| 1 | 13 | Counter-overflow interrupt |
+| 1 | 14-15 | *Reserved* |
+| 1 | ≥16 | *Designated for platform use* |
+| 0 | 0 | Instruction address misaligned |
+| 0 | 1 | Instruction access fault |
+| 0 | 2 | Illegal instruction |
+| 0 | 3 | Breakpoint |
+| 0 | 4 | Load address misaligned |
+| 0 | 5 | Load access fault |
+| 0 | 6 | Store/AMO address misaligned |
+| 0 | 7 | Store/AMO access fault |
+| 0 | 8 | Environment call from U-mode |
+| 0 | 9 | Environment call from S-mode |
+| 0 | 10-11 | *Reserved* |
+| 0 | 12 | Instruction page fault |
+| 0 | 13 | Load page fault |
+| 0 | 14 | *Reserved* |
+| 0 | 15 | Store/AMO page fault |
+| 0 | 16-17 | *Reserved* |
+| 0 | 18 | Software check |
+| 0 | 19 | Hardware error |
+| 0 | 20-23 | *Reserved* |
+| 0 | 24-31 | *Designated for custom use* |
+| 0 | 32-47 | *Reserved* |
+| 0 | 48-63 | *Designated for custom use* |
+| 0 | ≥64 | *Reserved* |
+
+</center>
+
+<span class = "blue">**Synchronous Exception Priority**</span>：
+
+<center>
+
+| Priority | Exc. Code | Description |
+|----------|----------|-------------|
+| **Highest** | 3 | Instruction address breakpoint |
+| | 12, 1 | During instruction address translation: First encountered page fault or access fault |
+| | 1 | With physical address for instruction: Instruction access fault |
+| | 2 | Illegal instruction |
+| | 0 | Instruction address misaligned |
+| | 8, 9, 11 | Environment call |
+| | 3 | Environment break |
+| | 3 | Load/store/AMO address breakpoint |
+| | 4, 6 | *Optionally*: Load/store/AMO address misaligned |
+| | 13, 15, 5, 7 | During address translation for an explicit memory access: First encountered page fault or access fault |
+| | 5, 7 | With physical address for an explicit memory access: Load/store/AMO access fault |
+| **Lowest** | 4, 6 | If not higher priority: Load/store/AMO address misaligned |
+
+</center>
 
 ### 12.1.9. Supervisor Trap Value (`stval`) Register
 
@@ -448,7 +459,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 硬體平台會規定有哪些異常需要在 `stval` 中填入具體資訊、哪些異常會一律將其清為 0、以及哪些異常需要視實際導致異常的底層事件而定
 
-若在指令擷取(instruction fetch)、讀取(load) 或寫入(store) 時，發生 breakpoint、地址未對齊(address-misaligned)、存取錯誤(access-fault) 或 page-fault，而且 `stval` 被寫入的值不為 0，則該 `stval` 內會存放導致錯誤的虛擬位址(faulting virtual address)
+若在指令擷取(instruction fetch)、讀取(load) 或寫入(store) 時，發生 breakpoint、位址未對齊(address-misaligned)、存取錯誤(access-fault) 或 page-fault，而且 `stval` 被寫入的值不為 0，則該 `stval` 內會存放導致錯誤的虛擬位址(faulting virtual address)
 
 假設未對齊(misaligned) 的讀取或寫入觸發了 access-fault 或 page-fault 異常，而且此時 `stval` 被寫入的值不為 0，則 `stval` 會包含造成故障的那一部份存取(access) 的虛擬位址。 例如一次讀取 4 word，卻對齊在奇數位址，其可能會拆分成兩次記憶體操作(部分對齊於第一個 page，部分對齊於第二個 page)。 假設其中某個 page 發生訪問錯誤，硬體可能只在 `stval` 中記錄真正發生錯誤的那個分段位址
 
@@ -515,7 +526,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 :::info  
 `FIOM` 位元是為了特定情況而設計的：
 - 環境正在 U-mode 中「模擬 (emulate) 一個 I/O 裝置」
-- 該裝置有記憶體緩衝區，理論上應該屬於 I/O 空間 (不在一般主記憶體中)，但由於位址轉譯(address translation) 的關係，實際上映射到主記憶體
+- 該裝置有記憶體緩衝區，理論上應該屬於 I/O 空間 (不在一般主記憶體中)，但由於位址轉換(address translation) 的關係，實際上映射到主記憶體
 - 多個實體 hart 同時在 U-mode 下存取這個模擬裝置
 
 在一般情況下，「I/O fence」只保證對 I/O 動作 (例如對 I/O port 或 MMIO) 的順序，不一定包含對主記憶體的同步。 但若「I/O 區」實際上是主記憶體的一塊，就有可能造成同步問題，所以需要讓「I/O fence」也涵蓋主記憶體存取
@@ -553,3 +564,104 @@ spec 的第 21 章為「Hypervisor extension (H-extension)」，當環境中沒�
         - 32-bit 的 Zicfiss 指令會回退(revert) 到 Zimop 擴充所定義的行為
         - 16-bit 的 Zicfiss 指令會回退到 Zcmop 擴充所定義的行為
         - 此外，當 `menvcfg.SSE` 被設為 1 時，`SSAMOSWAP.W/D` 指令在 U-mode 會產生 illegal-instruction 異常，而在 VU-mode 會產生 virtual instruction 異常
+
+### 12.1.11. Supervisor Address Translation and Protection (`satp`) Register
+
+`satp` 是一個 SXLEN 位元的可讀寫 CSR，根據 SXLEN 的不同有不同格式，如下圖：
+
+<center>
+
+![alt text](image/satp.png)
+
+</center>
+
+`satp` 用來控制 S-mode 的位址轉換與保護 (address translation and protection)，當中存著
+
+- root page table 的 PPN (Physical Page Number)
+  - 值為 S-mode 的實體位址除以 4 KiB
+- ASID (address space identifier)
+  - 用於在每個位址空間的基礎上輔助 address-translation fences
+- MODE
+  - 用來選擇當前的位址轉換方式，如 `Bare`、Sv32 或 Sv39 等
+
+更多關於此暫存器的存取方式請參見第 3.1.6.6 節
+
+:::info  
+在 `satp` 中儲存 PPN，而不是完整「實體位址」的好處是，能夠在 RV32 的環境下使物理位址空間超過 4 GiB
+
+`satp` 中的 PPN 欄位可能無法存放所有 PPN。 有些平台標準可能會對 `satp.PPN` 的值施加額外限制，例如要求能夠表示所有對應到主記憶體的 PPN
+
+將 ASID 與 page table base address 都儲存在同一個 CSR 內，是為了在進行上下文切換(context switch) 時能夠原子(atomically) 地同時更換這兩者
+
+如果兩者不是原子更新，可能會讓舊的虛擬位址空間混入新的位址轉換資料（或反之），過程中的幾個時鐘週期內可能會出現不一致。 同時，一次性地更新 ASID 與 PPN 也能夠稍微降低上下文切換的成本(減少寫入 CSR 的次數)  
+:::
+
+下表顯示了 MODE 欄位在 `SXLEN=32` 以及 `SXLEN=64` 時的編碼方式：
+
+<span class = "blue">**SXLEN=32**</span>：
+
+<center>
+
+| Value | Name | Description |
+|-------|------|-------------|
+| 0     | Bare | No translation or protection. |
+| 1     | Sv32 | Page-based 32-bit virtual addressing (see Section 12.3). |
+
+</center>
+
+<span class = "blue">**SXLEN=64**</span>：
+
+<center>
+
+| Value | Name | Description |
+|-------|------|-------------|
+| 0     | Bare | No translation or protection. |
+| 1–7   | -    | *Reserved for standard use* |
+| 8     | Sv39 | Page-based 39-bit virtual addressing (see Section 12.4). |
+| 9     | Sv48 | Page-based 48-bit virtual addressing (see Section 12.5). |
+| 10    | Sv57 | Page-based 57-bit virtual addressing (see Section 12.6). |
+| 11    | Sv64 | *Reserved for page-based 64-bit virtual addressing.* |
+| 12–13 | -    | *Reserved for standard use* |
+| 14–15 | -    | *Designated for custom use* |
+
+</center>
+
+當 `MODE=Bare` 時，S-mode 的虛擬位址等同於 S-mode 實體位址，除了第 3.7 節描述的實體記憶體保護機制外，沒有額外的記憶體保護
+
+如果 `MODE=Bare`，軟體必須將 `satp` 中剩餘的欄位都清 0，在 `SXLEN=32` 時為 bits 30–0，在 `SXLEN=64` 時為 bits 59–0。 如果嘗試在 `MODE=Bare` 的情況下於剩餘欄位填入非零值，其為未定義行為 (UNSPECIFIED)，不保證對剩餘欄位與位址轉換/保護的結果
+
+在 `SXLEN=32` 的情況下，若 `MODE=Bare` 且 `ASID[8:7] = 3`，則 `satp` 被用為自訂用途 (custom use)；若 `MODE=Bare` 但 `ASID[8:7] ≠ 3`，或是當 `SXLEN=64` 時，所有對應 `MODE=Bare` 的 `satp` 編碼都被保留給未來標準使用
+
+:::info  
+在標準的 1.11 版中，曾聲明「在 `MODE=Bare` 時，`satp` 的其他欄位沒有任何影響」，現在把這些欄位設為保留位是為了將來能在 RV32 上定義更多位址轉換與保護模式，尤其對於已經用完現有 `MODE` 編碼的 RV32 來說，此舉更顯必要  
+:::
+
+在 `SXLEN=32` 的情況下，除了 `Bare` 之外，唯一有效的 `MODE` 設定為 Sv32，詳細說明見第 12.3 節。 當 `SXLEN=64` 時，標準定義了三種 page-base 的虛擬記憶體機制：Sv39、Sv48 與 Sv57，分別在第 12.4、12.5、12.6 節有詳細描述。 未來標準還會定義 Sv64。 至於其他 `MODE` 設定都被保留給未來使用，且可能對 `satp` 內的其他欄位有不同的解釋方式
+
+硬體實作不需要支援所有 `MODE`，如果軟體寫入了某個硬體不支援的 `MODE`，則整個寫入動作無效，`satp` 中的任何欄位都不會被改變
+
+ASID 的 bit 數並沒有被指定(UNSPECIFIED)，其有可能是 0。 為了知道硬體實際實作了多少個 ASID 位元（稱為 `ASIDLEN`），可以嘗試在 ASID 欄位的每一個位元都寫入 1，然後讀回 `satp` 看哪些位元仍維持為 1。
+
+ASID 的最低位元需要最先被實作，也就是說如果 `ASIDLEN = N > 0`，那麼 `ASID[N-1 : 0]` 是可寫的。 ASIDLEN 的最大值 (`ASIDMAX`) 在 Sv32 下是 9，在 Sv39/Sv48/Sv57 下是 16
+
+:::info  
+對許多應用程式而言，page size 會對效能產生顯著影響。 較大的 page 可以增加 TLB 的涵蓋範圍 (TLB reach)，並且能減少對 VIPT 快取的組合度 (associativity) 限制。 然而較大的 page 會加劇了內部碎片化 (internal fragmentation) 的問題，浪費了實體記憶體，甚至可能浪費快取  
+
+委員會最後決定在 RV32 與 RV64 上都使用傳統的 4 KiB page size，預期使低層級的軟體與裝置驅動更容易移植
+
+現代作業系統中透明的 superpage 支援已經能緩解 TLB 覆蓋範圍的問題 (Navarro et al., 2002)。 另外，相較於多層級的快取 (multi-level cache)，多層級的 TLB (multi-level TLB) 的成本相對便宜，而且它們只需要映射同一個位址空間  
+:::
+
+當特權模式為 S-mode 或 U-mode 時，`satp` CSR 被視為是「活動 (active)」的。 在 `satp` 處於活動狀態時，負責轉換位址的演算法才會使用 `satp` 的值
+
+如果在 `satp` 活動期間開始了一次位址轉換，若此時 `satp` 變為非活動狀態 (例如切回了 M-mode)，那些已經開始的轉換不需要馬上完成或終止，除非執行了對應位址與 ASID 的 `SFENCE.VMA` 指令
+
+系統必須利用 `SFENCE.VMA` 來確保該 hart 之後的「隱式讀取 (implicit read)」能看到更新後的位址轉換的資料結構
+
+寫入 `satp` 不代表 page table 的更新與後續的地址轉譯之間有任何順序限制 (ordering constraints)，也不代表地址轉譯的快取會失效。 假如新的地址空間的 page table 已被修改，或者重用了某個 ASID，其通常需要在寫入 `satp` 前/後執行 `SFENCE.VMA` 指令（參見第 12.2.1 節）
+
+:::info  
+RISC-V 設計上把寫入 `satp` 與 TLB flush / page table fence 分離，讓軟體可更彈性控制失效時機，因此需要先在 page table 中做好更新，然後 `SFENCE.VMA`，再寫 `satp`；或者先寫 `satp`，然後再 `SFENCE.VMA` —— 依具體應用情況而定
+
+不要求在寫入 `satp` 時使強制讓地址轉譯的快取失效，可以降低上下文切換的成本，不過前提是擁有足夠大的 ASID 空間  
+:::
