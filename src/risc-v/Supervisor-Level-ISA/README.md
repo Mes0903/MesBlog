@@ -13,19 +13,19 @@ category: risc-v
 
 當 `SXLEN` 為 32 時，格式如下圖：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sstatus1.png?raw=true">
 
-</center><br>
+</div><br>
 
 當 `SXLEN` 為 64 時格式如下圖：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sstatus2.png?raw=true">
 
-</center><br>
+</div><br>
 
 - `SPP` 
   - `SPP` 位元表示 hart 在進入 S-mode 之前執行的特權等級
@@ -56,7 +56,7 @@ category: risc-v
 
 `UXL` 的編碼與 `misa` 內的 `MXL` 相同，`MXL` 的編碼如下表：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 | MXL | XLEN | 
 | - | - |
@@ -64,7 +64,7 @@ category: risc-v
 | 2 | 64 |
 | 3 | 128 |
 
-</center>
+</div>
 
 當 `SXLEN` 為 32 時，`UXL` 欄位不存在，此時 `UXLEN` 為 32。 當 `SXLEN` 為 64 時，它是一個 WARL 字段，值為當前 `UXLEN` 值的編碼。 具體來說，UXL 可能被實作為一個唯讀的字段，其值始終保證 `UXLEN = SXLEN`
 
@@ -134,11 +134,11 @@ HINT 指令是沒有實際運算效果，但可能被用來提供某些優化或
 
 page table entry 可以參考下圖(Sv32 page table entry)
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv32_page_table_entry.png?raw=true">
 
-</center><br>
+</div><br>
 
 `SUM` 的機制可以防止 S-mode 下的軟體意外存取 user memory，作業系統可以在 `SUM=0` 的情況下執行大部分的程式碼，並在少數需要訪問 user memory 的情況下再暫時設定 `SUM`
 
@@ -210,11 +210,11 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 決定進入 S-mode 下的異常 (Exception) 和中斷 (Interrupt) 後 PC 該跳轉到哪裡，配置方式如下圖：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/stvec.png?raw=true">
 
-</center>
+</div>
 
 `BASE` 欄位可以存放任何有效的虛擬位址或實體位址，但需符合以下對齊限制：
 - 該位址必須以 4-byte 對齊 (最低兩個位元為 0)
@@ -247,11 +247,11 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 位元 0~15 (bits 15:0) 保留給標準中斷原因（例如軟體中斷、計時器中斷等），16 以上的位元則留給平台自行使用
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sipsie.png?raw=true">
 
-</center>
+</div>
 
 一個編號為 `i` 的中斷，只有在以下兩個條件都成立時，才會陷入到 S-mode 進行處理：
 
@@ -275,11 +275,11 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 `sip` 與 `sie` 的 標準部分(bits 15:0)，格式如下圖所示：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sipsie2.png?raw=true">
 
-</center>
+</div>
 
 `sip.SEIP` 與 `sie.SEIE` 對應到 S-mode 外部中斷 (supervisor-level external interrupts) 的「等待 (pending)」與「啟用 (enable)」位。 若實作了此功能，則 `sip` 中的 `SEIP` 是唯讀的，它的設置和清除由執行環境（通常透過平台特定的中斷控制器）來完成
 
@@ -321,11 +321,11 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 ### 12.1.5. Counter-Enable (`scounteren`) Register
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/scounteren.png?raw=true">
 
-</center>
+</div>
 
 `scounteren` 是一個 32 位元 的 CSR，控制 U-mode 是否能存取硬體效能監控計數器(hardware performance monitoring counters)
 
@@ -350,11 +350,11 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `sepc` 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sepc.png?raw=true">
 
-</center>
+</div>
 
 `sepc` 的最低位元(`sepc[0]`) 永遠為 0。 如果某個處理器實作只支援 `IALIGN=32` (指令對齊為 32 位元)，那麼 `sepc` 的最低兩個位元 (`sepc[1:0]`) 都會是 0
 
@@ -368,11 +368,11 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `scause`(Supervisor Cause) 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/scause.png?raw=true">
 
-</center>
+</div>
 
 當透過 trap 進入 S-mode 時，硬體會將造成 trap 的事件代碼(code) 寫入 `scause`。 除此之外，硬體不會 任何時候自行改寫 `scause`，但軟體可以顯式地對它寫入
 
@@ -384,7 +384,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 <span class = "blue">**Supervisor cause (`scause`) register values after trap**</span>：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 | Interrupt | Exception Code | Description |
 |-----------|---------------|-------------|
@@ -422,11 +422,11 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 | 0 | 48-63 | *Designated for custom use* |
 | 0 | ≥64 | *Reserved* |
 
-</center>
+</div>
 
 <span class = "blue">**Synchronous Exception Priority**</span>：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 | Priority | Exc. Code | Description |
 |----------|----------|-------------|
@@ -443,17 +443,17 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 | | 5, 7 | With physical address for an explicit memory access: Load/store/AMO access fault |
 | **Lowest** | 4, 6 | If not higher priority: Load/store/AMO address misaligned |
 
-</center>
+</div>
 
 ### 12.1.9. Supervisor Trap Value (`stval`) Register
 
 `stval` 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/stval.png?raw=true">
 
-</center>
+</div>
 
 當透過 trap 進入 S-mode 時，硬體會將與該異常(exception) 相關的特定資訊寫入 `stval`，以協助軟體處理該 trap。 在其他情況下，硬體不會對 `stval` 做任何寫入，不過軟體可以顯式地寫入它
 
@@ -494,11 +494,11 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `senvcfg` 是一個 SXLEN 位元的可讀寫 CSR，用來控制 U-mode 執行環境的某些特性，它的格式如下圖所示：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/senvcfg.png?raw=true">
 
-</center>
+</div>
 
 如果在 `senvcfg` 中的 FIOM (Fence of I/O implies Memory) 位元被設為 1，則在 U-mode 執行的 FENCE 指令會被修改，原先只在對裝置 I/O 要求順序(order) 保證的地方，現在也同時要求主記憶體的順序保證
 
@@ -506,10 +506,14 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 下表說明了在 U-mode 下 `FIOM=1` 時，FENCE 指令中 `PI`、`PO`、`SI`、`SO` 這些位元的修改：
 
+<div style="display: flex; justify-content: center;">
+
 | Instruction bit	| Meaning when set |  
 |-|-|
 | PI<br> PO| Predecessor device input and memory reads (PR implied)<br >Predecessor device output and memory writes (PW implied)|
 | SI<br>SO | Successor device input and memory reads (SR implied)<br> Successor device output and memory writes (SW implied)|
+
+</div>
 
 > 當 `FIOM=1`，在 U-mode 下：  
 > - `PI=1` → 表示 fence 要確保「之前(predecessor) 的裝置輸入以及記憶體讀取」都已完成 (PR：predecessor reads)
@@ -569,11 +573,11 @@ spec 的第 21 章為「Hypervisor extension (H-extension)」，當環境中沒�
 
 `satp` 是一個 SXLEN 位元的可讀寫 CSR，根據 SXLEN 的不同有不同格式，如下圖：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 ![alt text](image/satp.png)
 
-</center>
+</div>
 
 `satp` 用來控制 S-mode 的位址轉換與保護 (address translation and protection)，當中存著
 
@@ -600,18 +604,18 @@ spec 的第 21 章為「Hypervisor extension (H-extension)」，當環境中沒�
 
 <span class = "blue">**SXLEN=32**</span>：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 | Value | Name | Description |
 |-------|------|-------------|
 | 0     | Bare | No translation or protection. |
 | 1     | Sv32 | Page-based 32-bit virtual addressing (see Section 12.3). |
 
-</center>
+</div>
 
 <span class = "blue">**SXLEN=64**</span>：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 | Value | Name | Description |
 |-------|------|-------------|
@@ -624,7 +628,7 @@ spec 的第 21 章為「Hypervisor extension (H-extension)」，當環境中沒�
 | 12–13 | -    | *Reserved for standard use* |
 | 14–15 | -    | *Designated for custom use* |
 
-</center>
+</div>
 
 當 `MODE=Bare` 時，S-mode 的虛擬位址等同於 S-mode 實體位址，除了第 3.7 節描述的實體記憶體保護機制外，沒有額外的記憶體保護
 

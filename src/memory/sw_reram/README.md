@@ -384,13 +384,13 @@ Score Matrix 填充完畢後，開始從最大值的位置回溯，找到最佳�
 
 回溯路徑如下圖：
 
-<center>    
+<div style="display: flex; justify-content: center;">    
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/sw.png?raw=true">
 
 圖源：[Smith-Waterman算法、Needleman-Wunsch算法的算法原理及算法比较](https://blog.csdn.net/yohjob/article/details/89144032)
 
-</center>
+</div>
 
 因此最終得到的序列為
 
@@ -412,13 +412,13 @@ Systolic Array 是由孔祥重院士提出的，問題的起因是把東西從 c
 
 下圖中的「PE」是運算單元，可以看見其將數據一次性地經過了多個 PE：
 
-<center>
+<div style="display: flex; justify-content: center;">
     
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic1.png?raw=true">
 
 圖源：[Kung, "Why systolic architectures?," in Computer, vol. 15, no. 1, pp. 37-46, Jan. 1982, doi: 10.1109/MC.1982.1653825.](https://ieeexplore.ieee.org/document/1653825)
     
-</center>
+</div>
 
 所以你可以猜到並不是所有的運算都適合利用 systolic array 來運算，因為數據並不一定符合「能一次性地做很多很多的運算」的這個特性
 
@@ -449,31 +449,31 @@ $$
 
 假設一個開始 `t = 0`，則當 `t = 3` 時整個架構會長得像這樣：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic2.png?raw=true">
 
-</center><br>
+</div><br>
 
 上圖中有三個 PE，每個 PE 內有一個 register 用來存進來的 $X_i$，而每個 PE 的上方會有固定的 $w_i$ 數據傳入，PE 的內部有一個乘法器負責做乘法運算，運算完的結果會傳出來跟其他 PE 的運算結果做加法，整個做完後就是我們要的 $Y_1$ 了
 
 可以再多看一個 $Y_2$ 的樣子：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic3.png?raw=true">
 
-</center><br>
+</div><br>
 
 而還有其他的方法，如孔院士提出的 broadcast inputs, move results, weights stay：
 
-<center>
+<div style="display: flex; justify-content: center;">
     
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic4.png?raw=true">
 
 圖源：[Kung, "Why systolic architectures?," in Computer, vol. 15, no. 1, pp. 37-46, Jan. 1982, doi: 10.1109/MC.1982.1653825.](https://ieeexplore.ieee.org/document/1653825)
     
-</center>
+</div>
 
 在上例中，$w_i$ 會預先存在每一個 PE 裡面，$X_i$ 則從上方平行傳入對應的 PE 中，這被稱為「廣播」，而 $Y_i$ 則向右側依序傳入，這個動作被稱為「脈動」
 
@@ -522,11 +522,11 @@ $$
 
 這個的 Systolic Array 會有四個 PE，整體步驟如下圖所示：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic5.png?raw=true">
 
-</center><br>
+</div><br>
 
 原先的矩陣乘法，一個 $N\times N$ 的矩陣，會需要做 $N\times N\times N$ 次的乘法，透過 Systolic Array，可以將運算降低至 $3N - 1$ 個 cycles
 
@@ -542,13 +542,13 @@ ReRAM 是一種新型的非揮發性記憶體，所謂的「非揮發性」表�
 
 比較特別的地方在於中間那個絕緣材料有可變電阻的特性。當電流通過 ReRAM cell 時，這會導致絕緣材料中的一部分變成導體，改變電阻值。這個改變是可逆的，可以通過反向電流（負極->正極）或其他方法將它恢復
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/reram1.png?raw=true">
 
 圖源：[R. Liu, D. Mahalanabis, H. J. Barnaby and S. Yu, "Investigation of Single-Bit and Multiple-Bit Upsets in Oxide RRAM-Based 1T1R and Crossbar Memory Arrays," in IEEE Transactions on Nuclear Science, vol. 62, no. 5, pp. 2294-2301, Oct. 2015, doi: 10.1109/TNS.2015.2465164.](https://ieeexplore.ieee.org/document/7274484)
 
-</center>
+</div>
 
 當 ReRAM 單元處於高阻態（HRS）時，表示存儲的是數據位「0」；當處於低阻態（LRS）時，表示存儲的是數據位「1」。通過對 ReRAM cell 施加適當的電壓，可以在兩種狀態之間切換
 
@@ -560,11 +560,11 @@ ReRAM 也可以有 Multi-level 的型態，在這種情況寫一個 ReRAM cell �
 
 至於該如何計算，這邊舉個例子，假設我們現在有四個 ReRAM cell：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/reram2.png?raw=true">
 
-</center><br>
+</div><br>
 
 當我們設定 WL 上的電壓 $V_i$ 與對應的可變電阻 $G_i$ 時，BL 會產生對應的電流 $I_i$，以圖中的例子來說，利用歐姆定律，我們可以算出 $I_1 = V_1G_1 + V_2G_2$，$I_2$ 同理
 
@@ -585,11 +585,11 @@ $$
 
 我們就可以將電壓與電阻設為特殊的數值來計算出我們要的結果：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/reram3.png?raw=true">
 
-</center><br>
+</div><br>
 
 如此一來就完成了一個矩陣運算，另外，這種一個 Vector 與 Matrix 的乘法操作有個名字稱為 matrix-vector-multiplication，簡寫為 MVM，常出現在論文裡面
 
@@ -619,11 +619,11 @@ T -8  -5  -2  -3  -1   2
 
 他的 Systolic Array 應該要是以下形式：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp1.png?raw=true">
 
-</center><br>
+</div><br>
 
 可以看見他將整個矩陣的運算優化到了 7 個 cycle
 
@@ -631,33 +631,33 @@ T -8  -5  -2  -3  -1   2
 
 而每個 PE 的設計也很簡單：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp2.png?raw=true">
 
-</center><br>
+</div><br>
 
 其中，當 `Sequence\#1` 等於 `Sequence\#2` 時，$S_{i,j}$ 為 match score，否則為 mismatch score
 
 而 Comparator 的本體也不難，由於是比較等於，網路上一找馬上就有簡單的實作出來了：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp3.png?raw=true">
 
 Reference：[8-Bit Identity Comparator](https://www.renesas.com/us/en/products/memory-logic/standard-logic/fast-cmos-ttl-compatible-fct/74fct521t-8-bit-identity-comparator)
     
-</center><br>
+</div><br>
     
 其中的 XOR 可以用 NOR 實作出來：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp4.png?raw=true">
 
 Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)
 
-</center><br>
+</div><br>
 
 ### NOR gate on ReRAM
 
@@ -676,19 +676,19 @@ Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)
 
 論文中給出的範例如下，首先有三個 cell：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp5.png?raw=true">
 
-</center><br>
+</div><br>
 
 A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給定電壓，讓電流從左邊通過時，其電流如下：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp6.png?raw=true">
 
-</center><br>
+</div><br>
 
 首先假設 CC 電流為 1mA：
 
@@ -699,11 +699,11 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 
 如此一來便完成了 OR gate，接下來的 NOT gate 更簡單了：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp7.png?raw=true">
 
-</center><br>
+</div><br>
 
 #### Truth table
 
@@ -715,13 +715,13 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 + 事先利用可變電阻將目標 gate 的真值表存起來
 + 偵測輸入電壓後的目標電流對應的電阻值
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp8.png?raw=true">
 
 (我也不知道為什麼論文內的圖這麼糊)
 
-</center><br>
+</div><br>
 
 上圖是 NOR gate 的例子，電阻塗黃表示 1，塗白則為 0
 

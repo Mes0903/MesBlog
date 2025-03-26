@@ -12,19 +12,19 @@ order: 3
 
 這個方法顧名思義就是把原本的方法做一點放鬆，他的概念用到外插法 (extrapolate) 來產生他迭代的方法，像這樣：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r1.png?raw=true">
 
-</center><br>
+</div><br>
 
 畫成圖形可以像這樣：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r2.png?raw=true">
 
-</center><br>
+</div><br>
 
 利用上一次的 $x^{(k-1)}$ 的資訊與透過某種方式獲得的向量 $x^*$ 來取得這一次的 $x^k$
 
@@ -32,11 +32,11 @@ order: 3
 
 w 是一個實數，而 $x^*$ 其實是個中間迭代出來的解，不管是用 Jacobi 還是 Gauss-Seidel 都可以，那我們這邊用 Gauss-Seidel 來舉例，也就是說：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r3.png?raw=true">
 
-</center><br>
+</div><br>
 
 你把 $x^*$ 的 `*` 改成 k 就完全是 Gauss-Seidel 的通式了
 
@@ -44,11 +44,11 @@ w 是一個實數，而 $x^*$ 其實是個中間迭代出來的解，不管是�
 
 那 w 的選擇有兩種：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r4.png?raw=true">
 
-</center><br>
+</div><br>
 
 我們原本考慮的問題如果用 Gauss-Seidel 方法，不會收斂的話，這時候我們就可以考慮用 under-relaxation method。 而一個迭代法會不收斂就代表這個問題的迭代矩陣的譜半徑大於 1
 
@@ -56,38 +56,38 @@ w 是一個實數，而 $x^*$ 其實是個中間迭代出來的解，不管是�
 
 加速收斂就代表我們迭代的解更快的靠近真實的解，我們先寫成這樣：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r5.png?raw=true">
 
-</center><br>
+</div><br>
 
 T 是這個問題的迭代矩陣，c 是一個跟 k 無關的向量
 
 而如果這個迭代法會收斂，就會滿足這個式子：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r6.png?raw=true">
 
-</center><br>
+</div><br>
 
 注意 T 的譜半徑會小於 1，因為收斂
 
 那我們讓這兩式相減，會長這樣(紅色部分)：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r7.png?raw=true">
 
-</center><br>
+</div><br>
 
 那一樣像上次那樣寫成 D、L、U 的形式
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r8.png?raw=true">
 
-</center><br>
+</div><br>
 
 可以看見我們一樣要解一個下三角矩陣的問題，那也一樣可以用 forward substitution 來快速解這個問題

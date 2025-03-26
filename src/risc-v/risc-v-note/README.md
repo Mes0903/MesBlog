@@ -70,11 +70,11 @@ operation 總共有四種變化：
 
 ### 指令編碼格式
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/1.png?raw=true">
 
-</center><br>
+</div><br>
 
 指令最後會被翻譯為機器指令，裡面的 32 bits 都有對應的意思，以 32 bits 對齊，每個 32 bits 會照上面的圖被劃分為不同的區域(field)
 
@@ -82,11 +82,11 @@ operation 總共有四種變化：
 
 對於 opcode 的部分有另一張表規定了其內容意義：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/2.png?raw=true">
 
-</center><br>
+</div><br>
 
 opcode 的前兩位永遠為 11，而第 2~4 位是一組的，5~6 位是一組的，我們用一個例子來學習這個表格是怎麼看得：
 
@@ -100,11 +100,11 @@ opcode 的前兩位永遠為 11，而第 2~4 位是一組的，5~6 位是一組�
 
 RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`，則需要先將其倒反過來為：`00 95 05 b3`，寫為二進制的話為 `00000000-10010101-00000101-10110011`，到標準中查表可知此指令為 `add x11, x10, x9`
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/3.png?raw=true">
 
-</center><br>
+</div><br>
 
 指令格式有 6 種，也就是第一張圖裡面的 R、I、S 那些：
 
@@ -132,11 +132,11 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：R-type
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/4.png?raw=true">
 
-</center><br>
+</div><br>
 
 對應意義：
 + opcode(7)：0110011 (OP)
@@ -161,11 +161,11 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：I-type
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/5.png?raw=true">
 
-</center><br>
+</div><br>
 
 對應意義：
 
@@ -189,11 +189,11 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：U-type
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/6.png?raw=true">
 
-</center><br>
+</div><br>
 
 對應意義：
 + opcode (7)：0b0110111 (LUI)
@@ -585,11 +585,11 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：J-type
 > 例：jal x1, label
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/7.png?raw=true">
 
-</center><br>
+</div><br>
 
 調用函式時地址的計算方法為先對 20 bits 寬的 `IMM` 乘以 2，然後進行 sign-extension，最後與 PC 相加，因此跳躍的範圍是以 PC 為基準，上下加減 1 MB
 
@@ -602,10 +602,10 @@ JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實�
 格式：I-type
 > 例：jalr x0, 0(x5)
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/8.png?raw=true">
 
-</center><br>
+</div><br>
 
 調用函式時地址的計算方法為先對 12 bits 寬的 `IMM` 進行 sign-extension，然後將其與 RS1 的值相加，得到最終的結果後將其最低位設為 0 (用以確保對齊)，因此跳躍的範圍是以 RS1 為基準，上下加減 2KB

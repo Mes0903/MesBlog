@@ -18,11 +18,11 @@ A 的特徵值(eigen value) 會被包含在這些圓( $R = \cup_{i=1}^n R_i$ ) �
 
 證明：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Linear-Algebra-and-Eigenvalues/image/1.png?raw=true">
 
-</center><br>
+</div><br>
 
 然後如果有 k 個圓的聯集和剩下的 n-k 個圓聯集沒有交集，那麼前者會包含 k 個特徵值，而後者則恰有 n-k 個特徵值
 
@@ -30,8 +30,8 @@ A 的特徵值(eigen value) 會被包含在這些圓( $R = \cup_{i=1}^n R_i$ ) �
 
 ### 例子
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Linear-Algebra-and-Eigenvalues/image/2.png?raw=true">
 
-</center><br>
+</div><br>

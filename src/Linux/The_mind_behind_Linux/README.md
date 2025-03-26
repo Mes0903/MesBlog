@@ -84,21 +84,21 @@ Linus Torvalds 在 15:25 時說
 
 然後會有一個 branch 判斷 `prev` 是否為空指標，如果是空指標就代表 target 是 list 的 head，因此需要把 list 的 head 指向下一個元素；若非空就把前一個元素的 next Node 設為目前的下一個 Node：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/The_mind_behind_Linux/image/link_list1.png?raw=true">
 
-</center><br>
+</div><br>
 
 而 Linus Torvalds 的想法則是拿一個指標指向「Node 裡面指向下一個 Node 的指標」，以「要更新的位址」為思考點來操作
 
 有一個指標的指標 `indirect`，一開始指向 head，之後一樣走訪 list，解指標看是不是我們要的 target，如果 `*indirect` 就是我們要刪除的元素，代表 `indirect` 現在指向前一個 Node 裡面的 next pointer，因此把 `*indirect` 設為 target 的下一個 Node 就完成整個操作了：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/The_mind_behind_Linux/image/link_list2.png?raw=true">
 
-</center><br>
+</div><br>
 
 ### 簡單的實作
 

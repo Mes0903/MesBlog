@@ -80,11 +80,11 @@ operation 總共有四種變化：
 
 ### 指令編碼格式
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/1.png?raw=true">
 
-</center><br>
+</div><br>
 
 指令最後會被翻譯為機器指令，裡面的 32 bits 都有對應的意思，以 32 bits 對齊，每個 32 bits 會照上面的圖被劃分為不同的區域(field)
 
@@ -92,11 +92,11 @@ operation 總共有四種變化：
 
 對於 opcode 的部分有另一張表規定了其內容意義：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/2.png?raw=true">
 
-</center><br>
+</div><br>
 
 opcode 的前兩位永遠為 11，而第 2~4 位是一組的，5~6 位是一組的，我們用一個例子來學習這個表格是怎麼看得：
 
@@ -110,11 +110,11 @@ opcode 的前兩位永遠為 11，而第 2~4 位是一組的，5~6 位是一組�
 
 RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`，則需要先將其倒反過來為：`00 95 05 b3`，寫為二進制的話為 `00000000-10010101-00000101-10110011`，到標準中查表可知此指令為 `add x11, x10, x9`
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/3.png?raw=true">
 
-</center><br>
+</div><br>
 
 指令格式有 6 種，也就是第一張圖裡面的 R、I、S 那些：
 
@@ -142,11 +142,11 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：R-type
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/4.png?raw=true">
 
-</center><br>
+</div><br>
 
 對應意義：
 + opcode(7)：0110011 (OP)
@@ -171,11 +171,11 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：I-type
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/5.png?raw=true">
 
-</center><br>
+</div><br>
 
 對應意義：
 
@@ -199,11 +199,11 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：U-type
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/6.png?raw=true">
 
-</center><br>
+</div><br>
 
 對應意義：
 + opcode (7)：0b0110111 (LUI)
@@ -595,11 +595,11 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：J-type
 > 例：jal x1, label
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/7.png?raw=true">
 
-</center><br>
+</div><br>
 
 調用函式時地址的計算方法為先對 20 bits 寬的 `IMM` 乘以 2，然後進行 sign-extension，最後與 PC 相加，因此跳躍的範圍是以 PC 為基準，上下加減 1 MB
 
@@ -612,11 +612,11 @@ JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實�
 格式：I-type
 > 例：jalr x0, 0(x5)
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/8.png?raw=true">
 
-</center><br>
+</div><br>
 
 調用函式時地址的計算方法為先對 12 bits 寬的 `IMM` 進行 sign-extension，然後將其與 RS1 的值相加，得到最終的結果後將其最低位設為 0 (用以確保對齊)，因此跳躍的範圍是以 RS1 為基準，上下加減 2KB
 
@@ -632,19 +632,19 @@ RISC-V 中，每一個 privilege level 都對應到一組特定的暫存器，�
 
 首先要看的是 Machine 模式下的 CSR 列表，因為 CPU 一上電時默認是在 machine 模式下，有點類似 x86 的 real mode：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/1.png?raw=true">
 
-</center><br>
+</div><br>
 
 可以看見前面有與 Hart ID 相關的暫存器，像是 `mvendorid`、`marchid` 等，那接下來要看怎麼讀：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/2.png?raw=true">
 
-</center><br>
+</div><br>
 
 我們關心的是前兩個，先看 CSRRW (Atomic Read/Write CSR)：
 
@@ -931,11 +931,11 @@ extern uint32_t HEAP_SIZE;
 
 這邊使用陣列來實作 page 的管理：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/3.png?raw=true">
 
-</center><br>
+</div><br>
 
 前方紅藍的部分為管理對應 page 狀態的區域，後方白色的是一個一個的 page
 
@@ -1144,21 +1144,21 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 
 前面提到了一個 task 的本質是一堆指令的序列，假設這邊有 Task A 和 B，在 Cooperative Multitasking 的情況下他們會長這樣：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/4.png?raw=true">
 
-</center><br>
+</div><br>
 
 可以看見兩個 Task 內都是由指令序列組成的(Instruction i)，中間有一個指令是 `call switch_to`，這就是讓下一個 task 來使用 CPU 的 function
 
 那我們就來看一下這個 `switch_to` 裡面到底做了什麼：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/5.png?raw=true">
 
-</center><br>
+</div><br>
 
 步驟是：
 
@@ -1184,35 +1184,35 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 
 前面有提到 `call` 這個指令執行的時候是會把下一條指令的位址放到 ra 裡面去的，因此 `i+M` 會被放到 ra 裡面去：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/6.png?raw=true">
 
-</center><br>
+</div><br>
 
 接下來就可以開始執行 `switch_to` 的內容，根據前面的步驟，第一步是儲存當前的 context，會將剛剛 `struct context` 內列出的暫存器內容全部從 CPU 儲存起來到 context A 的記憶體中
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/7.png?raw=true">
 
-</center><br>
+</div><br>
 
 下一步是切換 context，改變 CPU 的 ra 就可以了：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/8.png?raw=true">
 
-</center><br>
+</div><br>
 
 下一步是 restore，也就是要載入 Task B 的暫存器內容：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/9.png?raw=true">
 
-</center><br>
+</div><br>
 
 最後是 return，前面有提到 `ret` 這個指令會跳回到 `ra` 暫存器儲存的記憶體位址，這邊已經被我們改成 Instruction j 了，因此就會切換到 Task B 了
 
@@ -1351,11 +1351,11 @@ csrw    mscratch, a0
 
 因為我們這邊 OS 是寫在 Machine mode 下的，因此就看 Machine mode 下的 CSR：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/10.png?raw=true">
 
-</center><br>
+</div><br>
 
 然後我們把跟 Trap 有關的整理出來：
 
@@ -1385,11 +1385,11 @@ csrw    mscratch, a0
 
 #### mtvec (Machine Trap-Vector Base-Address)
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/11.png?raw=true">
 
-</center><br>
+</div><br>
 
 這裡 WARL 的意思是「Write Any Values，Reads Legal Values」，也就是說這個地方可以隨便我們寫的，而讀出來的值都是合法的
 
@@ -1401,19 +1401,19 @@ csrw    mscratch, a0
         + Direct：所有的 exception 和 interrupt 發生後，PC 都跳轉到 BASE 指定的位址處
         + Vectored：exception 處理方式同 Direct；但 interrupt 的入口地址以 array 方式排列
 
-    <center>
+    <div style="display: flex; justify-content: center;">
 
     <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/12.png?raw=true">
 
-    </center><br>
+    </div><br>
 
 #### mepc (Machine Exception Program Counter)
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/13.png?raw=true">
 
-</center><br>
+</div><br>
 
 + 當 trap 發生時，PC 會被替換為 mtvec 設定的位址，同時 Hart 會將 mepc 設為目前指令或下一條指令的位址，當我們需要退出 trap 時可以呼叫特殊的 mret 指令，該指令會將 mepc 中的值還原為 PC 中（實現返回的效果）
 
@@ -1421,11 +1421,11 @@ csrw    mscratch, a0
 
 #### mcause (Machine Cause)
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/14.png?raw=true">
 
-</center><br>
+</div><br>
 
 這裡 WLRL 的意思是「Write/Read Only Legal Values」，表示我們在讀寫的時候需要確保它的值是合法的
 
@@ -1433,21 +1433,21 @@ csrw    mscratch, a0
 + 最高位元 Interrupt 為 1 時標識了目前 trap 為 interrupt，否則是  exception
 + 剩餘的 Exception Code 用來標識具體的 interrupt 或 exception 的種類
 + spec 內有附一張表格
-    <center>
+    <div style="display: flex; justify-content: center;">
 
     <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/15.png?raw=true">
 
-    </center><br>
+    </div><br>
 
 #### mtval (Machine Trap Value)
 
 用來輔助 mcause 用的暫存器
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/16.png?raw=true">
 
-</center><br>
+</div><br>
 
 + 當 trap 發生時，除了透過 mcause 可以取得 exception 的種類 code 值外，hart 還提供了 mtval 來提供 exception 的其他資訊來輔助我們執行更進一步的操作
 
@@ -1457,11 +1457,11 @@ csrw    mscratch, a0
 
 用來描述一些狀態信息的，分得很細
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/17.png?raw=true">
 
-</center><br>
+</div><br>
 
 WPRL 的意思是「Reserved Writes Preserve Values，Reads Ignore Values」，也就是說寫是保留值，忽略讀，簡單來說就是盡量不要去動它 
 
@@ -1519,11 +1519,11 @@ void trap_init()
     + 前面有提到 MIE 代表中斷的開或關
     + MIE 清除的話代表填 0，也就是說中斷目前是被關掉的狀態
 2. 設定 mepc，同時 PC 被設定為 mtvec；需要注意的是，對於exception，mepc 指向導致異常的指令；對於 interrupt，它指向被中斷的指令的下一條指令的位置
-    <center>
+    <div style="display: flex; justify-content: center;">
 
     <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/18.png?raw=true">
 
-    </center><br>
+    </div><br>
 3. 根據 trap 的種類設定 mcause，並根據需要為 mtval 設定附加資訊
 4. 將 trap 發生之前的權限模式保存在 mstatus 的 MPP 域中，再把 hart 權限模式改為 M（也就是說無論在任何 Level 下觸發 trap，hart 首先切換到 Machine 模式）
 
@@ -1619,11 +1619,11 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 從 trap 返回的話我們需要 MRET 這個指令
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/19.png?raw=true">
 
-</center><br>
+</div><br>
 
 + 針對不同權限等級下如何退出 trap 有各自的回傳指令 xRET（x = M/S/U)
     + 我們這裡用的是 MRET
@@ -1652,11 +1652,11 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 所以我們也可以說有三種：software、timer 與 externel；每一種下面都會再分 User、Supervisor、Reserved 與 Machine：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/20.png?raw=true">
 
-</center><br>
+</div><br>
 
 #### mie 與 mip
 
@@ -1664,37 +1664,37 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 mie 用於控制 Interrupt 的開或關；前面有提到一個 mstatus，那個是控制全局的，一旦關閉，不管是哪種中斷都無法使用，而 mie 是可以設置要單獨關閉 software interrupt 這類的操作：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/21.png?raw=true">
 
-</center><br>
+</div><br>
 
 如果 mie 是用來寫的，那 mip 你可以認為就是拿來讀的，透過讀對應的 bit，我們可以得知當前發生了哪種中斷：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/22.png?raw=true">
 
-</center><br>
+</div><br>
 
 #### PLIC
 
 外部中斷代表的是外部設備所產生的中斷，通常一個 Hart 會有一根引腳來傳遞外部中斷的訊號，然而外部設備很多，那該怎麼辦呢?
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/23.png?raw=true">
 
-</center><br>
+</div><br>
 
 此時我們就引入了一個叫做 PLIC 的設備，全名為 Platform-Level Interrupt Controller，類似一個 hub：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/24.png?raw=true">
 
-</center><br>
+</div><br>
 
 左邊是很多不同的外設，它們全都會接到 PLIC 上；而 PLIC 到每一個 Hart 只會接一根引腳
 
@@ -1702,11 +1702,11 @@ mie 用於控制 Interrupt 的開或關；前面有提到一個 mstatus，那個
 
 左邊的這些外設我們將其稱為中斷源：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/25.png?raw=true">
 
-</center><br>
+</div><br>
 
 每一個外設我們會給他一個編號，標準內定義了 53 個中斷源，0 號預留不用，因此實際有效的中斷源為 1~53；前面我們有用到 UART，UART 的 id 為 10，下面是 QEMU 的實作：
 
@@ -1806,53 +1806,53 @@ static const MemMapEntry virt_memmap[] = {
 
 這邊通過一張圖來了解一下設置這些暫存器到底起到了什麼作用
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/26.png?raw=true">
 
-</center><br>
+</div><br>
 
 左方的這個大正方形是一個 PLIC，上面接了兩個中斷源進來，右邊接了兩個 CPU 出去
 
 這個是用來設置中斷源優先級的：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/27.png?raw=true">
 
-</center><br>
+</div><br>
 
 這個是用來設定是否要啟用此中斷源的：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/28.png?raw=true">
 
-</center><br>
+</div><br>
 
 這個用來設定中斷源的閥值：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/29.png?raw=true">
 
-</center><br>
+</div><br>
 
 這個是 Pending，用來判斷中斷是不是發生了：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/30.png?raw=true">
 
-</center><br>
+</div><br>
 
 這個是 Claim/Complete：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/31.png?raw=true">
 
-</center><br>
+</div><br>
 
 #### UART 的例子
 
@@ -1949,11 +1949,11 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 `cause_code` 的數字含意見下表，前面也有貼過：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/32.png?raw=true">
 
-</center><br>
+</div><br>
 
 `external_interrupt_handler` 的定義如下：
 
@@ -2024,11 +2024,11 @@ void uart_init()
 
 一個 Hart 會有三個 Interrupt 的引腳，剛剛講的屬於 External Interrupt，這邊來講 Timer Interrupt
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/33.png?raw=true">
 
-</center><br>
+</div><br>
 
 Timer Interrupt 屬於本地中斷，這代表他不是由外部設備發起的，而是由一個叫做 CLINT 的設備發出來的，其全名為 Core Local Interrupt，主要負責產生 software interrupt 與 timer interrupt
 
@@ -2155,11 +2155,11 @@ OS 裡面的時間管理就是利用硬體的 time counter 完成的
 
 所以我們這邊就來實作搶占式的多任務，首先一樣會有兩個 Task A 和 B：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/34.png?raw=true">
 
-</center><br>
+</div><br>
 
 可以看見因為式搶占式的多任務，因此 Task 中不會有放棄 CPU 的這個指令
 
@@ -2262,56 +2262,56 @@ switch_to:
 
 接下來用圖來演示一下步驟：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/35.png?raw=true">
 
-</center><br>
+</div><br>
 
 跟前面一樣，先初始化，並且假設第一個呼叫的任務為 A：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/36.png?raw=true">
 
-</center><br>
+</div><br>
 
 之後就開始執行了，因此 PC 會跟著改變：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/37.png?raw=true">
 
-</center><br>
+</div><br>
 
 此時 timer interrupt 發生了，因此將 `i+2` 存入 `mepc`，並開始執行 trap 處理函式，首先要保存 context，因此將 `mepc` 存入 `pc`：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/38.png?raw=true">
 
-</center><br>
+</div><br>
 
 接著切換 context：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/39.png?raw=true">
 
-</center><br>
+</div><br>
 
 然後載入 B 的 context：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/40.png?raw=true">
 
-</center><br>
+</div><br>
 
 最後執行 `mret` 返回，進到 Task B：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/41.png?raw=true">
 
-</center>
+</div>

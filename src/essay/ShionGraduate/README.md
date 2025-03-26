@@ -7,11 +7,11 @@ category: essay
 
 # 往日已去
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/essay/ShionGraduate/image/shion.png?raw=true">
 
-</center><br>
+</div><br>
 
 前陣子花了一些時間重整了部落格，幾乎把整個架構都重構了，順便移到了 vuepress 上。 過程中發現越後期的文章架構往往較完整，用詞也較統一，整體來說成熟了不少，讓人可以很深刻地感受到自己的成長
 

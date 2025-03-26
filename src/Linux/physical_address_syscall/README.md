@@ -58,7 +58,7 @@ Process type and features -> Linux guest support -> Support for running PVH gues
 
 下面是輸入 `make menuconfig` 後會出現的選單，把上面列出來的選項都勾起來：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build1.png?raw=true">
 
@@ -68,7 +68,7 @@ Process type and features -> Linux guest support -> Support for running PVH gues
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build4.png?raw=true">
 
-</center><br>
+</div><br>
 
 <!--
 Cryptographic API -> Certificates for signature checking
@@ -123,11 +123,11 @@ chmod +x etc/init.d/rcS
 find . | cpio -o --format=newc | gzip > ../../linux-6.6/rootfs.img.gz
 ```
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/rootfs.png?raw=true">
 
-</center><br>
+</div><br>
 
 ### Run Kernel
 
@@ -151,11 +151,11 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 454 common  my_get_physical_addresses   sys_my_get_physical_addresses   
 ```
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/add_system_call1.png?raw=true">
 
-</center><br>
+</div><br>
 
 這行有四個部分，每項之間由空白或 tab 隔開，它們代表的意義是：
 
@@ -172,11 +172,11 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 檔案位於 `arch/x86/include/generated/asm/syscalls_64.h`：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/add_system_call2.png?raw=true">
 
-</center><br>
+</div><br>
 
 ### 實作自己的 system call
 
@@ -184,19 +184,19 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 在 Linux 內部的記憶體地址映射過程為邏輯地址 –> 線性地址–> 實體地址 (PA)，實體地址最簡單：在匯流排中傳輸的數位信號，而線性地址和邏輯地址所表示的意涵則是種轉換規則，線性地址規則如下：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call1.png?raw=true">
 
-</center><br>
+</div><br>
 
 這部分由 MMU 完成，其中在 IA32 架構下，涉及到主要的暫存器有 CR0, CR3。機器指令中出現的是邏輯地址，邏輯地址規則如下：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call2.png?raw=true">
 
-</center><br>
+</div><br>
 
 在 Linux 中的邏輯地址對應於線性地址，也就是說 Intel 為了相容過往架構，把硬體設計搞得很複雜，Linux 核心的實作則予以簡化，並且在支援其他處理器架構時，儘量保持該原則
 
@@ -371,14 +371,14 @@ struct 的詳細內容可以看看這篇：[linux内核那些事之struct page](
 
 以下是一個 4-level page table 的例子：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/page_table.png?raw=true">
 
 圖源：[關於Linux記憶體尋址與頁表處理的一些細節](https://www.cnblogs.com/QiQi-Robotics/p/15630380.html)   
 (圖很小，可以用新分頁打開來看一下)
     
-</center>
+</div>
 
 每一個 Process 都會有自己的 Page Table，存在它自己的 kernel space，Page table 的 Base address 會被存在 CR3 裡面，這是一個 register，又被稱為 PDBR(page directory base register)，存的是實體位址，但 `task_struct->mm->pgd` 內儲存的則是 Process Global Directory 的虛擬位址
 
@@ -492,11 +492,11 @@ static inline pud_t *pud_offset(p4d_t *p4d, unsigned long address)
 asmlinkage long sys_my_get_physical_addresses(void *);
 ```
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call3.png?raw=true">
 
-</center><br>
+</div><br>
 
 新增一個檔案叫 `project1.c`，路徑是 `kernel/project1.c`
 
@@ -604,11 +604,11 @@ obj-y     = fork.o exec_domain.o panic.o \
 
 接下來要寫一個 user program 來使用這個 system call，在 kernel 資料夾的外面新增一個檔案叫 `project1.c`
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build_test.png?raw=true">
 
-</center><br>
+</div><br>
 
 <details> <summary><span class = "yellow">範例 code</span></summary>
 
@@ -750,27 +750,27 @@ cd linux-6.6
 qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "root=/dev/ram rdinit=/sbin/init console=ttyS0"
 ```
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run1.png?raw=true">
 
-</center><br>
+</div><br>
 
 按 enter 可以開始下指令，可以先 `ls` 看看：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run2.png?raw=true">
 
-</center><br>
+</div><br>
 
 這裡面就有我們編譯好的執行檔了，直接執行它：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run3.png?raw=true">
 
-</center><br>
+</div><br>
 
 ### 輸出：
 
@@ -938,19 +938,19 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 hackmd 的排版讓表格不太好看，所以這邊截一下圖：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/out1.png?raw=true">
 
-</center><br>
+</div><br>
 
 把 memory layout 簡單畫出來：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/out2.png?raw=true">
 
-</center><br>
+</div><br>
 
 字很醜不好意思
 

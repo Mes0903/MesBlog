@@ -346,35 +346,35 @@ $$
 
 假設我們想要將左圖透過轉換變成右圖：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/HomogeneousCoordinates/image/image.png?raw=true">
 
-</center>
+</div>
 
 讀完了上面的你，肯定可以知道這可以透過平移與旋轉達成，但是這時候要注意順序。 假設你先是先平移再旋轉，則會變成下圖的樣子：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/HomogeneousCoordinates/image/image-1.png?raw=true">
 
-</center>
+</div>
 
 這個例子中我們需要先旋轉再平移：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/HomogeneousCoordinates/image/image-2.png?raw=true">
 
-</center>
+</div>
 
 同時這些變換是可以做分解的，看以下例子：
 
-<center>
+<div style="display: flex; justify-content: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/HomogeneousCoordinates/image/image-3.png?raw=true">
 
-</center>
+</div>
 
 上例中我們要將圖形以其左下角的頂點 $c$ 做旋轉，而由於旋轉是以原點為基準在轉的，因此我們可以先將整個圖形平移回原點，轉完後再將其位移回去
 
