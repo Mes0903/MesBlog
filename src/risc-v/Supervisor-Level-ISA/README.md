@@ -575,7 +575,7 @@ spec 的第 21 章為「Hypervisor extension (H-extension)」，當環境中沒�
 
 <div style="display: flex; justify-content: center;">
 
-![alt text](image/satp.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/satp.png?raw=true">
 
 </div>
 
