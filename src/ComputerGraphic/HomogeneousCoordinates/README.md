@@ -1,7 +1,9 @@
 ---
 title: Homogeneous Coordinates(齊次座標)
 date: 2023-09-12
-tag: computer-graphic
+tag: 
+  - computer-graphic
+  - GAMES101
 category: computer-graphic
 ---
 

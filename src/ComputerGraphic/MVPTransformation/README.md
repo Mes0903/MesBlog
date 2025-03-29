@@ -1,7 +1,9 @@
 ---
 title: MVP Transformation
 date: 2025-03-14
-tag: computer-graphic
+tag: 
+  - computer-graphic
+  - GAMES101
 category: computer-graphic
 ---
 
