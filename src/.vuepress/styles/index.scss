@@ -14,6 +14,12 @@ img {
   max-width: 100%;
 }
 
+.center-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 h1,h2 {
   font-size: 2em;
   margin: 0.67em 0;
@@ -178,3 +184,4 @@ a.wheatlink:active {
   color: #b4f1b4;
   background-color: #1b4721;
 }
+
