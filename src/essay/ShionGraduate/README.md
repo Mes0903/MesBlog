@@ -7,7 +7,7 @@ category: essay
 
 # 往日已去
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/essay/ShionGraduate/image/shion.png?raw=true">
 

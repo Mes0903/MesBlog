@@ -384,7 +384,7 @@ Score Matrix 填充完畢後，開始從最大值的位置回溯，找到最佳�
 
 回溯路徑如下圖：
 
-<div style="display: flex; justify-content: center;">    
+<div style="display: flex; flex-direction: column; align-items: center;">    
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/sw.png?raw=true">
 
@@ -412,7 +412,7 @@ Systolic Array 是由孔祥重院士提出的，問題的起因是把東西從 c
 
 下圖中的「PE」是運算單元，可以看見其將數據一次性地經過了多個 PE：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
     
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic1.png?raw=true">
 
@@ -449,7 +449,7 @@ $$
 
 假設一個開始 `t = 0`，則當 `t = 3` 時整個架構會長得像這樣：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic2.png?raw=true">
 
@@ -459,7 +459,7 @@ $$
 
 可以再多看一個 $Y_2$ 的樣子：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic3.png?raw=true">
 
@@ -467,7 +467,7 @@ $$
 
 而還有其他的方法，如孔院士提出的 broadcast inputs, move results, weights stay：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
     
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic4.png?raw=true">
 
@@ -522,7 +522,7 @@ $$
 
 這個的 Systolic Array 會有四個 PE，整體步驟如下圖所示：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/systolic5.png?raw=true">
 
@@ -542,7 +542,7 @@ ReRAM 是一種新型的非揮發性記憶體，所謂的「非揮發性」表�
 
 比較特別的地方在於中間那個絕緣材料有可變電阻的特性。當電流通過 ReRAM cell 時，這會導致絕緣材料中的一部分變成導體，改變電阻值。這個改變是可逆的，可以通過反向電流（負極->正極）或其他方法將它恢復
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/reram1.png?raw=true">
 
@@ -560,7 +560,7 @@ ReRAM 也可以有 Multi-level 的型態，在這種情況寫一個 ReRAM cell �
 
 至於該如何計算，這邊舉個例子，假設我們現在有四個 ReRAM cell：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/reram2.png?raw=true">
 
@@ -585,7 +585,7 @@ $$
 
 我們就可以將電壓與電阻設為特殊的數值來計算出我們要的結果：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/reram3.png?raw=true">
 
@@ -619,7 +619,7 @@ T -8  -5  -2  -3  -1   2
 
 他的 Systolic Array 應該要是以下形式：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp1.png?raw=true">
 
@@ -631,7 +631,7 @@ T -8  -5  -2  -3  -1   2
 
 而每個 PE 的設計也很簡單：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp2.png?raw=true">
 
@@ -641,7 +641,7 @@ T -8  -5  -2  -3  -1   2
 
 而 Comparator 的本體也不難，由於是比較等於，網路上一找馬上就有簡單的實作出來了：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp3.png?raw=true">
 
@@ -651,7 +651,7 @@ Reference：[8-Bit Identity Comparator](https://www.renesas.com/us/en/products/m
     
 其中的 XOR 可以用 NOR 實作出來：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp4.png?raw=true">
 
@@ -676,7 +676,7 @@ Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)
 
 論文中給出的範例如下，首先有三個 cell：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp5.png?raw=true">
 
@@ -684,7 +684,7 @@ Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)
 
 A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給定電壓，讓電流從左邊通過時，其電流如下：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp6.png?raw=true">
 
@@ -699,7 +699,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 
 如此一來便完成了 OR gate，接下來的 NOT gate 更簡單了：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp7.png?raw=true">
 
@@ -715,7 +715,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 + 事先利用可變電阻將目標 gate 的真值表存起來
 + 偵測輸入電壓後的目標電流對應的電阻值
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/sw_reram/image/imp8.png?raw=true">
 

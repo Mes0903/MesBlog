@@ -38,9 +38,10 @@ category: computer-graphic
 
 在習慣上，我們會將相機移動到 $(0,0,0)$ 的位置，並看向 $-Z$ 方向，並以 $+Y$ 為向上方向，將世界的座標系轉換為相機的座標系
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/view1.png?raw=true">
+
 (這三個相機拍出來的照片會一模一樣)
 
 </div>
@@ -57,7 +58,7 @@ category: computer-graphic
 
 這樣做完後自然而然 X 方向也就對上了，這就是我們的基本思路
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/view2.png?raw=true">
 
@@ -159,7 +160,7 @@ $$
 
 虎書裡面給了一個比較不直觀的例子：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/projection1.png?raw=true">
 
@@ -171,7 +172,7 @@ $$
 
 如果你學習過素描，或是畫畫，就會知道說右邊的這種投影方式更接近餘人眼的成像，它會有一個性質：看到的平行線不再平行，最終都會相交到某一個點去，也因此其可以反映近大遠小的特性
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/projection2.png?raw=true">
  
@@ -189,7 +190,7 @@ $$
 
 那我們就從正交投影開始講，其非常好理解，只要不管遠近，統一將物體擠到某個平面上去就可以了，那這要怎麼做呢?
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/orthographic1.png?raw=true">
 
@@ -201,7 +202,7 @@ $$
 
 此外，我們還需要做個約定俗成的操作，把所有物體都移到 $-1$ 至 $1$ 之間，這可以方便之後的計算，再看個例子，假設空間中有個立方體，如下圖：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/orthographic2.png?raw=true">
 
@@ -247,7 +248,7 @@ $$
 
 回到透視投影，它是由一個點開始往外延伸出來的四稜錐所形成的，這個形狀和長方體的差別在於遠平面相對大一點：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/orthographic3.png?raw=true">
 
@@ -266,9 +267,9 @@ $$
 
 現在就開始擠它，我們從側面來看這個四角錐的話它長這樣(省略下面部分)：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/orthographic4.png?raw=true">  
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/orthographic4.png?raw=true">
 
 (n 為近平面距離相機的距離，z 為遠平面距離相機的距離)
 
@@ -439,7 +440,7 @@ $$
 
 而要定義一個四角錐其實也很簡單，我們從相機出發，看向某一個區域，如果假設我們看到的就是近平面，那麼我們可以給近平面定義一個寬度和高度，就好像人在看螢幕一樣
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/Frustum.png?raw=true">
 
@@ -451,7 +452,7 @@ $$
 
 有了這兩個概念我們就可以來定義四角錐了：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/MVPTransformation/image/Frustum2.png?raw=true">
 

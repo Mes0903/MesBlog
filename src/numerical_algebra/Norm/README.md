@@ -21,7 +21,7 @@ order: 1
 3. 裡面乘上任意一個實數，那個實數可以加絕對值提出來
 4. 三角不等式，兩個向量相加完取 norm 會小於等於兩個個別取 norm 相加
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.1.png?raw=true">
 
@@ -43,7 +43,7 @@ order: 1
 
     把所有的元素掛絕對值後取最大的那個
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.2.png?raw=true">
 
@@ -53,7 +53,7 @@ order: 1
 
 另外，一個在 $R^n$ 裡面的向量 $x^{(k)}$ 的數列，k 從一到無窮大，我們說在下面這個條件下，這個數列在相對應的 norm 下收斂到一個 x 向量：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.5.png?raw=true">
 
@@ -65,7 +65,7 @@ order: 1
 
 給兩個 $R^n$ 裡的向量 x, y，我們可以寫下這個關係式：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.3.png?raw=true">
 
@@ -75,7 +75,7 @@ order: 1
 
 我們也可以對矩陣取 norm，這邊我們給一個在 $R^{n\times n}$ 下的矩陣 A，A 的 norm 定義為：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/matrix_norm1.png?raw=true">
 
@@ -89,7 +89,7 @@ A 的 norm 會等於 A 乘上一個向量 x 再除上 x 向量的 norm，這個 
 
 A 是一個在 $R^{n\times n}$ 下的矩陣，它第 ij 個元素就寫成 $a_{ij}$，那麼 A 矩陣的 one norm 和 infinite norm 就定義成下面這樣
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/matrix_norm2.png?raw=true">
 
@@ -99,7 +99,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 然後有兩個重要的不等式：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/matrix_norm3.png?raw=true">
 
@@ -109,7 +109,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 如果 A 自己一直乘下去會是一個零矩陣，我們說矩陣 A 收斂：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.16.png?raw=true">
 
@@ -117,7 +117,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 然後收斂會跟下面三點等價：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.17.png?raw=true">
 
@@ -129,7 +129,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 定義相信大家都很清楚了，長這樣：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.13.png?raw=true">
 
@@ -139,7 +139,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 但接下來這個大家可能就沒看過了，一個矩陣 A 的譜半徑(spectral radius) 定義為， 一個矩陣的特徵值掛上絕對值，再去取最大的那個，就是我們 A 矩陣的譜半徑：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.14.png?raw=true">
 
@@ -154,7 +154,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 證明如下：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.15.png?raw=true">
 
@@ -164,7 +164,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 什麼是一個迭代法呢? 我們可以想像說我們要解一個 $A\vec x = \vec b$ 的問題，接著看這張圖：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/ax_b.png?raw=true">
 
@@ -178,7 +178,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 迭代法會有一個初始條件 $\vec x^{(0)}$，我們希望它最後會收斂到我們要的 $\vec x$，因此會有一個數列從 k = 0 到無限大，讓 $\vec x^{(k)}$ 收斂到 $\vec x$
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi1.png?raw=true">
 
@@ -187,7 +187,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 先給一個 A 矩陣：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi2.png?raw=true">
 
@@ -197,7 +197,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 但是我們要用這個式子我們仍需要知道右邊 $x_j$ 的值，沒辦法直接求出 $x_i$，但沒關係，這提供了我們一個數列作為一個很好的動件，來發展一個最簡單的迭代法，Jacobi's 方法：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi3.png?raw=true">
 
@@ -207,7 +207,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 看一下這個例子：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi4.png?raw=true">
 
@@ -216,7 +216,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 這邊 $\vec x$ 的解是 $(1,2,-1,1)^T$，那我們現在要用迭代法來算一次，我們先假設 $\vec x^{(0)} = (0,0,0,0)^T$，這代表 $x_1^{(0)} = 0$，$x_2^{(0)} = 0$，$x_3
 ^{(0)} = 0$，$x_4^{(0)} = 0$：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi5.png?raw=true">
 
@@ -224,7 +224,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 代入上面的數列的式子，一直代下去，最後就可以找到一個很接近的解
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi6.png?raw=true">
 
@@ -236,7 +236,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 我們先把 A 矩陣拆成 D + L + U：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi7.png?raw=true">
 
@@ -244,7 +244,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 這樣我們就有：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi8.png?raw=true">
 
@@ -252,7 +252,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 那我們就可以把 Jacobi 迭代法寫成：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi9.png?raw=true">
 
@@ -260,7 +260,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 如此一來，pseudo code 就會長得像這樣：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi10.png?raw=true">
 
@@ -268,7 +268,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 Step 4 的停止條件事可以被改寫的，上面這樣代表前一次迭代的值和現在的值兩個相減小於某個可容忍的值時就停止，這個叫做絕對誤差，我們也可以改得像這樣：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi11.png?raw=true">
 

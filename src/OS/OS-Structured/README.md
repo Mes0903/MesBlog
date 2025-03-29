@@ -36,7 +36,7 @@ Interface 大家應該都很熟悉，其實只分兩個：
 
 但不管是哪種，我們都可以透過 memory 的使用把 Communication 切成兩大類：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/1.png?raw=true">
 
@@ -100,7 +100,7 @@ API 的目的是方便使用者使用，所以像 `abs()`，取絕對值的 func
 
 比較常見的 API 有 Windows 上的 Win32 API、Unix 的 POSIX API 與 JVM 的 Java API
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/2.png?raw=true">
 
@@ -130,7 +130,7 @@ system call 一樣是 function，所以也會有參數需要傳遞，一般來�
 
 因此就非常的不安全，且很難 maintain，所以早期電腦才會有那麼多的 worm
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/3.png?raw=true">
 
@@ -144,7 +144,7 @@ system call 一樣是 function，所以也會有參數需要傳遞，一般來�
 
 因此就把這些 subsystem 分層，外面的 Layer 可以 call 裡面的，但裡面的不能 call 外面的，以下圖來說就是 I/O 可以 call Memory，但 Memory 不能 call I/O，所以在設計上就不應該提供後面那個 function call，因為會破壞定義好的 layer
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/4.png?raw=true">
 
@@ -164,7 +164,7 @@ Microkernel 主要的想法是 kernel 的程式碼應該要越少越好，因為
 
 當時比較嚴謹的定義是只要是在 kernel 外面的，都算在 user space，所以下圖的 I/O Manager、Graphics Subsystem 等都跟普通的 user program 一樣，也因此他 crash 也沒關係
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/5.png?raw=true">
 
@@ -180,7 +180,7 @@ Microkernel 主要的想法是 kernel 的程式碼應該要越少越好，因為
 
 Modular 有一個很重要的點是它 loadable，也就是可以去 load kernel module 進去，這樣便能夠改變 OS 的 feature
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/6.png?raw=true">
 
@@ -202,7 +202,7 @@ VM 可以把底層的架構抽象化，在底層已經灌了一個 OS 的情況�
 
 下圖左方是原本正常的狀況，硬體上方直接就是 OS，而右方則是有 VM 的狀況，硬體上會有原本的 OS 和一些管理的軟體，然後再上面我們可以去創建 VM，VM 與 VM 間並不知道彼此的存在
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/7.png?raw=true">
 
@@ -244,7 +244,7 @@ VM 可以把底層的架構抽象化，在底層已經灌了一個 OS 的情況�
 
     Full Virtualization 代表只要是可以裝在一般電腦的 OS，也可以直接裝在 VM 裡面，不需要調整，OS 完全不會知道自己是裝在 VM 裡面，所以叫做 Full Virtualization
 
-    <div style="display: flex; justify-content: center;">
+    <div style="display: flex; flex-direction: column; align-items: center;">
 
     <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/8.png?raw=true">
 
@@ -253,7 +253,7 @@ VM 可以把底層的架構抽象化，在底層已經灌了一個 OS 的情況�
 
     差別在會多一個 global zone，我們通常叫他 manager，這是個特殊的程式，他知道所有的 VM 的存在，另外 裝在上面的 OS(guest) 也需要被修改，好處是這樣就可以開一些後門了，速度也不一定會比較慢
 
-    <div style="display: flex; justify-content: center;">
+    <div style="display: flex; flex-direction: column; align-items: center;">
 
     <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/9.png?raw=true">
 
@@ -266,7 +266,7 @@ VM 可以把底層的架構抽象化，在底層已經灌了一個 OS 的情況�
 
     當要在電腦執行時，它會再根據電腦的環境往下做 translation，因為 JVM 類似一個 OS，所以對於這些 code 所使用的 memory 會有很好的 isolation，也就是說再怎麼寫，它仍然只會使用那個 VM 裡面的 memory，所以對於 host OS 而言，裡面的 code 不管怎麼執行都不太會影響到別人
 
-    <div style="display: flex; justify-content: center;">
+    <div style="display: flex; flex-direction: column; align-items: center;">
 
     <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/10.png?raw=true">
 

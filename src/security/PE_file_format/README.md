@@ -13,7 +13,7 @@ PE 是 Portable Executable 的縮寫，它是根據 UNIX 系統的 COFF 來設�
 
 PE File 內部的格式是規定好的，也就是所謂的 PE file format，大致可以分為兩部分，Header 與 Section：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/security/PE_file_format/image/header_section.png?raw=true">
 
@@ -66,7 +66,7 @@ start:
 
 我們可以用 PE-bear 這個軟體來看 PE file 的內容，這是我用 PEbear 將 demo.exe 開起來的樣貌：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/security/PE_file_format/image/PE_bear.png?raw=true">
 
@@ -78,7 +78,7 @@ start:
 
 PE file 最一開始的部分是 Dos Header，PE-bear 可以幫我們把這段 binary：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/security/PE_file_format/image/DOS_header1.png?raw=true">
 
@@ -86,7 +86,7 @@ PE file 最一開始的部分是 Dos Header，PE-bear 可以幫我們把這段 b
 
 解析為這樣：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/security/PE_file_format/image/DOS_header2.png?raw=true">
 
@@ -161,7 +161,7 @@ typedef struct _IMAGE_NT_HEADERS {
 第一個成員 `Signature` 是 `PE File` 的簽名，簽名為 `PE`，用 PE-bear 可以看見其 binary 為 
 `00 00 45 50`(此 exe 為 little endian)
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/security/PE_file_format/image/NT_header.png?raw=true">
 
@@ -222,7 +222,7 @@ typedef struct _IMAGE_FILE_HEADER {
 
 以 demo.exe 來說，其值為 `014c`
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/security/PE_file_format/image/File_header1.png?raw=true">
 
@@ -253,7 +253,7 @@ Characteristics 記錄了這個檔案的屬性，會是以下這些值去做 `or
 
 以 demo.exe 來說其值為 `0x010f`，因此是 1, 2, 4, 8, 100 做 `or` 運算
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/security/PE_file_format/image/File_header2.png?raw=true">
 
@@ -336,7 +336,7 @@ typedef struct _IMAGE_SECTION_HEADER {
 
 每個 Section Header 會指向對應的 Section，像是這樣
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/security/PE_file_format/image/Section_header.png?raw=true">
 
@@ -366,7 +366,7 @@ Section Header 只負責記錄對應 Section 的重要屬性，像是 Section �
 
 我們看張圖來解釋：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/security/PE_file_format/image/RVA.png?raw=true">
 

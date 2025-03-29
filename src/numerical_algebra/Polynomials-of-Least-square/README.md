@@ -16,7 +16,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 這樣的話 least square error，或一開始的 LDA 的 error 就會長 $f(x) - Pn(x)$，那一樣，我們要找到 $a_0,a_1,\ ...\ ,a_n$ 來最小化 $E$：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/1.png?raw=true">
 
@@ -28,7 +28,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 那我們就可以開始推了：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/2.png?raw=true">
 
@@ -42,7 +42,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 所以現在 $Pn(x) = \Sigma_{k=0}^{n} a_k\phi_k(x)$，那一樣我們要找 $a_0$、$a_1...$ 等係數來最小化 $E$：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/3.png?raw=true">
 
@@ -50,7 +50,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 然後一樣找 gradient E = 0：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/4.png?raw=true">
 
@@ -60,7 +60,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 #### Example 1. 勒壤得多項式 Legendre Function
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/5.png?raw=true">
 
@@ -70,7 +70,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 #### Example 2. 柴比雪夫多項式 Chebyshev polynomials
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/6.png?raw=true">
 

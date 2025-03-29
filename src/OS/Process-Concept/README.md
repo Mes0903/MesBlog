@@ -44,7 +44,7 @@ order: 3
 
 所以我們常說一個 Process 在 OS 的世界裡就是一個 memory 的 space，基本長的會像這樣：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Process-Concept/image/1.png?raw=true">
 
@@ -66,7 +66,7 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 下圖可以看的更清楚 thread 和 Process 的差異，其實就在於說在同一個 Process 下的所有 thread，它們有些 memory 是共用的，定義上來說，只要是同一個 Process 下的 thread，它的 code section，data section 和 OS resources 是共用的，某一個 thread 開了一個檔案，另一個 thread 可以直接拿這個檔案的 pointer 跟著去做讀寫
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Process-Concept/image/2.png?raw=true">
 
@@ -104,7 +104,7 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 可以看下圖，更好記憶：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Process-Concept/image/3.png?raw=true">
 
@@ -114,7 +114,7 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 上面的 Process State 是一個管理的邏輯，實現的方式是 OS 會幫 Process 建立一個 table，紀錄剛剛那些 information，這樣 OS 就可以知道誰在 Queue 裡面，誰的 State 是什麼等等：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Process-Concept/image/4.png?raw=true">
 
@@ -138,7 +138,7 @@ Context Switch 完成後就會開始執行 P1，所以會把 program counter 設
 
 下圖裡面 P1 執行完後又做了一次 Context Switch 回 P0，一樣的意思，會 save 和 reload PCB：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Process-Concept/image/5.png?raw=true">
 
@@ -167,7 +167,7 @@ Process 在被 schedule 的過程中會被放在 OS 內部的 qeueu 裡面，他
     + Wait State
     + 放等著做 I/O 或 sleep 等等的 Process
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Process-Concept/image/6.png?raw=true">
 
@@ -177,7 +177,7 @@ Process 在被 schedule 的過程中會被放在 OS 內部的 qeueu 裡面，他
 
 所以整體流程會類似下圖，最上面有個 ready queue，而下方有四個 Waiting queue：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Process-Concept/image/7.png?raw=true">
 
@@ -215,7 +215,7 @@ Process 在 OS 中是一個實體，要找到他 我們就需要給 Process 一�
  
 Process 要產生需要被 Parent create，所以我們一定可以把 Process 畫成一個 Tree：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Process-Concept/image/8.png?raw=true">
 
@@ -284,7 +284,7 @@ L3  L3  L3  L3  // There will be 4 child processes
 
 現在我們會創建 Process 了，接下來會需要的就是 Process 內的溝通，簡稱為 IPC，之前有講過主要有兩種方式，Shared memory 與 Message Passing
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Process-Concept/image/9.png?raw=true">
 
@@ -351,7 +351,7 @@ procedure consumer() {
 
 因此我們需要特別處理這塊記憶體的使用，假設共用的記憶體空間是一個有 `B` 個元素的 circular array，我們有兩個指標 `in` 與 `out`，`in` 指向放入 data 的位置，`out` 指向拿出 data 的位置：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Process-Concept/image/10.png?raw=true">
 
@@ -361,7 +361,7 @@ procedure consumer() {
 
 我們可以簡單看一下 code:
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Process-Concept/image/11.png?raw=true">
 

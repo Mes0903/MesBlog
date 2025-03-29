@@ -346,7 +346,7 @@ $$
 
 假設我們想要將左圖透過轉換變成右圖：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/HomogeneousCoordinates/image/image.png?raw=true">
 
@@ -354,7 +354,7 @@ $$
 
 讀完了上面的你，肯定可以知道這可以透過平移與旋轉達成，但是這時候要注意順序。 假設你先是先平移再旋轉，則會變成下圖的樣子：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/HomogeneousCoordinates/image/image-1.png?raw=true">
 
@@ -362,7 +362,7 @@ $$
 
 這個例子中我們需要先旋轉再平移：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/HomogeneousCoordinates/image/image-2.png?raw=true">
 
@@ -370,7 +370,7 @@ $$
 
 同時這些變換是可以做分解的，看以下例子：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/HomogeneousCoordinates/image/image-3.png?raw=true">
 

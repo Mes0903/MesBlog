@@ -18,7 +18,7 @@ A 的特徵值(eigen value) 會被包含在這些圓( $R = \cup_{i=1}^n R_i$ ) �
 
 證明：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Linear-Algebra-and-Eigenvalues/image/1.png?raw=true">
 
@@ -30,7 +30,7 @@ A 的特徵值(eigen value) 會被包含在這些圓( $R = \cup_{i=1}^n R_i$ ) �
 
 ### 例子
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Linear-Algebra-and-Eigenvalues/image/2.png?raw=true">
 

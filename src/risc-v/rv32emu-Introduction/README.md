@@ -20,7 +20,7 @@ rv32emu 是針對 32 bit [RISC-V processor model](https://riscv.org/technical/sp
 
 下圖為 rv32emu 的架構圖：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/1.png?raw=true">
 
@@ -259,7 +259,7 @@ static inline void set_dest(hart_t *vm, uint32_t insn, uint32_t x)
 
 RISC-V 內將 Trap 分為 Exception 與 Interrupt，而 Interrupt 有三種，分別為 software interrupt、timer interrupt 與 external interrupt。 而 PLIC 全名為 Platform Level Interrupt Controller，是一個 memory mapped device，如上述所說的用來處理 external interrupt，也就是下圖左邊的部分：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/2.png?raw=true">
 
@@ -271,7 +271,7 @@ PLIC 內主要分為 PLIC Gateway 與 PLIC Core，當中斷源（Interrupt Sourc
 
 下圖是更具體的流程：
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/3.png?raw=true">
  
@@ -382,7 +382,7 @@ SBI 是 RISC-V 定義的一個位於 OS 和 Firmware 之間的介面，用來提
 
 這樣的設計上底下的 SEE 可以抽換成不同的實作，上層的 OS 也可以正常的運作，也因此 rv32emu 實作在 S mode 下，在 linux 中可以定義不同的 interrupt controller，實作在 S mode 就可以避免每更新 interrupt controller 就需要修改 linux guest 的情況
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/4.png?raw=true">
 

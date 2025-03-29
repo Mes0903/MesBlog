@@ -7,7 +7,7 @@ category: essay
 
 # 關於往前這件事
 
-<div style="display: flex; justify-content: center;">
+<div style="display: flex; flex-direction: column; align-items: center;">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/essay/AboutMovingForward/image/Lookback.png?raw=true">
 
