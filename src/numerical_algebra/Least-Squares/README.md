@@ -12,7 +12,7 @@ order: 7
 
 假設現在給你這些點
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/1.png?raw=true">
 
@@ -22,7 +22,7 @@ order: 7
 
 我們沒辦法用一條直線來通過這些全部的點，但我們可以像這樣找到誤差最小的直線：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/2.png?raw=true">
 
@@ -42,7 +42,7 @@ $E_1(a_0, a_1) = \Sigma_{i=1}^{10} |y_i - (a_1x_i + a_0)|$
 
 那我們要找最小值，也就是說我們要找到 $a_0$、$a_1$ 符合下面這兩條式子：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/3.png?raw=true">
 
@@ -62,7 +62,7 @@ $E_2(a_0, a_1) = \Sigma_{i=1}^{10} [\ y_i - (a_1x_i + a_0)\ ]^2$
 
 我們繼續找最小值，對上方的 $E_2$ 做偏微：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/4.png?raw=true">
 
@@ -70,7 +70,7 @@ $E_2(a_0, a_1) = \Sigma_{i=1}^{10} [\ y_i - (a_1x_i + a_0)\ ]^2$
 
 然後我們可以推出(用克拉瑪)：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/5.png?raw=true">
 
@@ -82,7 +82,7 @@ $E_2(a_0, a_1) = \Sigma_{i=1}^{10} [\ y_i - (a_1x_i + a_0)\ ]^2$
 
 然而妳拿到的資料很有可能不是一個用 $ax + b$ 就能表達的資料分布，像是這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/6.png?raw=true">
 
@@ -96,14 +96,14 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 那我們要找到 $a_0, a_1, ..., a_n$ 來最小化 E：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/7.png?raw=true">
 
 </div><br>
 那一樣對他偏微：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/8.png?raw=true">
 
@@ -111,7 +111,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 那我們就可以推出這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/9.png?raw=true">
 
@@ -123,7 +123,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 寫成矩陣會像這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/10.png?raw=true">
 
@@ -135,7 +135,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 證明：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/11.png?raw=true">
 
@@ -147,7 +147,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 那這個東西解起來就會像這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/12.png?raw=true">
 
@@ -159,7 +159,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 多維代表不只有 $a_0$、$a_1$，還有其他的 $a_2$、$a_3$ 等等，所以你的 $A$ 的 column 數就會增加，以 $y = a_2x^2 + a_1x + a_0$ 來說就會長這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/13.png?raw=true">
 
@@ -171,7 +171,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 有時候資料的表示式可能是 $y = be^{ax}$ 這類的形式，那麼我們可以這樣寫：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/14.png?raw=true">
 

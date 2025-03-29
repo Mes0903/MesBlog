@@ -33,7 +33,7 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 基地台的內部通常會有 Transceiver 負責進行訊號的收發，除此之外還會需要諸如功率放大器、雙工器、合錄器和天線等設備，這些設備在 GSM 中統稱為 BTS (Base Transceiver Station)，BTS 是基地台系統的核心部分，負責將手機的訊號轉換為無線訊號，並將無線訊號轉換為手機的訊號
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/BTS.png?raw=true" width = "25%">
 
@@ -56,7 +56,7 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 然而只有 BSS 是不夠的，我們肯定還會需要路由器和交換機之類的設備，不然上不了網，因此就需要一個地方來解析 BSS 傳來的訊息，在 GSM 架構下稱這個地方為 MSC (Mobile Switching Center)，可以說是 GSM 架構的心臟
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/MSC-server.png?raw=true" width = "50%">
 
@@ -67,7 +67,7 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 在 GSM 架構中，MSC 負責非常多的事項，像是無線頻寬資源的管理(稱為 RRM，Radio Resource Management)，處理語音資料格式的轉換，用戶呼叫的控制，用互更換蜂巢時的控制，用戶的身份認證，用戶的資料管理等等，全都是由 MSC 處理的
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/MSC-black.png?raw=true" width = "65%">
 
@@ -87,7 +87,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 當我今天去了日本，我的手機網路就會跟著連到日本的 MSC，此時它一看見我的 IMSI 碼，就會發現我是台灣來的，因此就會到台灣的 HLR 中查詢我的資料，並且向台灣的 HLR 登記我現在在日本，好讓別人可以找到我； 當然，也要把我的資料複製到日本的 VLR 中，這樣我就可以在日本使用網路了
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/HLR-black.png?raw=true" width = "55%">
 
@@ -105,7 +105,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 所以整個 GSM 的網路看起來會長這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/GSM-net-black.png?raw=true">
 
@@ -115,7 +115,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 如果今天是 User B 要打電話給 User E，由於他們處於同一個 PLMN 內，也就是同一個業者的管轄範圍內，所以就不用經過 GMSC，直接由 MSC 轉接就可以了：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/same-plmn-black.png?raw=true">
 
@@ -125,7 +125,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 如果今天是 User A 要打電話給 User E，由於他們處於不同的 PLMN 內，也就是不同業者的管轄範圍內，所以就需要經過 GMSC，由 GMSC 轉接到 User E 所在的 MSC：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/cross-plmn-black.png?raw=true">
 
@@ -135,7 +135,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 如果今天是 User A 要打電話給家用電話(User F)，由於家用電話是接在 PSTN 上的，所以就需要經過 GMSC，由 GMSC 轉接到 PSTN：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/to-pstn-black.png?raw=true">
 
@@ -147,7 +147,7 @@ GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸�
 
 因此原先的 MSC 就專注在處理語音通話與簡訊方面，而 SGSN 和 GGSN 就專注在處理網路上的封包，架構圖如下：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/GPRS-black.png?raw=true">
 
@@ -159,7 +159,7 @@ GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸�
 
 在 UMTS 中，BTS 被改稱為了 Node B，BSC 被改稱為 RNC (Radio Network Controller)
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/UMTS-net-black.png?raw=true">
 
@@ -233,7 +233,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
   假設有以下拓樸：
 
-  <div style="display: flex; flex-direction: column; align-items: center;">
+  <div class = "center-column">
 
   <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/RIP-net-black.png?raw=true">
 
@@ -452,7 +452,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
   假設有以下拓撲：
 
-  <div style="display: flex; flex-direction: column; align-items: center;">
+  <div class = "center-column">
 
   <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/EIGRP-black.png?raw=true">
 

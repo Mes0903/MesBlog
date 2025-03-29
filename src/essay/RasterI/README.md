@@ -31,7 +31,7 @@ Alan Jian 大神實作了一個基於 TBDR 架構，針對 real-time rasterizati
 ⁡
 因此 TBDR 的優勢主要在於有效使用 on-chip memory，使常見的像速處理於 GPU 內高速完成，不用 access主記憶體。 針對那些只在 render pass 內需要的資料還可以於 Tile 完成時直接捨棄掉，省下更多的記憶體頻寬。   
 ⁡
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/essay/RasterI/image/TBDR.png?raw=true">
 

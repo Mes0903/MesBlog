@@ -22,7 +22,7 @@ order: 4
 
 我們看個例子，這邊我們解一個 Ax = b：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/1.png?raw=true">
 
@@ -40,7 +40,7 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 然後如果 $\vec x$ 不是 trivial 的解且 b 不是 0 向量，那我們可以導出這件事來(我全貼) ：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/2.png?raw=true">
 
@@ -52,7 +52,7 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 套用到剛剛的例子，就會長這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/3.png?raw=true">
 
@@ -60,7 +60,7 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 也就是說雖然 $||\vec r||$ 很小，但 $||A||\cdot||A^{-1}||$ 很大的話仍然會爆掉：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/4.png?raw=true">
 
@@ -70,7 +70,7 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 證明：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/5.png?raw=true">
 
@@ -80,7 +80,7 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(condition number)，記做 K(A)
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/6.png?raw=true">
 
@@ -90,7 +90,7 @@ $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(co
 
 舉個例子：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/7.png?raw=true">
 
@@ -100,7 +100,7 @@ $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(co
 
 接下來是另一個主題，就像一開始所說我們會有 rouding error，又稱 perturbation，也就是說我們實際上 Ax = b 丟進去電腦時會跑出個 $\delta$，像這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/8.png?raw=true">
 
@@ -108,7 +108,7 @@ $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(co
 
 那我們把它就代回 Ax = b：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/9.png?raw=true">
 
@@ -118,7 +118,7 @@ $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(co
 
 證明：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/10.png?raw=true">
 

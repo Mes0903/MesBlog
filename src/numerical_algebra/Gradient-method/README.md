@@ -12,7 +12,7 @@ order: 5
 
 給定一個 $\mathbb{R}^{n\times n}$ 裡的 symmetric postive matrix $A$，當我們想解 $A\vec x = \vec b$ 的 $\vec x$ 時，等價於找到能 minimizes $\Phi(\vec y) = \frac{1}{2}<A\vec y, \vec y> - <\vec b, \vec y>$ 的 $\vec x$
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/1.png?raw=true">
 
@@ -22,7 +22,7 @@ order: 5
 
 證明：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/2.png?raw=true">
 
@@ -30,7 +30,7 @@ order: 5
 
 而我們利用這個方法去找到每次的 $x^{(k)}$：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/3.png?raw=true">
 
@@ -44,7 +44,7 @@ order: 5
 
 因為之前有說過如果一個函數可微的話，那麼這個函數的負的 gradient 方向就會指出它最大的遞減方向
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/4.png?raw=true">
 
@@ -60,7 +60,7 @@ order: 5
 
 接下來要來決定 $\alpha_{k-1}$，推導：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/5.png?raw=true">
 
@@ -68,7 +68,7 @@ order: 5
 
 那我們可以做個簡單的操作來得到 residual vector 的 equation：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/6.png?raw=true">
 
@@ -76,7 +76,7 @@ order: 5
 
 #### Pseudo Code
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/7.png?raw=true">
 

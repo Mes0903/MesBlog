@@ -12,7 +12,7 @@ order: 2
 
 上次我們用了 Jacobi's method，它操作起來長這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Gauss-Seidel/image/gs1.png?raw=true">
 
@@ -20,7 +20,7 @@ order: 2
 
 然後我們就發現 $\vec x^{(k)}$ 裡的元素 $\vec x_1^{(k)}$, $\vec x_2^{(k)}$, ... , $\vec x_{i-1}^{(k)}$ 都已經被算出來了，那因為 $\vec x_j^{(k)}$ 會比 $\vec x_j^{(k-1)}$ 更準更接近解，所以我們可以把上面的公式換成這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Gauss-Seidel/image/gs2.png?raw=true">
 
@@ -34,7 +34,7 @@ order: 2
 
 上次我們把原本的矩陣分成 D、L、U：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Gauss-Seidel/image/gs3.png?raw=true">
 
@@ -42,7 +42,7 @@ order: 2
 
 那我們做了優化之後，可以把它寫成這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Gauss-Seidel/image/gs4.png?raw=true">
 
@@ -72,7 +72,7 @@ $\quad$ $\vec {x_0} = x$
 
 證明：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Gauss-Seidel/image/gs5.png?raw=true">
 
@@ -84,7 +84,7 @@ $\quad$ $\vec {x_0} = x$
 
 證明：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Gauss-Seidel/image/gs6.png?raw=true">
 

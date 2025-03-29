@@ -12,7 +12,7 @@ order: 3
 
 這個方法顧名思義就是把原本的方法做一點放鬆，他的概念用到外插法 (extrapolate) 來產生他迭代的方法，像這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r1.png?raw=true">
 
@@ -20,7 +20,7 @@ order: 3
 
 畫成圖形可以像這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r2.png?raw=true">
 
@@ -32,7 +32,7 @@ order: 3
 
 w 是一個實數，而 $x^*$ 其實是個中間迭代出來的解，不管是用 Jacobi 還是 Gauss-Seidel 都可以，那我們這邊用 Gauss-Seidel 來舉例，也就是說：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r3.png?raw=true">
 
@@ -44,7 +44,7 @@ w 是一個實數，而 $x^*$ 其實是個中間迭代出來的解，不管是�
 
 那 w 的選擇有兩種：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r4.png?raw=true">
 
@@ -56,7 +56,7 @@ w 是一個實數，而 $x^*$ 其實是個中間迭代出來的解，不管是�
 
 加速收斂就代表我們迭代的解更快的靠近真實的解，我們先寫成這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r5.png?raw=true">
 
@@ -66,7 +66,7 @@ T 是這個問題的迭代矩陣，c 是一個跟 k 無關的向量
 
 而如果這個迭代法會收斂，就會滿足這個式子：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r6.png?raw=true">
 
@@ -76,7 +76,7 @@ T 是這個問題的迭代矩陣，c 是一個跟 k 無關的向量
 
 那我們讓這兩式相減，會長這樣(紅色部分)：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r7.png?raw=true">
 
@@ -84,7 +84,7 @@ T 是這個問題的迭代矩陣，c 是一個跟 k 無關的向量
 
 那一樣像上次那樣寫成 D、L、U 的形式
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r8.png?raw=true">
 

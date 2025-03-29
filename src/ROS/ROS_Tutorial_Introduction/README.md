@@ -17,7 +17,7 @@ ROS 全名叫 Robot Operating System，但它其實是一種中介軟體(Middlew
 
 那它主要會幫我們連結各個軟體和零件之間的溝通，並且會提供一些 logging 的工具，那機器人的中介軟體有很多，像是 ROS、JAUS、Mira 等等
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/middleware.png?raw=true" width="200px">
 
@@ -47,7 +47,7 @@ ROS 全名叫 Robot Operating System，但它其實是一種中介軟體(Middlew
 
 ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理解一下簡單的主從式架構：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/p2p1.png?raw=true">
 
@@ -65,7 +65,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 那如果 ROS 使用了主從式架構，很有可能也會有類似的問題，因此 ROS 使用的是 Peer-To-Peer (一種分散式系統架構)，Middleware 通常都會是分散式系統架構：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/p2p2.png?raw=true">
 
@@ -79,7 +79,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 那 p2p 有一些變型，這邊舉三個例子，看下面這張圖：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/p2p3.png?raw=true">
 
@@ -119,7 +119,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 那麼 ROS 的架構是第一種，Centralized P2P：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/p2p4.png?raw=true">
 
@@ -215,7 +215,7 @@ Message 在發布時我們會給它加上 Topic，妳可以把 Message 想像成
 
 於是在 ROS 裡面，發布 Message 出來的 Node 我們叫它 Publisher，接收 Message 的 Node 我們叫它 Subscriber，看看下面這張圖：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub1.png?raw=true">
 
@@ -225,7 +225,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 而 Message 裡面可能裝很多個整數的陣列，Topic 可能是「雷達資料」，以上方那個圖來說就是：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub2.png?raw=true">
 
@@ -233,7 +233,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 而同一種 Topic 的 Message 也可以由不同的 Node 發布，也就是有不同的 Publisher 發布同樣 Topic 的 Message； 例如妳雷達有兩顆，而且妳為他們寫了兩個 Node，那麼這兩個 Node 都可以發布「雷達資料」這種 Topic 的 Message：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub3.png?raw=true">
 
@@ -241,7 +241,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 同理，同一種 Topic 的 Message 也可以有不同的 Node 訂閱，有就是有不同的 Subscriber 訂閱同樣 Topic 的 Message； 例如規劃路徑的 Node 需要雷達的資料，建地圖的 Node 也需要雷達的資料，那這兩個 Node 都可以訂閱「雷達資料」這種 Topic 的 Message
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub4.png?raw=true">
 
@@ -253,7 +253,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 實際上在傳遞資訊時還會需要 Master 來幫忙 Node 之間的通訊，那麼 ROS 的訊息傳送時是使用 TCP/IP 協定的連線，且一旦兩個訊息接起來後就不會再經過 Master 了：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub5.png?raw=true">
 
@@ -281,7 +281,7 @@ Ubuntu 是基於 Debian，以桌面應用為主的 Linux 發行版。Ubuntu 有�
 
 ### Terminal & CLI
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/terminal.png?raw=true">
 
@@ -405,7 +405,7 @@ rosrun turtlesim turtlesim_node
 rosrun turtlesim turtle_teleop_key
 ```
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/robot.png?raw=true">
 
@@ -423,7 +423,7 @@ rosrun turtlesim turtle_teleop_key
 gedit ~/.bashrc
 ```
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/setting1.png?raw=true">
 
@@ -433,7 +433,7 @@ gedit ~/.bashrc
 source ~/.bashrc
 ```
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/setting2.png?raw=true">
 
@@ -483,7 +483,7 @@ gedit ~/.bashrc
 
 可以看到現在預設是使用 minibot，你若是想預設 turtlebot 只要將 139 行反註解、140 行註解掉即可
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/setting3.png?raw=true">
 
@@ -524,7 +524,7 @@ roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 
 #### 你一定會遇到的問題
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/setting4.png?raw=true">
 
@@ -558,7 +558,7 @@ catkin 大致上把一個工作區劃分為以下三個區塊
 - devel  
   編譯完的執行檔跟一些環境變數設定檔都會放置在這
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/catkin1.png?raw=true">
 
@@ -568,7 +568,7 @@ catkin 大致上把一個工作區劃分為以下三個區塊
 
 在編譯時，catkin 編譯系統會遞迴的查詢和編譯 `src/` 下的每一個原始碼包。因此你也可以把幾個原始碼包放到同一個資料夾下，如下圖所示：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/catkin2.png?raw=true">
 
@@ -610,7 +610,7 @@ catkin_make
 
 他就會自動幫你編譯所有 package
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/catkin3.png?raw=true">
 

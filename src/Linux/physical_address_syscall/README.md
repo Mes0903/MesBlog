@@ -58,7 +58,7 @@ Process type and features -> Linux guest support -> Support for running PVH gues
 
 下面是輸入 `make menuconfig` 後會出現的選單，把上面列出來的選項都勾起來：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build1.png?raw=true">
 
@@ -123,7 +123,7 @@ chmod +x etc/init.d/rcS
 find . | cpio -o --format=newc | gzip > ../../linux-6.6/rootfs.img.gz
 ```
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/rootfs.png?raw=true">
 
@@ -151,7 +151,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 454 common  my_get_physical_addresses   sys_my_get_physical_addresses   
 ```
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/add_system_call1.png?raw=true">
 
@@ -172,7 +172,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 檔案位於 `arch/x86/include/generated/asm/syscalls_64.h`：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/add_system_call2.png?raw=true">
 
@@ -184,7 +184,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 在 Linux 內部的記憶體地址映射過程為邏輯地址 –> 線性地址–> 實體地址 (PA)，實體地址最簡單：在匯流排中傳輸的數位信號，而線性地址和邏輯地址所表示的意涵則是種轉換規則，線性地址規則如下：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call1.png?raw=true">
 
@@ -192,7 +192,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 這部分由 MMU 完成，其中在 IA32 架構下，涉及到主要的暫存器有 CR0, CR3。機器指令中出現的是邏輯地址，邏輯地址規則如下：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call2.png?raw=true">
 
@@ -371,7 +371,7 @@ struct 的詳細內容可以看看這篇：[linux内核那些事之struct page](
 
 以下是一個 4-level page table 的例子：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/page_table.png?raw=true">
 
@@ -492,7 +492,7 @@ static inline pud_t *pud_offset(p4d_t *p4d, unsigned long address)
 asmlinkage long sys_my_get_physical_addresses(void *);
 ```
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call3.png?raw=true">
 
@@ -604,7 +604,7 @@ obj-y     = fork.o exec_domain.o panic.o \
 
 接下來要寫一個 user program 來使用這個 system call，在 kernel 資料夾的外面新增一個檔案叫 `project1.c`
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build_test.png?raw=true">
 
@@ -750,7 +750,7 @@ cd linux-6.6
 qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "root=/dev/ram rdinit=/sbin/init console=ttyS0"
 ```
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run1.png?raw=true">
 
@@ -758,7 +758,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 按 enter 可以開始下指令，可以先 `ls` 看看：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run2.png?raw=true">
 
@@ -766,7 +766,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 這裡面就有我們編譯好的執行檔了，直接執行它：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run3.png?raw=true">
 
@@ -938,7 +938,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 hackmd 的排版讓表格不太好看，所以這邊截一下圖：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/out1.png?raw=true">
 
@@ -946,7 +946,7 @@ hackmd 的排版讓表格不太好看，所以這邊截一下圖：
 
 把 memory layout 簡單畫出來：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/physical_address_syscall/image/out2.png?raw=true">
 

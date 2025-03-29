@@ -48,7 +48,7 @@ order: 1
 
 我們看一個例子：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/1.png?raw=true">
 
@@ -108,7 +108,7 @@ OS 主要的考量、需求有二：
 
 電腦系統有很多不同的 Hardware，我們需要把它串起來，你把主機打開來可以看見它有 bus、線，而作業系統的目的就是要控制、協調這些硬體的使用，可以看看下面這張圖：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/2.png?raw=true">
 
@@ -122,7 +122,7 @@ OS 主要的考量、需求有二：
 
 這是一個 OS 基本運作的例子：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/3.png?raw=true">
 
@@ -184,7 +184,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 用這張圖來看：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/4.png?raw=true">
 
@@ -198,7 +198,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 那我們來看個例子，情境是使用者要執行 `scanf`，而最終當然會到最底層去 call 到 driver：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/5.png?raw=true">
 
@@ -230,7 +230,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 那我們現在來仔細看一下他的流程，首先是 Signal：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/6.png?raw=true">
 
@@ -254,7 +254,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 接下來是 Trap，一樣看一下它的流程：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/7.png?raw=true">
 
@@ -282,7 +282,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 接下來要講電腦資料讀取的基本方式，大家應該都很熟悉了，電腦資料在儲存其實是一個 Hierarchy 的架構：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/8.png?raw=true">
 
@@ -338,7 +338,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 這邊看一下 Disk，他不是電子式而是機械式的，它會有讀寫的手臂，手臂上面有很多磁頭可以同時讀寫多個磁盤，磁盤有很多個，可以旋轉：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/9.png?raw=true">
 
@@ -352,7 +352,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 而電腦的資料通常最終會儲存在最慢的 Device 裡面，因此我們會把資料 copy 到比較快的 Device 上面，用到的頻率越高，我們就會把它存到越上層，所以才會需要有 L1、L2、L3 的 Cache，加速 cpu 的計算：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/10.png?raw=true">
 
@@ -396,7 +396,7 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 這兩個 mode 在可能就是一個 bit(0 or 1)，我們前面提過，OS 要做任何事都是透過 system call，而 system call 需要透過 Interrupt
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/11.png?raw=true">
 
@@ -432,7 +432,7 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 檢查的流程大概就長這樣：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/12.png?raw=true">
 

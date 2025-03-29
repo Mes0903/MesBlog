@@ -13,7 +13,7 @@ category: risc-v
 
 當 `SXLEN` 為 32 時，格式如下圖：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sstatus1.png?raw=true">
 
@@ -21,7 +21,7 @@ category: risc-v
 
 當 `SXLEN` 為 64 時格式如下圖：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sstatus2.png?raw=true">
 
@@ -56,7 +56,7 @@ category: risc-v
 
 `UXL` 的編碼與 `misa` 內的 `MXL` 相同，`MXL` 的編碼如下表：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 | MXL | XLEN | 
 | - | - |
@@ -134,7 +134,7 @@ HINT 指令是沒有實際運算效果，但可能被用來提供某些優化或
 
 page table entry 可以參考下圖(Sv32 page table entry)
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv32_page_table_entry.png?raw=true">
 
@@ -210,7 +210,7 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 決定進入 S-mode 下的異常 (Exception) 和中斷 (Interrupt) 後 PC 該跳轉到哪裡，配置方式如下圖：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/stvec.png?raw=true">
 
@@ -247,7 +247,7 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 位元 0~15 (bits 15:0) 保留給標準中斷原因（例如軟體中斷、計時器中斷等），16 以上的位元則留給平台自行使用
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sipsie.png?raw=true">
 
@@ -275,7 +275,7 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 `sip` 與 `sie` 的 標準部分(bits 15:0)，格式如下圖所示：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sipsie2.png?raw=true">
 
@@ -321,7 +321,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 ### 12.1.5. Counter-Enable (`scounteren`) Register
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/scounteren.png?raw=true">
 
@@ -350,7 +350,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `sepc` 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sepc.png?raw=true">
 
@@ -368,7 +368,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `scause`(Supervisor Cause) 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/scause.png?raw=true">
 
@@ -384,7 +384,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 <span class = "blue">**Supervisor cause (`scause`) register values after trap**</span>：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class="center-column">
 
 | Interrupt | Exception Code | Description |
 |-----------|---------------|-------------|
@@ -426,7 +426,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 <span class = "blue">**Synchronous Exception Priority**</span>：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 | Priority | Exc. Code | Description |
 |----------|----------|-------------|
@@ -449,7 +449,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `stval` 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/stval.png?raw=true">
 
@@ -494,7 +494,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `senvcfg` 是一個 SXLEN 位元的可讀寫 CSR，用來控制 U-mode 執行環境的某些特性，它的格式如下圖所示：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/senvcfg.png?raw=true">
 
@@ -506,7 +506,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 下表說明了在 U-mode 下 `FIOM=1` 時，FENCE 指令中 `PI`、`PO`、`SI`、`SO` 這些位元的修改：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 | Instruction bit	| Meaning when set |  
 |-|-|
@@ -573,7 +573,7 @@ spec 的第 21 章為「Hypervisor extension (H-extension)」，當環境中沒�
 
 `satp` 是一個 SXLEN 位元的可讀寫 CSR，根據 SXLEN 的不同有不同格式，如下圖：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/satp.png?raw=true">
 
@@ -604,7 +604,7 @@ spec 的第 21 章為「Hypervisor extension (H-extension)」，當環境中沒�
 
 <span class = "blue">**SXLEN=32**</span>：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 | Value | Name | Description |
 |-------|------|-------------|
@@ -615,7 +615,7 @@ spec 的第 21 章為「Hypervisor extension (H-extension)」，當環境中沒�
 
 <span class = "blue">**SXLEN=64**</span>：
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 | Value | Name | Description |
 |-------|------|-------------|
@@ -676,7 +676,7 @@ RISC-V 設計上把寫入 `satp` 與 TLB flush / page table fence 分離，讓�
 
 ### 12.2.1. Supervisor Memory-Management Fence Instruction
 
-<div style="display: flex; flex-direction: column; align-items: center;">
+<div class = "center-column">
 
 ![alt text](image/sfence.png)
 
