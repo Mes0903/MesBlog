@@ -350,7 +350,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/tree/vuepress-theme-hope/src/ComputerGraphic/GAMES101/HomogeneousCoordinates/image/image.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/HomogeneousCoordinates/image/image.png?raw=true">
 
 </div>
 
@@ -358,7 +358,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/tree/vuepress-theme-hope/src/ComputerGraphic/GAMES101/HomogeneousCoordinates/image/image-1.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/HomogeneousCoordinates/image/image-1.png?raw=true">
 
 </div>
 
@@ -366,7 +366,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/tree/vuepress-theme-hope/src/ComputerGraphic/GAMES101/HomogeneousCoordinates/image/image-2.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/HomogeneousCoordinates/image/image-2.png?raw=true">
 
 </div>
 
@@ -374,7 +374,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/tree/vuepress-theme-hope/src/ComputerGraphic/GAMES101/HomogeneousCoordinates/image/image-3.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/HomogeneousCoordinates/image/image-3.png?raw=true">
 
 </div>
 
