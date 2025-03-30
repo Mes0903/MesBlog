@@ -125,9 +125,23 @@ export default sidebar([
     collapsible: true,
     prefix: "/ComputerGraphic/",
     children: [
-      "glfwInputGuide/",
-      "HomogeneousCoordinates/",
-      "MVPTransformation/",
+      {
+        text: "GAMES101",
+        collapsible: true,
+        prefix: "/ComputerGraphic/GAMES101/",
+        children: [
+          "HomogeneousCoordinates/",
+          "MVPTransformation/",
+          "Rasterization/"
+        ]
+      },
+      {
+        text: "其他",
+        collapsible: true,
+        children: [
+          "glfwInputGuide/",
+        ]
+      },
     ],
   },
   {
