@@ -50,7 +50,7 @@ order: 1
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/1.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Introduction/image/1.png?raw=true">
 
 </div><br>
 
@@ -110,7 +110,7 @@ OS 主要的考量、需求有二：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/2.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Introduction/image/2.png?raw=true">
 
 </div><br>
 
@@ -124,7 +124,7 @@ OS 主要的考量、需求有二：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/3.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Introduction/image/3.png?raw=true">
 
 </div><br>
 
@@ -186,7 +186,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/4.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Introduction/image/4.png?raw=true">
 
 </div><br>
 
@@ -200,7 +200,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/5.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Introduction/image/5.png?raw=true">
 
 </div><br>
 
@@ -232,7 +232,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/6.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Introduction/image/6.png?raw=true">
 
 </div><br>
 
@@ -256,7 +256,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/7.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Introduction/image/7.png?raw=true">
 
 </div><br>
 
@@ -284,7 +284,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/8.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Introduction/image/8.png?raw=true">
 
 </div><br>
 
@@ -340,7 +340,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/9.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Introduction/image/9.png?raw=true">
 
 </div><br>
 
@@ -354,7 +354,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/10.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Introduction/image/10.png?raw=true">
 
 </div><br>
 
@@ -398,7 +398,7 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/11.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Introduction/image/11.png?raw=true">
 
 </div><br>
 
@@ -434,7 +434,7 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/Introduction/image/12.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Introduction/image/12.png?raw=true">
 
 </div><br>
 

@@ -38,7 +38,7 @@ Interface 大家應該都很熟悉，其實只分兩個：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/1.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/1.png?raw=true">
 
 </div><br>
 
@@ -102,7 +102,7 @@ API 的目的是方便使用者使用，所以像 `abs()`，取絕對值的 func
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/2.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/2.png?raw=true">
 
 </div><br>
 
@@ -132,7 +132,7 @@ system call 一樣是 function，所以也會有參數需要傳遞，一般來�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/3.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/3.png?raw=true">
 
 </div><br>
 
@@ -146,7 +146,7 @@ system call 一樣是 function，所以也會有參數需要傳遞，一般來�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/4.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/4.png?raw=true">
 
 </div><br>
 
@@ -166,7 +166,7 @@ Microkernel 主要的想法是 kernel 的程式碼應該要越少越好，因為
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/5.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/5.png?raw=true">
 
 </div><br>
 
@@ -182,7 +182,7 @@ Modular 有一個很重要的點是它 loadable，也就是可以去 load kernel
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/6.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/6.png?raw=true">
 
 </div><br>
 
@@ -204,7 +204,7 @@ VM 可以把底層的架構抽象化，在底層已經灌了一個 OS 的情況�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/7.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/7.png?raw=true">
 
 </div><br>
 
@@ -246,7 +246,7 @@ VM 可以把底層的架構抽象化，在底層已經灌了一個 OS 的情況�
 
     <div class = "center-column">
 
-    <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/8.png?raw=true">
+    <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/8.png?raw=true">
 
     </div>
 2. Para-virtualization  
@@ -255,7 +255,7 @@ VM 可以把底層的架構抽象化，在底層已經灌了一個 OS 的情況�
 
     <div class = "center-column">
 
-    <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/9.png?raw=true">
+    <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/9.png?raw=true">
 
     </div>
 3. Java VM
@@ -268,6 +268,6 @@ VM 可以把底層的架構抽象化，在底層已經灌了一個 OS 的情況�
 
     <div class = "center-column">
 
-    <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OS-Structured/image/10.png?raw=true">
+    <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/10.png?raw=true">
 
     </div>
