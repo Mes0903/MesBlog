@@ -32,7 +32,7 @@ OS 有兩種方法，來解決大多數空間管理問題。第一種是將空�
 
 <div class = "center-column">
 
-![](image/18-1.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/image/18-1.png?raw=true">
 
 </div>
 
@@ -75,7 +75,7 @@ movl <virtual address>, %eax
 
 <div class = "center-column">
 
-![alt text](image/VPN.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/image/VPN.png?raw=true">
 
 </div>
 
@@ -83,7 +83,7 @@ movl <virtual address>, %eax
 
 <div class = "center-column">
 
-![alt text](image/VPN-2.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/image/VPN-2.png?raw=true">
 
 </div>
 
@@ -99,7 +99,7 @@ movl 21, %eax
 
 <div class = "center-column">
 
-![alt text](image/VPN-3.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/image/VPN-3.png?raw=true">
 
 </div>
 
@@ -109,7 +109,7 @@ movl 21, %eax
 
 <div class = "center-column">
 
-![alt text](image/18-3.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/image/18-3.png?raw=true">
 
 （Figure 18.3：位址轉換過程）
 
@@ -146,7 +146,7 @@ page table 可以變得非常大，比我們之前討論過的 small segment tab
 
 <div class = "center-column">
 
-![alt text](image/18-4.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/image/18-4.png?raw=true">
 
 (Figure 18.4：一個 Kernel Physical Memory 內的 Page Table 的例子)
 
@@ -186,7 +186,7 @@ page table 就是一種資料結構，用於將虛擬位址映射到物理位址
 
 <div class = "center-column">
 
-![alt text](image/18-5.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/image/18-5.png?raw=true">
 
 </div>
 
@@ -332,7 +332,7 @@ page table 的確切結構要麽由硬體（舊系統）決定，要麽由 OS（
 
 <div class = "center-column">
 
-![alt text](image/18-7.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/image/18-7.png?raw=true">
 
 （Figure 18.7：虛擬與物理記憶體的追蹤）
 
