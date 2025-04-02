@@ -153,6 +153,7 @@ export default sidebar([
         collapsible: true,
         prefix: "/OS/OSTEP/",
         children: [
+          "paging/"
         ]
       },
     ],
