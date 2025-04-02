@@ -439,7 +439,7 @@ TLB 和所有快取一樣，建立在一個基本假設上：大部分情況下�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/image/19-2.png?raw=true"
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/image/19-2.png?raw=true">
 
 </div>
 
@@ -652,7 +652,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/image/19-4.png?raw=true"
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/image/19-4.png?raw=true">
 
 </div>
 
