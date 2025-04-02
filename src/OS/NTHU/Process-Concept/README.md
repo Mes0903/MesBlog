@@ -8,7 +8,7 @@ order: 3
 
 # Ch3 Processes Concept
 
-### Process Concept
+## Process Concept
 
 前面一直看到 Process 和 Program，他們翻成中文都叫程式，但他們是有一些差別的，Program 是一堆儲存在 disk 裡面的 binary，它是死的東西，只是個檔案，等著被執行，簡單來講就是程式碼而已。而 Process 就是跑起來的 Program，在 memory 裡面，因為正在被執行，是活的
 
@@ -40,7 +40,7 @@ order: 3
 
     在開檔，使用電腦上的資源時，Process 會需要一個類似 token 的東西，讓 OS 能夠知道你開了哪些檔案，或是用了多少 socket port 等等
 
-### Process in Memory
+## Process in Memory
 
 所以我們常說一個 Process 在 OS 的世界裡就是一個 memory 的 space，基本長的會像這樣：
 
@@ -54,7 +54,7 @@ order: 3
 
 heap 和 stack 的大小是會隨 Process 執行而變化的，而 data 段和 code 段則是固定的
 
-### Thread
+## Thread
 
 另一個你可能很常聽到的東西是 thread，thread 和 process 很相似，但也有一些地方不一樣
 
@@ -76,7 +76,7 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 因為要可以獨立執行，所以 thread 會有自己的 ID，program counter，register set 和 stack，讓 OS 知道它是 Process 裡的哪一個 thread
 
-### Process State
+## Process State
 
 一個 Process 被 launch 起來後整個執行的過程主要會有五個狀態
 
@@ -110,7 +110,7 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 </div><br>
 
-### Process Control Block (PCB)
+## Process Control Block (PCB)
 
 上面的 Process State 是一個管理的邏輯，實現的方式是 OS 會幫 Process 建立一個 table，紀錄剛剛那些 information，這樣 OS 就可以知道誰在 Queue 裡面，誰的 State 是什麼等等：
 
@@ -124,7 +124,7 @@ PCB 是 OS 建立的一個物件，前面提到 Process 會被放到 Queue 裡�
 
 另外 PCB 裡面還會有 Process State，Program counter，CPU register 等資訊，這些東西是放在 memory 裡面，而且是 kernel space，是 OS 自己的 memory 裡面
 
-### Context Switch
+## Context Switch
 
 前面有提到 Process 需要在 CPU 與 memory 間，與其它的 Process 交換，這動作有個專有名詞叫 Context Switch，這部分也是利用了 PCB 來完成
 
@@ -183,7 +183,7 @@ Process 在被 schedule 的過程中會被放在 OS 內部的 qeueu 裡面，他
 
 </div><br>
 
-### Scheduler
+## Scheduler
 
  Scheduler 是負責幫忙做 scheduling 的 process，依照場合可將其分為三類，也可以對應到上方的三個 queue：
  
@@ -209,7 +209,7 @@ Process 在被 schedule 的過程中會被放在 OS 內部的 qeueu 裡面，他
 
 ## Process Creation
 
-### PID
+## PID
  
 Process 在 OS 中是一個實體，要找到他 我們就需要給 Process 一個 id，這個 id 我們稱之為 pid
  
@@ -221,11 +221,11 @@ Process 要產生需要被 Parent create，所以我們一定可以把 Process �
 
 </div><br>
 
-### Process Creation
+## Process Creation
 
 Parent 和 Child Process 會有一定的關聯性，但實際上有什麼樣的關聯性是交由 OS 設計者來決定的
 
-#### fork
+### fork
 
 在 UNIX/Linux 中，要創建一個 Process，我們需要使用 `fork` 這個 system call，被 fork 出來的 child 的記憶體配置一開始會和 parent process 一模一樣
 
@@ -294,13 +294,13 @@ Shared memory 的優點是快，透過 memory address 來 access data，但缺�
 
 一般來說，在同一台電腦上，溝通的 Process 多，情況複雜，我們就會使用 Message Passing，如果溝通的 Process 少，Communication Pattern 比較簡單，我們就會使用 Shared Memory，
 
-### Shared Memory
+## Shared Memory
 
 主要是用 Thread Porgramming 的方式在寫，因此條件很單純，因為就是 memory access，唯一的條件就是你要有辦法去創見一塊共用的記憶體出來，這件事情預設是不會有的，需要靠 system call 才能做到
 
 另外 Shared Memory 需要處理 Synchronization 的問題，不能讓兩個 Process 同時寫一塊記憶體，可以看一個知名的例子
 
-#### Consumer & Producer Problem
+### Consumer & Producer Problem
 
 Producer 是一個 Process 負責產生 data，而 Consumer 是另一個 Process 負責消耗 data，所以有兩支不同的 Process，並會有一段共用的記憶體空間給這兩個 Process 放 data 與拿 data
 
@@ -375,7 +375,7 @@ procedure consumer() {
 
 我有實作一個 Demo 用的小程式，我是使用 semaphore 來處理 Synchronization Problem，你可以在這個[連結](https://www.youtube.com/watch?v=I1nM207KStg)內看到我的錄影，底下說明欄有對應的 code，這是跑在 windows 上的，如果需要 unix 的版本，網路上應該蠻多的
 
-### Message Passing
+## Message Passing
 
 要使用 Message Passing，首先我們要建立一個管道，這可以是一個 Hardware bus，或是網路，甚至是一塊 shared memory 都可以，因為這是一個機制，你只要有管道能讓你溝通就可以
 

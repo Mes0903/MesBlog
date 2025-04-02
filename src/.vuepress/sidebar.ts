@@ -23,17 +23,6 @@ export default sidebar([
         ],
       },
       {
-        text: "OS",
-        collapsible: true,
-        prefix: "/OS/",
-        children: [
-          "",
-          "Introduction/",
-          "OS-Structured/",
-          "Process-Concept/",
-        ],
-      },
-      {
         text: "ROS",
         collapsible: true,
         prefix: "/ROS/",
@@ -140,6 +129,30 @@ export default sidebar([
         collapsible: true,
         children: [
           "glfwInputGuide/",
+        ]
+      },
+    ],
+  },
+  {
+    text: "OS",
+    collapsible: true,
+    children: [
+      {
+        text: "清大周志遠 OS",
+        collapsible: true,
+        prefix: "/OS/NTHU/",
+        children: [
+          "",
+          "Introduction/",
+          "OS-Structured/",
+          "Process-Concept/",
+        ]
+      },
+      {
+        text: "OSTEP",
+        collapsible: true,
+        prefix: "/OS/OSTEP/",
+        children: [
         ]
       },
     ],

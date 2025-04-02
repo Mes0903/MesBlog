@@ -8,15 +8,15 @@ order: 1
 
 # Ch1 基礎概論
 
-### 什麼是作業系統?
+## 什麼是作業系統?
 
-#### Introduction
+### Introduction
 
 「作業系統（英語：Operating System，縮寫：OS）是一組主管並控制電腦操作、運用和執行硬體、軟體資源和提供公共服務來組織使用者互動的相互關聯的系統軟體程式」── [wiki](https://zh.wikipedia.org/wiki/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F)
 
 簡單來說就是一個管理電腦的系統程式，是使用者和電腦硬體的介面 (interface)
 
-#### Computer System
+### Computer System
 
 整個電腦系統主要可以分成四個部分：硬體、作業系統、應用程式和使用者，這邊先對它們做個簡單的介紹，但這些不是定義，只是一個描述
 
@@ -44,7 +44,7 @@ order: 1
 
 因此作業系統就會有一些 for virtual resource 的 API 可以使用，這些 API 我們也常稱它為 system call，<span class="yellow">這些 API 是 user 與 resource 間唯一的 interface</span>
 
-#### Example
+### Example
 
 我們看一個例子：
 
@@ -64,7 +64,7 @@ Device Driver 也算 OS 的一部份，把它抽出來是因為它是可以一�
 
 因此這個過程中我們會先呼叫 `printf`，然後會呼叫到 system call，再去呼叫到 driver 這樣一層一層下去
 
-#### Goals of an Operating System
+### Goals of an Operating System
 
 OS 主要的考量、需求有二：
 
@@ -76,7 +76,7 @@ OS 主要的考量、需求有二：
 
 而這兩點是 trade-off 的，因為「方便」是給 user 的，一定會多加到一些東西，所以速度就會慢下來，因此就看怎麼設計怎麼取捨
 
-#### Modern Operating Systems
+### Modern Operating Systems
 
 這邊列幾個常見的 OS：
 
@@ -102,7 +102,7 @@ OS 主要的考量、需求有二：
     
     如 Raspberry Pi、Xbox 等等
 
-### Computer-System Organization
+## Computer-System Organization
 
 知道了 OS 的定位、角色之後就要開始講它到底是如何運作的了
 
@@ -118,7 +118,7 @@ OS 主要的考量、需求有二：
 
 而 coordinate 部份的問題是今天可能有很多程式，OS 需要讓它們能夠同時執行在這台電腦上而不出錯，像是 A Process 不能去修改到 B Process 的資料之類的
 
-#### Computer-System Operations
+### Computer-System Operations
 
 這是一個 OS 基本運作的例子：
 
@@ -138,7 +138,7 @@ OS 主要的考量、需求有二：
 
 因此在讀資料時，I/O Device 需要先和 Device Controller 做 I/O，跟 cpu 無關，但是後面因為 memory 是 cpu 在使用的，所以後半段的操作就需要 cpu 去下指令操作
 
-#### Busy Waiting
+### Busy Waiting
 
 那麼 cpu 那邊要怎麼控制呢? 一個早期大家想到的最簡單的方法就是 Busy Waiting，完全由 cpu 來控制，這邊舉個簡單的例子：
 
@@ -174,7 +174,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 如果我們是這樣做 I/O 的，那整個效率就會很差，因為 I/O 和 cpu 並沒有 overlap，一個程式在做 I/O 的時候仍會霸佔住 cpu
 
-#### Interrupt
+### Interrupt
 
 因為 Busy waiting 非常沒有效率，在檢查是否為 busy 時 cpu 沒法做其他的事，會整個卡在那邊，也因此會很難同時處理多個 I/O
 
@@ -226,7 +226,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 而我們把 error 與 system call，也就是軟體送出的 Interrupt，統稱為 <span class = "yellow">trap</span>
 
-#### Hardware Interrupt (Signal)
+### Hardware Interrupt (Signal)
 
 那我們現在來仔細看一下他的流程，首先是 Signal：
 
@@ -250,7 +250,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 妳可以發現 Interrupt vector 的大小是固定的，因為它是跟 Hardware 綁在一起的，妳一個主機板買來它就有固定的 Signal handler number，妳只能替換掉裡面的東西
 
-#### Software Interrupt (Trap)
+### Software Interrupt (Trap)
 
 接下來是 Trap，一樣看一下它的流程：
 
@@ -268,7 +268,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 但總之一樣會有個 number，讓它可以去查是對應哪個 function call，並去執行那個 routine，然後再回到剛剛被打斷的 Process
 
-#### 補充
+### 補充
 
 妳可能會想到當我 Interrupt Service Routine 執行到一半時又收到 Interrupt 怎麼辦？ 這樣的話會不斷不斷被打斷，如此一來就會需要紀錄很多的資訊，像前面提到的 program counter 的位址，完成後才能回到上一個狀態，間接成本就會很高
 
@@ -278,7 +278,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 所以 Interrupt 是可以被 mask 掉的，會有 High Priority 與 Low Priority 的 Interrupt，當 High Priority 的 Interrupt 正在被執行時，Low Priority 的 Interrupt 全部會被無視，所以有時候妳動滑鼠就會沒反應，因為它可能卡在某個 routine 裡面
 
-### Storage-Device Hierarchy
+## Storage-Device Hierarchy
 
 接下來要講電腦資料讀取的基本方式，大家應該都很熟悉了，電腦資料在儲存其實是一個 Hierarchy 的架構：
 
@@ -292,7 +292,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 這些只是傳統上的分類，現在有很多新的裝置會插在中間，但一樣可以用速度、價格、容量、揮發性(Volatility) 來看
 
-#### Main memory
+### Main memory
 
 儲存這邊最重要的一個分隔點就是主記憶體，主記憶體是 cpu 能直接訪問的最後一層了，它上面可以有很多層，像是 register、cache，看妳怎麼設計，但這些都只是 copy 而已，最後這些資料還是已主記憶體上的資料為主
 
@@ -326,7 +326,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 大部分的這些 solution 都有 trade-off，畢竟如果有一個完美的方案那就不用再去分這兩個了，而上面這些只是大概提一下，不用特別去記，畢竟比較跟 OS 無關
 
-#### Secondary Storage
+### Secondary Storage
 
 而主記憶體以下的統稱為 Secondary Storage，如果妳想讓 cpu 讀它，必須要先把它搬到主記憶體才能讀，所以會比較慢
 
@@ -348,7 +348,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 而 SSD 就是電子式的，且讀取速度與資料在哪裡也沒什麼關係，所以速度才會比較快，但如果是讀取連續的資料，那 SSD 與 HDD 其實不會差太多，SSD 是贏在資料跳來跳去的狀況
 
-#### Caching
+### Caching
 
 而電腦的資料通常最終會儲存在最慢的 Device 裡面，因此我們會把資料 copy 到比較快的 Device 上面，用到的頻率越高，我們就會把它存到越上層，所以才會需要有 L1、L2、L3 的 Cache，加速 cpu 的計算：
 
@@ -366,7 +366,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 也因此有些系統是沒有 Cache 的，看妳怎麼設計，一個例子是處理巨量資料的系統，因為資料量非常大，所以一定是掃過一遍就丟掉，不可能在這邊來來回回檢查，且資料很有可能大到 memory 都塞不下，這種狀況下 Cache 就沒意義了
 
-#### Coherency and Consistency Issue
+### Coherency and Consistency Issue
 
 Cache 的定義是 Copy，只是個分身，不能跟本尊不同，如果不同，就會有 Coherency 的問題，也就是不一致性
 
@@ -376,11 +376,11 @@ Cache 的定義是 Copy，只是個分身，不能跟本尊不同，如果不同
 
 因此如果今天妳的 Data 只有被一個 Process 訪問，那其實不會有什麼問題，妳再慢更新後面的資料也沒關係；但如果今天有很多個 Process 在 share 同一段 memory content，那就會有問題了，在分散式系統裡面這也是一個很重要的議題，因為還牽扯到了網路
 
-### Hardware Protection
+## Hardware Protection
 
 Protection 指的不是 Security，而是指很多程式、使用者同時在使用電腦時不會影響到對方，像是如果 A 程式 crash 了，B 程式應該也要能繼續跑；或是指某個程式只能使用某段 memory content，不能不通過 OS 就去使用到別人的 memory，諸如此類的
 
-#### Dual-Mode Operation
+### Dual-Mode Operation
 
 前面在講的時候都有把 OS 與 User 分開，有些動作只有 OS 能做，那要怎麼區分 User 與 OS? 在最底層，Hardware 必須進來，因為 Hardware 是很難被修改，東西已經燒在上面的，所以 Hardware 可以做一些最基本的 Protection
 
@@ -406,7 +406,7 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 因此 Interrupt 還有一個很重要的意義就是 Program 會從 User mode 切換到 Kernel mode，等到 OS 做完，return 到 User Program 時，那個 bit 才會 flip 回來
 
-#### Privileged instructions
+### Privileged instructions
 
 那我們就可以透過這個機制來保護電腦，今天我們要做任何事都要透過 instruction，如果某個 instruction 會影響到其他人，我們就會要求他一定要透過 OS，這個是 instruction 在設計的時候就寫死的，也就是它有一個 set 叫做 Privileged instructions
 
@@ -414,7 +414,7 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 所以 User 需要透過 system call 才能讓 OS 幫忙做事，這樣 OS 就可以完全 control 哪些動作能做哪寫不能
 
-#### I/O Protection
+### I/O Protection
 
 那接下來我們就要看怎麼去保護電腦，首先是 I/O 方面，而與 I/O 有關的 instruction <span class = "yellow">全都都需要保護</span>，因為 I/O 的資源是 share 的，像是螢幕輸出，都時同一個螢幕，硬碟儲存也是同一顆硬碟。 
 
@@ -422,7 +422,7 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 但這樣其實還是有一些漏洞，沒法繞過 I/O，但還是可以繞 memory，像是透過合法的 I/O 流程去修改原本應該要執行的函式，讓它執行我們想要做的事這類的，有在打 CTF 的應該很熟
 
-#### Memory Protection
+### Memory Protection
 
 所以更重要的還是保護 memory，首先當然 Interrupt vector 不能被改，然後就是別人的 Data 不能被修改這類的
 
@@ -442,7 +442,7 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 要注意的是 Base register 與 Limit register 都是 register，裡面存的都是值，如果要修改這個值，這個 instruction 需要是 Privileged instructions，不然這個機制也沒用了
 
-#### CPU Protection
+### CPU Protection
 
 cpu 的保護主要是要阻止一個程式可以霸佔 cpu，不讓別的程式執行，舉個例子，當我們有一個 Process 裡面有無限迴圈，我們一樣可以把它 ctrl+c 掉，不會 cpu 直接被霸佔，電腦整個當掉
 
