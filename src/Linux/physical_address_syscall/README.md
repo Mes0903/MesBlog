@@ -147,7 +147,8 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 首先我們要新增自己的 system call，打開 `arch/x86/entry/syscalls/syscall_64.tbl`
 
 在第 377 行後面新增我們自己的 system call：
-```clike
+
+```c
 454 common  my_get_physical_addresses   sys_my_get_physical_addresses   
 ```
 
