@@ -315,7 +315,9 @@ else // TLB Miss
       RetryInstruction()
 ```
 
-> 這段 code 在原文中是張圖，Figure 20.6: Multi-level Page Table Control Flow
+:::info  
+這段 code 在原文中是張圖 — Figure 20.6: Multi-level Page Table Control Flow  
+:::
 
 在進行複雜的 multi-level page table 操作之前，硬體會先檢查 TLB；如果命中，就能直接產生 physical address，根本不用查 page table。 只有在 TLB 未命中時，硬體才需要執行完整的 multi-level 查表。 在這條路徑上，你就會看到傳統 2-level page table 的代價，其需要兩次額外的記憶體操作才能查出一筆有效的轉譯
 
