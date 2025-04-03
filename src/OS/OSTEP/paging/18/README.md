@@ -20,7 +20,7 @@ OS 有兩種方法，來解決大多數空間管理問題。 第一種是將空�
 - 如何讓這些技術運行良好，並盡可能減少空間和時間開銷？  
 :::
 
-> 本文中如果使用 virtual page，則專指 VPN 對應到的邏輯上的 page。 如果是指物理上的 page 則會寫 page frame。 若只寫 page，則代表這是個 general 的概念，對於 virtual page 或 page frame 都通，此時想表達的只是一個固定大小的記憶體區段  
+> 本文中如果使用 virtual page，則專指 VPN 對應到的邏輯上的 page。 如果是指物理上的 page 則會寫 page frame。 若只寫 page，則代表這是個 general 的概念，對於 virtual page 或 page frame 都通，此時想表達的只是一個固定大小的記憶體區段<br><br>
 >  
 > 另外，page table 的元素被稱為 PTE，這與 virtual page 及 page frame 是不同的東西，不要搞混了。 OS 會利用 virtual page 的 VPN 查找 page table，以得到 PTE，PTE 內部會記錄對應的 PFN（看 18.3 中 x86 的例子），之後再利用 PFN 得到 page frame
 
