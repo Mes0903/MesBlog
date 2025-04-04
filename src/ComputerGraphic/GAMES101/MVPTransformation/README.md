@@ -436,6 +436,34 @@ $$
 M_{persp} = M_{ortho} M_{persp \rightarrow ortho}
 $$
 
+乘出來的結果為：
+
+$$
+M_{\text{persp}} 
+= 
+\begin{bmatrix}
+\frac{2n}{r - l} & 0 & -\frac{r + l}{r - l} & 0 \\
+0 & \frac{2n}{t - b} & -\frac{t + b}{t - b} & 0 \\
+0 & 0 & \frac{n + f}{n - f} & -\frac{2nf}{n - f} \\
+0 & 0 & 1 & 0
+\end{bmatrix}
+$$
+
+如果是 OpenGL，由於其 NDC 使用左手系，因此長的會不一樣：
+
+$$
+M_{\text{persp}} 
+= 
+\begin{bmatrix}
+\frac{2n}{r - l} & 0 & \frac{r + l}{r - l} & 0 \\
+0 & \frac{2n}{t - b} & \frac{t + b}{t - b} & 0 \\
+0 & 0 & \frac{n + f}{n - f} & \frac{2nf}{n - f} \\
+0 & 0 & 1 & 0
+\end{bmatrix}
+$$
+
+可以到這邊看更多：https://www.songho.ca/opengl/gl_projectionmatrix.html
+
 ## FOV of Frustum
 
 這邊補充一下我們如何定義一個四角錐，前面提到立方體可以用 X、Y、Z 軸的覆蓋，也就是六個數字去表示一個立方體
