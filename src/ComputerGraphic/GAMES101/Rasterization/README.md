@@ -567,7 +567,7 @@ MSAA 的結果：
 
 這也是為什麼當大家在打遊戲時，如果開啟了 MSAA，假設用個 `2x2` 倍，幀率並不會真的變成原來的四分之一
 
-## 其他相關
+### 其他相關
 
 這邊再多簡單提兩個現代常用的抗鋸齒方法，除了 MSAA，較為重要的兩種為 FXAA 與 TAA，這兩個得到了工業界的廣泛應用
 
@@ -590,3 +590,83 @@ TAA 是 Temporal Anti-Aliasing 的縮寫，是最近幾年才剛剛興起的方�
 因此和抗鋸齒很像，都是要解決取樣率不足的問題，這邊簡單介紹一種做法較 DLSS，它通過深度學習，用猜的把那些缺失的細節給生出來了，也就可以將原本的圖恢復成高解析度的圖了
 
 牽扯到「猜」，那肯定就會利用到深度學習了
+
+## Z-Buffer（Depth buffer）
+
+### Painter's Algorithm
+
+現在回來處理 $Z$ 值的問題，假設場景中有很多不同的物體，我們要把這些物體都畫到螢幕上，一個很直觀的想法是針對物體被畫出的順序來作文章，如果我們畫的順序是對的，像畫油畫一樣，先畫最遠的物體，再畫近的物體，使其覆蓋遠的物體，這樣我們就可以從遠到近的把這幅畫給畫出來
+
+對於我們來說，就是先對遠處的物體做光柵化，再慢慢往前對近處的物體做光柵化，因為整體流程與畫油畫類似，因此這個方法被稱為畫家演算法（Painter's Algorithm）
+
+假設我們要畫一個立方體，那可以先畫最遠的面，再考慮周圍的四個面，最後再畫上方的面：
+
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/cube.png?raw=true">
+
+</div>
+
+但畫家演算法有一個問題，直接看圖比較好理解：
+
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/painter_problem.png?raw=true">
+
+</div>
+
+上圖內有三個三角形，P 覆蓋 Q，Q 覆蓋 R，但 R 又覆蓋 P，形成了一個環，屬於一個互相遮擋的關係。 在這種情況下，我們就沒有辦法定義它們的深度關係了，因此也就無法使用畫家算法了
+
+### Z-Buffer（Depth buffer）
+
+為此，圖形學引入了一個概念，叫做 Z-Buffer，這是一個目前廣泛採用的演算法，它的想法也很簡單，剛剛的問題是我們判斷的依據是一個物體，現在我們改成針對每個像素來判斷深度關係，紀錄一個像素能見的最淺深度，便可以解決剛剛的問題了
+
+我們通常會在 Rendering 的過程中生成另一張圖，這張圖用來存所有像素紀錄能見的最淺深度，這張圖被稱為深度圖：
+
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/z_buffer.png?raw=true">
+
+</div>
+
+上圖的左側為我們 Rendering 的主目標，其結果為 frame buffer，而引入 z-buffer 後的副產物就是右圖，用來記錄所有像素對應的深度，並將其反映在顏色上，越近越黑，包括地板的顏色也是
+
+接下來來談如何實作，上一節我們在討論變換的時候提到一個事情 — 相機放在原點，並看向負 Z 方向。 這邏輯上代表我們看到的所有 Z 值都小於 0，因此數字如果越小，代表離我們越遠，反之數字越大就越近。 由於這個特性，同時為了方便計算，我們還可以將深度可以理解為相機到該像素紀錄的點的距離，距離永遠是正的，而且距離越小越近，與前面的特性相襯
+
+實作上兩種方法都有人用，寫 code 的時候要注意其是如何判斷深度的，下面是一個簡單的範例：
+
+```cpp
+for each triangle T
+  for each sample (x,y,z) in T
+    if (z < zbuffer[x,y])    // closest sample so far
+      framebuffer[x,y] = rgb;    // update color
+      zbuffer[x,y] = z;    // update depth
+    else
+      ;    // do nothing, this sample is occluded
+```
+
+一樣以上圖為例，假設目標像素一開始先考慮了地板，我們就會把地板的深度給記錄下來，接著來開始考慮立方體，立方體的三角形會告訴我們在目標像素上的深度是多少，然後我們拿這個深度與 Z-Buffer 中紀錄的深度對比，就會發現其深度比較小，此時我們便可以更新 Z-Buffer 了
+
+::: info  
+此例中，一開始 Z-Buffer 的所有元素都會被初始化為無限遠，如此才有辦法紀錄地板的深度  
+:::
+
+再看另一個例子：
+
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/z_buffer2.png?raw=true">
+
+</div>
+
+上圖中有兩個三角形，一個紅的一個藍的，紅的三角形深度都為 5，藍色三角形擺的有個角度所以深度各不相同。 我們先判斷了紅色的三角形，因此 Z-Buffer 將紅色三角形的深度更新了進去，接著開始判斷藍色三角形，你可以看到只有深度小於 5 的像素會被更新進去。 如果我們先考慮藍色的三角形，那結果基本上會是一樣的，由此你也可以發現 Z-Buffer 的演算法和順序是沒有關係的，這是一個不錯的特性
+
+你可以發現上圖中兩個三角形互相覆蓋了彼此的一部分，實務上我們通常用浮點數來表示深度，所以很少會出現深度相同的狀況，因此透過維護一張這樣的表，我們就可以得到一個準確的深度關係了
+
+Z-Buffer 的核心思想是以像素為單位來考慮深度，但由於走訪的單位是物體，因此複雜度為 $O(N)$，$N$ 為三角形的數量（這個算法不需要排序，只記錄最小值，所以不會是 $nlogn$）
+
+另外，對於 MSAA，如果我們要應用 Z-Buffer，那就還要再考慮其是要以像素為單位，還是以 MSAA 裡面的每個取樣點為單位來建表，通常是會以小的取樣點建表，詳細可見 GAMES101 作業二的 issue：[Games101｜作業2 + 光柵化+ SSAA vs MSAA + 黑邊問題](https://zhuanlan.zhihu.com/p/454001952)
+
+:::info  
+Z-Buffer 處理不了透明物體，透明物體要特殊處理，後面再說  
+:::
