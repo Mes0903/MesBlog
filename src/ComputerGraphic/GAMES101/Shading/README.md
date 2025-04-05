@@ -220,7 +220,7 @@ $I/r^2$ 是著色點的光強，而 $n \cdot l$ 為兩向量的夾角，表示�
 
 <div class = "center-column">
 
-![alt text](image/shading_frequency.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/shading_frequency.png?raw=true">
 
 </div>
 
@@ -238,7 +238,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/flat_shading.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/flat_shading.png?raw=true">
 
 </div>
 
@@ -248,7 +248,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/gouraud_shading.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/gouraud_shading.png?raw=true">
 
 </div>
 
@@ -260,7 +260,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/phong_shading.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/phong_shading.png?raw=true">
 
 </div>
 
@@ -272,7 +272,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/frequency_compare.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/frequency_compare.png?raw=true">
 
 </div>
 
@@ -290,7 +290,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/per_vertex_normal_vector.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/per_vertex_normal_vector.png?raw=true">
 
 </div>
 
@@ -306,7 +306,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/per_pixel_normal_vector.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/per_pixel_normal_vector.png?raw=true">
 
 </div>
 
@@ -320,7 +320,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/texture_mapping.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_mapping.png?raw=true">
 
 </div>
 
@@ -334,7 +334,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/texture_mapping2.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_mapping2.png?raw=true">
 
 </div>
 
@@ -344,7 +344,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/texture2.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture2.png?raw=true">
 
 </div>
 
@@ -362,7 +362,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/texture_coordinate.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_coordinate.png?raw=true">
 
 </div>
 
@@ -372,11 +372,11 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 紋理可以應用在各種不同的物體表面，再看個例子：
 
-![alt text](image/texture3.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture3.png?raw=true">
 
 如果我們把它所有點的紋理座標都顯示出來，那會長這樣：
 
-![alt text](image/texture4.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture4.png?raw=true">
 
 你可以看見座標不斷地從 0 到 1 重複，就好像在貼磁磚一樣，如此一來便可以把整個物體給貼滿，這也告訴我們紋理圖上的點並不需要只被用一次，一個點可以映射到三維空間中的不同位置
 
@@ -390,7 +390,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/graphic_pipeline.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/graphic_pipeline.png?raw=true">
 
 </div>
 
@@ -398,7 +398,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/MVP.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/MVP.png?raw=true">
 
 </div>
 
@@ -406,7 +406,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/rasterization.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/rasterization.png?raw=true">
 
 </div>
 
@@ -414,7 +414,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/z_buffer.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/z_buffer.png?raw=true">
 
 </div>
 
@@ -422,7 +422,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/shading.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/shading.png?raw=true">
 
 </div>
 
@@ -432,7 +432,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-![alt text](image/texture.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture.png?raw=true">
 
 </div>
 
