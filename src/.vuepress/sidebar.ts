@@ -121,7 +121,8 @@ export default sidebar([
         children: [
           "HomogeneousCoordinates/",
           "MVPTransformation/",
-          "Rasterization/"
+          "Rasterization/",
+          "Shading/",
         ]
       },
       {
