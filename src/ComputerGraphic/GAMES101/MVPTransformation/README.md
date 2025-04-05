@@ -1,5 +1,5 @@
 ---
-title: MVP Transformation
+title: Games101：MVP Transformation
 date: 2025-03-14
 tag: 
   - computer-graphic
@@ -7,7 +7,7 @@ tag:
 category: computer-graphic
 ---
 
-# MVP Transformation
+# Games101：MVP Transformation
 
 我們的最終目的是將三維的世界顯示在二維的螢幕上，在現實生活中我們可以透過相機拍照來達到這個效果，而在電腦內我們就要試著把這個過程變成一個轉換寫出來
 

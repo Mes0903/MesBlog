@@ -1,5 +1,5 @@
 ---
-title: Rasterization (光柵化)
+title: Games101：Rasterization (光柵化)
 date: 2025-03-29
 tag: 
   - computer-graphic
@@ -7,7 +7,7 @@ tag:
 category: computer-graphic
 ---
 
-# Rasterization (光柵化)
+# Games101：Rasterization (光柵化)
 
 在 MVP Transformation 一節中我們已經介紹了要如何將整個坐標系投影的螢幕坐標上，同時也先簡單介紹了螢幕空間，如果你還不曉得這些是什麼，那記得先去看前一節
 

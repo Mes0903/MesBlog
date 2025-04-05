@@ -1,5 +1,5 @@
 ---
-title: Homogeneous Coordinates(齊次座標)
+title: Games101：Homogeneous Coordinates(齊次座標)
 date: 2023-09-12
 tag: 
   - computer-graphic
@@ -7,7 +7,7 @@ tag:
 category: computer-graphic
 ---
 
-# Homogeneous Coordinates(齊次座標)
+# Games101：Homogeneous Coordinates(齊次座標)
 
 一般的轉換可以寫成矩陣的形式，像是
 
