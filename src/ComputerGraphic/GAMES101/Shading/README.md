@@ -206,4 +206,192 @@ $I/r^2$ 是著色點的光強，而 $n \cdot l$ 為兩向量的夾角，表示�
 
 上圖將三個不同的部分視覺化出來了，你可以看見環境光是個常數的顏色，而漫反射項則攜帶了主要的顏色資訊，高光攜帶了鏡面反射的資訊，三者加起來就可以得到上圖最右邊的結果，有點像塑膠玩具，這也是 Blinn-Phong 的特點之一，詳細的原因我們在後面的章節會再回來解釋
 
-## 
+:::info  
+由於 Blinn-Phong 是個經驗模型，所以你可以看見有很多東西都被簡化了。 假設一個模型中間有個凹進去的點，那照理說該部分應該會暗一些，但在 Blinn-Phong 的角度就不是如此，由於環境光是個常數，在 Blinn-Phong 中凹進去的部分並不會變暗
+
+再來 Blinn-Phong 也沒有考慮物體到觀察點的距離造成的能量損失，一般來說看一個較遠的物體應該要會比較暗，但在這裡就沒有這種現象
+
+要更精確地描述這些現象，要到後面講 Radiometry 的時候才會解釋了
+::: 
+
+## 著色頻率（Shading Frequencies）
+
+考慮完了一個最基礎的著色模型，接下來我們要來看著色點要怎麼取，這被稱為著色頻率（Shading Frequencies），看個例子：
+
+<div class = "center-column">
+
+![alt text](image/shading_frequency.png)
+
+</div>
+
+這三個球擁有完全的幾何形狀，也就是說他們的幾何表示在空間中是一模一樣的，由相同的三角形組成。 但你可以很清楚的看到這三個球的顏色不一樣，從色塊的邊界你就可以發現問題，這就是著色頻率
+
+著色頻率考慮我們要將著色應用在哪個部分，最左邊的球我們將著色應用到了一整個四邊形面上，每個面有一個固定的法向量，我們取一個面上的點求出其著色結果後，暴力的認為整個平面都是相同的顏色，也就是一個平面只做一次著色，你可以看見結果並不怎麼好
+
+中間的球考慮了平面的四個頂點，算出每個頂點對應的法向量，接著進行著色，面中間的顏色透過內差法補上，得到的就是該結果，你可以看到結果好了不少
+
+最右邊的球則將著色考慮到了每個像素上，也就與我們最一開始的想法一樣，你可以看見結果非常好，接下來我們來就來做一下正規的定義
+
+### Shade each triangle (flat shading)
+
+flat shading 對應到最左邊的球，將三角形的法向量求出來，這能透過將三角形的兩邊做外積求得。 接著我們根據使用的著色模型，算出一個著色的結果，而對於三角形的內部則沒有著色的變化，因此一個三角形只需要做一次著色：
+
+<div class = "center-column">
+
+![alt text](image/flat_shading.png)
+
+</div>
+
+### Shade each vertex (Gouraud shading)
+
+第二種方式對應到中間的球，叫做 Gouraud shading，對三角形上的頂點求出法向量，怎麼求我們等等再說，求出法向量後三個頂點各做一次著色，接著用內差將三角形內的顏色補上：
+
+<div class = "center-column">
+
+![alt text](image/gouraud_shading.png)
+
+</div>
+
+結果比第一種好，但你可以看到當三角形稍微大一點的時候，例如圖中右邊棕色的球，高光可能會消失
+
+### Shade each pixel (Phong shading)
+
+第三種對應到最右邊的球，叫做 Phong shading，對每一個像素進行一次著色，就可以得到一個相對較好的結果
+
+<div class = "center-column">
+
+![alt text](image/phong_shading.png)
+
+</div>
+
+這邊要注意 Phong Shading 與 Blinn-Phong Model 是兩個不同的東西，Phong Shading 指的是著色頻率，Blinn-Phong Model 是著色模型，只是剛好都是由同一個人發明所以名字一樣而已
+
+### 三者比較
+
+實際上要用哪種方法要取決於具體的模型，Flat Shadding 並不一定會比較差，看個比較圖：
+
+<div class = "center-column">
+
+![alt text](image/frequency_compare.png)
+
+</div>
+
+上圖中用的幾何模型都是一樣的，但 row 與 row 之間的三角形數會上升，中間的 row 比第一個 row 用了更多的三角形，也就是說幾何模型本身的面數變多，更光滑了。 你可以看見在幾何足夠複雜的情況下，我們其實可以用相對簡單的著色頻率，結果其實不會差太多
+
+另外，這些方法的成本需要同時考慮模型的面數與像素的數量，並不是說 Phong Shading 開銷就一定比較大。 當你的模型太過複雜，複雜到其面數已經超過了像素的數量，那自然用 Phong Shading 會比較快
+
+### 頂點法向量
+
+#### Per-Vertex Normal Vectors
+
+我們還留了一個問題，三角形頂點的法向量怎麼算。 假設在一個理想的情況下，我們知道模型要表達的是一顆球，但實作上是用三角形來表示
+
+那我們就可以知道三角形的頂點其實對應到球上的某一個點，此時就可以利用球的位置算出三角形頂點的法向量，這很好算，只要算出球心連向三角形頂點的向量即可，見圖中右上角部分：
+
+<div class = "center-column">
+
+![alt text](image/per_vertex_normal_vector.png)
+
+</div>
+
+但平常不可能有這麼好的事情，因此人們發明了一種方法，取任何一個頂點，他肯定會和很多個不同的三角形有所關連，例如上圖右下角的部分中，四個三角形共用了一個頂點，那我們就認為這個頂點的法向量是相鄰四個面的法向量的平均
+
+注意在這邊我們不做 normalize，我們希望如果一個三角形越大，那它貢獻的部分就越多，也就是說我們的平均是加權平均，權重以三角形的面積來計算，實務上這的確會帶來更好的結果
+
+這就是我們如何去定義一個以頂點為考量的法向量
+
+#### Per-Pixel Normal Vectors
+
+另一個是以像素為考量點，定義一個逐像素的法向量。 假設我們已經知道三角形頂點的法向量了，那我們可以透過重心座標來做內差，以得到對應的法向量：
+
+<div class = "center-column">
+
+![alt text](image/per_pixel_normal_vector.png)
+
+</div>
+
+上圖中我們的前提是知道左右兩個頂點的法向量，之後透過內差算出中間這些法向量。 這邊注意就要做 normalize 了，要保證他們長度都是相同的
+
+至於要怎麼做重心座標的內差，我們後面再提
+
+## Graphic Pipeline
+
+至此我們已經知道給一個幾何模型與著色模型，我們要怎麼得出渲染的結果了，把學到目前為止的東西都合在一起，被稱為 Graphic Pipeline，它描述的是從一個 3D 的場景到其真的變成一張 2D 的圖，到底經過了一系列怎麼樣的過程，每個組件就對應到我們前面的不同章節提到的概念：
+
+<div class = "center-column">
+
+![alt text](image/graphic_pipeline.png)
+
+</div>
+
+所以我們這邊就來做個統整、複習。 我們的輸入都是一系列空間中的點，因此第一步要做投影，將 3D 的點變換到螢幕空間中：
+
+<div class = "center-column">
+
+![alt text](image/MVP.png)
+
+</div>
+
+接著透過光柵化，對像素進行取樣，我們可以將其離散為不同的像素，在 OpenGL 內被稱為 fragment，在這步我們要算出不同像素的顏色是什麼：
+
+<div class = "center-column">
+
+![alt text](image/rasterization.png)
+
+</div>
+
+在計算的過程中我們產生了一系列的像素，此時還需要 Z-Buffer 來判斷其可不可見，當然這步我們可以把它也算到光柵化中，只是這裡分得比較細：
+
+<div class = "center-column">
+
+![alt text](image/z_buffer.png)
+
+</div>
+
+然後便是著色：
+
+<div class = "center-column">
+
+![alt text](image/shading.png)
+
+</div>
+
+在上圖中你會發現一件事，這裡頂點和像素的著色會同時發生，這是因為考慮到有不同的著色頻率，現代的 GPU 會讓這兩個部分變成可編成的，因此你可以在這兩個步驟中寫自己的 code 來控制要用什麼著色頻率。 整個實時渲染就是針對這兩個部分再做文章，通過程式碼來決定頂點和像素要怎麼處理，這些程式碼我們稱其為 shader，負責控制頂點和像素要如何著色
+
+最後還有一部分是紋理（Texture），讓我們可以顯示貼圖：
+
+<div class = "center-column">
+
+![alt text](image/texture.png)
+
+</div>
+
+這就是我們處理從三維場景到最後渲染出一張二維的圖的一個基本操作，而除了前面提到的 Vertex Processing 與 Fragment Processing，其餘的操作都是已經在 GPU 硬體內被寫好的
+
+### Shader Program
+
+Shader 本質上是一些能在 GPU 硬體上執行的語言，以 OpenGL 為例，他是一個圖學的 API，你可以用它來寫 shader，對於每個頂點或是像素，他都會執行一次你的 Shader code，因此你不需要有個 for loop，在寫 Shader 時只需要專注在一個頂點或像素即可
+
+專注於頂點的 Shader 被稱為頂點著色器（Vertex Shader），而專注於像素的 Shader 被稱為像素著色器（Fragment Shader），Fragment 也會有人翻成片段，但基本上是同一個意思
+
+現在來看幾個具體的例子，對於 Fragment Shader，他的輸出是一個像素最後的顏色，底下是一個簡單的範例，他用的是 OpenGL 的著色語言，稱為 GLSL：
+
+```glsl
+uniform sampler2D myTexture;    // program parameter
+uniform vec3 lightDir;    // program parameter
+varying vec2 uv;    // per fragment value (interp. by rasterizer)
+varying vec3 norm;    // per fragment value (interp. by rasterizer)
+void diffuseShader()
+{
+  vec3 kd;
+  kd = texture2d(myTexture, uv); // material color from texture
+  kd *= clamp(dot(–lightDir, norm), 0.0, 1.0); // Lambertian shading model
+  gl_FragColor = vec4(kd, 1.0); // output fragment color
+} 
+```
+
+這裡說的是有兩個全域變數 `myTexture` 與 `lightDir`，分別代表紋理和光照方向，也就是說我們認為每一個像素都有一個固定的光照方向。 接下來先忽略 `uv`，`norm` 代表法向量，它是利用差值算出來的，也就是說對於目標三角形，它可能三個頂點各有不同的法向量，但我們不管，到了這個像素裡面 OpenGL 會自動幫我們差值出它的法向量
+
+由於這份程式碼每個像素都會執行，因此不需要 for loop，每個像素都會執行 `diffuseShader` 這個函式，在當中由於我們假設光照是一個常數，因此只需要將其與法向量做內積，就可以得到 Blinn-Phong 中漫反射的部分。 算出來後再將他賦值給 `gl_FragColor`，表示一個像素的顏色
+
+通過 Shader，我們就可以定義任何一個頂點或像素要怎麼操作了。 如果你實際去學一些圖學的 API，例如 OpenGL、DirectX 或 Vulkan，你會發現我們只需要指定場景中的東西要如何運動、選轉，相機要如何擺放即可，實際的矩陣並不用我們自己寫，這就是因為這些 API 內部都幫我們做好了
