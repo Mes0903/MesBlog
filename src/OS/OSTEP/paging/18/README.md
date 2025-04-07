@@ -173,12 +173,12 @@ page table 就是一種資料結構，用於將虛擬位址映射到物理位址
 
 - 有效位（valid bit）  
   - 用於標記特定位址轉譯是否有效  
-    - 例如，當一個 process 開始運行時，它的 code 和 heap 段在位址空間的一側，而 stack 段又在另一側。 此時中間所有未使用的空閒空間都會被標記為無效的（invalid），如果 process 嘗試訪問這些記憶體，就會引發 interrupt，這可能會導致該 process 被終止  
+    - 例如，當一個 process 開始運行時，它的 code 和 heap 段在位址空間的一側，而 stack 段又在另一側。 此時中間所有未使用的空閒空間都會被標記為無效的（invalid），如果 process 嘗試訪問這些記憶體，就會引發 exception，這可能會導致該 process 被終止  
   - 因此，有效位對於支持稀疏位址空間至關重要  
   - 通過把位址空間中所有未使用的 virtual page 標記為無效的，我們就不再需要為這些 virtual page 分配實體記憶體，從而節省大量記憶體
 - 保護位（protection bit）  
   - 用於標記 virtual page 是否可以被讀取、寫入或執行  
-  - 同樣地，以這些位不允許的方式訪問 virtual page，會引發 interrupt
+  - 同樣地，以這些位不允許的方式訪問 virtual page，會引發 exception
 - 存在位（present bit）  
   - 表示該 virtual page 是在實體記憶體內，還是在硬碟上（即它已被換出，swapped out）  
   - swap 允許 OS 將很少使用的 page frame 移到硬碟，從而釋放實體記憶體 
