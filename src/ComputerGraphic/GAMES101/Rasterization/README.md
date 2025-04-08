@@ -581,7 +581,7 @@ MSAA（Multi-Sampling AA）則很聰明的只是在光柵化階段，判斷一�
 
 <div class = "center-column">
 
-![alt text](image.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/msaa8.png?raw=true">
 
 </div>
 
