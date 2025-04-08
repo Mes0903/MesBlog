@@ -567,6 +567,34 @@ MSAA 的結果：
 
 這也是為什麼當大家在打遊戲時，如果開啟了 MSAA，假設用個 `2x2` 倍，幀率並不會真的變成原來的四分之一
 
+#### SSAA
+
+另外還有個東西叫 SSAA，他與 MSAA 非常像，應該說 MSAA 是在 SSAA 的基礎上研發出來的。 兩者都會將一個像素再往下分更多取樣點，差別在於 SSAA 的每個取樣點都會執行一次 Fragment Shader code，但 MSAA 的每個取樣點只會計算 Sampling（判斷是否有被三角形覆蓋等），之後再於中心點執行一次 Fragment Shader code
+
+上例中因為三角形的顏色都相同，所以感受不太出來差別，等到讀完 Shading 部分再回來看應該會懂一些
+
+以下節錄自文刀秋二的回答：
+
+最直接的抗鋸齒方法就是 SSAA（Super Sampling AA）。 拿 4xSSAA 舉例子，假設最終螢幕輸出的解析度是 800x600， 4xSSAA 就會先渲染到一個解析度 1600x1200 的 buffer 上，然後再直接把這個放大 4 倍的 buffer 下取樣致 800x600。 這種做法在數學上是最完美的抗鋸齒，但劣勢也很明顯，光柵化和著色的計算負荷都比原來多了4倍，render target 的大小也漲了 4 倍
+
+MSAA（Multi-Sampling AA）則很聰明的只是在光柵化階段，判斷一個三角形是否被像素覆蓋的時候會計算多個覆蓋樣本（Coverage sample），但是在 pixel shader 著色階段計算像素顏色的時候每個像素還是只計算一次。 例如下圖是 4xMSAA，三角形只涵蓋了 4 個 coverage sample 中的 2 個：
+
+<div class = "center-column">
+
+![alt text](image.png)
+
+</div>
+
+所以這個三角形需要產生一個 fragment 在 pixel shader 裡著色，只不過生成的 fragment 還是在像素中央（位置，法向量等資訊插值到像素中央），然後只運行一次 pixel shader，最後得到的結果在 resolve 階段會乘以 0.5，因為這個三角形隻 cover 了一半的 sample
+
+現代所有 GPU 都在硬體上實作了這個演算法，而且在 shading 的運算量遠大於光柵化的今天，這個方法遠比 SSAA 快很多。 順便提一下之前 NV 的 CSAA，它就是更進​​一步的把 coverage sample 和 depth，stencil test 分開了
+
+> 連結：[請問FXAA、FSAA與MSAA有什麼不同？效果和性能上哪個好？](https://www.zhihu.com/question/20236638)
+
+::: info  
+「而且在 shading 的運算量遠大於光柵化的今天」原作者說打反了，但我沒看懂是哪裡反了，大家自己注意一下吧，如果搞懂了也拜託告訴我XD  
+:::
+
 ### 其他相關
 
 這邊再多簡單提兩個現代常用的抗鋸齒方法，除了 MSAA，較為重要的兩種為 FXAA 與 TAA，這兩個得到了工業界的廣泛應用
