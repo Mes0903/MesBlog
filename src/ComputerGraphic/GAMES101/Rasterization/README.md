@@ -571,6 +571,8 @@ MSAA 的結果：
 
 另外還有個東西叫 SSAA，他與 MSAA 非常像，應該說 MSAA 是在 SSAA 的基礎上研發出來的。 兩者都會將一個像素再往下分更多取樣點，差別在於 SSAA 的每個取樣點都會執行一次 Fragment Shader code，但 MSAA 的每個取樣點只會計算 Sampling（判斷是否有被三角形覆蓋等），之後再於中心點執行一次 Fragment Shader code
 
+簡單來說，假設以 2x2 的 SuperSampling 為例，SSAA 會生成一個 4 倍大的 frame buffer 與 z-buffer，但 MSAA 只會生成一個 4 倍大的 z-buffer
+
 上例中因為三角形的顏色都相同，所以感受不太出來差別，等到讀完 Shading 部分再回來看應該會懂一些
 
 以下節錄自文刀秋二的回答：
