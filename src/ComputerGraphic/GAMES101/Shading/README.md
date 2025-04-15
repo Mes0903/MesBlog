@@ -374,11 +374,19 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 紋理可以應用在各種不同的物體表面，再看個例子：
 
+<div class = "center-column">
+
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture3.png?raw=true">
+
+</div>
 
 如果我們把它所有點的紋理座標都顯示出來，那會長這樣：
 
+<div class = "center-column">
+
 <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture4.png?raw=true">
+
+</div>
 
 你可以看見座標不斷地從 0 到 1 重複，就好像在貼磁磚一樣，如此一來便可以把整個物體給貼滿，這也告訴我們紋理圖上的點並不需要只被用一次，一個點可以映射到三維空間中的不同位置
 
@@ -392,7 +400,11 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 假設有一個三角形 $ABC$，那重心座標告訴我們在這個三角形所形成的平面上，任何一個點 $(x,y)$ 都可以表示成三角形 $ABC$ 三個頂點座標的線性組合：
 
-![alt text](image/BC1.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/BC1.png?raw=true">
+
+</div>
 
 上圖中的 $A$、$B$、$C$ 都是座標，三角形所在平面上的任何一點 $(x,y)$ 都可以用這三個頂點的線性組合表示，其中 $\alpha$、$\beta$、$\gamma$ 加起來要為一，如果要進一步限制點在三角形內，那麼 $\alpha$、$\beta$、$\gamma$ 都必須是非負的
 
@@ -400,25 +412,45 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 接著來看重心座標要怎麼求，更具體的說是 $\alpha$、$\beta$、$\gamma$ 要怎麼求。 這裡重心座標給出了另一個定義，$\alpha$、$\beta$、$\gamma$ 這三個數值是可以通過面積比求出來的：
 
-![alt text](image/BC2.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/BC2.png?raw=true">
+
+</div>
 
 上圖中我們隨意給了一個三角形內的點，並將其與 $A$、$B$、$C$ 都連上線，此時我們會發現每個頂點的對面都會有一個三角形，像是上圖的 $C$ 與 $A_C$ 的關係。 通過這三個三角形，我們就可以通過其面積比算出 $\alpha$、$\beta$、$\gamma$
 
 透過這個方法，我們會發現有個特殊的點，被稱為這個三角形的重心，它有個很好的性質是能將三角形的面積平分為三等份，也因此它的 $\alpha$、$\beta$、$\gamma$ 剛好都是 $\frac{1}{3}$：
 
-![alt text](image/BC3.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/BC3.png?raw=true">
+
+</div>
 
 接下來重心座標還有個一般式，但可以不用記它沒關係：
 
-![alt text](image/BC4.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/BC4.png?raw=true">
+
+</div>
 
 接著我們可以嘗試用重心座標簡單做一些事情，像是求三角形內部的顏色，或是紋理座標、法向量或深度等，都是透過插值來計算的：
 
-![alt text](image/BC5.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/BC5.png?raw=true">
+
+</div>
 
 包括 Blinn Phong 的 $K_d$ 項也可以這麼算出來，其可能定義在紋理圖中，我們能夠利用三角形三個頂點的 $u,v$ 座標插值算出目標點的 $u,v$ 座標，再利用其座標去查紋理圖，便可找到 $K_d$ 項：
 
-![alt text](image/BC6.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/BC6.png?raw=true">
+
+</div>
 
 最後有一點，如果大家在讀 OpenGL 之類的文章，可能都會涉及到一個問題，重心座標雖然好用，但在投影變換下我們是不能保證重心座標不變的
 
@@ -438,7 +470,11 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 因此如果我們只是對座標做四捨五入，那畫面會變得像下圖最左邊這樣：
 
-![alt text](image/texture_magnification.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_magnification.png?raw=true">
+
+</div>
 
 看上去有一個個的格子，這通常不是我們想要的效果，我們希望能有上圖的中間或右邊那樣的效果，模糊一點沒關係，但至少結果稍微連續一點。 因此我們要做的是座標查找的處理，查找時我們會找到非整數的座標，那要如何得到最後的值就是這邊的主題
 
@@ -446,19 +482,31 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 首先是雙線性插值（Bilinear）：
 
-![alt text](image/bilinear.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bilinear.png?raw=true">
+
+</div>
 
 上圖是一個 4x4 texel 的例子，而 pixel 對應到的位置在紅點處，而我們想知道紅點處紋理的值是多少，如果是剛剛的四捨五入，等於就是找最近的 texel，那就會有我們不想要的一塊一塊的結果
 
 要做 Bilinear，首先要找它鄰近的四個點，並將紅點與左下角的偏移量算出來（圖中的 $s$ 與 $t$）：
 
-![alt text](image/bilinear2.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bilinear2.png?raw=true">
+
+</div>
 
 這個 $s$ 和 $t$ 肯定會介於 0 到 1 之間，因為 texel 與 texel 間的距離為 1
 
 接著做 Bilinear 的計算：
 
-![alt text](image/bilinear3.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bilinear3.png?raw=true">
+
+</div>
 
 圖中的 $\text{lerp}$ 是線性插值（linear interpolation）的意思，以 $\text{lerp}(x, v_0, v_1)$ 來說，其對 $v_0$ 與 $v_1$ 做插值，$x$ 則是佔 $v$ 軸的比例，因此是一個 0 到 1 之間的值，如果 $x$ 等於 0，則插值結果為 $v_0$，等於 1 則為 $v_1$
 
@@ -476,19 +524,31 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 下一個問題是紋理太大，因此需要縮小，剛剛我們能透過差值來解決問題，但這邊我們卻沒辦法，而且會引起更多的問題，先來看一個例子：
 
-![alt text](image/texture_magnification2.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_magnification2.png?raw=true">
+
+</div>
 
 上圖有個平面，平面上貼了一張紋理圖，這個紋理是一堆的格子，接著我們從某個角度看過去，因為有透視投影的關係所以會有近大遠小的效果。 接著我們照著剛剛的方法一樣，求出紋理座標後做插值，此時得到的就是右圖，你會發現有個熟悉的現象出現了 ー 混疊（鋸齒），且越遠越明顯
 
 這是因為對於近處的像素來說，單個像素在紋理上的覆蓋區域其實較小，但在遠處的像素，單個像素就覆蓋了紋理圖中的一大片區域：
 
-![alt text](image/texture_magnification3.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_magnification3.png?raw=true">
+
+</div>
 
 因此螢幕上的像素在紋理圖上覆蓋的區域是各不相同的，對於覆蓋區域較小的像素，我們利用像素中心去查紋理圖，找到的值可以近似的被表示成實際的覆蓋區域沒問題（上圖中最左側的例子）； 但對於覆蓋區域較大的像素，用單一一個中心去代表整塊的平均值，很明顯的就不對了（上圖中最右側的例子）
 
 之前為了解決鋸齒，我們引入了 MSAA，這裡其實也是差不多的概念，我們需要在一個像素內用更多的取樣點去查找紋理座標，下圖是一個像素分 512 個取樣點下去的結果：
 
-![alt text](image/texture_magnification4.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_magnification4.png?raw=true">
+
+</div>
 
 但與前面提到的問題一樣，單個像素要分這麼多取樣點，效能肯定會受到影響，所以我們再回來看看有沒有什麼優化空間。 我們遇到的一樣是混疊問題，也就是取樣頻率跟不上訊號的頻率，當像素在紋理圖內覆蓋範圍過大的時候，整個區域的紋理訊號變化只被一個取樣點取樣了
 
@@ -506,21 +566,37 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
-![alt text](image/mipmap.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap.png?raw=true">
+
+</div>
 
 上面中我們把一系列的圖分成了不同的層（Level），每一層的分辨率都是上一層的四分之一倍，因為每次都是把邊長除以二因此總共的層數是以 $log_2$ 計算的，至於儲存空間量大概會多三分之一倍（等比級數和）
 
 於先前一樣，在查詢紋理座標的時候，任何一個像素都可以映射到紋理圖上的一個區域：
 
-![alt text](image/mipmap2.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap2.png?raw=true">
+
+</div>
 
 這個區域我們有個近似的算法，假設我們想算上圖中單獨一個紅色像素的區域，我們可以先將四個紅色像素各自的中心，投影到紋理圖後，計算不同點之間的距離
 
-![alt text](image/mipmap3.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap3.png?raw=true">
+
+</div>
 
 上圖中 $max$ 內取的兩個投影過後的邊長，接著我們取較長的那條來近似一個像素的區域：
 
-![alt text](image/mipmap4.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap4.png?raw=true">
+
+</div>
 
 上圖中可以看到一個長度為 $L$ 的正方形，這就是我們最後的近似結果
 
@@ -532,25 +608,45 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 但由於層數是離散的，因此查詢的結果也會有之前那種斷層感，視覺化出來的話長這樣，圖中的不同顏色代表不同層的紋理圖：
 
-![alt text](image/mipmap5.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap5.png?raw=true">
+
+</div>
 
 但我們不希望這樣，想要有連續的結果，此時又可以將剛剛的雙線性插值拿過來用了。 假設我們要查第 1.8 層，那就先找第一層，再找第二層，這兩層內部我分別都跟之前一樣，用雙線性插值找出一個結果，接著再把這兩個雙線性插值的結果，利用一次線性插值，將層與層之間的數值給找出來：
 
-![alt text](image/mipmap6.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap6.png?raw=true">
+
+</div>
 
 上圖中我們會在第 D 層做一次雙線性插值，在第 D+1 層做一次雙線性插值，接著把這兩個雙線性插值的結果拿出來，再做一次線性插值。 由於總共做了三次不同方向（$u$、$v$ 和 Layer）的插值，因此這被稱為三線性插值，開銷很小，效果又好，因此在圖學中得到了廣泛的應用
 
 這樣一來無論我們就可以計算任意一層，甚至是浮點數層的值了：
 
-![alt text](image/mipmap7.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap7.png?raw=true">
+
+</div>
 
 現在就來看看利用 Mipmap 的結果和分 512 個取樣點的結果有什麼差別：
 
-![alt text](image/mipmap8.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap8.png?raw=true">
+
+</div>
 
 效果不錯，但此時你會發現有個地方不太對，Mipmap 到了遠處的地方它會整個糊掉，這被稱為 overblur。 我們一開始有提到，Mipmap 只能查詢正方形區域的平均，因此在 pixel 映射到紋理圖時我們會將其近似成長度為 $L$ 的正方形，但實際上的像素所佔的區域有可能與該正方形相差很多：
 
-![alt text](image/mipmap9.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap9.png?raw=true">
+
+</div>
 
 #### Anisotropic Filtering（各向異性過濾）
 
@@ -558,7 +654,11 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 各向異性過濾利用了這種特性，做了更準確的近似，Mipmap 是同時縮小 $u$、$v$ 座標以形成各層的紋理圖，而各向異性過濾則是增加了只縮小了單一軸的紋理圖，因此對於長方形的映射範圍更準，但對於那種斜著的長方形仍然效果不好：
 
-![alt text](image/anisotropic_filtering.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/anisotropic_filtering.png?raw=true">
+
+</div>
 
 為了適應各種不同的形狀，人們還發明了許多不同的方法，這裡提一個例子叫 EWA 過濾，他的想法是將任意不規則的形狀拆成很多不同的圓形，去覆蓋這個不規則的形狀
 
@@ -570,45 +670,77 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 接下來就開始講講紋理的應用，首先看到下面這個球：
 
-![alt text](image/environment_lighting.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/environment_lighting.png?raw=true">
+
+</div>
 
 它反射的光線中來自天空與地面，那這要怎麼去表示它呢? 這種環境的紋理圖被稱為環境光映射，也會直接被稱為環境光照，我們用紋理圖去描述整個環境的光，並且我們可以用環境光去渲染一些其他的物體。 在使用環境光的時候，我們會假設環境光都來自無限遠處，因此不記錄深度訊息，只記錄方向訊息
 
 我們可以將環境光存儲在球上，以上圖來說我們有個非常光滑的金屬球，這個鏡子反射出來的東西就是整個環境光，要使用時就將其展開，像是將地球儀的表面展開為世界地圖一樣，這種將環境光存儲在球面的方式被稱為球面環境映射（Spherical Environment Mapping）：
 
-![alt text](image/environment_lighting2.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/environment_lighting2.png?raw=true">
+
+</div>
 
 他有一個問題是在展開後紋理圖會有一些扭去，像是下圖中的樹木、天空等：
 
-![alt text](image/environment_lighting3.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/environment_lighting3.png?raw=true">
+
+</div>
 
 這個現象在世界地圖上也可以看到，如果你有讀過一些科普文章，可能會知道歐洲、南極洲等其實都挺大的，沒有地圖上看起來那麼小，這就是因為再展開的時候緯度較高的地方佔的區域相對較小。 換句話說這能描述整個球上不同的位置，但不是一個均勻地描述，在靠近極點的地方會出些一些扭曲的現象
 
 後來這個問題人們發下了一個解法，還是用一個球，而現在我們認為這個球有一個包圍盒，我們原本是用球的表面來紀錄來自任何地方的光線，現在我們連一條球心往目標的射線，讓它繼續走，直到它打到立方體的表面上，這樣就可以將環境光的訊息存在立方體表面上了：
 
-![alt text](image/environment_lighting4.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/environment_lighting4.png?raw=true">
+
+</div>
 
 可以看見我們會得到六張圖，而由於立方體的各個面基本上都是均勻的，因此扭曲的現象會較少發生，但它有其他的問題，在計算光線方向時還要判斷它在哪個立方體的面上，因此需要一些額外的計算，但仍非常快。 這種方法被稱為立方體貼圖（Cube Map），除了環境光映射，常見的天空盒也是利用 Cube Map 在做的
 
 下面是一個教堂的例子：
 
-![alt text](image/environment_lighting5.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/environment_lighting5.png?raw=true">
+
+</div>
 
 #### Bump Mapping（凹凸貼圖）
 
 接下來是另一個應用，叫做凹凸貼圖，類似的還有法向量貼圖。 我們之前用紋理是為了設定 Blinn Phong 裡面的 $K_d$ 項，但紋理也可以定義一些更進階的屬性，以凹凸貼圖來說它會額外定義一個高度的屬性，表示該點要以物理模型的法向量方向再往下或往上走多少：
 
-![alt text](image/bump_mapping.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bump_mapping.png?raw=true">
+
+</div>
 
 上圖中的黑線是物理模型原本的位置，而利用凹圖貼圖，我們就可以透過紋理座標來定義三角形內任意點的相對高度，而相對高度一變法向量就會跟著產生變化，因此 Shading 的結果就會有明暗對比，進而在不改變物理模型的情況達到視覺上的凹凸效果，下面是一個例子：
 
-![alt text](image/bump_mapping1.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bump_mapping1.png?raw=true">
+
+</div>
 
 圖中的這顆橘子，其物理模型只是一顆球，因此建模很簡單，可以只用一兩百個三角形表示。 如果我們想利用物理模型來達到圖中的效果，那會需要超級多的三角形，但利用凹凸貼圖我們就可以節省許多三角形
 
 接著來看法向量的變化該如何計算，我們先考慮一個簡化的例子：
 
-![alt text](image/bump_mapping2.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bump_mapping2.png?raw=true">
+
+</div>
 
 假設上圖原本是個平面，因此原先目標點 $p$ 的法向量會是 $(0,1)$，而藍色的波浪線是凹凸貼圖定義出來的，此時若要算任意一個點的方向量，就相當於是要求該點的導數，換句話說就是要求該點切線。 而這個計算很簡單，只要算下一個點 $p+1$ 和目標點 $p$ 的高度差就可以了（差分法），上圖中還引入了參數 $c$ 來定義這個凹凸貼圖的影響到底大不大，只是做一個簡單的縮放而已
 
@@ -640,7 +772,11 @@ $$
 
 它們的起點都是一樣的，都是通過用紋理定義出任一點的相對高度，因此它們的輸入完全一樣，差別在於位移貼圖會對三角形面的不同頂點真的做移動，而不是像法向量貼圖只做假的移動，看個差異圖：
 
-![alt text](image/bump_mapping3.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bump_mapping3.png?raw=true">
+
+</div>
 
 凹凸貼圖由於沒有實際改變幾何模型，因此在邊緣的地方會有問題，第二是在幾何模型相對複雜的情況，凸起部分的陰影無法被表現出來。 而由於位移貼圖實際改變了各三角形頂點的位置，因此效果肯定較好，但代價就是它需要模型本身的三角形足夠細，因為它改變的是三角形頂點的位置，如果三角形本身較大，而在三角形內部還有一些需要改變的位置，那就沒辦法做了
 
@@ -652,7 +788,11 @@ $$
 
 再來提一些較瑣碎的東西，首先是三維紋理，紋理不一定需要是張二維的圖，看個例子：
 
-![alt text](image/3d_texture.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/3d_texture.png?raw=true">
+
+</div>
 
 假設我們將上圖的球體切一半，如果是用二維的紋理圖，那切開後我們是什麼都看不到的，但如果是用三圍貼圖的話就可以看到，換句話說三圍貼圖定義了空間中任何一個點的值
 
@@ -662,7 +802,11 @@ $$
 
 三維的紋理在立體渲染（Volume rendering）的地方很常用到，例如在醫學裡面會有核磁共振成像，或者 CT 成像等，這些都是去掃描人體組織的某一塊返回的訊息，因此任何一個點上，例如密度之類的訊息都可以被記錄下來，然後我們就可以通過這些訊息拿去做渲染：
 
-![alt text](image/volume_rendering.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/volume_rendering.png?raw=true">
+
+</div>
 
 既然儲存在三維空間中，我們自然也就會將其當作三維紋理在用了，也就是說紋理這個概念可以延伸為資料的儲存集
 
@@ -670,7 +814,11 @@ $$
 
 紋理還可以拿來記錄一些預先算好的訊息，看個例子：
 
-![alt text](image/precomputed_shading.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/precomputed_shading.png?raw=true">
+
+</div>
 
 對比最左邊的圖和最右邊的圖，以眉骨為例，眼窩部分會有陰影，這可以用中間的紋理圖來表示，這張紋理圖叫做環境光遮蔽（Ambient Occlusion）。 而最左圖是在算 Shading 的結果，此時還考慮不到環境光遮蔽的訊息，因此你可以看到最左圖中眼窩部分並沒有陰影，但我們可以先把 Shading 計算的結果寫進另一張紋理圖中
 
