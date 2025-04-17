@@ -126,6 +126,14 @@ export default sidebar([
         ]
       },
       {
+        text: "GAMES105",
+        collapsible: true,
+        prefix: "/ComputerGraphic/GAMES105/",
+        children: [
+          "CharacterKinematicsAndKeyframeAnimation/",
+        ]
+      },
+      {
         text: "其他",
         collapsible: true,
         children: [
