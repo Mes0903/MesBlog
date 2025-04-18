@@ -86,7 +86,7 @@ Linus Torvalds 在 15:25 時說
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/The_mind_behind_Linux/image/link_list1.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/The_mind_behind_Linux/image/link_list1.png?raw=true">
 
 </div><br>
 
@@ -96,7 +96,7 @@ Linus Torvalds 在 15:25 時說
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/The_mind_behind_Linux/image/link_list2.png?raw=true">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/Linux/The_mind_behind_Linux/image/link_list2.png?raw=true">
 
 </div><br>
 
