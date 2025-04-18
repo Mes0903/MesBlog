@@ -136,6 +136,11 @@ export default hopeTheme({
       prefix: "fa6-solid:",
     },
 
+    feed: {
+      rss: true,
+      atom: true,
+      json: true,
+    },
     // install @vuepress/plugin-pwa and uncomment these if you want a PWA
     // pwa: {
     //   favicon: "/favicon.ico",
