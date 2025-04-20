@@ -3,6 +3,7 @@ import sidebar from "./sidebar.js";
 
 export default hopeTheme({
   hostname: "https://mes0903.github.io",
+  contributors: false,
 
   author: {
     name: "Mes",
