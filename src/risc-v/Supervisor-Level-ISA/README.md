@@ -9,7 +9,7 @@ category: risc-v
 
 ### 12.1.1. Supervisor Status (`sstatus`) Register
 
-`sstatus` 暫存器是一個 SXLEN-bit read/write 的暫存器，用來追蹤處理器目前的狀態，為 `mstatus` 的子集
+`sstatus` 暫存器是一個 SXLEN-bit read/write 的暫存器，用來追蹤處理器目前的狀態，其為 `mstatus` 的子集
 
 當 `SXLEN` 為 32 時，格式如下圖：
 
@@ -39,7 +39,7 @@ category: risc-v
   - 如果 hart 運行在 U-mode，`SIE` 的值會被忽略，且會啟用 S-mode 的中斷
   - supervisor 可以利用 `sie` CSR 來停用單一的中斷來源
 - `SPIE`
-  - 用來紀錄在進入 S-mode 之前是否啟用了 S-mode 下的中斷
+  - 用來記錄在進入 S-mode 之前是否啟用了 S-mode 下的中斷
   - 當 Trap 進入 S-mode 時，`SPIE` 被設為 `SIE`，並且 `SIE` 被設為 0
   - 執行 `SRET` 指令時，`SIE` 被設為 `SPIE`，然後 `SPIE` 被設為 1
 
@@ -239,11 +239,11 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 ### 12.1.3. Supervisor Interrupt (`sip` and `sie`) Registers
 
-`sip` 暫存器是一個 SXLEN-bit 的可讀寫寄存器，其內容代表當前等待處理 (pending) 的中斷資訊
+`sip` 暫存器是一個 SXLEN-bit 的可讀寫暫存器，其內容代表當前等待處理 (pending) 的中斷資訊
 
-`sie` 暫存器則是對應的 SXLEN 位元可讀寫寄存器，其中紀錄啟用中斷的位元
+`sie` 暫存器則是對應的 SXLEN-bit 的可讀寫暫存器，其中記錄啟用中斷的位元
 
-在 `scause` CSR 裏面所報告的中斷原因編號 `i`（參考第 12.1.8 節）對應到 `sip` 與 `sie` 的第 i 個位元
+其中在 `scause` CSR 裏面所報告的中斷原因編號 `i`（參考第 12.1.8 節）對應到 `sip` 與 `sie` 的第 i 個位元
 
 位元 0~15 (bits 15:0) 保留給標準中斷原因（例如軟體中斷、計時器中斷等），16 以上的位元則留給平台自行使用
 
@@ -256,22 +256,22 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 一個編號為 `i` 的中斷，只有在以下兩個條件都成立時，才會陷入到 S-mode 進行處理：
 
 - (a)
-    - 當前特權模式是 S-mode，並且 `sstatus` 寄存器裡的 `SIE` 位元為 1
+    - 當前特權模式是 S-mode，並且 `sstatus` 暫存器裡的 `SIE` 位元為 1
     - 或是當前特權模式低於 S-mode（也就是 U-mode 等更低特權模式）
 - (b) 
-    - `sip[i]` 與 `sie[i]` 都為 1，也就是該中斷 `i` 正在等待處理 並且已被啟用
+    - `sip[i]` 與 `sie[i]` 都為 1，也就是該中斷 `i` 已被啟用且正在等待處理
 
-硬體 (或實作) 在偵測到 `sip[i]` 發生變化（例如 `0→1`）時，應該在 合理且有限的時間內檢查是否要觸發中斷，不能無限制地拖延，否則中斷就失去意義
+硬體 (或實作) 在偵測到 `sip[i]` 發生變化（例如 `0→1`）時，應該在合理且有限的時間內檢查是否要觸發中斷，不能無限制地拖延，否則中斷就失去意義了
 
 同時，也必須在執行 `SRET` 指令之後，以及對任何會影響中斷陷阱條件的 CSR（例如 `sip`, `sie`, `sstatus`）進行「顯式寫入 (explicit write)」後，立即重新評估這些條件
 
 對 S-mode 的中斷優先於對任何更低特權模式（例如 U-mode）的中斷
 
-在 `sip` 寄存器中，每個位元都可能是可寫，也可能是唯讀的，當第 `i` 位元是可寫的時，如果中斷 `i` 處於 pending 狀態，可以透過寫入 0 到此位元的方式來清除該中斷
+在 `sip` 暫存器中，每個位元都可能是可寫，也可能是唯讀的，當第 `i` 位元是可寫的時，如果中斷 `i` 處於 pending 狀態，可以透過寫入 0 到此位元的方式來清除該中斷
 
 如果一個中斷 `i` 可能處於等待狀態，但是 `sip` 中該位元是唯讀的，那麼必須由實作提供其他機制來清除該 pending 中斷（可能需要透過呼叫執行環境 (execution environment) 的某種方法）
 
-在 `sie` 寄存器中，如果對應的中斷可能變成 pending 的，那麼該位元就必須是可寫的。 若某些位元是不可寫的，那它們就會是唯讀的，且永遠為 0（該中斷永遠不會發生）
+在 `sie` 暫存器中，如果對應的中斷可能變成 pending 的，那麼該位元就必須是可寫的。 若某些位元是不可寫的，那它們就會是唯讀的，且永遠為 0（該中斷永遠不會發生）
 
 `sip` 與 `sie` 的 標準部分(bits 15:0)，格式如下圖所示：
 
@@ -287,19 +287,19 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 `sip.SSIP` 與 `sie.SSIE` 對應到 S-mode 軟體中斷 (software interrupt) 的「等待」與「啟用」位。 若系統實作該功能，`sip` 中的 `SSIP` 是 可寫的，也可能由平台特定的中斷控制器設置為 1
 
-> 外部中斷往往是由硬體控制器 (PIC, PLIC, etc.) 來管理，S-mode 只能透過平台特定的方法去清除 pending。 計時器中斷通常也是由硬體或韌體自動管理，軟體無法直接清除 pending，故 STIP 是唯讀
+> 外部中斷往往是由硬體控制器 (PIC, PLIC, etc.) 來管理，S-mode 只能透過平台特定的方法去清除 pending。 計時器中斷通常也是由硬體或韌體自動管理，軟體無法直接清除 pending，故 STIP 是唯讀的
 
 若系統實作了 Sscofpmf 擴充，則 `sip.LCOFIP` 與 `sie.LCOFIE` 這些位元對應到 local counter-overflow interrupt 的等待與啟用。 `sip.LCOFIP` 在 `sip` 中是可讀寫 (read-write)，當 `mhpmeventn.OF` 中任何一個位元被設置（表示計數器溢出）時，就會反映成一個 local counter-overflow interrupt。 如果 Sscofpmf 未實作，那麼 `sip.LCOFIP` 與 `sie.LCOFIE` 是唯讀的且永遠為 0
 
 > Sscofpmf (Supervisor Software Counter Overflow Performance Monitoring)：一種專門的擴充，用於監測計數器溢出事件
 
 :::info  
-跨處理器中斷 (Interprocessor interrupts) 是透過特定的實作方式發送到其他 hart，最終會使接收端 hart 的 `sip` 寄存器中的 `SSIP` 位元被設為 1  
+跨處理器中斷 (Interprocessor interrupts) 是透過特定的實作方式發送到其他 hart，最終會使接收端 hart 的 `sip` 暫存器中的 `SSIP` 位元被設為 1  
 :::
 
 每一種標準中斷類型（`SEI`、`STI`、`SSI`、或 `LCOFI`）都可能不被實作；如果沒有實作，對應的等待與啟用位就會是唯讀且為 0 的
 
-`sip` 與 `sie` 中的所有位元都是 WARL 欄位，可透過在 `sie` 寄存器的每個位元都寫入 1，然後再讀回來檢查哪個位元真的保持在 1，就能得知系統實際實作了哪些中斷
+`sip` 與 `sie` 中的所有位元都是 WARL 欄位，可透過在 `sie` 暫存器的每個位元都寫入 1，然後再讀回來檢查哪個位元真的保持在 1，就能得知系統實際實作了哪些中斷
 
 :::info  
 `sip` 與 `sie` 是 `mip` 與 `mie` 的子集，讀取或寫入 `sip/sie` 的任何已實作欄位，同時也會對應到 `mip/mie` 裡的相同欄位，也就是說當你寫 `sip.SSIP=1`，實際硬體也會把 `mip.SSIP` 做相應設定
@@ -329,16 +329,16 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `scounteren` 是一個 32 位元 的 CSR，控制 U-mode 是否能存取硬體效能監控計數器(hardware performance monitoring counters)
 
-如果在 `scounteren` 寄存器中，`CY`、`TM`、`IR` 或 `HPMn` 其中任意一個位元被清為 0，那麼當 U-mode 嘗試讀取對應的 `cycle`、`time`、`instret` 或 `hpmcountern` 寄存器時，將會觸發非法指令 (illegal-instruction) 異常。 若當中有位元為 1，則允許 U-mode 讀取對應的計數器
+如果在 `scounteren` 暫存器中，`CY`、`TM`、`IR` 或 `HPMn` 其中任意一個位元被清為 0，那麼當 U-mode 嘗試讀取對應的 `cycle`、`time`、`instret` 或 `hpmcountern` 暫存器時，將會觸發非法指令 (illegal-instruction) 異常。 若當中有位元為 1，則允許 U-mode 讀取對應的計數器
 
 對應關係：
 
-- `CY` bit：控制 cycle 寄存器 (CPU 週期計數器)
-- `TM` bit：控制 time 寄存器 (實時計數器)
-- `IR` bit：控制 instret 寄存器 (指令完成數計數器)
+- `CY` bit：控制 cycle 暫存器 (CPU 週期計數器)
+- `TM` bit：控制 time 暫存器 (實時計數器)
+- `IR` bit：控制 instret 暫存器 (指令完成數計數器)
 - `HPMn` bits：控制 hpmcountern (高階性能計數器)
 
-系統必須實作 `scounteren` 寄存器，但其內的任何位元都可以為唯讀的 0，表示在 U-mode 下讀取對應計數器時會產生異常。 因此，這些位元等同於 WARL 欄位
+系統必須實作 `scounteren` 暫存器，但其內的任何位元都可以為唯讀的 0，表示在 U-mode 下讀取對應計數器時會產生異常。 因此，這些位元等同於 WARL 欄位
 
 :::info  
 在 `mcounteren`（M-mode 的 counter-enable）中某一個位元的設定，並不會影響對應的 `scounteren` 位元是否可寫
@@ -358,9 +358,9 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 `sepc` 的最低位元(`sepc[0]`) 永遠為 0。 如果某個處理器實作只支援 `IALIGN=32` (指令對齊為 32 位元)，那麼 `sepc` 的最低兩個位元 (`sepc[1:0]`) 都會是 0
 
-如果某個處理器支援 `IALIGN=16` 或 `IALIGN=32`（例如透過修改 `misa` CSR 來切換），那麼在 `IALIGN=32` 的狀態時，`sepc[1]` 在讀取時會被遮罩(mask) 為 0，因此看起來總是為 0。 這種遮罩行為也包含`SRET` 指令內對 `sepc` 的隱式讀取時。 另外，即便在 `IALIGN=32` 模式下被遮罩，`sepc[1]` 仍然是可寫的
+如果某個處理器支援 `IALIGN=16` 或 `IALIGN=32`（例如透過修改 `misa` CSR 來切換），那麼在 `IALIGN=32` 的狀態下讀取 `sepc` 時，`sepc[1]` 會被遮罩(mask) 為 0，因此看起來總會為 0。 這種遮罩行為也會在 `SRET` 指令內對 `sepc` 的隱式讀取時發生。 另外，即便在 `IALIGN=32` 模式下被遮罩，`sepc[1]` 仍然是可寫的
 
-`sepc` 是一個 WARL 類型的寄存器，必須能夠存放所有合法虛擬位址，但不需要能存放「所有可能的無效位址」。 在寫入 `sepc` 之前，處理器實作可能會把某個無效位址轉換成另一個它可以容納的無效位址，然後再存進 `sepc`
+`sepc` 是一個 WARL 類型的暫存器，必須能夠存放所有合法虛擬位址，但不需要能存放「所有可能的無效位址」。 在寫入 `sepc` 之前，處理器實作可能會把某個無效位址轉換成另一個它可以容納的無效位址，然後再存進 `sepc`
 
 當透過 trap 進入 S-mode 時，硬體會把被中斷的指令(或遇到異常的指令) 的虛擬位址寫入 `sepc`。 除此之外，硬體不會自行寫入 `sepc`，但軟體可以顯式地對它寫入
 
@@ -374,9 +374,9 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 </div>
 
-當透過 trap 進入 S-mode 時，硬體會將造成 trap 的事件代碼(code) 寫入 `scause`。 除此之外，硬體不會 任何時候自行改寫 `scause`，但軟體可以顯式地對它寫入
+當透過 trap 進入 S-mode 時，硬體會將造成 trap 的事件代碼(code) 寫入 `scause`。 除此之外，硬體不會自行改寫 `scause`，但軟體可以顯式地對它寫入
 
-在 `scause` 寄存器中，有一個稱作 Interrupt bit 的位元，如果 trap 是由中斷(interrupt) 造成，這個位元就會被設為 1。 `scause` 中還有一個 Exception Code(異常碼) 的欄位，用來標示最後一次異常或中斷的代碼
+在 `scause` 暫存器中，有一個稱作 Interrupt bit 的位元，如果 trap 是由中斷(interrupt) 造成，這個位元就會被設為 1。 `scause` 中還有一個 Exception Code(異常碼) 的欄位，用來標示最後一次異常或中斷的代碼
 
 異常碼是一個 WLRL 欄位，它至少需要支援 0~31 的取值（也就是位元 `4-0` 必須實作），超過 31 的值，硬體可自行決定是否支援，或以其他方式處理
 
@@ -445,6 +445,10 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 </div>
 
+> Synchronous exception 是指那些由當前指令本身引起的例外狀況，與中斷不同，它是執行這條指令時就立刻可知的錯誤<br><br>
+> 
+> 當一條指令導致多個 synchronous exceptions 時，因為同一時間只能 trap 一次，此時就會依照此表決定哪一個例外應該優先被送進 trap handler，並寫入 `scause`
+
 ### 12.1.9. Supervisor Trap Value (`stval`) Register
 
 `stval` 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
@@ -478,7 +482,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 取最小者能確保 `stval` 的內容不會超過自己能表示的位寬，而寫入到 `stval` 中的位元會右對齊(right-justified)，而未用到的高位元則清為 0，換句話說若實際指令不足 `SXLEN` 位元，則 `stval` 的低位元保存指令位元，高位填 0
 
-如果 trap 由 software check exception 所引起，則 `stval` 寄存器會保存觸發該異常的原因(cause)。 下面列出了一些定義好的編碼：
+如果 trap 由 software check exception 所引起，則 `stval` 暫存器會保存觸發該異常的原因(cause)。 下面列出了一些定義好的編碼：
 
 - 0：無額外資訊
 - 2：Landing Pad Fault（由 Zicfilp 擴充定義，見第 22.1 節）
@@ -486,7 +490,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 對於其他陷阱而言，預設將 `stval` 設為 0，但未來標準可能會擴充某些陷阱對 `stval` 的使用方式
 
-`stval` 是一個 WARL 型態的寄存器，必須能夠存放所有合法虛擬位址與 0，但不需要能夠表示所有「無效」位址。 在寫入 `stval` 之前，硬體實作可能會把一個無效位址轉換成另一個 `stval` 可以表示的無效位址
+`stval` 是一個 WARL 型態的暫存器，必須能夠存放所有合法虛擬位址與 0，但不需要能夠表示所有「無效」位址。 在寫入 `stval` 之前，硬體實作可能會把一個無效位址轉換成另一個 `stval` 可以表示的無效位址
 
 如果實作支援「將錯誤指令位元載入 `stval`」的功能，那麼 `stval` 還必須能夠存下所有小於 $2^{(min(SXLEN, ILEN))}$ 的值，其中 $min(SXLEN, ILEN)$ 表示 `SXLEN` 與 `ILEN` 中較小的值
 
@@ -523,7 +527,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 >
 > 由於 `FIOM=1`，因此 I/O fence 同時會涵蓋 memory fence
 
-如果 `satp.MODE` 是只讀且永遠是 0（表示系統處於 Bare 模式，無 page 功能），那麼硬體可以讓 `FIOM` 位元也成為唯讀的，且永遠 0（無法啟用 `FIOM`）
+如果 `satp.MODE` 唯讀且永遠是 0（表示系統處於 Bare 模式，無 page 功能），那麼硬體可以讓 `FIOM` 位元也成為唯讀的，且永遠 0（無法啟用 `FIOM`）
 
 > 換句話說在沒有 page 的情況下，若實作者覺得不需要對 I/O 或 memory 做額外的順序處理，可將其鎖死成 0
 
@@ -553,7 +557,7 @@ spec 的第 21 章為「Hypervisor extension (H-extension)」，當環境中沒�
 軟體其實可以不啟用 FIOM，前提是它絕對不會使用主記憶體來模擬原本屬於 I/O 空間的記憶體緩衝區，但這麼做通常會需要攔截 (trap) 所有 U-mode 對該模擬緩衝區的存取，這可能對效能產生明顯影響，相較之下，FIOM 提供的替代方案在實作難度和開銷上都相對低，因此即使它不常被使用，我們仍認為值得支援  
 :::
 
-接下來是一些其他較少敘述的欄位，所以我用列點的方式表達：
+接下來是一些敘述較少的欄位，所以我用列點的方式表達：
 
 - `CBZE` 欄位由 Zicboz extension 定義：這可能與 cache-block zero 指令相關  
 - `CBCFE` 與 `CBIE` 欄位由 Zicbom extension 定義：這些則與 cache-block manage 指令 (block fill，block invalidate) 相關
@@ -646,7 +650,7 @@ spec 的第 21 章為「Hypervisor extension (H-extension)」，當環境中沒�
 
 ASID 的 bit 數並沒有被指定(UNSPECIFIED)，其有可能是 0。 為了知道硬體實際實作了多少個 ASID 位元（稱為 `ASIDLEN`），可以嘗試在 ASID 欄位的每一個位元都寫入 1，然後讀回 `satp` 看哪些位元仍維持為 1。
 
-ASID 的最低位元需要最先被實作，也就是說如果 `ASIDLEN = N > 0`，那麼 `ASID[N-1 : 0]` 是可寫的。 ASIDLEN 的最大值 (`ASIDMAX`) 在 Sv32 下是 9，在 Sv39/Sv48/Sv57 下是 16
+ASID 需要從最低位元開始實作，也就是說如果 `ASIDLEN = N > 0`，那麼 `ASID[N-1 : 0]` 是可寫的。 ASIDLEN 的最大值 (`ASIDMAX`) 在 Sv32 下是 9，在 Sv39/Sv48/Sv57 下是 16
 
 :::info  
 對許多應用程式而言，page size 會對效能產生顯著影響。 較大的 page 可以增加 TLB 的涵蓋範圍 (TLB reach)，並且能減少對 VIPT 快取的組合度 (associativity) 限制。 然而較大的 page 會加劇了內部碎片化 (internal fragmentation) 的問題，浪費了實體記憶體，甚至可能浪費快取  
@@ -658,14 +662,14 @@ ASID 的最低位元需要最先被實作，也就是說如果 `ASIDLEN = N > 0`
 
 當特權模式為 S-mode 或 U-mode 時，`satp` CSR 被視為是「活動 (active)」的。 在 `satp` 處於活動狀態時，負責轉換位址的演算法才會使用 `satp` 的值
 
-如果在 `satp` 活動期間開始了一次位址轉換，若此時 `satp` 變為非活動狀態 (例如切回了 M-mode)，那些已經開始的轉換不需要馬上完成或終止，除非執行了對應位址與 ASID 的 `SFENCE.VMA` 指令
+如果在 `satp` 活動期間開始了一次位址轉換，若此時 `satp` 變為非活動狀態 (例如切回了 M-mode)，那些已經開始的轉換不需要馬上完成或終止，除非執行了與對應到該位址與 ASID 的 `SFENCE.VMA` 指令
 
 系統必須利用 `SFENCE.VMA` 來確保該 hart 之後的「隱式讀取 (implicit read)」能看到更新後的位址轉換的資料結構
 
 寫入 `satp` 不代表 page table 的更新與後續的地址轉換之間有任何順序限制 (ordering constraints)，也不代表地址轉換的快取會失效。 假如新的地址空間的 page table 已被修改，或者重用了某個 ASID，其通常需要在寫入 `satp` 前/後執行 `SFENCE.VMA` 指令（參見第 12.2.1 節）
 
 :::info  
-RISC-V 設計上把寫入 `satp` 與 TLB flush / page table fence 分離，讓軟體可更彈性控制失效時機，因此需要先在 page table 中做好更新，然後 `SFENCE.VMA`，再寫 `satp`；或者先寫 `satp`，然後再 `SFENCE.VMA` —— 依具體應用情況而定
+RISC-V 設計上把寫入 `satp` 與 TLB flush / page table fence 分離，讓軟體可更彈性控制失效時機，因此需要先在 page table 中做好更新，然後執行 `SFENCE.VMA`，再寫入 `satp`；或者先寫入 `satp`，然後再執行 `SFENCE.VMA` —— 依具體應用情況而定
 
 不要求在寫入 `satp` 時使強制讓地址轉換的快取失效，可以降低上下文切換的成本，不過前提是擁有足夠大的 ASID 空間  
 :::
@@ -685,28 +689,33 @@ RISC-V 設計上把寫入 `satp` 與 TLB flush / page table fence 分離，讓�
 > 這邊翻的有點難懂，主要記得這兩個專有名詞：
 > - 記憶體管理資料結構 (memory-management data structure)：如 page table
 > - 地址轉換快取 (address-translation cache)：如 TLB
->   - 地址轉換快取項目：TLB entry
+>   - 地址轉換快取項目：如 TLB entry
 
 `SFENCE.VMA`（supervisor memory-management fence）是一條指令，用來將記憶體中的「記憶體管理資料結構 (memory-management data structures)」的更新與「當前執行」同步
 
 一般的指令在執行過程中會隱式地讀寫這些資料結構，但這些隱式引用 (implicit references) 通常不會與顯式的 load/store 指令有任何順序保證
 
-> 在 RISC-V（以及許多其他架構）中，「隱式引用」指的是 CPU 在執行某些行為時，在硬體層面主動對記憶體管理資料結構進行的讀寫，而這些讀寫並不直接對應程式碼中的顯式指令
+> 在 RISC-V（以及許多其他架構）中，「隱式引用」指的是 CPU 在執行某些行為時，在硬體層面主動對記憶體管理資料結構進行的讀寫，而這些讀寫並不直接對應程式碼中的顯式指令<br><br>
 >
-> 例如在讀 page table 的時候，CPU 需要將虛擬位址轉換為實體位址，因此會在硬體層面讀取或查詢 page table，又或是 TLB 之類的快取裡面的資訊
+> 例如在讀 page table 的時候，CPU 需要將虛擬位址轉換為實體位址，因此會在硬體層面讀取或查詢 page table，又或是 TLB 之類的快取裡面的資訊<br><br>
 >
 > 這個行為對軟體來說是不可見的，程式碼中並沒有 load/store page table 的指令，但硬體卻完成了對 page table 的存取，因此稱為隱式引用
 
-`SFENCE.VMA` 指令可以確保對該 hart，可見的所有 store 寫入都會先於之後指令中對這些記憶體管理資料結構的某些隱式參考
+`SFENCE.VMA` 指令可以確保對該 hart，可見的所有寫入（store）都會先於之後指令中對這些記憶體管理資料結構的某些隱式參考
 
-`SFENCE.VMA` 所影響的特定操作集合，會由 rs1 和 rs2 來決定。 同時，`SFENCE.VMA` 也被用來讓與該 hart 相關的位址轉換快取失效（詳見第 12.3.2 節）
+`SFENCE.VMA` 所影響的特定操作集合，會由 `rs1` 和 `rs2` 來決定。 同時，`SFENCE.VMA` 也被用來讓與該 hart 相關的位址轉換快取失效（詳見第 12.3.2 節）
 
 關於該指令的進一步細節可參見第 3.1.6.6 與第 3.7.2 節
 
 :::info  
 `SFENCE.VMA` 用來清空與地址轉換相關的硬體快取。 其被定義為一條「fence」指令，而非「TLB flush 指令」，是為了提供更清晰的語意，說明哪些指令會受到 flush 影響，也同時支援更多種動態快取架構與記憶體管理方案
 
-此外，`SFENCE.VMA` 也會被更高特權層（例如 M-mode 或 HS-mode）用來將「page table 的寫入」與「地址轉換硬體」做同步處理  
+此外，`SFENCE.VMA` 也會被更高特權層（例如 M-mode 或 HS-mode）用來將「page table 的寫入」與「地址轉換硬體」做同步處理
+
+總而言之，`SFENCE.VMA` 會做兩件事：
+
+1. 確保虛擬位址翻譯的同步
+2. Flush TLB  
 :::
 
 `SFENCE.VMA` 只會排序 (order) 該指令所在的 hart 上，針對「記憶體管理資料結構」的隱式參考，不會影響其他 hart 上的地址轉換快取，也不會為它們提供同步或失效機制
@@ -732,7 +741,11 @@ RISC-V 設計上把寫入 `satp` 與 TLB flush / page table fence 分離，讓�
 
 針對只修改了一個地址映射（例如只有一個 page 或 superpage）的常見情況，可透過 `rs1` 指定一個在映射範圍內的虛擬位址，從而只針對該映射進行 translation fence。 另外若只修改了一個 ASID，則可透過 `rs2` 指定該地址空間
 
-> 在大多數情況下，OS 可能只更新了特定的一個 page 或 superpage，因此這可以避免整個 TLB 失效；同樣地如果只改了對應的某個 ASID（比如只修改了一個 Process 的 page table），則只要失效與該 ASID 相關的 TLB 項目即可
+> Translation fence（`SFENCE.VMA`）用來清除或同步處理器快取中的翻譯結果（如 TLB, page walk cache）與主記憶體中 page table entry（PTE）的內容，以確保當 page table 被軟體修改後，接下來的虛擬位址轉譯會根據新的 PTE 的內容執行<br><br>
+> 
+> 在大多數情況下，OS 可能只更新了特定的一個 page 或 superpage，因此這可以避免整個 TLB 失效；同樣地如果只改了對應的某個 ASID（比如只修改了一個 Process 的 page table），則只要失效與該 ASID 相關的 TLB 項目即可<br><br>
+>
+> 另外，Data fence（`FENCE`/`FENCE.I`）用來確保不同記憶體操作之間的執行順序，以滿足一致性模型與 I/O 記憶體順序的需求
 
 `SFENCE.VMA` 的行為依賴於 `rs1` 與 `rs2`，具體說明如下：
 
@@ -771,13 +784,9 @@ over-fence 在任何時候都合法，例如，只使用 `rs1` 與/或 `rs2` 中
 >
 > `SFENCE.VMA` 雖然可以保證「先前對 page table 的 explicit store」在「後續對 page table 的 implicit load」前可見，但它不自動保證「先前所有 explicit store」會在「後續所有 explicit store」前出現在全域順序中
 
-由於這項規範，實作在「自從涵蓋該地址的最近一次 SFENCE.VMA」之後，任何時點有效過的轉換結果，都可能被使用
+由於這項規範，實作可以使用自上次對該位址執行（並涵蓋該位址的）`SFENCE.VMA` 以來，任何時刻曾經有效過的位址轉譯結果。 也就是說，如果修改了一個 leaf PTE 但沒有執行對應的 `SFENCE.VMA`，舊轉換結果或新轉換結果都有可能被硬體拿來使用，系統無法預測會用哪一個。 不過，除「可能隨機選擇舊/新轉換結果」之外的行為，都有被明確定義
 
-也就是說，如果修改了一個 leaf PTE 但沒有執行對應的 `SFENCE.VMA`，舊轉換結果或新轉換結果都有可能被硬體拿來使用，系統無法預測會用哪一個。 不過，除「可能隨機選擇舊/新轉換結果」之外的行為，都符合定義 (well-defined)
-
-在傳統 TLB 設計中，可能出現多個可以對應同一個位址的 TLB 項目
-
-舉個例子，如果把一個普通的 page 升級成 superpage，但沒有把原本 non-leaf PTE 的 valid bit 清除，並用 `rs1=x0` 執行一個 `SFENCE.VMA`，那麼
+在傳統 TLB 設計中，可能會出現多個可以對應到同一個位址的 TLB 項目。 舉個例子，如果把一個普通的 page 升級成 superpage，但沒有把原本 non-leaf PTE 的 valid bit 清除，並用 `rs1=x0` 執行一個 `SFENCE.VMA`，那麼
 
 在這種情況下，同樣地，硬體無法預測會用到「舊的 non-leaf PTE」還是「新的 leaf PTE」，但行為依照規範也是符合定義的 (well defined)
 
@@ -800,6 +809,8 @@ over-fence 在任何時候都合法，例如，只使用 `rs1` 與/或 `rs2` 中
 
 同時，硬體只允許對「來自指令實際執行」所導致的隱式訪問產生異常，對於「推測性執行（speculative execution）」所造成的隱式訪問不能產生例外（exception）
 
+> 推測性執行（Speculative Execution）是指 CPU 預先執行可能會用到的指令，即使當下還無法確定它們是否真的會被執行，以提升效能與吞吐量，一個常見的例子是 branch prediction，但其他像是 Memory disambiguation 或 Indirect Jumps 等地方也會用到
+
 對 `sstatus` 中的 `SUM` 和 `MXR` 欄位所做的更動會立即生效，不需要執行 `SFENCE.VMA`。 將 `satp.MODE` 從 Bare 切換到其他模式（或反之）時也會立即生效，無需執行 `SFENCE.VMA`。 同樣，變更 `satp.ASID` 的值也會立即生效。
 
 以下幾種常見情境通常都需要執行 `SFENCE.VMA` 指令：
@@ -814,7 +825,6 @@ over-fence 在任何時候都合法，例如，只使用 `rs1` 與/或 `rs2` 中
 
 地址轉譯快取是 hart-locol 的，每個 hart 都有自己的 TLB/ASID 解釋，並不要求全系統一致，軟體可以選擇在不同的 hart 上使用相同的 ASID 來代表不同的地址空間
 
-未來的擴充可能會將 ASID 重新定義為在整個 SEE 中是全域的，從而實現像是共用地址轉譯快取與硬體支援的廣播式 TLB shootdown 等選項。 然而現今作業系統已經有各種先進技巧（如 lazy shootdown、分群 flush 等）來減少 TLB shootdown 的頻率與範圍，所以我們預期 hart-locol ASID 依然因其簡潔性與可擴展性而仍具吸引力
+未來的擴充可能會將 ASID 重新定義為在整個 Supervisor Execution Environment（SEE）中是全域的，從而實現像是共用地址轉譯快取與硬體支援的廣播式 TLB shootdown 等選項。 然而現今作業系統已經有各種先進技巧（如 lazy shootdown、分群 flush 等）來減少 TLB shootdown 的頻率與範圍，所以我們預期 hart-locol ASID 依然因其簡潔性與可擴展性而仍具吸引力
 
 對於那些將 `satp.MODE` 設為唯讀且固定為零（始終為 Bare 模式）的實作，嘗試執行 `SFENCE.VMA` 指令可能會觸發非法指令例外（illegal-instruction exception）
-
