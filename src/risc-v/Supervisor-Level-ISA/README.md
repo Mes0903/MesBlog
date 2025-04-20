@@ -144,7 +144,7 @@ page table entry 可以參考下圖(Sv32 page table entry)
 
 `SUM` 的機制不允許 S-mode 軟體執行 user code pages 中的指令。 但這在其他場景下通常也是個不合法的操作，在 POSIX 環境中也禁止 S-mode 執行 U-mode memory page 中的指令，因為如果 S-mode 中存在任意代碼執行(Arbitrary Code Execution, ACE) 的漏洞，那麼這類漏洞將變得更容易被利用，特別是當攻擊者能夠將惡意代碼存放在 U-mode 可存取的記憶體 (user buffer) 並在攻擊過程中執行它
 
-但是有些 non-POSIX 的單一位址空間(Single Address Space) 作業系統允許部分軟體在 S-mode 下執行 U-mode program，其大部分程式都運行在 U-mode 下，並和 kernel 共用同一個位址空間。 在這種情況下，可以通過映射相同的物理記憶體到不同的虛擬記憶體頁面，並設定不同的權限來允許 S-mode 軟體部分執行 U-mode 的程式碼
+但是有些 non-POSIX 的單一位址空間(Single Address Space) 作業系統允許部分軟體在 S-mode 下執行 U-mode program，其大部分程式都運行在 U-mode 下，並和 kernel 共用同一個位址空間。 在這種情況下，可以通過映射相同的物理記憶體到不同的虛擬記憶體 page，並設定不同的權限來允許 S-mode 軟體部分執行 U-mode 的程式碼
 
 #### 12.1.1.3. Endianness Control in `sstatus` Register (`UBE`)
 
@@ -190,7 +190,7 @@ Trap handler 需要在儲存好 `scause`、`sepc`、`stval` 等狀態，並且�
 - `SDT=1`
 - 該存取指令導致了 guest page-fault
 
-時，不過這不常發生。 另外，儘管 GPA 不會被記錄，但這沒關係，需要的話仍可以通過遍歷 page table 來達成目的
+時，不過這不常發生。 另外，儘管 GPA 不會被記錄，但這沒關係，需要的話仍可以通過走訪 page table 來達成目的
 
 對於源自 VS-mode 的 double trap，M-mode 應該要將該異常重新導向到 HS-mode，具體做法是：
 
@@ -793,6 +793,28 @@ over-fence 在任何時候都合法，例如，只使用 `rs1` 與/或 `rs2` 中
 
 本規範允許在 V (Valid) 位元為 0 時，依然快取該 PTE。 作業系統在實作時，必須面對這種情況；但同時也要提醒硬體實作者，如果過度地快取這些無效 PTE，將導致更多的 page fault 發生，從而拖累效能
 
-硬體實作只能從「`satp暫存器當前內容所指向的翻譯資料結構」，或從之後找到的有效 (V=1) 條目，進行隱式讀取；
+硬體實作只能對下列範圍進行隱式讀取（如 TLB 查詢 page table）：
 
-而且只能對「指令執行所產生的隱式存取」拋出異常，不得對「推測執行 (speculative)」中產生的隱式存取拋出異常
+- 由目前 `satp` 暫存器所指向的地址轉譯資料結構
+- 或者從該 page table 中向下遞迴時出現的、有效（V=1）的 PTE
+
+同時，硬體只允許對「來自指令實際執行」所導致的隱式訪問產生異常，對於「推測性執行（speculative execution）」所造成的隱式訪問不能產生例外（exception）
+
+對 `sstatus` 中的 `SUM` 和 `MXR` 欄位所做的更動會立即生效，不需要執行 `SFENCE.VMA`。 將 `satp.MODE` 從 Bare 切換到其他模式（或反之）時也會立即生效，無需執行 `SFENCE.VMA`。 同樣，變更 `satp.ASID` 的值也會立即生效。
+
+以下幾種常見情境通常都需要執行 `SFENCE.VMA` 指令：
+
+- 當軟體回收一個 ASID（即將其重新關聯到不同的 page table）時，應先把 `satp` 設定到「新 page table + 該 ASID」，然後執行 `SFENCE.VMA`（`rs1 = x0`，`rs2` 為該回收 ASID）來失效這個 ASID 相關的 TLB 條目。 也允許提前執行 `SFENCE.VMA`，只要之後載入 ASID 時確實對應新 page table 即可
+- 在實作不支援 ASID，或軟體根本不用（只用 ASID 0）的情況下，所有 Process 都會共用同一份 TLB cache，那在每次寫入 `satp` 後（如切換 page table），軟體應要執行 `SFENCE.VMA`（`rs1=x0`）來 flush 整個 TLB。 如果沒有改到全域映射，可透過將 `rs2` 設為一個非 `x0` 但值為零的暫存器，來避免不必要的 flush（不刷新全域映射）
+- 若軟體修改了一個 non-leaf PTE，則應該執行 `SFENCE.VMA`（`rs1 = x0`）。 如果走訪路徑上的任何 PTE 有將 G bit 設為 1，代表改到了全域映射，因此 `rs2` 必須被設為 `x0`（flush ALL ASID），否則 `rs2` 應被設為被修改的 non-leaf PTE 所屬的 ASID
+- 若軟體修改了一個 leaf PTE，則應該執行 `SFENCE.VMA`（`rs1` 被設為該 page 內的任一虛擬位址），以針對該 page 的 TLB 條目進行失效。 如果遍歷路徑上的任何 PTE 有將 G bit 設為 1，則 `rs2` 必須被設為 `x0`（flush ALL ASID），否則 `rs2` 應被設為被修改的 leaf PTE 所屬的 ASID
+- 在提升 leaf PTE 的權限，或將一個無效 PTE 改為有效的 leaf PTE 時，軟體可以選擇延遲執行 `SFENCE.VMA`。 在修改 PTE 後，但尚未執行 `SFENCE.VMA` 前，可能會使用新的權限，也可能會使用舊的權限。 若是後者，則可能會產生 page fault exception，此時軟體應依照上一點來執行 `SFENCE.VMA`
+
+  這主要是因為有些情況下（如只增加權限，或把 page 從 invalid 變 valid），允許先執行程式碼，等真的觸發 page fault 再補做 flush，可以減少不必要的 TLB flush，提高效能。 在這段期間，硬體可能會用到新的或舊的權限，因此最多只會多一次 page fault，並不會導致未定義行為
+
+地址轉譯快取是 hart-locol 的，每個 hart 都有自己的 TLB/ASID 解釋，並不要求全系統一致，軟體可以選擇在不同的 hart 上使用相同的 ASID 來代表不同的地址空間
+
+未來的擴充可能會將 ASID 重新定義為在整個 SEE 中是全域的，從而實現像是共用地址轉譯快取與硬體支援的廣播式 TLB shootdown 等選項。 然而現今作業系統已經有各種先進技巧（如 lazy shootdown、分群 flush 等）來減少 TLB shootdown 的頻率與範圍，所以我們預期 hart-locol ASID 依然因其簡潔性與可擴展性而仍具吸引力
+
+對於那些將 `satp.MODE` 設為唯讀且固定為零（始終為 Bare 模式）的實作，嘗試執行 `SFENCE.VMA` 指令可能會觸發非法指令例外（illegal-instruction exception）
+
