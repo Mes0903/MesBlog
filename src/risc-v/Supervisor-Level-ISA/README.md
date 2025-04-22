@@ -1,5 +1,5 @@
 ---
-title: (WIP) RISC-V Supervisor-Level ISA
+title: RISC-V Supervisor-Level ISA
 date: 2025-02-25
 tag: risc-v
 category: risc-v
