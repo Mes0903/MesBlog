@@ -82,7 +82,9 @@ S-mode 無法窺探或取得任何來自更高 privilege mode（如 M-mode）的
 
 舉個例子，當 `UXLEN` 為 32，`SXLEN` 為 64 的情況下，U-mode 下的程式無論怎麼操作記憶體，都只能看到低 4GiB 的記憶體範圍，換句話說 U-mode 的記憶體存取是 32 位元位址空間內的操作，而不是完整的 64 位元位址空間
 
-> $2^{32}$ = 4GiB
+::: tip  
+$2^{32}$ = 4GiB  
+:::
 
 ##### HINT 相關
 
@@ -181,7 +183,9 @@ page table entry 可以參考下圖(Sv32 page table entry)
 
 `SDT`(S-mode-disable-trap) 是一個 WARL 的欄位，由 Ssdbltrp 擴充指令集引入，用來解決 S-mode 以下 double trap 的問題
 
-> double trap 指的是，當 Trap handler 正在處理異常(Trap) 且正處於 non-reentrant 的狀態時，發生了另一個異常，導致其無法正常處理
+::: tip  
+double trap 指的是，當 Trap handler 正在處理異常(Trap) 且正處於 non-reentrant 的狀態時，發生了另一個異常，導致其無法正常處理  
+:::
 
 當 `SDT` 位元透過 CSR write 顯式設為 1 時，無論該操作是否在同一寫入中試圖設定 `SIE`，`SIE` 都會被強制清 0，這代表 S-mode 將無法接受中斷。 而執行 `SRET` 指令 `SDT` 會被清 0
 
@@ -295,11 +299,15 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 `sip.SSIP` 與 `sie.SSIE` 對應到 S-mode 軟體中斷 (software interrupt) 的「等待」與「啟用」位。 若系統實作該功能，`sip` 中的 `SSIP` 是 可寫的，也可能由平台特定的中斷控制器設置為 1
 
-> 外部中斷往往是由硬體控制器 (PIC, PLIC, etc.) 來管理，S-mode 只能透過平台特定的方法去清除 pending。 計時器中斷通常也是由硬體或韌體自動管理，軟體無法直接清除 pending，故 STIP 是唯讀的
+::: tip  
+外部中斷往往是由硬體控制器 (PIC, PLIC, etc.) 來管理，S-mode 只能透過平台特定的方法去清除 pending。 計時器中斷通常也是由硬體或韌體自動管理，軟體無法直接清除 pending，故 STIP 是唯讀的  
+:::
 
 若系統實作了 Sscofpmf 擴充，則 `sip.LCOFIP` 與 `sie.LCOFIE` 這些位元對應到 local counter-overflow interrupt 的等待與啟用。 `sip.LCOFIP` 在 `sip` 中是可讀寫 (read-write)，當 `mhpmeventn.OF` 中任何一個位元被設置（表示計數器溢出）時，就會反映成一個 local counter-overflow interrupt。 如果 Sscofpmf 未實作，那麼 `sip.LCOFIP` 與 `sie.LCOFIE` 是唯讀的且永遠為 0
 
-> Sscofpmf (Supervisor Software Counter Overflow Performance Monitoring)：一種專門的擴充，用於監測計數器溢出事件
+::: tip  
+Sscofpmf (Supervisor Software Counter Overflow Performance Monitoring)：一種專門的擴充，用於監測計數器溢出事件  
+:::
 
 :::info  
 跨處理器中斷 (Interprocessor interrupts) 是透過特定的實作方式發送到其他 hart，最終會使接收端 hart 的 `sip` 暫存器中的 `SSIP` 位元被設為 1  
@@ -453,9 +461,11 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 </div>
 
-> Synchronous exception 是指那些由當前指令本身引起的例外狀況，與中斷不同，它是執行這條指令時就立刻可知的錯誤<br><br>
-> 
-> 當一條指令導致多個 synchronous exceptions 時，因為同一時間只能 trap 一次，此時就會依照此表決定哪一個例外應該優先被送進 trap handler，並寫入 `scause`
+::: tip  
+Synchronous exception 是指那些由當前指令本身引起的例外狀況，與中斷不同，它是執行這條指令時就立刻可知的錯誤
+
+當一條指令導致多個 synchronous exceptions 時，因為同一時間只能 trap 一次，此時就會依照此表決定哪一個例外應該優先被送進 trap handler，並寫入 `scause`
+:::
 
 ### 12.1.9. Supervisor Trap Value (`stval`) Register
 
@@ -527,17 +537,23 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 </div>
 
-> 當 `FIOM=1`，在 U-mode 下：  
-> - `PI=1` → 表示 fence 要確保「之前(predecessor) 的裝置輸入以及記憶體讀取」都已完成 (PR：predecessor reads)
-> - `PO=1` → 確保「之前的裝置輸出以及記憶體寫入」都已完成 (PW：predecessor writes)
-> - `SI=1` → 確保「之後(successor) 的裝置輸入以及記憶體讀取」的順序 (SR：successor reads)
-> - `SO=1` → 確保「之後的裝置輸出以及記憶體寫入」的順序 (SW：successor writes)  
->
-> 由於 `FIOM=1`，因此 I/O fence 同時會涵蓋 memory fence
+::: tip  
+當 `FIOM=1`，在 U-mode 下：  
+
+- `PI=1` → 表示 fence 要確保「之前(predecessor) 的裝置輸入以及記憶體讀取」都已完成 (PR：predecessor reads)
+- `PO=1` → 確保「之前的裝置輸出以及記憶體寫入」都已完成 (PW：predecessor writes)
+- `SI=1` → 確保「之後(successor) 的裝置輸入以及記憶體讀取」的順序 (SR：successor reads)
+- `SO=1` → 確保「之後的裝置輸出以及記憶體寫入」的順序 (SW：successor writes)  
+
+由於 `FIOM=1`，因此 I/O fence 同時會涵蓋 memory fence  
+:::
+
 
 如果 `satp.MODE` 唯讀且永遠是 0（表示系統處於 Bare 模式，無 page 功能），那麼硬體可以讓 `FIOM` 位元也成為唯讀的，且永遠 0（無法啟用 `FIOM`）
 
-> 換句話說在沒有 page 的情況下，若實作者覺得不需要對 I/O 或 memory 做額外的順序處理，可將其鎖死成 0
+::: tip  
+換句話說在沒有 page 的情況下，若實作者覺得不需要對 I/O 或 memory 做額外的順序處理，可將其鎖死成 0  
+:::
 
 :::info  
 `FIOM` 位元是為了特定情況而設計的：
@@ -690,24 +706,28 @@ RISC-V 設計上把寫入 `satp` 與 TLB flush / page table fence 分離，讓�
 
 <div class = "center-column">
 
-![alt text](image/sfence.png)
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sfence.png?raw=true">
 
 </div>
 
-> 這邊翻的有點難懂，主要記得這兩個專有名詞：
-> - 記憶體管理資料結構 (memory-management data structure)：如 page table
-> - 地址轉換快取 (address-translation cache)：如 TLB
->   - 地址轉換快取項目：如 TLB entry
+::: tip  
+這邊翻的有點難懂，主要記得這兩個專有名詞：
+- 記憶體管理資料結構 (memory-management data structure)：如 page table
+- 地址轉換快取 (address-translation cache)：如 TLB
+  - 地址轉換快取項目：如 TLB entry  
+:::
 
 `SFENCE.VMA`（supervisor memory-management fence）是一條指令，用來將記憶體中的「記憶體管理資料結構 (memory-management data structures)」的更新與「當前執行」同步
 
 一般的指令在執行過程中會隱式地讀寫這些資料結構，但這些隱式引用 (implicit references) 通常不會與顯式的 load/store 指令有任何順序保證
 
-> 在 RISC-V（以及許多其他架構）中，「隱式引用」指的是 CPU 在執行某些行為時，在硬體層面主動對記憶體管理資料結構進行的讀寫，而這些讀寫並不直接對應程式碼中的顯式指令<br><br>
->
-> 例如在讀 page table 的時候，CPU 需要將虛擬位址轉換為實體位址，因此會在硬體層面讀取或查詢 page table，又或是 TLB 之類的快取裡面的資訊<br><br>
->
-> 這個行為對軟體來說是不可見的，程式碼中並沒有 load/store page table 的指令，但硬體卻完成了對 page table 的存取，因此稱為隱式引用
+::: tip  
+在 RISC-V（以及許多其他架構）中，「隱式引用」指的是 CPU 在執行某些行為時，在硬體層面主動對記憶體管理資料結構進行的讀寫，而這些讀寫並不直接對應程式碼中的顯式指令
+
+例如在讀 page table 的時候，CPU 需要將虛擬位址轉換為實體位址，因此會在硬體層面讀取或查詢 page table，又或是 TLB 之類的快取裡面的資訊
+
+這個行為對軟體來說是不可見的，程式碼中並沒有 load/store page table 的指令，但硬體卻完成了對 page table 的存取，因此稱為隱式引用  
+:::
 
 `SFENCE.VMA` 指令可以確保對該 hart，可見的所有寫入（store）都會先於之後指令中對這些記憶體管理資料結構的某些隱式參考
 
@@ -737,23 +757,27 @@ RISC-V 設計上把寫入 `satp` 與 TLB flush / page table fence 分離，讓�
 
 此流程在 RISC-V 中對應了「TLB shootdown」的做法
 
-> TLB shootdown 的一個簡單例子是
->
-> 1. 系統中有個所有 hart 共享的記憶體
-> 2. 其中一個 hart 限制了對該共享記憶體 page 的存取
-> 3. 因此所有的 hart 都必須刷新其 TLB，以便禁止那些原先被允許訪問該 page 的 hart 去存取該 page
->
-> 一個 hart 的操作導致其他 hart 上的 TLB 被刷新，這就是所謂的 TLB shootdown<br><br>
->
-> 在多 CPU 系統中，傳統的方式是「IPI + flush TLB + ack」的過程，RISC-V 中則用 `SFENCE.VMA` 來 flush TLB
+::: tip  
+TLB shootdown 的一個簡單例子是
+
+1. 系統中有個所有 hart 共享的記憶體
+2. 其中一個 hart 限制了對該共享記憶體 page 的存取
+3. 因此所有的 hart 都必須刷新其 TLB，以便禁止那些原先被允許訪問該 page 的 hart 去存取該 page
+
+一個 hart 的操作導致其他 hart 上的 TLB 被刷新，這就是所謂的 TLB shootdown
+
+在多 CPU 系統中，傳統的方式是「IPI + flush TLB + ack」的過程，RISC-V 中則用 `SFENCE.VMA` 來 flush TLB  
+:::
 
 針對只修改了一個地址映射（例如只有一個 page 或 superpage）的常見情況，可透過 `rs1` 指定一個在映射範圍內的虛擬位址，從而只針對該映射進行 translation fence。 另外若只修改了一個 ASID，則可透過 `rs2` 指定該地址空間
 
-> Translation fence（`SFENCE.VMA`）用來清除或同步處理器快取中的翻譯結果（如 TLB, page walk cache）與主記憶體中 page table entry（PTE）的內容，以確保當 page table 被軟體修改後，接下來的虛擬位址轉譯會根據新的 PTE 的內容執行<br><br>
-> 
-> 在大多數情況下，OS 可能只更新了特定的一個 page 或 superpage，因此這可以避免整個 TLB 失效；同樣地如果只改了對應的某個 ASID（比如只修改了一個 Process 的 page table），則只要失效與該 ASID 相關的 TLB 項目即可<br><br>
->
-> 另外，Data fence（`FENCE`/`FENCE.I`）用來確保不同記憶體操作之間的執行順序，以滿足一致性模型與 I/O 記憶體順序的需求
+::: tip  
+Translation fence（`SFENCE.VMA`）用來清除或同步處理器快取中的翻譯結果（如 TLB, page walk cache）與主記憶體中 page table entry（PTE）的內容，以確保當 page table 被軟體修改後，接下來的虛擬位址轉譯會根據新的 PTE 的內容執行
+
+在大多數情況下，OS 可能只更新了特定的一個 page 或 superpage，因此這可以避免整個 TLB 失效；同樣地如果只改了對應的某個 ASID（比如只修改了一個 Process 的 page table），則只要失效與該 ASID 相關的 TLB 項目即可
+
+另外，Data fence（`FENCE`/`FENCE.I`）用來確保不同記憶體操作之間的執行順序，以滿足一致性模型與 I/O 記憶體順序的需求  
+:::
 
 `SFENCE.VMA` 的行為依賴於 `rs1` 與 `rs2`，具體說明如下：
 
@@ -788,9 +812,11 @@ over-fence 在任何時候都合法，例如，只使用 `rs1` 與/或 `rs2` 中
 
 此外，對這些記憶體管理資料結構的「隱式讀取 (implicit load)」，也不必遵守正常的 program order 與之前針對同位址的 load/store 之間的關係
 
-> 這代表在執行 `SFENCE.VMA` 之前，若你改了 page table，而又沒有對應的 `SFENCE.VMA`，此時 TLB 仍持有舊的轉換結果，此時不管 TLB 繼續使用舊的轉換結果，或重新讀 page table 來拿到新的轉換結果，都是有可能的行為，換句話說行為不可預測，但符合規範<br><br>
->
-> `SFENCE.VMA` 雖然可以保證「先前對 page table 的 explicit store」在「後續對 page table 的 implicit load」前可見，但它不自動保證「先前所有 explicit store」會在「後續所有 explicit store」前出現在全域順序中
+::: tip  
+這代表在執行 `SFENCE.VMA` 之前，若你改了 page table，而又沒有對應的 `SFENCE.VMA`，此時 TLB 仍持有舊的轉換結果，此時不管 TLB 繼續使用舊的轉換結果，或重新讀 page table 來拿到新的轉換結果，都是有可能的行為，換句話說行為不可預測，但符合規範
+
+`SFENCE.VMA` 雖然可以保證「先前對 page table 的 explicit store」在「後續對 page table 的 implicit load」前可見，但它不自動保證「先前所有 explicit store」會在「後續所有 explicit store」前出現在全域順序中  
+:::
 
 由於這項規範，實作可以使用自上次對該位址執行（並涵蓋該位址的）`SFENCE.VMA` 以來，任何時刻曾經有效過的位址轉譯結果。 也就是說，如果修改了一個 leaf PTE 但沒有執行對應的 `SFENCE.VMA`，舊轉換結果或新轉換結果都有可能被硬體拿來使用，系統無法預測會用哪一個。 不過，除「可能隨機選擇舊/新轉換結果」之外的行為，都有被明確定義
 
@@ -798,15 +824,19 @@ over-fence 在任何時候都合法，例如，只使用 `rs1` 與/或 `rs2` 中
 
 在這種情況下，同樣地，硬體無法預測會用到「舊的 non-leaf PTE」還是「新的 leaf PTE」，但行為依照規範也是符合定義的 (well defined)
 
-> 假設 OS 把原本多個 4 KiB page 合成一個更大的 superpage (例如 2 MiB)，則中間需要更新 page table 結構 (non-leaf → leaf) 並讓舊的轉換結果失效<br><br>
->
-> 如果沒有做正確的失效 (像是忘了先關 valid bit、再做 `SFENCE.VMA`)，TLB 內就有可能同時保留舊 non-leaf PTE 和新 leaf PTE<br><br>
->
-> 此時依 RISC-V 規範來說，這不會導致未定義行為 (undefined)，但行為是沒保證的 (unpredictable)，OS 看起來可能會有不一致現象 (有時舊、有時新)
+::: tip  
+假設 OS 把原本多個 4 KiB page 合成一個更大的 superpage (例如 2 MiB)，則中間需要更新 page table 結構 (non-leaf → leaf) 並讓舊的轉換結果失效
+
+如果沒有做正確的失效 (像是忘了先關 valid bit、再做 `SFENCE.VMA`)，TLB 內就有可能同時保留舊 non-leaf PTE 和新 leaf PTE
+
+此時依 RISC-V 規範來說，這不會導致未定義行為 (undefined)，但行為是沒保證的 (unpredictable)，OS 看起來可能會有不一致現象 (有時舊、有時新)
+:::
 
 這個規範的另一種後果是，多次利用寬度小於 PTE 寬度的 store 指令來更新 PTE 通常是不安全的，因為對硬體來說，它可以在任意時間讀取該 PTE，包括在只有部分 store 指令被完成、生效，但整個 PTE 尚未被完整更新的時候
 
-> 換句話說，假設 PTE 是 64 位，但程式只用 2 個 32 位 store 來改它；在兩次 store 之間，硬體可能會讀到更新到一半的 PTE
+::: tip  
+換句話說，假設 PTE 是 64 位，但程式只用 2 個 32 位 store 來改它；在兩次 store 之間，硬體可能會讀到更新到一半的 PTE  
+:::
 
 本規範允許在 V (Valid) 位元為 0 時，依然快取該 PTE。 作業系統在實作時，必須面對這種情況；但同時也要提醒硬體實作者，如果過度地快取這些無效 PTE，將導致更多的 page fault 發生，從而拖累效能
 
@@ -817,7 +847,9 @@ over-fence 在任何時候都合法，例如，只使用 `rs1` 與/或 `rs2` 中
 
 同時，硬體只允許對「來自指令實際執行」所導致的隱式訪問產生異常，對於「推測執行（speculative execution）」所造成的隱式訪問不能產生例外（exception）
 
-> 推測執行（speculative execution）是指 CPU 預先執行可能會用到的指令，即使當下還無法確定它們是否真的會被執行，以提升效能與吞吐量，一個常見的例子是 branch prediction，但其他像是 Memory disambiguation 或 Indirect Jumps 等地方也會用到
+::: tip  
+推測執行（speculative execution）是指 CPU 預先執行可能會用到的指令，即使當下還無法確定它們是否真的會被執行，以提升效能與吞吐量，一個常見的例子是 branch prediction，但其他像是 Memory disambiguation 或 Indirect Jumps 等地方也會用到  
+:::
 
 對 `sstatus` 中的 `SUM` 和 `MXR` 欄位所做的更動會立即生效，不需要執行 `SFENCE.VMA`。 將 `satp.MODE` 從 Bare 切換到其他模式（或反之）時也會立即生效，無需執行 `SFENCE.VMA`。 同樣，變更 `satp.ASID` 的值也會立即生效。
 
@@ -860,7 +892,11 @@ RISC-V 初期的 page-base 虛擬記憶體架構是以簡單直接的方式設�
 
 Sv32 的實作支援一個 32-bit 的虛擬位址空間，並以 page 進行劃分。 一個 Sv32 的虛擬位址會被分割為一個 virtual page number（VPN）與 page offset，如下圖所示：
 
-![alt text](image/sv32_virtual_address.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv32_virtual_address.png?raw=true">
+
+</div>
 
 當 `satp` 暫存器中的 `MODE` 欄位被設為 Sv32 時，supervisor 的虛擬位址會透過一個兩層的 page table 轉換為 supervisor 的實體位址。 這個 20-bit 的 VPN 會轉換為一個 22-bit 的 physical page number（PPN），而 12-bit 的 page offset 則不參與轉換
 
@@ -885,7 +921,11 @@ Sv32 的 page table 包含 $2^{10}$ 個 page-table entries（PTEs），每個 en
 
 Sv32 的 PTE 格式如下圖所示：
 
-![alt text](image/sv32_PTE.png)
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv32_PTE.png?raw=true">
+
+</div>
 
 V bit 表示此 PTE 是否為有效，若為 0，則 PTE 中的所有其他位元均可被忽略，並可供軟體自由使用。 權限位元 R、W 與 X 分別表示此 page 是否可讀、可寫、可執行，當這三個位元皆為 0 時，表示該 PTE 指向下一層 page table 的指標；若有任一位元為 1，則該 PTE 為一個 leaf PTE。 可寫的 page 必須同時標記為可讀（W 被設為 1 時 R 也一定要被設為 1），相反的組合保留做未來用途
 
