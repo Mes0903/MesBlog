@@ -1069,11 +1069,11 @@ RSW 欄位保留給 supervisor 軟體使用，實作（硬體）應忽略此欄�
   它們可以拆成兩個動作：
 
   - 先更新 A/D bit
-  - 再訪問那個頁面
+  - 再訪問那個 page 
 
-  中間如果發生了 page fault，A bit 可能已經設了（表示這頁「嘗試過被存取」），但你還沒真的去讀資料，這在 RISC-V 中是合法的
+  中間如果發生了 page fault，A bit 可能已經設了（表示這個 page「曾被嘗試存取過」），但你還沒真的去讀資料，這在 RISC-V 中是合法的
 
-  但是不能先訪問頁面再更新 A/D bit，如果硬體提早去讀資料，而這時其他 hart、或甚至是 OS 都還沒看到 PTE 的變動（例如還沒寫入 memory），就會導致不可預期的 race  
+  但是不能先訪問該 page 再更新 A/D bit，如果硬體提早去讀資料，而這時其他 hart、或甚至是 OS 都還沒看到 PTE 的變動（例如還沒寫入 memory），就會導致不可預期的 race  
   :::
 
   page table 必須被放置在具有硬體 page-table 寫入權限，並且具備 *RsrvEventual* PMA 的記憶體區段中
@@ -1151,7 +1151,7 @@ A bit 與 D bit 不會被硬體主動清除。 若 supervisor 軟體不依賴 A/
 在第 7 步中不可使用地址轉譯快取，只能直接在記憶體中更新 A/D bit，也就是說不能只改 cache 中的 shadow copy，必須真正改寫到 page table 對應的 PTE 記憶體區段中
 
 ::: info  
-RISC-V 允許多個地址轉譯快取映射到同一個地址上。 在傳統的 TLB 階層中，如果某個頁面被升級為 superpage，但沒有先清除原先 non-leaf PTE 的 valid 位元，並執行了 `SFENCE.VMA`（`rs1 = x0`），或者在某個 TLB 階層中存在多個平行的 TLB，那就可能會有多個項目映射到同一個地址
+RISC-V 允許多個地址轉譯快取映射到同一個地址上。 在傳統的 TLB 階層中，如果某個 page 被升級為 superpage，但沒有先清除原先 non-leaf PTE 的 valid 位元，並執行了 `SFENCE.VMA`（`rs1 = x0`），或者在某個 TLB 階層中存在多個平行的 TLB，那就可能會有多個項目映射到同一個地址
 
 在這種情況下，如同在對 memory-management table 寫入後未執行 `SFENCE.VMA` 而接著進行相同地址的隱式讀取時一樣，我們無法預測究竟會使用舊的 non-leaf PTE 還是新的 leaf PTE，但其他行為仍是有良好定義的  
 :::
@@ -1170,7 +1170,7 @@ RISC-V 允許多個地址轉譯快取映射到同一個地址上。 在傳統的
 2. 不能產生例外（trap）
     - 推測性執行只是預先查詢，不能導致如 page-fault、access-fault。
 3. 不能建立已被 `SFENCE.VMA` 清除的快取項目
-    - 比如你早在某頁建立快取後執行 `SFENCE.VMA`，該 page 就應失效，你不可以推測地又偷偷加回去  
+    - 比如你早在某個 page 建立快取後執行 `SFENCE.VMA`，該 page 就應失效，你不可以推測地又偷偷加回去  
 :::
 
 ::: info  
