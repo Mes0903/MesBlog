@@ -1,11 +1,19 @@
 ---
-title: (WIP) Supervisor-Level ISA
+title: (WIP) RISC-V Supervisor-Level ISA
 date: 2025-02-25
 tag: risc-v
 category: risc-v
 ---
 
 # 12. Supervisor-Level ISA, Version 1.13
+
+本篇為 RISC-V Supervisor-Level ISA 的中文翻譯與筆記，原文可於[官方 github](https://github.com/riscv/riscv-isa-manual/tree/main) 的第 12 章中看到
+
+本篇內的 Info block 為原文中的補充段落，我全部都有翻，但會依照前後文的語境來決定要不要安插 Info block 進來，也就是說雖然本文中有些段落不在藍色的 Info 區塊內，但在原文中其屬於補充段落。 至於綠色的 Tips block 則是我個人的補充筆記
+
+## 12.1. Supervisor CSRs
+
+S-mode 無法窺探或取得任何來自更高 privilege mode（如 M-mode）的結構或資訊。 許多 supervisor-level 的 CSR 是對應的 M-mode CSR 的子集，因此為了理解 supervisor-level CSR 的描述，應該先閱讀 machine-mode 章節
 
 ### 12.1.1. Supervisor Status (`sstatus`) Register
 
@@ -762,7 +770,7 @@ RISC-V 設計上把寫入 `satp` 與 TLB flush / page table fence 分離，讓�
 - `rs1 ≠ x0` 且 `rs2 ≠ x0` (特定虛擬位址，特定 ASID) ：  
   則 fence 只會對 `rs2` 「指定的地址空間」內，由 `rs1` 「指定的虛擬位址」所對應的 leaf PTE 進行排序；同樣地，對全域映射則不包含在此範圍
 
-  此外，該 fence 只會無效化，包含與 `rs1` 「指定的虛擬位址」所對應的 leaf PTE，且與 `rs2` 所「指定的地址空間」相符的地址轉換快取條目，但擁有全域映射的條目不會受影響
+  此外，該 fence 只會無效化，包含與 `rs1` 「指定的虛擬位址」所對應的 leaf PTE，且與 `rs2` 所「指定的地址空間」相符的地址轉換快取項目，但擁有全域映射的項目不會受影響
 
 若 `rs1` 內的數值不是一個有效的虛擬位址，則 `SFENCE.VMA` 指令沒有任何作用，而且不會拋出異常
 
@@ -807,18 +815,18 @@ over-fence 在任何時候都合法，例如，只使用 `rs1` 與/或 `rs2` 中
 - 由目前 `satp` 暫存器所指向的地址轉譯資料結構
 - 或者從該 page table 中向下遞迴時出現的、有效（V=1）的 PTE
 
-同時，硬體只允許對「來自指令實際執行」所導致的隱式訪問產生異常，對於「推測性執行（speculative execution）」所造成的隱式訪問不能產生例外（exception）
+同時，硬體只允許對「來自指令實際執行」所導致的隱式訪問產生異常，對於「推測執行（speculative execution）」所造成的隱式訪問不能產生例外（exception）
 
-> 推測性執行（Speculative Execution）是指 CPU 預先執行可能會用到的指令，即使當下還無法確定它們是否真的會被執行，以提升效能與吞吐量，一個常見的例子是 branch prediction，但其他像是 Memory disambiguation 或 Indirect Jumps 等地方也會用到
+> 推測執行（speculative execution）是指 CPU 預先執行可能會用到的指令，即使當下還無法確定它們是否真的會被執行，以提升效能與吞吐量，一個常見的例子是 branch prediction，但其他像是 Memory disambiguation 或 Indirect Jumps 等地方也會用到
 
 對 `sstatus` 中的 `SUM` 和 `MXR` 欄位所做的更動會立即生效，不需要執行 `SFENCE.VMA`。 將 `satp.MODE` 從 Bare 切換到其他模式（或反之）時也會立即生效，無需執行 `SFENCE.VMA`。 同樣，變更 `satp.ASID` 的值也會立即生效。
 
 以下幾種常見情境通常都需要執行 `SFENCE.VMA` 指令：
 
-- 當軟體回收一個 ASID（即將其重新關聯到不同的 page table）時，應先把 `satp` 設定到「新 page table + 該 ASID」，然後執行 `SFENCE.VMA`（`rs1 = x0`，`rs2` 為該回收 ASID）來失效這個 ASID 相關的 TLB 條目。 也允許提前執行 `SFENCE.VMA`，只要之後載入 ASID 時確實對應新 page table 即可
+- 當軟體回收一個 ASID（即將其重新關聯到不同的 page table）時，應先把 `satp` 設定到「新 page table + 該 ASID」，然後執行 `SFENCE.VMA`（`rs1 = x0`，`rs2` 為該回收 ASID）來失效這個 ASID 相關的 TLB 項目。 也允許提前執行 `SFENCE.VMA`，只要之後載入 ASID 時確實對應新 page table 即可
 - 在實作不支援 ASID，或軟體根本不用（只用 ASID 0）的情況下，所有 Process 都會共用同一份 TLB cache，那在每次寫入 `satp` 後（如切換 page table），軟體應要執行 `SFENCE.VMA`（`rs1=x0`）來 flush 整個 TLB。 如果沒有改到全域映射，可透過將 `rs2` 設為一個非 `x0` 但值為零的暫存器，來避免不必要的 flush（不刷新全域映射）
 - 若軟體修改了一個 non-leaf PTE，則應該執行 `SFENCE.VMA`（`rs1 = x0`）。 如果走訪路徑上的任何 PTE 有將 G bit 設為 1，代表改到了全域映射，因此 `rs2` 必須被設為 `x0`（flush ALL ASID），否則 `rs2` 應被設為被修改的 non-leaf PTE 所屬的 ASID
-- 若軟體修改了一個 leaf PTE，則應該執行 `SFENCE.VMA`（`rs1` 被設為該 page 內的任一虛擬位址），以針對該 page 的 TLB 條目進行失效。 如果遍歷路徑上的任何 PTE 有將 G bit 設為 1，則 `rs2` 必須被設為 `x0`（flush ALL ASID），否則 `rs2` 應被設為被修改的 leaf PTE 所屬的 ASID
+- 若軟體修改了一個 leaf PTE，則應該執行 `SFENCE.VMA`（`rs1` 被設為該 page 內的任一虛擬位址），以針對該 page 的 TLB 項目進行失效。 如果遍歷路徑上的任何 PTE 有將 G bit 設為 1，則 `rs2` 必須被設為 `x0`（flush ALL ASID），否則 `rs2` 應被設為被修改的 leaf PTE 所屬的 ASID
 - 在提升 leaf PTE 的權限，或將一個無效 PTE 改為有效的 leaf PTE 時，軟體可以選擇延遲執行 `SFENCE.VMA`。 在修改 PTE 後，但尚未執行 `SFENCE.VMA` 前，可能會使用新的權限，也可能會使用舊的權限。 若是後者，則可能會產生 page fault exception，此時軟體應依照上一點來執行 `SFENCE.VMA`
 
   這主要是因為有些情況下（如只增加權限，或把 page 從 invalid 變 valid），允許先執行程式碼，等真的觸發 page fault 再補做 flush，可以減少不必要的 TLB flush，提高效能。 在這段期間，硬體可能會用到新的或舊的權限，因此最多只會多一次 page fault，並不會導致未定義行為
@@ -828,3 +836,316 @@ over-fence 在任何時候都合法，例如，只使用 `rs1` 與/或 `rs2` 中
 未來的擴充可能會將 ASID 重新定義為在整個 Supervisor Execution Environment（SEE）中是全域的，從而實現像是共用地址轉譯快取與硬體支援的廣播式 TLB shootdown 等選項。 然而現今作業系統已經有各種先進技巧（如 lazy shootdown、分群 flush 等）來減少 TLB shootdown 的頻率與範圍，所以我們預期 hart-locol ASID 依然因其簡潔性與可擴展性而仍具吸引力
 
 對於那些將 `satp.MODE` 設為唯讀且固定為零（始終為 Bare 模式）的實作，嘗試執行 `SFENCE.VMA` 指令可能會觸發非法指令例外（illegal-instruction exception）
+
+## 12.3. Sv32: Page-Based 32-bit Virtual-Memory Systems
+
+Sv32 是 RISC-V 定義的 32-bit page-base 的虛擬記憶體架構，僅在 32 位元平台（`SXLEN=32`）可用，設計時已納入足以支援現代 Unix 系統所需的各種機制。 當 Sv32 被寫入 `satp` 暫存器中的 `MODE` 欄位時（參見第 12.1.11 節），supervisor 將會運作於 32-bit page-base 的虛擬記憶體系統中。 在這個模式下，supervisor 與 user 的虛擬位址會透過走訪一棵 radix-tree 結構的 page table，轉換為 supervisor 的實體位址
+
+RISC-V 初期的 page-base 虛擬記憶體架構是以簡單直接的方式設計，目的是為了支援既有的作業系統。 我們針對 page table 的結構進行了設計，使其能夠支援硬體層面的 page-table walker。 對於高效能系統來說，使用軟體方式進行 TLB refill 是一個效能瓶頸，對於那些與主處理器解耦的專用 coprocessor 而言更是麻煩。 如果要使用軟體的 TLB refill，可以選擇以 M-mode trap handler 來實作，作為 M-mode 的擴充
+
+某些指令集架構在架構層級上暴露了 VITP 的快取機制，如果經由不同的虛擬位址存取同一個實體位址，在快取中可能不具一致性，除非這些虛擬位址剛好落在同一個 cache set 中。 而本規範隱含地禁止這類行為在架構層級上被暴露
+
+::: tip  
+某些架構使用的 cache 設計是 VIPT（Virtually Indexed, Physically Tagged）：
+
+- index 用 VA 的部分位元來決定哪一個 cache set
+- tag 用 PA 的部分位元來做比對（避免 alias）
+
+如果不同的 VA 映射到同一個 PA，而它們 index 落在不同 cache set，就會導致同一筆資料會在兩個 cache block 中出現，導致 cache incoherence issue
+
+而 RISC-V 的規範禁止了這種行為，換句話說，RISC-V 保證對相同 PA 的訪問行為不會受 VA 差異影響，這讓 OS 設計更簡單，也避免奇怪的 cache bug  
+:::
+
+### 12.3.1. Addressing and Memory Protection
+
+Sv32 的實作支援一個 32-bit 的虛擬位址空間，並以 page 進行劃分。 一個 Sv32 的虛擬位址會被分割為一個 virtual page number（VPN）與 page offset，如下圖所示：
+
+![alt text](image/sv32_virtual_address.png)
+
+當 `satp` 暫存器中的 `MODE` 欄位被設為 Sv32 時，supervisor 的虛擬位址會透過一個兩層的 page table 轉換為 supervisor 的實體位址。 這個 20-bit 的 VPN 會轉換為一個 22-bit 的 physical page number（PPN），而 12-bit 的 page offset 則不參與轉換
+
+最終所得到的 supervisor-level physical address 會先經過任意已實作的 physical memory protection 結構（見第 3.7 節）檢查，然後才被直接轉換為 machine-level physical address。 如有需要，supervisor-level physical address 會以 zero-extension 擴展至實作所支援的實體位址寬度
+
+::: info  
+例如，考慮一個支援 34-bit 實體位址的 RV32 系統。 當 `satp.MODE` 設為 Sv32 時，會直接產生一個 34-bit 的 physical address，因此不需要進行 zero-extension。 而當 `satp.MODE` 設為 Bare 時，32-bit 的虛擬位址會直接作為 32-bit 的 physical address，然後這個 physical address 會以 zero-extension 方式延展為一個 34-bit 的 machine-level physical address  
+:::
+
+::: tip  
+在 RISC-V 中，經過 page walk 後查出來的 physical address 被稱為 Supervisor-level physical address，換句話說 leaf-PTE 內存的 PPN 只是 Supervisor-level physical address。 而真正 memory bus 看到的位址被稱為 Machine-level physical address
+
+spec 上是允許平台在 Supervisor PA ➝ Machine PA 間進行轉換的，而這個轉換取決於實體平台的實作：
+- 有些平台：Supervisor PA = Machine PA（直接用）
+- 有些平台：
+    - 使用 Zero-extension（常見於 32-bit 虛擬空間 → 36/40-bit PA）
+    - 使用 bus remapping 或 MMU（Memory Management Unit）機制
+    - 使用 PMA（Physical Memory Attribute）或 PMP 進行範圍限制與調整  
+:::
+
+Sv32 的 page table 包含 $2^{10}$ 個 page-table entries（PTEs），每個 entry 的大小為 4 byes。 一個 page table 的大小恰為一個 page，並且必須對齊至 page 的邊界。 root page table 的 PPN 儲存在 `satp` 暫存器中
+
+Sv32 的 PTE 格式如下圖所示：
+
+![alt text](image/sv32_PTE.png)
+
+V bit 表示此 PTE 是否為有效，若為 0，則 PTE 中的所有其他位元均可被忽略，並可供軟體自由使用。 權限位元 R、W 與 X 分別表示此 page 是否可讀、可寫、可執行，當這三個位元皆為 0 時，表示該 PTE 指向下一層 page table 的指標；若有任一位元為 1，則該 PTE 為一個 leaf PTE。 可寫的 page 必須同時標記為可讀（W 被設為 1 時 R 也一定要被設為 1），相反的組合保留做未來用途
+
+下表概述了權限位元的編碼方式：
+
+<div class = "center-column">
+
+|X|W|R|Meaning|
+|-|-|-|-|
+|0|0|0|Pointer to next level of page table.|
+|0|0|1|Read-only page.|
+|0|1|0|Reserved for future use.|
+|0|1|1|Read-write page.|
+|1|0|0|Execute-only page.|
+|1|0|1|Read-execute page.|
+|1|1|0|Reserved for future use.|
+|1|1|1|Read-write-execute page.|
+
+</div>
+
+若試圖從一個沒有執行權限的 page 中 fetch instruction，會觸發 fetch page-fault exception。 若執行一條 load 或 load-reserved 指令，其有效位址（effective address）落在一個沒有讀取權限的 page 上，則會觸發 load page-fault exception。 若執行 store、store-conditional 或 AMO 指令，其有效位址落在一個沒有寫入權限的 page 上，則會觸發 store page-fault exception
+
+:::tip  
+- X 權限缺失 → 取指時觸發 fetch page-fault
+- R 權限缺失 → 執行 load（或 LR）時觸發 load page-fault
+- W 權限缺失 → 執行 store / SC / AMO 時觸發 store page-fault
+
+每種類型的 page-fault 對應不同的 trap 處理流程與 scause 編碼  
+:::
+
+AMO 指令永遠不會引發 load page-fault exception，因為一個不可讀的 page 必定也是不可寫的，若試圖在一個不可讀的 page 上執行 AMO，將一律觸發 store page-fault exception
+
+U bit 用來指示該 page 是否可供 U-mode 存取，U-mode 軟體僅可存取 `U=1` 的 page。 若 `sstatus` 暫存器中的 `SUM` 欄位被設為 1，S-mode 的軟體也可存取 `U=1` 的 page。 然而，S-mode 通常會在 `SUM=0` 的情況下運作，此時若試圖存取 U-mode 的 page，將會觸發 fault。 無論 `SUM` 的狀態為何，supervisor 都不得執行來自 `U=1` 的 page 中的指令
+
+另一種替代的 PTE 格式支援為 supervisor 與 user 分別設計不同的權限。 我們省略了這項設計，因為它與 `SUM` 機制（見第 12.1.1.2 節）大致重複，且會額外佔用 PTE 的編碼空間
+
+::: tip  
+某些架構（如 x86）允許 page 使用者與核心擁有不同的權限組。 RISC-V 選擇不在 PTE 中獨立加入 U/S 的權限控制，而是交由 `sstatus` 的 `SUM` 來控制 supervisor 能否碰 user page  
+:::
+
+G bit 用來標示此為 global mapping，global mapping 是指存在於所有 address space 中的 mapping。 對於 non-leaf PTE 而言，若其被設為 global，則其下一層 page table 中的所有 mapping 也都是 global 的
+
+要注意的是，若忘了把 global mapping 標記為 global，只會導致效能下降； 但若錯誤地將 non-global mapping 標為 global，則在切換 address space 且該位址範圍有不同 non-global mapping 的情況下，可能會不可預測地使用其中之一，屬於軟體錯誤
+
+:::info  
+global mapping 不需要為多個 ASID 在地址轉譯快取中重複儲存。 此外，執行 `SFENCE.VMA` 且 `rs2 ≠ x0` 時，也不需將 global mapping 自本地地址轉譯快取中清除  
+:::
+
+RSW 欄位保留給 supervisor 軟體使用，實作（硬體）應忽略此欄位
+
+每個 leaf PTE 都包含一個 accessed（A）bit 與 dirty（D）bit。 A bit 表示該 virtual page 自從上一次 A bit 被清除後，是否曾經被讀取、寫入，或 fetch。 D bit 則表示該 virtual page 自從上一次 D bit 被清除後，是否曾經被寫入過
+
+針對 A 與 D bit 的管理，規範定義了兩種機制：
+
+- 第一種是 *Svade* extension：
+
+  當 virtual page 被存取且 A bit 為清除狀態，或被寫入且 D bit 為清除狀態時，將會觸發一個 page-fault exception
+
+  ::: tip  
+  Svade 是一個 optional 的 RISC-V extension
+
+  它的策略是由軟體來管理 A/D bit：
+
+  - 硬體不會自動 set A/D bit
+  - 如果未設而觸發使用，會故意讓 trap 發生（page-fault）
+  - OS 可以透過 trap handler 來動態設置 A 或 D bit
+
+  因此可想而知下方的另一種就是由硬體來管理的方式  
+  :::
+
+- 第二種，當未實作 Svade extension 時，則會套用以下機制：
+
+  當 virtual page 被存取且 A bit 為清除狀態時，PTE 將會被更新以設置 A bit。 當 virtual page 被寫入且 D bit 為清除狀態時，PTE 將會被更新以設置 D bit。 若 G-stage address translation 已啟用且其模式不是 Bare，則這些 G-stage virtual pages 可能會因為對 VS-level 記憶體管理結構的隱式存取而被讀取或寫入
+
+  當系統使用 two-stage address translation 時，一次顯式的存取可能同時造成 VS-stage 與 G-stage 的 PTE 被更新
+
+  ::: tip  
+  在虛擬機系統中，會有兩層 page translation：
+
+  - 第一層（VS-stage）：guest OS 自己的 VA → GPA
+  - 第二層（G-stage）：hypervisor 將 GPA → MPA  
+  :::
+
+  以下規則適用於所有由顯式或隱式 memory access 所引發的 PTE 更新操作：
+
+  PTE 的更新必須對其他對該 PTE 的存取操作具有原子性，並且必須以原子方式執行對該 leaf PTE 所需的所有 page walk 檢查，且這些檢查應該是 PTE 更新的一部分，並且要在「條件式更新 PTE 值」之前完成
+
+  ::: tip  
+  這邊主要是在講當硬體（例如 MMU）在修改某個 PTE（特別是 A/D bit）時：
+
+  - 不得與其他對該 PTE 的讀/寫操作交錯
+  - 必須確保整個「讀 + 檢查 + 更新」整組是不可被中斷的操作（atomic）
+
+  MMU 在決定要不要更新 A/D bit 時，不能只看那一個 bit，而是必須「完成所有 page walk 要求的檢查條件」，比如：
+
+  - 該 PTE 是否有效（V=1）
+  - 權限是否合法（R/W/X）
+  - 對應地址是否對齊
+  - PPN 合法性
+
+  而且這整個檢查加更新的動作必須是一個「原子的動作」。 更新 A/D bit 的動作，是有條件的（conditionally），並非一定會做
+
+  假設在 `A=1` 的情況下我們就需要更新。 但此時只有在「先做完上述所有檢查，且都通過」的情況下，才能去條件式更新 PTE 的值
+
+  所以「檢查 + 決定是否更新 + 更新」這整組動作是不可中斷的  
+  :::
+
+  A bit 的更新可以作為推測執行的結果進行，即使該次存取最終未實際發生。 然而，D bit 的更新必須是精確的（也就是不可推測執行），並且需由 local hart 以程式順序觀察
+
+  當 two-stage address translation 被啟用時，若 G-stage PTE 允許寫入，則在任意推測性地存取 VS-stage PTE 之前，對 G-stage PTE 的 D bit 更新可以由隱式 VS-stage 存取觸發
+
+  ::: tip  
+  two-stage address translation（雙階段地址轉譯）是在像 RISC-V 這種支援虛擬化（virtualization）的架構中，為了讓虛擬機（guest OS）也能使用虛擬記憶體機制而引入的一個關鍵設計，目的很簡單：讓 guest OS 看到的虛擬地址，也能經過兩層轉換後，對應到實體記憶體中的真正位置
+
+  在支援虛擬化的架構（例如你開啟了 RISC-V 的 Hypervisor extension），會有：
+
+  - Guest OS：跑在虛擬機中的作業系統，它也會認為自己有虛擬記憶體空間
+  - Hypervisor（Hypervisor-level OS）：真正管理整體實體記憶體的人
+  - 
+  這時候就需要兩階段的地址轉譯，步驟如下：
+
+  - 第 1 階段（VS-stage translation）：
+    - 轉換 Guest OS 的虛擬地址（GVA: Guest Virtual Address）
+    - 使用 vsatp 中定義的 guest page table
+    - 轉換 GVA ➝ GPA（Guest Physical Address）
+
+  - 第 2 階段（G-stage translation）：
+    - 轉換 GPA ➝ MPA（Machine Physical Address）
+    - 使用 hypervisor 的 hgatp 中定義的 G-stage page table  
+  :::
+
+  PTE 的更新在全域記憶體順序中，必須出現在造成該 PTE 更新的那次記憶體存取之前，且也必須出現在該 hart 隨後對該 virtual page 的任何顯式記憶體存取之前
+
+  由 FENCE 指令或原子指令上的 acquire/release 位元所提供的 load/store 順序，也會對其他 hart 可見地順序化這些與 PTE 更新相關的 load/store 操作
+
+  PTE 的更新不需要與觸發該更新的那筆記憶體存取操作之間具有原子性，換句話說，在 PTE 被更新（例如設置 A/D bit）之後、真正去執行那次記憶體存取之前，可能會有 trap 發生，如果真的發生 trap，那麼 A/D bit 可能已經被寫入 PTE 中，但記憶體本身的訪問卻尚未執行。 在 PTE 的更新還沒在「全域可見」（globally visible）之前，hart 不能提早去執行那次記憶體存取
+
+  ::: tip  
+  這邊主要想講的是設置 A/D bit 這件事不一定要跟真正的「load/store/fetch」同一時間發生
+
+  它們可以拆成兩個動作：
+
+  - 先更新 A/D bit
+  - 再訪問那個頁面
+
+  中間如果發生了 page fault，A bit 可能已經設了（表示這頁「嘗試過被存取」），但你還沒真的去讀資料，這在 RISC-V 中是合法的
+
+  但是不能先訪問頁面再更新 A/D bit，如果硬體提早去讀資料，而這時其他 hart、或甚至是 OS 都還沒看到 PTE 的變動（例如還沒寫入 memory），就會導致不可預期的 race  
+  :::
+
+  page table 必須被放置在具有硬體 page-table 寫入權限，並且具備 *RsrvEventual* PMA 的記憶體區段中
+
+  ::: tip  
+  - PMA = Physical Memory Attribute（硬體定義哪些 memory 區段可怎麼被存取）
+  - RsrvEventual：一種允許最終一致性與延遲更新的 PMA 模式  
+  :::
+
+另外，無論是哪種方法：
+
+- 一個系統中的所有 hart 必須使用相同的 PTE 更新機制
+- 記憶體存取（位於某個 `FENCE` 指令之後）所引起的 PTE 更新，本身不會被該 `FENCE` 指令所排序
+
+::: tip  
+`FENCE` 只針對顯式記憶體存取有效，對於那些間接觸發的 A/D bit 寫入，並不適用  
+:::
+
+::: info  
+較簡單的實作方式可以將 PTE 的更新設計為發生在所有後續顯式記憶體存取之前，而不需要特別保證該 PTE 的更新恰好在與其關聯的 virtual page 的後續存取之前發生
+
+在早期版本的規格中，要求 PTE 的 A bit 必須精確更新。 但現在允許 A bit 在推測執行時被更新，這有助於簡化 address translation prefetcher 的實作。 通常系統軟體將 A bit 作為 page replacement 的提示，因而不需要嚴格要求功能的正確性
+
+但相對地，D bit 的更新仍必須精確，且必須依程式順序執行，因為 D bit 會影響剔除 page 的功能正確性。 當然，實作仍然允許將 A bit 與 D bit 的更新都以精確方式來執行
+
+在兩種情況下，都要求 PTE 的更新具有原子性，以確保更新不會被其他對 page table 的寫入操作所打斷。 因為如果中間被打斷，可能會造成 A/D bit 被設在已被重新使用或回收的 PTE 上。 較簡單的實作可以改用觸發 page-fault exception 來避免這類問題
+
+A bit 與 D bit 不會被硬體主動清除。 若 supervisor 軟體不依賴 A/D bit（例如不需要 swap 到磁碟，或該 page 被用來映射 I/O 空間），則應該直接在 PTE 中將其設為 1，以提升效能
+:::
+
+任何層級的 PTE 都可以是 leaf PTE，因此除了 4 KiB 的 page，Sv32 也支援 4 MiB 的 megapage。 一個 megapage 必須在虛擬與實體位址上都對齊至 4 MiB 邊界，若實體位址未對齊，將會觸發 page-fault exception
+
+對於非 leaf PTE，D、A 與 U 這些位元目前是保留給未來標準使用的。 在其用途尚未被標準 extension 定義之前，軟體必須將這些位元全都清 0，以維持向前相容性
+
+對於同時支援 page-based 虛擬記憶體與「A」標準指令集擴充（即原子指令集）的實作來說，LR/SC（Load-Reserved / Store-Conditional）所使用的 reservation set 必須完全落在同一個 base physical page 中（也就是自然對齊的 4 KiB 實體記憶體區域內）
+
+在某些實作中，未對齊的 load、store 以及 fetch 可能會被拆解成多個記憶體存取動作，其中的部分動作可能會在 page-fault 發生之前就成功完成，特別是對一個未對齊的 store 操作來說，即使該 store 的其他部分最終因例外而失敗，某一部分也可能會通過例外檢查並實際寫入
+
+即使是位址已自然對齊的情況下，若 store 操作的寬度超過 `XLEN`（例如 RV32D 中的 FSD 指令），也可能出現類似行為
+
+### 12.3.2. Virtual Address Translation Process
+
+虛擬位址 `va` 轉換為實體位址 `pa` 時遵循以下步驟：
+
+1. 令 `a = satp.ppn × PAGESIZE`，並令 `i = LEVELS - 1`（對於 Sv32，PAGESIZE = $2^{12}$ = 4 KiB，LEVELS = 2）。 `satp` 暫存器必須處於活動狀態，也就是說當前有效的特權模式必須是 S-mode 或 U-mode
+2. 令 `pte` 為在地址 `a + va.vpn[i] × PTESIZE` 處所儲存的 PTE 值（對於 Sv32，PTESIZE = 4）。 若在存取此 `pte` 時違反 PMA 或 PMP 檢查，則會觸發與原始存取類型對應的 access-fault
+3. 若 `pte.v = 0`，或 `pte.r = 0` 且 `pte.w = 1`，或 `pte` 中設置了保留給未來標準使用的位元或編碼，則停止並觸發與原始存取類型對應的 page-fault
+4. 否則，該 `pte` 為有效項目。若 `pte.r = 1` 或 `pte.x = 1`，則跳至第 5 步（表示已是 leaf PTE）。 否則，該 `pte` 是下一層 page table 的指標   
+
+      令 `i = i - 1`，若 `i < 0`，則停止並觸發 page-fault；否則，令 `a = pte.ppn × PAGESIZE` 並回到步驟 2
+5. 當前已到達一個 leaf PTE。 若 `i > 0` 且 `pte.ppn[i-1:0] ≠ 0`，表示這是一個未對齊的 superpage，停止並觸發 page-fault
+6. 根據當前特權模式及 `mstatus` 中 `SUM` 與 `MXR` 欄位的值，檢查該次記憶體存取是否被 `pte.u` 位元所允許。 若不被允許，則停止並觸發 page-fault
+7. 確認對於 Shadow Stack 記憶體保護規則，該次記憶體存取是否被 `pte.r`、`pte.w` 與 `pte.x` 所允許。 若不被允許，則停止並觸發 access-fault
+8. 檢查該次記憶體存取是否被 `pte.r`、`pte.w`、`pte.x` 所允許。 若不被允許，則停止並觸發 page-fault
+9. 若 `pte.a = 0`，或原始存取為 store 且 `pte.d = 0`：
+      - 若實作了 Svade extension，則停止並觸發 page-fault
+      - 若對 pte 的寫入違反 PMA 或 PMP 檢查，則觸發 access-fault
+      - 以原子方式執行以下操作：
+          - 比較目前的 pte 與在 `a + va.vpn[i] × PTESIZE` 處的記憶體值是否一致
+          - 若一致，則將 `pte.a` 設為 1；若原始存取為 store，也將 `pte.d` 設為 1
+          - 若比較失敗，則返回步驟 2（重試 table walk）
+10. 轉譯成功後，對應的實體位址 `pa` 為：
+      - `pa.pgoff = va.pgoff`
+          - 若 `i > 0`（代表使用 superpage），則 `pa.ppn[i-1:0] = va.vpn[i-1:0]`
+          - `pa.ppn[LEVELS-1:i] = pte.ppn[LEVELS-1:i]`
+
+此轉譯演算法中，對地址轉譯資料結構的所有隱式存取都使用 `PTESIZE` 的寬度進行。 這代表讀取 PTE 時都是以一個完整的 PTE 為單位（Sv32 為 4B，Sv48/Sv57 為 8B），不能用小單位拆開處理
+
+例如在 Sv48 實作中，不能使用兩次 4B 的讀取來非原子性地存取單一 8B 的 PTE； 而當實作更新 A/D bit 時，也必須視為原子性地更新整個 PTE，不能只更新 A/D bit，而忽略其他欄位的原子性，即使除了 A/D bit 外的位元都沒變
+
+在步驟 2 中隱式地址轉譯所得到的結果，可以暫存於一個唯讀、非一致性的地址轉譯快取中，但不得與其他 hart 共用。 該 cache 可以包含任意數量的 entry，甚至可包含同一個位址與 ASID 的多個 entry
+
+若某個快取的 entry 所對應的 ASID 與第 0 步所載入的 ASID 相符，或該 entry 是 global mapping，則該快取 entry 可用來滿足之後第 2 步的讀取。 為了確保隱式讀取能觀察到對相同記憶體位置的寫入，必須在寫入後執行一條 `SFENCE.VMA` 指令來清除相關的快取轉譯資料
+
+在第 7 步中不可使用地址轉譯快取，只能直接在記憶體中更新 A/D bit，也就是說不能只改 cache 中的 shadow copy，必須真正改寫到 page table 對應的 PTE 記憶體區段中
+
+::: info  
+RISC-V 允許多個地址轉譯快取映射到同一個地址上。 在傳統的 TLB 階層中，如果某個頁面被升級為 superpage，但沒有先清除原先 non-leaf PTE 的 valid 位元，並執行了 `SFENCE.VMA`（`rs1 = x0`），或者在某個 TLB 階層中存在多個平行的 TLB，那就可能會有多個項目映射到同一個地址
+
+在這種情況下，如同在對 memory-management table 寫入後未執行 `SFENCE.VMA` 而接著進行相同地址的隱式讀取時一樣，我們無法預測究竟會使用舊的 non-leaf PTE 還是新的 leaf PTE，但其他行為仍是有良好定義的  
+:::
+
+只要 `satp` 處於活動狀態（如第 12.1.11 節所定義），實作可以在任意時間，對任意虛擬位址，推測執行地址轉譯演算法，此類推測執行會預先填入地址轉譯快取
+
+推測執行地址轉譯演算法時，其行為應與非推測執行相同，除了以下例外：
+
+它們不得設置 PTE 的 D bit、不得觸發例外，也不得建立那些在該推測執行開始後、被該 hart 執行過的 `SFENCE.VMA` 指令所應無效化的地址轉譯快取項目
+
+::: tip  
+推測執行與一般的地址轉譯一樣，都是走 page table、更新 A/D bit、快取結果。 但這裡明確限制了推測執行不能做的幾件事：
+
+1. 不能設 D bit（dirty）
+     - D bit 代表有寫入操作，但推測性執行的 store 不一定會真的 commit，所以不准提早記錄。
+2. 不能產生例外（trap）
+    - 推測性執行只是預先查詢，不能導致如 page-fault、access-fault。
+3. 不能建立已被 `SFENCE.VMA` 清除的快取項目
+    - 比如你早在某頁建立快取後執行 `SFENCE.VMA`，該 page 就應失效，你不可以推測地又偷偷加回去  
+:::
+
+::: info  
+例如，對於非推測性與推測性地址轉譯演算法來說，以下行為是非法的：
+
+開始執行後讀取 level 2 page table，然後在 hart 執行 `SFENCE.VMA`（`rs1 = rs2 = x0`）時暫停，接著再繼續使用這個已經過時的 level 2 PTE，因為接下來的隱式讀取可能會使用過時的 PTE 來填入地址轉譯快取（失效的 PTE 被當成有效的快取資料重新加回 cache，導致不一致行為）
+
+因此，在許多實作中，執行 `SFENCE.VMA`（`rs1 = x0`）時，會終止所有正在進行的推測性地址轉譯（針對指定的 ASID，如適用），或是等待它們完成，再清除所產生的快取項目（在這種情況下，該 `SFENCE.VMA` 將適當地使其建立的地址轉譯快取項目無效化）
+
+同樣地，執行 `SFENCE.VMA`（`rs1 ≠ x0`）時，這只清除了部分虛擬地址範圍，通常必須保證正在進行的推測性地址轉譯（針對指定 ASID，如適用）無法再建立新的 leaf PTE 的地址轉譯快項目，或是等待它們完成再清除快取項目。 總之你還是要保證過去 launch 的 speculative walk 不能偷偷建立新快取，不然就等它們跑完再把快取清掉
+
+由於規格允許實作在任意時間、以推測方式讀取地址轉譯資料結構，因此任何時候只要透過此演算法可達的所有 PTE，皆有可能被載入地址轉譯快取中。 換句話說，因為允許 speculative execution，所以任一時間，只要能走到的 PTE，都有可能被預抓（prefetch）到 cache 裡。這不是 bug，是明確被允許的設計
+
+一般 page table 都會放在冪等（idempotent）記憶體中，表示重複存取結果一致，但規格中並未明確禁止你把它放在 I/O 或非冪等的記憶體裡。 由於演算法只會存取由 `satp` 指定的那棵 root page table 所可達的 page table，因此實作的 page table walker 所會觸及的地址範圍完全受 supervisor 控制
+
+此演算法不允許在物理地址寬度較窄的實作中忽略 PPN 的高位元，換句話說，如果你是 RV32，只支援 34-bit 實體位址，不代表你可以無視 `PTE.ppn[19:34]`，你還是要照樣使用完整的 ppn bits 來做轉譯，即使你平台上的 memory 寬度根本沒用到  
+:::
+
