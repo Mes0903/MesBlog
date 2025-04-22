@@ -7,7 +7,7 @@ category: risc-v
 
 # 12. Supervisor-Level ISA, Version 1.13
 
-本篇為 RISC-V Supervisor-Level ISA 的中文翻譯與筆記，原文可於[官方 github](https://github.com/riscv/riscv-isa-manual/tree/main) 的第 12 章中看到
+本篇為 RISC-V Supervisor-Level ISA 的中文翻譯與筆記，原文可於[官方 github](https://github.com/riscv/riscv-isa-manual/tree/main) 的第 12 章中看到。 大部分的情況下我會直接直譯，但有些地方我覺得文件實在寫得很繞，那種地方我就會直接用我自己的話寫了，或是多補一個 Tips Block 做解釋
 
 本篇內的 Info block 為原文中的補充段落，我全部都有翻，但會依照前後文的語境來決定要不要安插 Info block 進來，也就是說雖然本文中有些段落不在藍色的 Info 區塊內，但在原文中其屬於補充段落。 至於綠色的 Tips block 則是我個人的補充筆記
 
@@ -949,7 +949,7 @@ V bit 表示此 PTE 是否為有效，若為 0，則 PTE 中的所有其他位�
 若試圖從一個沒有執行權限的 page 中 fetch instruction，會觸發 fetch page-fault exception。 若執行一條 load 或 load-reserved 指令，其有效位址（effective address）落在一個沒有讀取權限的 page 上，則會觸發 load page-fault exception。 若執行 store、store-conditional 或 AMO 指令，其有效位址落在一個沒有寫入權限的 page 上，則會觸發 store page-fault exception
 
 :::tip  
-- X 權限缺失 → 取指時觸發 fetch page-fault
+- X 權限缺失 → 擷取指令時觸發 fetch page-fault
 - R 權限缺失 → 執行 load（或 LR）時觸發 load page-fault
 - W 權限缺失 → 執行 store / SC / AMO 時觸發 store page-fault
 
@@ -1189,3 +1189,112 @@ RISC-V 允許多個地址轉譯快取映射到同一個地址上。 在傳統的
 此演算法不允許在物理地址寬度較窄的實作中忽略 PPN 的高位元，換句話說，如果你是 RV32，只支援 34-bit 實體位址，不代表你可以無視 `PTE.ppn[19:34]`，你還是要照樣使用完整的 ppn bits 來做轉譯，即使你平台上的 memory 寬度根本沒用到  
 :::
 
+## 12.4. Sv39: Page-Based 39-bit Virtual-Memory System
+
+本節描述一個簡單的 page-based 虛擬記憶體系統，適用於 `SXLEN=64`（即 64-bit 架構），此系統支援 39-bit 的虛擬位址空間。 Sv39 的設計遵循 Sv32 的整體架構，這一節僅詳細說明兩者之間的差異
+
+我們為 RV64 指定了多種虛擬記憶體系統，以緩解「提供更大位址空間」與「減少位址轉譯成本」之間的衝突。 對於許多系統來說，39-bit 的虛擬位址空間已經足夠，因此 Sv39 就已經足以應對。 Sv48 將虛擬位址空間增加至 48 bits，但這也提高了專門用來存放 page table 的實體記憶體容量需求、走訪 page table 的延遲，以及儲存虛擬位址所需的硬體結構的大小。Sv57 則再進一步提升了虛擬位址空間、page table 容量需求與轉譯延遲
+
+### 12.4.1. Addressing and Memory Protection
+
+Sv39 的實作支援一個被劃分為多個 pages 的 39-bit 虛擬位址空間。 一個 Sv39 的位址如下圖所示地被劃分：
+
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv39_va.png?raw=true">
+
+</div>
+
+指令擷取位址與 load/store 的有效位址都是 64-bit，但其 bit 63~39 的值必須與 bit 38 相等，否則就會觸發 page-fault 例外。 這個 27-bit 的 VPN 會經由三層 page table 被轉譯為 44-bit 的 PPN，而 12-bit 的 page offset 則不參與轉譯
+
+::: info  
+在不同位元寬度的位址之間進行映射時，RISC-V 對較窄的實體位址採用 zero-extension 以適應較寬的位元長度
+
+但在 Sv39 中，從 64-bit 虛擬位址對映到 39-bit 的使用空間時，不是使用 zero-extension，而是採用了某種既定慣例，允許作業系統利用 64-bit 虛擬位址中的一或幾個最高位元來快速區分 user 與 supervisor 的位址區域
+:::
+
+Sv39 的 page table 包含 512（$2^9$） 個 PTE，每個佔 8 bytes。 一個 page table 的大小正好等於一個 page，而且必須對齊至 page boundary。 root page table 的 PPN 被儲存在 `satp` 暫存器的 `PPN` 欄位中
+
+Sv39 的 PTE 格式如下圖所示：
+
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv39_PTE.png?raw=true">
+
+</div>
+
+bit 9 到 0 的意義與 Sv32 相同。 bit 63 保留給第 13 章的 Svnapot extension 使用。 如果未實作 Svnapot，bit 63 必須保留並由軟體清為 0，以確保未來相容性，否則會觸發 page-fault 例外
+
+bit 62-61 保留給第 14 章的 Svpbmt extension 使用。 如果未實作 Svpbmt，bit 62-61 也必須保留並清為 0，否則會觸發 page-fault
+
+bit 60 到 54 保留給未來的標準用途，除非某個標準 extension 定義了這些位元的用途，否則軟體必須將其清為 0，以維持向前相容性。 如果這些位元有任一被設為 1，則會觸發 page-fault 例外
+
+::: info  
+我們保留了數個 PTE 位元，以供未來可能的 extension 使用，這些 extension 能夠透過允許跳過某些 page-table 層級來增進對 sparse address space（稀疏位址空間）的支援，從而減少記憶體使用量與 TLB refill 的延遲
+
+這些保留位元也可能被用於學術研究的實驗用途。 這樣做的代價是會減少實體位址空間的可用位數，但目前仍有足夠的空間。 當這樣的位元數不足時，那些尚未分配的保留位元仍可以被拿來擴展實體位址空間
+:::
+
+Sv39 中任何層級的 PTE 都可以是 leaf PTE，因此除了 4 KiB 的 page 之外，Sv39 還支援 2 MiB 的 megapage 和 1 GiB 的 gigapage，這些 page 必須在虛擬與實體位址空間上都對齊到與其大小相等的邊界。 如果實體位址的對齊不足，則會觸發 page-fault 例外
+
+虛擬位址轉換為實體位址的演算法與第 12.3.2 節中所述的相同，唯一的差異是這裡的 `LEVELS = 3` 且 `PTESIZE = 8`
+
+## 12.5. Sv48: Page-Based 48-bit Virtual-Memory System
+
+本節描述一種針對 `SXLEN=64`（即 64-bit 架構）設計的簡單 page-based 虛擬記憶體系統，此系統支援 48-bit 的虛擬位址空間。 Sv48 是為了那些 39-bit 虛擬位址空間不敷使用的系統所設計的，它的設計與 Sv39 十分接近，僅是多增加了一層 page table，因此本章節僅說明這兩種機制之間的差異
+
+支援 Sv48 的實作也必須支援 Sv39。 支援 Sv48 的系統基本上可以以零成本同時支援 Sv39，因此應當這麼做，以維持對那些假設系統使用 Sv39 的 supervisor 軟體的相容性
+
+### 12.5.1. Addressing and Memory Protection
+
+Sv48 的實作支援一個 48-bit 的虛擬位址空間，並將其劃分為多個 pages。 Sv48 的位址分割如下圖所示：
+
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv48_va.png?raw=true">
+
+</div>
+
+用於指令擷取以及載入與儲存（load 與 store）的有效位址是 64-bit，但其 bit 63 至 48 必須全部等於 bit 47，否則會觸發 page-fault 例外。 這個 36-bit 的 VPN 會透過四層 page table 轉譯為 44-bit 的 PPN，而 12-bit 的 page offset 則不參與轉譯
+
+Sv48 的 PTE 格式如下圖所示：
+
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv48_PTE.png?raw=true">
+
+</div>
+
+位元 63–54 與 9–0 的意義與 Sv39 相同。 Sv48 中的任意層級的 PTE 都可以是 leaf PTE，因此除了標準的 pages 外，Sv48 還支援 megapages、gigapages 與 terapages。 每一種大小的 page 都必須在虛擬與實體位址空間上對齊至與其大小相等的邊界，如果實體位址的對齊不足，將會觸發 page-fault 例外
+
+虛擬位址轉譯為實體位址的演算法與第 12.3.2 節所述的相同，唯二的差異在於 `LEVELS = 4` 且 `PTESIZE = 8`
+
+## 12.6. Sv57: Page-Based 57-bit Virtual-Memory System
+
+本節描述一個針對 RV64 系統設計的簡單 page-based 虛擬記憶體系統，此系統支援 57-bit 的虛擬位址空間。 Sv57 是為了那些 48-bit 虛擬位址空間已經不足的系統而設計的。 它的設計與 Sv48 十分相似，只是再多增加一層 page table，因此本章節僅說明這兩種機制之間的差異
+
+支援 Sv57 的實作也必須支援 Sv48。 支援 Sv57 的系統基本上可以以零成本同時支援 Sv48，因此應當這麼做，以維持對那些假設系統使用 Sv48 的 supervisor 軟體的相容性
+
+### 12.6.1. Addressing and Memory Protection
+
+Sv57 的實作支援一個 57-bit 的虛擬位址空間，並將其劃分為多個 pages。 Sv57 的位址分割如下圖所示：
+
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv57_va.png?raw=true">
+
+</div>
+
+用於指令擷取（instruction fetch）以及載入與儲存（load 與 store）的有效位址是 64-bit，但其位元 63–57 必須全部等於位元 56，否則將觸發 page-fault 例外。 這個 45-bit 的 VPN 會透過五層 page table 轉譯為 44-bit 的 PPN，而 12-bit 的 page offset 則不參與轉譯
+
+Sv57 的 PTE 格式如下圖所示：
+
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv57_PTE.png?raw=true">
+
+</div>
+
+位元 63–54 與 9–0 的意義與 Sv39 相同。 Sv57 中的任意層級的 PTE 都可以是 leaf PTE，因此除了 pages 外，Sv57 還支援 megapages、gigapages、terapages 與 petapages。 每種大小的 page 都必須在虛擬與實體位址空間上對齊至與其大小相等的邊界，如果實體位址的對齊不足，將觸發 page-fault 例外
+
+虛擬位址轉譯為實體位址的演算法與第 12.3.2 節所述的相同，唯二的差異是 `LEVELS = 5` 且 `PTESIZE = 8`
