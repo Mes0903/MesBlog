@@ -12,7 +12,7 @@ category: computer-graphic
 越來越多應用程式和服務都以 3D 內容為基礎。像是線上商店提供支援 3D 預覽的產品配置器、博物館利用 3D 掃描技術數位化館藏，讓參觀者能在虛擬畫廊中自由探索。都市規劃師使用 3D 城市模型來進行規劃與資訊可視化，教育工作者也常透過互動式、動畫化的人體 3D 模型輔助教學。這些應用多數能直接在網頁瀏覽器中運作，歸功於現代瀏覽器全面支援 WebGL 的高效渲染技術
 
 <p align="center">
-<img src="image/applications.png"><br>
+<img src="https://github.com/Mes0903/MesBlog/raw/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/applications.png"><br>
 <a name="applications-png"></a>Image 1a: Screenshots of various websites and applications showing 3D models.
 </p>
 
@@ -29,7 +29,7 @@ category: computer-graphic
 要在應用程式中渲染這些 3D 內容，其必須能讀取多種不同的檔案格式。 這不只要解析場景結構，還要將幾何資料轉換成圖形 API（像是 OpenGL 或 WebGL）能使用的格式，並傳送到顯示卡記憶體中，接著才能透過一連串 API 呼叫來完成渲染。 因此，每個應用程式都得為自己支援的檔案格式撰寫相對應的匯入器、載入器或轉換器，如圖 1b 所示：
 
 <p align="center">
-<img src="image/contentPipeline.png" /><br>
+<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/contentPipeline.png?raw=true" /><br>
 <a name="contentPipeline-png"></a>Image 1b: The 3D content pipeline today.
 </p>
 
@@ -37,25 +37,21 @@ category: computer-graphic
 
 glTF 的目標是建立一個標準，來描述 3D 內容，使其適合直接在應用程式使用。 現有的許多檔案格式並不適合這樣的情境：有些格式只包含幾何資料，並未記錄任何場景資訊；有些則是設計來讓內容創作工具之間交換資料，主要目的是保留盡可能完整的 3D 場景資訊，結果往往導致檔案龐大、結構複雜且難以解析。 此外，這些格式中的幾何資料通常還需要額外的預處理，才能在客戶端應用程式中渲染
 
-None of the existing file formats were designed for the use case of efficiently transferring 3D scenes over the web and rendering them as efficiently as possible. But glTF is not "yet another file format." It is the definition of a *transmission* format for 3D scenes:
-
 過去，沒有任何一種既有的檔案格式，是真正針對「高效能地在網路上傳輸並渲染 3D 場景」這個需求設計的。 glTF 便是為了這個滿足需求而產生的，是一個專門為了 3D 場景傳輸而設計的傳輸格式（transmission format）：
 
 - 場景結構以 JSON 描述，格式緊湊且易於解析
 - 物件的 3D 資料以能夠直接被主流圖形 API（如 OpenGL、WebGL）使用的方式儲存，避免了解碼或預處理的額外負擔
 
-Different content creation tools may now provide 3D content in the glTF format. And an increasing number of client applications are able to consume and render glTF. Some of these applications are shown in [Image 1a](#applications-png). So glTF may help to bridge the gap between content creation and rendering, as shown in [Image 1c](#contentPipelineWithGltf-png).
-
 現在，各種內容創作工具也逐漸支援將 3D 內容直接以 glTF 格式匯出；而越來越多的客戶端應用程式也能直接載入並渲染 glTF 檔案。 這樣，glTF 就能像圖 1c 所示，幫助打通「內容創作」與「即時渲染」之間的鴻溝：
 
 <p align="center">
-<img src="image/contentPipelineWithGltf.png" /><br>
+<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/contentPipelineWithGltf.png?raw=true" /><br>
 <a name="contentPipelineWithGltf-png"></a>Image 1c: The 3D content pipeline with glTF.
 </p>
 
 現在越來越多內容創作工具也直接內建了 glTF 的匯入與匯出功能。 例如，Blender 的官方手冊就有詳細說明如何[使用 glTF 匯入與匯出 PBR 材質](https://docs.blender.org/manual/en/latest/addons/import_export/scene_gltf2.html)。 除此之外，也可以先使用其他檔案格式製作 3D 內容，再透過開源的轉換工具，將它們轉換成 glTF 格式，這些工具可以在 [glTF Project Explorer](https://github.khronos.org/glTF-Project-Explorer/) 中找到。 轉換完成後，還可以使用 [Khronos glTF Validator](https://github.khronos.org/glTF-Validator/) 來檢查檔案是否符合規範
 
-::: tip
+::: tip  
 所謂的 3D 內容（3D Content）並不只是指 3D model，它是一個更大的概念，可能包含了一整個場景，因此可能會有：
 - 多個 3D model
 - 場景結構（Scene Graph）
@@ -64,5 +60,5 @@ Different content creation tools may now provide 3D content in the glTF format. 
 - 材質（Materials）
 - 動畫（Animations）
 - 特效（Effects）
-- 物理屬性（例如碰撞、重量等）
+- 物理屬性（例如碰撞、重量等）  
 :::
