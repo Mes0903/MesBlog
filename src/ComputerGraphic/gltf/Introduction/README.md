@@ -29,7 +29,7 @@ category: computer-graphic
 要在應用程式中渲染這些 3D 內容，其必須能讀取多種不同的檔案格式。 這不只要解析場景結構，還要將幾何資料轉換成圖形 API（像是 OpenGL 或 WebGL）能使用的格式，並傳送到顯示卡記憶體中，接著才能透過一連串 API 呼叫來完成渲染。 因此，每個應用程式都得為自己支援的檔案格式撰寫相對應的匯入器、載入器或轉換器，如圖 1b 所示：
 
 <p align="center">
-<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/contentPipeline.png?raw=true" /><br>
+<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/contentPipeline.png?raw=true"><br>
 <a name="contentPipeline-png"></a>Image 1b: The 3D content pipeline today.
 </p>
 
@@ -45,7 +45,7 @@ glTF 的目標是建立一個標準，來描述 3D 內容，使其適合直接�
 現在，各種內容創作工具也逐漸支援將 3D 內容直接以 glTF 格式匯出；而越來越多的客戶端應用程式也能直接載入並渲染 glTF 檔案。 這樣，glTF 就能像圖 1c 所示，幫助打通「內容創作」與「即時渲染」之間的鴻溝：
 
 <p align="center">
-<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/contentPipelineWithGltf.png?raw=true" /><br>
+<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/contentPipelineWithGltf.png?raw=true"><br>
 <a name="contentPipelineWithGltf-png"></a>Image 1c: The 3D content pipeline with glTF.
 </p>
 
