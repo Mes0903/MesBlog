@@ -41,12 +41,18 @@ glTF 的核心是一個 JSON 檔案，這個檔案描述了整個 3D 場景的�
 ]
 ```
 
-下圖（改編自 [glTF 概念說明章節](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#concepts)）概覽了 glTF asset 中 JSON 部分的最上層元素：
+下圖（取自 [glTF 概念說明章節](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#concepts)）概覽了 glTF asset 中 JSON 部分的最上層元素：
 
-<p align="center">
-<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/BasicGltfStructure/image/gltfJsonStructure.png?raw=true"><br>
-<a name="gltfJsonStructure-png"></a>Image 2a: The glTF JSON structure
-</p>
+<div class = "center-column">
+
+<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/BasicGltfStructure/image/gltfJsonStructure.png?raw=true">
+（Image 2a: The glTF JSON structure.）
+
+</div>
+
+::: tip  
+原文是自己額外畫了一張圖，但我覺得 spec 內的圖比較一目了然，所以還是用 spec 內的圖了  
+:::
 
 在這裡會簡單介紹這些元素（同時附上連結到 glTF spec 的對應章節），而各元素之間更詳細的關係，會在接下來的章節中進一步說明：
 
@@ -64,10 +70,12 @@ glTF 的核心是一個 JSON 檔案，這個檔案描述了整個 3D 場景的�
 
 3D 物件的二進位資料，例如幾何資訊與材質貼圖，通常不會直接儲存在 JSON 檔案內。 取而代之的是，它們被存放在專門的外部檔案中，而 JSON 部分只包含指向這些外部檔案的連結。 這種設計讓二進位資料可以用更緊湊的形式儲存，並能夠高效率地透過網路傳輸。 此外，資料也可以使用一種能夠直接被渲染器（renderer）使用的格式儲存，無需額外解析、解碼或預處理
 
-<p align="center">
-<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/BasicGltfStructure/image/gltfStructure.png?raw=true"><br>
-<a name="gltfStructure-png"></a>Image 2b: The glTF structure
-</p>
+<div class = "center-column">
+
+<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/BasicGltfStructure/image/gltfStructure.png?raw=true">
+（Image 2b: The glTF structure.）
+
+</div>
 
 如上圖所示，glTF 中有兩種類型的物件可能包含指向外部資源的連結，分別是 `buffers` 和 `images`。 這些物件的詳細說明會在後續章節中介紹
 
@@ -87,10 +95,10 @@ glTF 的核心是一個 JSON 檔案，這個檔案描述了整個 3D 場景的�
 }
 ```
 
-這段二進位資料本身就是一塊從 URI 指定位置讀取進來的記憶體區塊，並不帶有任何固有的意義或結構。 在 Buffers、BufferViews 與 Accessors 的章節中，我們會看到如何透過資料型別與資料布局資訊來賦予這塊原始資料意義。 舉例來說，資料的一部分可以被解讀為動畫資料，另一部分可以被解讀為幾何資料。 以二進位形式儲存資料比 JSON 格式能更有效率地透過網路傳輸，而且這些資料可以直接傳遞給渲染器使用，而無需額外解碼或預處理。
+這段二進位資料本身就是一塊從 URI 指定位置讀取進來的記憶體區塊，並不帶有任何固有的意義或結構。 在 Buffers、BufferViews 與 Accessors 的章節中，我們會看到如何透過資料型別與資料布局資訊來賦予這塊原始資料意義。 舉例來說，資料的一部分可以被解讀為動畫資料，另一部分可以被解讀為幾何資料。 以二進位形式儲存資料比 JSON 格式能更有效率地透過網路傳輸，而且這些資料可以直接傳遞給渲染器使用，而無需額外解碼或預處理
 
 ## Image data in `images`
-
+＝
 一個 [`image`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-image) 物件可以參考至一個外部圖片檔案，作為渲染物件的貼圖：
 
 ```javascript

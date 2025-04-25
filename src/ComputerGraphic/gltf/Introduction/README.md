@@ -9,12 +9,14 @@ category: computer-graphic
 
 # Introduction to glTF using WebGL
 
-越來越多應用程式和服務都以 3D 內容為基礎。像是線上商店提供支援 3D 預覽的產品配置器、博物館利用 3D 掃描技術數位化館藏，讓參觀者能在虛擬畫廊中自由探索。都市規劃師使用 3D 城市模型來進行規劃與資訊可視化，教育工作者也常透過互動式、動畫化的人體 3D 模型輔助教學。這些應用多數能直接在網頁瀏覽器中運作，歸功於現代瀏覽器全面支援 WebGL 的高效渲染技術
+越來越多應用程式和服務都以 3D 內容為基礎。 像是線上商店提供支援 3D 預覽的產品配置器、博物館利用 3D 掃描技術數位化館藏，讓參觀者能在虛擬畫廊中自由探索。 都市規劃師使用 3D 城市模型來進行規劃與資訊可視化，教育工作者也常透過互動式、動畫化的人體 3D 模型輔助教學。 這些應用多數能直接在網頁瀏覽器中運作，歸功於現代瀏覽器全面支援 WebGL 的高效渲染技術
 
-<p align="center">
-<img src="https://github.com/Mes0903/MesBlog/raw/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/applications.png"><br>
-<a name="applications-png"></a>Image 1a: Screenshots of various websites and applications showing 3D models.
-</p>
+<div class = "center-column">
+
+<img src="https://github.com/Mes0903/MesBlog/raw/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/applications.png">
+（Image 1a: Screenshots of various websites and applications showing 3D models.）
+
+</div>
 
 各領域對 3D 內容的需求持續成長。 通常 3D 資料需要透過網路傳輸，並且在用戶端高效渲染。 不過，過去一直存在一個問題：從 3D 內容創作到應用程式中高效渲染之間，缺乏良好的銜接流程
 
@@ -28,10 +30,12 @@ category: computer-graphic
 
 要在應用程式中渲染這些 3D 內容，其必須能讀取多種不同的檔案格式。 這不只要解析場景結構，還要將幾何資料轉換成圖形 API（像是 OpenGL 或 WebGL）能使用的格式，並傳送到顯示卡記憶體中，接著才能透過一連串 API 呼叫來完成渲染。 因此，每個應用程式都得為自己支援的檔案格式撰寫相對應的匯入器、載入器或轉換器，如圖 1b 所示：
 
-<p align="center">
-<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/contentPipeline.png?raw=true"><br>
-<a name="contentPipeline-png"></a>Image 1b: The 3D content pipeline today.
-</p>
+<div class = "center-column">
+
+<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/contentPipeline.png?raw=true">
+（Image 1b: The 3D content pipeline today.）
+
+</div>
 
 ## glTF: A transmission format for 3D scenes
 
@@ -44,10 +48,12 @@ glTF 的目標是建立一個標準，來描述 3D 內容，使其適合直接�
 
 現在，各種內容創作工具也逐漸支援將 3D 內容直接以 glTF 格式匯出；而越來越多的客戶端應用程式也能直接載入並渲染 glTF 檔案。 這樣，glTF 就能像圖 1c 所示，幫助打通「內容創作」與「即時渲染」之間的鴻溝：
 
-<p align="center">
-<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/contentPipelineWithGltf.png?raw=true"><br>
-<a name="contentPipelineWithGltf-png"></a>Image 1c: The 3D content pipeline with glTF.
-</p>
+<div class = "center-column">
+
+<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/contentPipelineWithGltf.png?raw=true">
+（Image 1c: The 3D content pipeline with glTF.）
+
+</div>
 
 現在越來越多內容創作工具也直接內建了 glTF 的匯入與匯出功能。 例如，Blender 的官方手冊就有詳細說明如何[使用 glTF 匯入與匯出 PBR 材質](https://docs.blender.org/manual/en/latest/addons/import_export/scene_gltf2.html)。 除此之外，也可以先使用其他檔案格式製作 3D 內容，再透過開源的轉換工具，將它們轉換成 glTF 格式，這些工具可以在 [glTF Project Explorer](https://github.khronos.org/glTF-Project-Explorer/) 中找到。 轉換完成後，還可以使用 [Khronos glTF Validator](https://github.khronos.org/glTF-Validator/) 來檢查檔案是否符合規範
 
