@@ -111,4 +111,4 @@ glTF 的核心是一個 JSON 檔案，這個檔案描述了整個 3D 場景的�
 
 ## Binary data in data URIs
 
-通常情況下，`buffer` 和 `image` 物件中所包含的 URI 會指向一個外部檔案，檔案中包含了實際的資料。 作為另一種方式，也可以直接將資料以二進位格式嵌入到 JSON 內，這種方法被稱為資料 URI（[Data URI](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs)）
+通常情況下，`buffer` 和 `image` 物件中所包含的 URI 會指向一個外部檔案，檔案中包含了實際的資料。 作為另一種方式，也可以直接將資料以二進位格式嵌入到 JSON 內，這種方法被稱為 [Data URI](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/Data_URIs)
