@@ -144,6 +144,7 @@ export default sidebar([
           "MinimalGltfFile/",
           "ScenesNodes/",
           "BuffersBufferViewsAccessors/",
+          "SimpleAnimation/",
         ]
       },
       {
