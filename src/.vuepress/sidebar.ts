@@ -141,8 +141,8 @@ export default sidebar([
           "",
           "Introduction/",
           "BasicGltfStructure/",
-          "MimimalGltfFile/",
-          "SceneNodes/",
+          "MinimalGltfFile/",
+          "ScenesNodes/",
           "BuffersBufferViewsAccessors/",
         ]
       },
