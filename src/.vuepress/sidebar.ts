@@ -134,6 +134,19 @@ export default sidebar([
         ]
       },
       {
+        text: "Gltf Tutorial",
+        collapsible: true,
+        prefix: "/ComputerGraphic/gltf/",
+        children: [
+          "",
+          "Introduction/",
+          "BasicGltfStructure/",
+          "MimimalGltfFile/",
+          "SceneNodes/",
+          "BuffersBufferViewsAccessors/",
+        ]
+      },
+      {
         text: "其他",
         collapsible: true,
         children: [
