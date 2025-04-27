@@ -1,5 +1,5 @@
 ---
-title: Buffers, BufferViews, and Accessors
+title: glTF：Buffers, BufferViews, and Accessors
 date: 2025-04-27
 tag: 
   - computer-graphic
@@ -7,7 +7,7 @@ tag:
 category: computer-graphic
 ---
 
-# Buffers, BufferViews, and Accessors
+# glTF：Buffers, BufferViews, and Accessors
 
 在「A Minimal glTF File」的章節中已經出現過 `buffer`、`bufferView` 和 `accessor` 物件的範例，本節將會更詳細地說明這些概念
 

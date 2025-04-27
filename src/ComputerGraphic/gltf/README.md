@@ -1,5 +1,5 @@
 ---
-title: glTF Tutorial
+title: glTF：glTF Tutorial
 date: 2025-04-24
 tag: 
   - computer-graphic
@@ -7,7 +7,7 @@ tag:
 category: computer-graphic
 ---
 
-# glTF Tutorial
+# glTF：glTF Tutorial
 
 本系列是 KhronosGroup 所寫的 [glTF-Tutorials](https://github.com/KhronosGroup/glTF-Tutorials) 的中文翻譯與筆記
 

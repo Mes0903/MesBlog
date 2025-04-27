@@ -1,5 +1,5 @@
 ---
-title: A Minimal glTF File
+title: glTF：A Minimal glTF File
 date: 2025-04-25
 tag: 
   - computer-graphic
@@ -7,7 +7,7 @@ tag:
 category: computer-graphic
 ---
 
-# A Minimal glTF File
+# glTF：A Minimal glTF File
 
 以下是一個最小但完整的 glTF asset 範例，內容包含一個使用索引的單一三角形。 你可以直接將它複製並貼到一個 `.gltf` 檔案中，任何基於 glTF 的應用程式都應該能夠正確載入並渲染它。 本節將會以這個範例為基礎，來說明 glTF 的基本概念
 

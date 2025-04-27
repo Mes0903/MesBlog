@@ -1,5 +1,5 @@
 ---
-title: Introduction to glTF using WebGL
+title: glTF：Introduction to glTF using WebGL
 date: 2025-04-25
 tag: 
   - computer-graphic
@@ -7,7 +7,7 @@ tag:
 category: computer-graphic
 ---
 
-# Introduction to glTF using WebGL
+# glTF：Introduction to glTF using WebGL
 
 越來越多應用程式和服務都以 3D 內容為基礎。 像是線上商店提供支援 3D 預覽的產品配置器、博物館利用 3D 掃描技術數位化館藏，讓參觀者能在虛擬畫廊中自由探索。 都市規劃師使用 3D 城市模型來進行規劃與資訊可視化，教育工作者也常透過互動式、動畫化的人體 3D 模型輔助教學。 這些應用多數能直接在網頁瀏覽器中運作，歸功於現代瀏覽器全面支援 WebGL 的高效渲染技術
 

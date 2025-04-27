@@ -1,5 +1,5 @@
 ---
-title: The Basic Structure of glTF
+title: glTF：The Basic Structure of glTF
 date: 2025-04-25
 tag: 
   - computer-graphic
@@ -7,7 +7,7 @@ tag:
 category: computer-graphic
 ---
 
-# The Basic Structure of glTF
+# glTF：The Basic Structure of glTF
 
 glTF 的核心是一個 JSON 檔案，這個檔案描述了整個 3D 場景的內容。 它包含：
 - 場景結構本身的描述，這個結構是透過一個節點階層（node hierarchy）來表達的，也就是所謂的場景圖（scene graph）

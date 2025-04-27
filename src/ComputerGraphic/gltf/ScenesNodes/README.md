@@ -1,5 +1,5 @@
 ---
-title: Scenes and Nodes
+title: glTF：Scenes and Nodes
 date: 2025-04-26
 tag: 
   - computer-graphic
@@ -7,7 +7,7 @@ tag:
 category: computer-graphic
 ---
 
-# Scenes and Nodes
+# glTF：Scenes and Nodes
 
 ## Scenes
 
