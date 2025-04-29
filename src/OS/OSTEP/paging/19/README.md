@@ -22,7 +22,7 @@ category: OS
 
 TLB 是 MMU 的一部分，本質上就是一個用來快取常用的 virtual-to-physical address translation 的硬體快取裝置。 因此把它稱為 address-translation cache 其實更貼切
 
-:::info  
+::: tip  
 MMU 是 CPU core（RISC-V hart） 的一部分，因此每個 hart 都有自己的 TLB  
 :::
 
@@ -55,7 +55,7 @@ else // TLB Miss
     RetryInstruction()
 ```
 
-:::info  
+::: tip  
 原文中這是張圖 — Figure 19.1：TLB Control Flow Algorithm  
 :::
 
@@ -116,7 +116,7 @@ for (i = 0; i < 10; i++) {
 
 就像所有快取一樣，TLB 成功的關鍵是仰賴空間區域性與時間區域性，而這些特性都來自於程式本身的行為。 如果程式具有這些區域性，那 TLB 的命中率通常就會比較高
 
-::: tip  
+::: info  
 小提醒：能快取就快取
 
 快取是電腦系統中最根本的效能提升技術之一，在各種場景中都不斷被使用，目標就是讓「常見情況跑得快」[HP06]。 硬體快取背後的原理，是要善用指令與資料存取的區域性（locality）。 通常有兩種區域性 — 時間區域性與空間區域性
@@ -155,11 +155,11 @@ else // TLB Miss
   RaiseException(TLB_MISS)
 ```
 
-:::info  
+::: tip  
 Figure 19.3: TLB Control Flow Algorithm (OS Handled)  
 :::
 
-:::info  
+::: tip  
 CR3 是個很有名的暫存器，可以有個印象  
 :::
 
@@ -180,7 +180,7 @@ CR3 是個很有名的暫存器，可以有個印象
 
 採用 software-managed TLB 的最大優勢在於彈性 — OS 可以使用任意資料結構來實作 page table，而不需要硬體配合改動格式。 另一個優點是簡潔性 — 在圖 19.3 的控制流程中，硬體只要做一件事 — raise exception，然後交由 OS handler 處理即可。 圖 19.1 中，硬體要自己從第 11 行走到第 19 行，相較之下交給 OS 明顯簡化很多
 
-::: tip
+::: info
 補充：TLB 的 valid bit 不等於 page table 的 valid bit
 
 這兩者表示的是完全不同的意義，小心不要搞混：
@@ -193,7 +193,7 @@ CR3 是個很有名的暫存器，可以有個印象
 這個 bit 在 context switch 時也很有用，OS 可以直接暴力的把所有 TLB entries 標為 invalid，確保接下來要執行的 process 不會誤用上一個 process 的 translation
 :::
 
-::: tip
+::: info
 補充：RISC vs. CISC
 
 1980 年代，在電腦架構界曾經爆發過一場激烈的論戰。 一邊是 CISC 陣營（Complex Instruction Set Computing），另一邊是 RISC 陣營（Reduced Instruction Set Computing）[PS81]
@@ -248,7 +248,7 @@ $$
 
 這個問題有幾種可能的解法。 一種方法是在 context switch 時直接 flush 掉 TLB，也就是在執行下一個 process 之前把它清空。 如果是 software-based 的系統，可以使用明確且只有特權模式能執行的硬體指令來達成； 如果是 hardware-managed TLB，則可以在變更 PTBR 時觸發 flush。 不管是哪種做法，flush 操作都會把所有 valid bits 設為 0，也就是清除整個 TLB 的內容
 
-:::tip  
+::: info  
 注意 OS 在 context switch 時無論如何都要變更 PTBR  
 :::
 
@@ -335,11 +335,11 @@ MIPS TLB 通常有 32 或 64 個這樣的 entry，大多數會被 user process �
 
 OS 使用這些指令來管理 TLB 的內容
 
-:::tip  
+::: info  
 這些指令自然是特權指令  
 :::
 
-::: tip 
+::: info 
 TIP：RAM 並不總是 RAM（Culler 定律）
 
 "random-access memory"（RAM）這個詞暗示你可以任意存取記憶體的任一部份，並且速度都一樣。 雖然在概念上這樣理解沒錯，但實際上因為像 TLB 這樣的硬體／作業系統機制，有時候存取某個 page 會很慢，尤其是該 page 當下沒被映射進 TLB 的時候 

@@ -15,7 +15,7 @@ category: OS
 
 因此我們這章的重點自然就是：
 
-::: tip  
+::: info  
 關鍵：如何決定要 evict 哪一個 page
 
 OS 要如何決定要把哪些 page 從記憶體中移除？ 這由系統的 replacement policy 決定，它通常會依據一些通用原則，但也會加上一些小技巧來避免某些邊界情況的行為  
@@ -89,13 +89,13 @@ $$
 
 但未來一般是無法預測的，所以我們無法為一般用途的作業系統實作最佳策略。 因此當我們要開發真正能部署的策略時，就會轉向其他方式來決定要 evict 哪個 page。 最佳策略就只當作一個對照點，讓我們知道自己離「完美」還有多遠
 
-::: tip  
+::: info  
 TIP: COMPARING AGAINST OPTIMAL IS USEFUL
 
 雖然最佳策略在實務上不太實用，但在模擬或其他研究中作為對照是非常有價值的。 單純說你的新演算法 hit rate 有 80% 沒什麼意義，但如果你說最佳策略是 82%，你的方法已經非常接近最佳，就更有說服力、也更有參考價值。 因此，在你做的任何研究裡，知道最佳策略的表現如何，能幫你做出更好的比較，展示還有多少改進空間，也知道什麼時候可以停止再去優化，因為你已經夠接近理想了 [AD03]  
 :::
 
-::: tip  
+::: info  
 ASIDE: TYPES OF CACHE MISSES
 
 在 computer architecture 領域中，架構師們有時會把 miss 分類成三種情況：compulsory、capacity 和 conflict miss，也就是所謂的 Three C’s [H87]
@@ -113,7 +113,7 @@ ASIDE: TYPES OF CACHE MISSES
 
 拿 FIFO 和最佳策略比較，FIFO 的表現明顯比較差：只有 36.4% 的 hit rate（或扣除 compulsory miss 後是 57.1%）。 FIFO 完全沒辦法判斷 page 的重要性，就算 page 0 被使用了很多次，FIFO 還是會把它踢出去，因為它是最早進來的那個
 
-::: tip  
+::: info  
 ASIDE: BELADY’S ANOMALY
 
 Belady（最佳策略的提出者）和他的同事們發現了一個有趣的參照序列，行為有點出乎意料 [BNS69]。 這個記憶體存取序列是：1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5。 他們研究的替換策略是 FIFO，有趣的地方在於，當 cache 大小從 3 提高到 4 時，cache hit rate 反而變差了
@@ -195,7 +195,7 @@ page-replacement policy 可以使用的一種歷史資訊是頻率，如果某�
 
 另外，這些演算法還有「反過來」的版本 — Most-Frequently-Used（MFU）和 Most-Recently-Used（MRU）。 大多數情況下這些策略效果不佳，因為它們忽略了 locality
 
-::: tip  
+::: info  
 ASIDE: TYPES OF LOCALITY
 
 程式通常會展現兩種 locality，第一種稱為 spatial locality，它表示如果你存取了某個 page P，那麼 P 附近的 page（例如 P − 1 或 P + 1）也可能會被存取。 第二種稱為 temporal locality，它表示最近被存取過的 page，未來也可能會再次被存取
@@ -261,7 +261,7 @@ LRU 這種策略通常比 FIFO 或 Random 更有效，因為後者可能會隨�
 
 這就引出一個問題 — 我們真的需要找出那個「最老的」 page 嗎？ 我們能不能只做個近似版本就行？
 
-::: tip  
+::: info  
 關鍵：如何實作 LRU 替換策略
 
 既然要完全實作正確的 LRU 代價太高，我們能不能用某種方式近似它，並且仍然得到我們想要的行為？  

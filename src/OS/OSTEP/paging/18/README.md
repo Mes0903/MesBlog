@@ -13,14 +13,14 @@ OS 有兩種方法，來解決大多數空間管理問題。 第一種是將空�
 
 第二種方法是將空間分割成「固定長度」的片段。 在虛擬記憶體中，我們稱這種思想為 paging，可以追溯到一個早期的重要系統，Atlas [KE+62]。 paging 不會將一個 process 的位址空間分割成幾個不同長度的 segments（如 code、heap、stack segments），而是分割成固定大小的單元，每個單元稱為 page。 我們把實體記憶體看成是固定元素長度的陣列，這個元素有個名字叫 page frame，每個 page frame 包含一個 virtual page
 
-::: tip
+::: info
 接下來的主要問題是：
 - 如何通過 page 來實現虛擬記憶體，從而避免 segmentation 的問題？  
 - 基本技術是什麼？  
 - 如何讓這些技術運行良好，並盡可能減少空間和時間開銷？  
 :::
 
-::: info  
+::: tip  
 本文中如果使用 virtual page，則專指 VPN 對應到的邏輯上的 page。 如果是指物理上的 page 則會寫 page frame。 若只寫 page，則代表這是個 general 的概念，對於 virtual page 或 page frame 都通，此時想表達的只是一個固定大小的記憶體區段，例如在討論 page size 的時候，virtual page 與 page frame 的大小相同，因此只會寫 page
 
 另外，page table 的元素被稱為 PTE，這與 virtual page 及 page frame 是不同的東西，不要搞混了。 OS 會利用 virtual page 的 VPN 查找 page table，以得到 PTE，PTE 內部會記錄對應的 PFN（看 18.3 中 x86 的例子），之後再利用 PFN 得到 page frame
@@ -64,8 +64,12 @@ Section 18~20 中縮寫很多，這邊統整一下：
 
 要記住 page table 是每一個 process 都有的資料結構。 上例中如果還運行著另一個 process，OS 便會為它另外管理一個不同的 page table，它的 virtual page 映射到不同的 page frame（除了共享的 page 之外）
 
-:::tip  
+::: info  
 我們討論的大多數 page table 結構都是每一個 process 都有的資料結構，其中一個例外是 inverted page table
+:::
+
+::: tip  
+也因為每個 process 都有自己的 page table，因此不同 process 之間的虛擬位址即使相同，也會轉譯到不同的物理位址  
 :::
 
 現在來看一個位址轉譯的例子。 假設擁有這個小位址空間（64 bytes）的 process 正在訪問記憶體：
@@ -120,7 +124,7 @@ movl 21, %eax
 
 </div>
 
-::: tip  
+::: info  
 PFN 有時也稱 physical page number，簡記為 PPN
 :::
 
@@ -137,13 +141,13 @@ PFN 有時也稱 physical page number，簡記為 PPN
 
 page table 可以變得非常大，比我們之前討論過的 small segment table 或 base/bound pair 要大得多。 想像一個典型的 32-bit 系統，其位址空間有 $2^{32}$ bytes，帶有 4KB 的 page
 
-:::info  
+::: tip  
 原文混用了 32-bit address space 與 64-bytes address space 這兩種用法，前者代表的是位址空間有 $2^{32}$ bytes，後者代表位址空間只有 64 bytes，雖然寫起來很像，但意思差很多，讀原文的時候記得自己分辨一下  
 :::
 
 假設該系統的虛擬位址分成 20 位的 VPN 和 12 位的偏移量。 一個 20 位的 VPN 意味著有 $2^{20}$ 個 virtual page，因此 OS 必須為每個 process 管理 $2^{20}$ 個位址轉譯（大約一百萬）
 
-:::info  
+::: tip  
 有 $2^{20}$ 個 virtual page，每個 virtual page 的大小為 $2^{12}$ bytes，則整個位址空間有 $2^{20} \times 2^{12}$ bytes 這麼大，符合我們的假設  
 :::
 
@@ -265,7 +269,7 @@ else
   Register = AccessMemory(PhysAddr)
 ```
 
-:::info 
+::: tip 
 原文中這段 code 是張圖 — Figure 18.6: Accessing Memory With Paging
 :::
 
@@ -295,7 +299,7 @@ prompt> gcc -o array array.c -Wall -O
 prompt> ./array
 ```
 
-::: tip
+::: info
 現代 OS 的記憶體管理子系統中最重要的資料結構之一就是 page table。 通常 page table 儲存虛擬 ⬌ 物理位址轉譯的關係（virtual-to-physical address translation），從而讓系統知道位址空間的每個 page 實際在實體記憶體中的哪個位置
 
 由於每個位址空間都需要這種轉譯，因此一般來說，系統中每個 process 都有一個 page table
@@ -318,7 +322,7 @@ page table 的確切結構要麽由硬體（舊系統）決定，要麽由 OS（
 
 如果懂一點 x86，上例還是很好理解的。 第一條指令將 `$0x0` 複製到陣列的虛擬記憶體位址，這個位址是通過將 `%edi` 的值加上 `%eax` 乘以 4 來計算的。 因此可以輕鬆得知 `%edi` 保存陣列的基址，而 `%eax` 保存陣列索引
 
-:::info  
+::: tip  
 乘以 4 是因為這是一個整數陣列，每個元素的大小為 4 個 bytes  
 :::
 
@@ -355,7 +359,7 @@ Figure 18.7 展示了前 5 次循環的過程：
 - 整個圖表的 x 軸代表前五次迴圈迭代中所有的記憶體存取順序
 - 每次迴圈總共有 10 次記憶體存取，包含四次指令擷取（instruction fetch）、一次對記憶體的明確寫入，以及五次 page table 的存取，用來轉譯這四次擷取和一次寫入的虛擬位址
 
-:::tip  
+::: info  
 這裡假設每條指令的大小都是 4 bytes。 實際上，x86 指令是可變大小的  
 :::
 

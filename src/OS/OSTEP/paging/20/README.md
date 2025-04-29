@@ -13,7 +13,7 @@ category: OS
 
 而且通常系統中每個 process 都會有自己的 page table，如果系統上有一百個 active process，那我們光是為了這些 page table 就要分配幾百 MB 的記憶體，因此我們需要一些技術來減輕這個沉重的負擔，方法很多，接下來就一個一個來看
 
-::: tip  
+::: info  
 關鍵問題：如何讓 page table 更小？
 
 簡單的 array-based page table（通常稱為 linear page table）太大了，會在典型系統中佔用太多記憶體。 我們要如何讓 page table 變小？ 其中有哪些核心觀念？ 而使用這些新資料結構後，會帶來什麼樣的效率問題？  
@@ -27,7 +27,7 @@ category: OS
 
 因此，大多數系統在一般情況下還是會傾向使用相對較小的 page size，例如 x86 中的 4KB 或 SPARCv9 的 8KB，所以還要再找其他方法
 
-::: tip  
+::: info  
 補充：多種 page 大小
 
 許多架構（例如 MIPS、SPARC、x86-64）現在都支援多種 page 大小。 通常預設會用較小的 page（例如 4KB 或 8KB），但如果有應用程式提出需求，系統可以讓它為特定的 address space 區段分配一個大的 page（例如 4MB 大小）。 這樣就能把一個經常使用（而且很大）的資料結構放在這個區段中，而且只佔用一個 TLB entry
@@ -93,7 +93,7 @@ AddressOfPTE = Base[SN] + (VPN * sizeof(PTE))
 
 multi-level page table 的核心概念很簡單。 首先，將 page table 切成相同大小的不同單位，每個單位都是一個小的 page table，如果某一整個小 page table 中的 PTE 全都是無效的，那就不要配置這一個小的 page table 了
 
-:::info  
+::: tip  
 原文中將大的 page table 與這些被分割過後的小 page table 都稱為 page table，有時還會只以 page 稱呼小 page table，我的經驗是這會造成混淆，因此接下來我會簡稱這些小 page table 為 SPT（Small Page Table），page table 一詞則留給原先邏輯上一整張的大 page table  
 
 SPT 並不是一個通用的術語，只是為了這篇文而使用的，一般來說我們會使用 linux 內的名稱來稱呼：
@@ -123,7 +123,7 @@ Figure 20.3 的左邊是經典的 linear page table，即使中間那段 address
 
 你可以這樣想像 multi-level page table 的作用 — 它讓 linear page table 的一部分「消失」，從而釋放對應的 page frame 給其他用途，並透過 page directory 來追蹤 page table 中有哪些 SPT 被配置了
 
-:::info  
+::: tip  
 以上圖來說，其把一個大 page table 分成了四個 SPT，並用 page directory 來管理/追蹤這四個 SPT。 原先因為它們都屬於同一個大 page table，不可分割，因此在分配記憶體時需要一次性的配置整張 page table
 
 而切成 SPT 會使這四個區塊的記憶體配置相互獨立，我可以只配置其中兩個 SPT，不配置另外兩個 SPT，以達到節省記憶體的效果，這也是為什麼原文會用「消失」來描述這一行為，因為的確有兩個 SPT 沒被配置  
@@ -145,7 +145,7 @@ multi-level page table 是一個很好的時間與空間之間的取捨例子，
 
 另一個明顯的缺點是複雜度，無論是由硬體還是作業系統負責處理 page table 查詢（發生 TLB miss 時），這都會比原先的 linear page table 複雜不少。 當然，我們常常願意用更高的複雜度來換取更好的效能或更低的開銷； multi-level page table 就是一個讓我們在查表變複雜的情況下，換得寶貴記憶體節省的例子
 
-::: info  
+::: tip  
 這邊我補充一下，multi-level page table 節省記憶體開銷的前提是在 page table 內，有配置的 virtual page 的分布符合預期，例如 Figure 20.3 中你可以看到使用的 virtual page 集中在第 1、4 個 SPT 中，因此可以節省兩個 SPT 的記憶體開銷
 
 如果你的 virtual page 剛好分散在四個 SPT 中，那你還是需要分配一整個 page table 的記憶體給它，而且你還需要多花一個 page directory 的記憶體，因此整體記憶體的用量反而上升了
@@ -315,7 +315,7 @@ else // TLB Miss
       RetryInstruction()
 ```
 
-:::info  
+::: tip  
 這段 code 在原文中是張圖 — Figure 20.6: Multi-level Page Table Control Flow  
 :::
 

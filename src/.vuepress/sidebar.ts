@@ -177,15 +177,18 @@ export default sidebar([
         prefix: "/OS/OSTEP/",
         children: [
           {
-            text: "Paging",
+            text: "Virtual Memory",
             collapsible: true,
-            prefix: "/OS/OSTEP/paging/",
+            prefix: "/OS/OSTEP/",
             children: [
-              "18/",
-              "19/",
-              "20/"
+              "paging/18/",
+              "paging/19/",
+              "paging/20/",
+              "swapping/21/",
+              "swapping/22/",
+              "memory_system/23/",
             ]
-          }
+          },
         ]
       },
     ],

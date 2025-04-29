@@ -17,7 +17,7 @@ category: OS
 
 於是我們來到了問題的關鍵：
 
-::: tip  
+::: info  
 關鍵：如何超越 physical memory
 
 OS 要如何利用一個容量較大但速度較慢的裝置，來提供一個巨大的 virtual address space，且不被 process 察覺到？  
@@ -31,7 +31,7 @@ OS 要如何利用一個容量較大但速度較慢的裝置，來提供一個�
 
 為了實作這個功能，我們引入了 swap space，它不只限於單一 process，swap space 的加入讓 OS 能夠為多個同時執行的 process 提供大型 virtual memory，接下來就來細看它是怎麼做的
 
-::: tip  
+::: info  
 補充：儲存技術
 
 我們後面的章節會更深入探討 I/O 裝置的實際運作方式，這個較慢的裝置不一定要是硬碟，也可以是像 Flash 的 SSD 這類比較現代的設備。 目前我們只先假設有一個容量大但相對較慢的裝置，可以拿來幫助我們構築一個非常大的 virtual memory 的錯覺，甚至大到超過 physical memory 本身  
@@ -73,7 +73,7 @@ swap space 的大小很重要，因為它最終決定了系統在某一時間點
 
 一旦發生 page fault，OS 中一段特定的程式碼 — page-fault handler，便會被找來處理這次的 page fault，接下來我們會描述它的工作
 
-::: tip  
+::: info  
 補充：Swapping 的術語與其他事情
 
 在 virtual memory 系統中，術語可能有點令人困惑，而且在不同的機器與 OS 中不太一樣。 舉例來說，page fault 這個詞在比較廣的意義上，可能指任何查表造成的錯誤：可以是我們目前討論的這種 page-not-present fault，也可能是非法記憶體存取
@@ -93,7 +93,7 @@ swap space 的大小很重要，因為它最終決定了系統在某一時間點
 
 在 I/O 執行的期間，該 process 會處於 blocked 狀態。 因此，OS 可以在 page fault 被處理的期間去執行其他已 ready 的 process。 因為 I/O 成本很高，這種讓一個 process 的 page fault I/O 與另一個 process 的執行交錯進行的方式，是 multiprogramming 系統有效運用硬體資源的又一種方法
 
-::: tip  
+::: info  
 補充：為什麼不是硬體來處理 page fault？
 
 我們從 TLB 的經驗中知道，硬體設計者通常不太願意把事情交給 OS 處理，但為什麼他們信任 OS 處理 page fault？ 這裡有幾個主要原因。 第一，page fault 到 disk 很慢，而 OS 要花很多時間處理 fault，加上 disk 本身的操作也已經很慢了，所以這些額外的軟體成本基本上可以忽略
@@ -173,7 +173,7 @@ RetryInstruction() // retry instruction
 
 為了讓這個背景 paging 的執行緒運作，我們需要稍微修改一下 Figure 21.3 裡的控制流程，演算法不再是直接做 replacement，而是先檢查有沒有 free page。 如果沒有，就會通知背景 paging 執行緒說需要釋放一些 page，等該執行緒釋放了一些 page 之後，原本的執行緒會被喚醒，接著它就能把想要的 page 載入，繼續它原本的工作
 
-::: tip  
+::: info  
 TIP: DO WORK IN THE BACKGROUND
 
 當你有一些工作要做時，把它放到背景中去做，常常能提升效率，並讓操作可以被分批處理。 作業系統經常會在背景中做事，例如很多系統會先把檔案寫入動作暫存在記憶體中，之後才真的把資料寫進硬碟。 這樣做有許多潛在的好處：提升硬碟效率，因為硬碟現在能一次接收很多寫入請求，方便排程
