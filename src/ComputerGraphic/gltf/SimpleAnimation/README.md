@@ -164,25 +164,6 @@ category: computer-graphic
 - 一個新的 `bufferView`，用來參考這個 buffer
 - 兩個新的 `accessor` 物件，為動畫資料加入結構資訊
 
-::: tip  
-在這裡，「structural information（結構資訊）」是指附加在原始資料（raw data）之上，用來說明這些資料該怎麼被解讀、怎麼被排列、型別是什麼的額外描述資訊
-
-用 glTF 動畫的例子來講：
-
-- `buffer`：
-  純粹就是一連串的位元組（binary data），本身沒有結構意義，例如：「100 bytes 的資料」
-- `bufferView`：
-  把 `buffer` 切成小塊，但仍然不知道這些 bytes 是代表 float？還是 short？是一個數字還是一組向量？
-- `accessor`（這就是 Structural Information）：
-  其告訴你這段資料的結構：
-    - 資料型態是 `FLOAT`
-    - 每個元素是 `VEC4`（四個 float）
-    - 總共有多少筆資料（count）
-    - 每筆資料佔多少位元組（根據型態推得）
-
-這就是 structural information，把純資料加上「型別」「數量」「佈局」的說明，讓渲染器（或讀取程式）知道怎麼正確地去解讀這些二進位資料  
-:::
-
 ### The `buffer` and the `bufferView` for the raw animation data
 
 我們新增了一個 `buffer` 存放原始的動畫資料，這個 buffer 同樣是透過 data URI 來編碼的，動畫資料總共有 100 個位元組：
@@ -214,9 +195,9 @@ category: computer-graphic
 
 ### The `accessor` objects for the animation data
 
-我們新增了兩個 `accessor` 物件來描述該如何解讀動畫資料，第一個 `accessor` 描述的是動畫關鍵影格（key frames）的時間點（times），其有五個元素（`count = 5`），每個元素都是一個 float 的純量，總共佔用了 20 個位元組
+我們新增了兩個 `accessor` 物件來描述該如何解讀動畫資料，第一個 `accessor` 描述的是動畫關鍵影格（key frames）的時間點（times），其有五個元素（`count = 5`），元素是 float 的純量，總共佔用了 20 個位元組
 
-第二個 `accessor` 則描述，在前面的 20 個位元組之後有五個元素，每個元素都是由 float 所組成的四維向量，它們是以四元數（quaternions）的形式表示的，會對應到五個關鍵影格的旋轉：
+第二個 `accessor` 則描述，在第 20 個位元組之後有五個元素，每個元素都是由 float 所組成的四維向量，它們是以四元數（quaternions）的形式表示的，會對應到五個關鍵影格的旋轉：
 
 ```javascript
   "accessors" : [
@@ -240,10 +221,11 @@ category: computer-graphic
       "min" : [ 0.0, 0.0, 0.0, -0.707 ]
     }
   ],
-
 ```
 
 上例中由 times accessor 和 rotations accessor 提供的實際資料如下表所示：
+
+<div class = "center-column">
 
 | *times* accessor | *rotations* accessor | 含義 |
 |:---|:---|:---|
@@ -253,11 +235,48 @@ category: computer-graphic
 | 0.75 | (0.0, 0.0, 0.707, -0.707) | 在 0.75 秒時，三角形繞 z 軸旋轉了 270 度（= -90 度） |
 | 1.0 | (0.0, 0.0, 0.0, 1.0) | 在 1.0 秒時，三角形繞 z 軸旋轉了 360 度（= 0 度） |
 
+</div>
+
 因此這個動畫描述的是在 1 秒內，三角形繞 z 軸旋轉了 360 度
+
+::: tip  
+第一個 accessor 是 times accessor，它描述了：
+
+- 這個 accessor 會從 `bufferView[2]` 的 offset 0 開始讀資料
+- 每筆資料是 float（4 bytes）
+- `count: 5` → 共有 5 個 keyframe 時間點
+- `type: "SCALAR"` → 每個元素只有一個值（不是 vector）
+
+所以這段資料就被解釋成：
+
+```json
+times = [0.0, 0.25, 0.5, 0.75, 1.0]
+```
+
+而第二個 accessor 是 rotations accessor，描述了：
+
+- 從 `bufferView[2]` 的 offset = 20 開始讀（接在 times 後面）
+- 每筆資料是 VEC4 → 四個 float（16 bytes）
+- `count: 5` → 共有 5 筆 rotation 資料
+
+所以這段資料解釋成：
+
+```json
+rotations = [
+  (0.0, 0.0, 0.0, 1.0),      // identity quaternion → 0 度
+  (0.0, 0.0, 0.707, 0.707),  // 90 度
+  (0.0, 0.0, 1.0, 0.0),      // 180 度
+  (0.0, 0.0, 0.707, -0.707), // 270 度 (或 -90 度)
+  (0.0, 0.0, 0.0, 1.0)       // 回到初始角度
+]
+```
+
+要注意這些數值都是從對應的 buffer 中讀出來的，而不是計算出來的，跟下方的 `LINEAR` 沒有關係  
+:::
 
 ## The `animation`  
 
-`animation` 是實際新增動畫資料的部分，glTF 最上層的 `animations` 陣列中包含一個 `animation` 物件，這個物件由兩個部分組成：
+`animation` 是實際新增的動畫資料的部分，glTF 最上層的 `animations` 陣列中包含一個 `animation` 物件，這個物件由兩個部分組成：
 
 - `samplers`：描述動畫資料的來源
 - `channels`：可以想像成把「動畫資料的來源」連接到「動畫資料的目標」上的橋樑

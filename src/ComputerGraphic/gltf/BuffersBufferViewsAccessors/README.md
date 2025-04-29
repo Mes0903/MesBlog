@@ -38,7 +38,7 @@ category: computer-graphic
 
 ## BufferViews
 
-我們需要透過 [`bufferView`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-bufferview) 物件來完成從 `buffer` 中結構化資料的第一步。 `bufferView` 代表的是某個 buffer 資料中的一個「切片」（slice），這個切片是透過位移量（offset）與長度（length）（單位都是位元組 byte）來定義的。
+我們需要透過 [`bufferView`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-bufferview) 物件來完成從 `buffer` 中結構化資料的第一步。 `bufferView` 代表的是某個 buffer 資料中的一個「切片」（slice），這個切片是透過位移量（offset）與長度（length）來定義的（單位都是位元組 byte）
 
 在「A Minimal glTF File」的例子中，定義了兩個 `bufferView` 物件：
 
@@ -90,7 +90,7 @@ accessor 的資料型態是透過 `type` 和 `componentType` 這兩個屬性來�
   - `"SCALAR"` 代表純量
   - `"VEC3"` 代表三維向量
   - `"MAT4"` 代表 4×4 矩陣
-- `componentType` 則指定這些元素中**每個分量（component）**的資料型別，它是一個 GL constant，例如：
+- `componentType` 則指定這些元素中每個分量（component）的資料型別，其會是一個 GL constant，例如：
   - `5126` 表示 `FLOAT`（浮點數）
   - `5123` 表示 `UNSIGNED_SHORT`（無號短整數）
 
@@ -119,7 +119,7 @@ accessor 的資料型態是透過 `type` 和 `componentType` 這兩個屬性來�
   ],
 ```
 
-第一個 accessor 參考了索引為 0 的 `bufferView`，如上所述，這部分 `buffer` 的資料用來存放索引（indices）。 其中 `type` 是 `"SCALAR"`，`componentType` 是 `5123`（`UNSIGNED_SHORT`），也就是說，索引資料是以**無號短整數（unsigned short）**的純量形式儲存的
+第一個 accessor 參考了索引為 0 的 `bufferView`，如上所述，這部分 `buffer` 的資料用來存放索引（indices）。 其中 `type` 是 `"SCALAR"`，`componentType` 是 `5123`（`UNSIGNED_SHORT`），也就是說，索引資料是以無號短整數（unsigned short）的純量形式儲存的
 
 第二個 accessor 參考了索引為 1 的 bufferView，這部分 `buffer` 的資料用來存放頂點屬性（vertex attributes），特別是頂點位置（vertex positions）。 其中，`type` 是 `"VEC3"`，`componentType` 是 `5126`（`FLOAT`），也就是說，這個 accessor 描述的是浮點數的三維向量（3D vectors with float components）
 
@@ -128,11 +128,11 @@ accessor 的資料型態是透過 `type` 和 `componentType` 這兩個屬性來�
 `accessor` 還有其他屬性可以進一步指定資料的布局方式：
 
 - `count` 屬性表示這個 `accessor` 包含了多少個資料元素。 在上面的範例中，兩個 accessor 的 `count` 都是 3，分別代表三個索引（indices）與三個頂點（vertices），也就是一個三角形
-- 每個 accessor 也有一個 `byteOffset` 屬性。 在上述例子中，兩個 accessor 的 `byteOffset` 都是 0，因為每個 `bufferView` 都只有對應一個 accessor。 但如果有多個 accessor 參考同一個 `bufferView`，那麼 `byteOffset` 會用來描述該 accessor 的資料是從對應 `bufferView` 中的哪個位元組開始的
+- 每個 accessor 也都有一個 `byteOffset` 屬性。 在上述例子中，兩個 accessor 的 `byteOffset` 都是 0，因為每個 `bufferView` 都只有對應一個 accessor。 但如果有多個 accessor 參考同一個 `bufferView`，那麼 `byteOffset` 會用來描述該 accessor 的資料是從對應 `bufferView` 中的哪個位元組開始的
 
 ### Data alignment
 
-accessor 指向的資料可能會被傳送到顯卡作為渲染用的資料，也可能會在主機端（host side）作為動畫（animation）或骨骼綁定（skinning）資料使用。 因此，accessor 的資料必須依據**資料型態（type）**正確的進行對齊（alignment）
+accessor 指向的資料可能會被傳送到顯卡作為渲染用的資料，也可能會在主機端（host side）作為動畫（animation）或骨骼綁定（skinning）資料使用。 因此，accessor 的資料必須依據資料型態（type）正確的進行對齊（alignment）
 
 例如，當 accessor 的 `componentType` 是 `5126`（`FLOAT`）時，因為一個 float 佔 4 個位元組，所以資料必須對齊到 4 位元組邊界（4-byte boundaries）
 
@@ -155,16 +155,58 @@ accessor 指向的資料可能會被傳送到顯卡作為渲染用的資料，�
 
 </div>
 
+::: tip  
+總而言之，buffer 可以想成一個 memory pool，裡面就是存單純的 binary，需要靠 bufferView 和 accessor 的資訊才能解讀。 其中 bufferView 對應到一個物件，負責告訴你這個物件在 buffer 中的哪裡，佔了多大的區域，還有他是哪種 buffer；accessor 則告訴你要怎麼解讀對應 buffer 內的這段 binary
+
+以上圖來說，`accessors[0]` 為：
+
+```json
+{
+  "bufferView": 0,
+  "byteOffset": 0,
+  "componentType": 5123, // GL_UNSIGNED_SHORT (2 bytes)
+  "count": 3,
+  "type": "SCALAR"
+}
+```
+
+表示：
+
+- 從 `bufferView[0]` 開始讀（也就是 `buffer[0]`）
+- 每筆資料是 `GL_UNSIGNED_SHORT`（2 bytes）
+- SCALAR 表示一筆資料只有一個數字
+- count = 3 → 共有三筆資料 → 共佔 6 bytes，剛好是 `bufferView[0]` 長度
+
+而 `accessors[1]` 為：
+
+```json
+{
+  "bufferView": 1,
+  "byteOffset": 0,
+  "componentType": 5126, // GL_FLOAT (4 bytes)
+  "count": 3,
+  "type": "VEC3"
+}
+```
+
+表示：
+
+- 從 `bufferView[1]` 開始讀（`buffer[8]`）
+- 每筆是 `VEC3`，即 3 個 float
+- 每個 float 是 4 bytes → 每筆資料佔 12 bytes
+- count = 3 → 三筆資料 → 三個 VEC3 → 共佔 36 bytes，剛好對應 `bufferView[1]` 長度  
+:::
+
 ### Data interleaving
 
-`bufferView` 有時會採用**結構體陣列（Array-Of-Structures，AOS）**的格式來存放屬性（attributes）資料，此時單一 `bufferView` 中的資料，可能會交錯地同時包含：
+`bufferView` 有時會採用結構體陣列（Array-Of-Structures，AOS）的格式來存放屬性（attributes）資料，此時單一 `bufferView` 中的資料，可能會交錯地同時包含：
 
 - 頂點位置（vertex positions）
 - 頂點法線（vertex normals）
 
 這種情況下 accessor 的 `byteOffset` 用來定義對應屬性中第一筆資料的起始位置，而 `bufferView` 會額外定義一個 `byteStride` 屬性，這個值表示從一筆資料跳到下一筆資料所需要跨過的位元組數
 
-舉例來說，圖片 5d 示範了一個交錯存放 position 和 normal 屬性的 `bufferView`：
+舉例來說，下圖 5d 示範了一個交錯存放 position 和 normal 屬性的 `bufferView`：
 
 <div class = "center-column">
 
@@ -187,10 +229,10 @@ accessor 指向的資料可能會被傳送到顯卡作為渲染用的資料，�
 - 優先下載（prioritized downloads）
 - 可見性偵測（visibility detection）
 
-此外，這類資訊在儲存或處理**量化（quantized）**資料時也很有幫助，渲染器可以在執行期用這些範圍資訊進行去量化（dequantization），但對於量化資料的細節，超出了本教學的範圍，就不再贅述
+此外，這類資訊在儲存或處理量化（quantized）資料時也很有幫助，渲染器可以在執行期用這些範圍資訊進行去量化（dequantization），但對於量化資料的細節，超出了本教學的範圍，就不再贅述
 
-::: tip 
-quantize 基本上就是在做壓縮，你直接查 mesh quantize 或 gltf quantize 之類的應該就可以查到相關的資訊了
+::: tip  
+quantize 基本上就是在做壓縮，你直接查 mesh quantize 或 gltf quantize 之類的應該就可以查到相關的資訊了  
 :::
 
 ## Sparse accessors

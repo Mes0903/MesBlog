@@ -9,7 +9,7 @@ category: computer-graphic
 
 # glTF：A Minimal glTF File
 
-以下是一個最小但完整的 glTF asset 範例，內容包含一個使用索引的單一三角形。 你可以直接將它複製並貼到一個 `.gltf` 檔案中，任何基於 glTF 的應用程式都應該能夠正確載入並渲染它。 本節將會以這個範例為基礎，來說明 glTF 的基本概念
+以下是一個最小但完整的 glTF asset 範例，內容包含了一個三角形。 你可以直接將它複製並貼到一個 `.gltf` 檔案中，任何基於 glTF 的應用程式都應該能夠正確載入並渲染它。 本節將會以這個範例為基礎，來說明 glTF 的基本概念
 
 ```javascript
 {
@@ -93,7 +93,7 @@ category: computer-graphic
 
 ## The `scene` and `nodes` structure
 
-陣列 [`scenes`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-scene) 描述 glTF 中場景內容的起點。 當解析 glTF 的 JSON 檔案時，場景結構的遍歷就是從這裡開始的。 每個場景（scene）包含一個名為 `nodes` 的陣列，裡面存的是 [`node`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-node) 物件的索引。 這些 node 是場景圖（scene graph）階層結構的根節點
+陣列 [`scenes`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-scene) 描述 glTF 中場景內容的起點。 在解析 glTF 的 JSON 檔案時，會從這裡開始走訪場景結構。 每個場景（scene）包含一個名為 `nodes` 的陣列，裡面存的是 [`node`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-node) 物件的索引。 這些 node 是場景圖階層結構的根節點
 
 這裡的範例只包含一個場景。 `scene` 屬性指定了在載入 assets 時，預設要顯示的是哪個場景。 這個場景參考了範例中唯一的一個節點（索引為 0）。 而這個節點又參考了唯一的一個網格（mesh），其索引也是 0：
 
@@ -162,9 +162,9 @@ mesh primitive 的實際幾何資料由 `attributes` 和 `indices` 提供，其�
 
 ### Buffer views
 
-[`bufferView`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-bufferview) 用來描述整個原始 buffer 資料中的一個「區塊（chunk）」或「切片（slice）」。 在這個範例中，總共有兩個 buffer view，它們都參考同一個 buffer
+[`bufferView`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-bufferview) 用來描述整個原始 buffer 資料中的一個「區塊（chunk）」或「切片（slice）」。 在這個範例中，總共有兩個 buffer view，它們都參考了同一個 buffer
 
-第一個 buffer view 指向 buffer 中存放索引（indices）資料的部分，它的 byteOffset 是 0（也就是從整個 buffer 的開頭開始），byteLength 是 6，表示這段資料長度為 6 個位元組。 第二個 buffer view 則指向 buffer 中存放頂點位置（vertex positions）資料的部分，它的 byteOffset 是 8，byteLength 是 36，也就是從第 8 個位元組開始，直到整個 buffer 結束為止
+第一個 buffer view 指向 buffer 中存放索引資料的部分，它的 `byteOffset` 是 0（也就是從整個 buffer 的開頭開始），`byteLength` 是 6，表示這段資料長度為 6 個位元組。 第二個 buffer view 則指向 buffer 中存放頂點位置（vertex positions）資料的部分，它的 `byteOffset` 是 8，`byteLength` 是 36，也就是從第 8 個位元組開始，直到整個 buffer 結束為止
 
 範例的 JSON 片段如下：
 
@@ -187,11 +187,30 @@ mesh primitive 的實際幾何資料由 `attributes` 和 `indices` 提供，其�
 
 ### Accessors
 
-第二步資料結構化的工作是透過 [`accessor`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-accessor) 物件來完成的。 accessor 會定義 bufferView 中的資料該如何解讀，並提供資料型別與資料布局的相關資訊
+資料結構化的工作是透過 [`accessor`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-accessor) 物件來完成，其會定義 `bufferView` 中的資料該如何解讀，並提供資料型別與資料布局的相關資訊
+
+::: tip  
+這裡的結構化，或是後面提到的「structural information（結構資訊）」是指附加在原始資料（raw data）之上，用來說明這些資料該怎麼被解讀、怎麼被排列、型別是什麼的額外描述資訊
+
+用 glTF 動畫的例子來講：
+
+- `buffer`：
+  純粹就是一連串的位元組（binary data），本身沒有結構意義，例如：「100 bytes 的資料」
+- `bufferView`：
+  把 `buffer` 切成小塊，但仍然不知道這些 bytes 是代表 float？還是 short？是一個數字還是一組向量？
+- `accessor`（這就是 Structural Information）：
+  其告訴你這段資料的結構：
+    - 資料型態是 `FLOAT`
+    - 每個元素是 `VEC4`（四個 float）
+    - 總共有多少筆資料（count）
+    - 每筆資料佔多少位元組（根據型態推得）
+
+這就是 structural information，把純資料加上「型別」「數量」「佈局」的說明，讓渲染器（或讀取程式）知道怎麼正確地去解讀這些二進位資料  
+:::
 
 在這個範例中，總共有兩個 accessor 物件：
 
-第一個 accessor 描述的是幾何資料的索引（indices）。 它參考了索引為 0 的 `bufferView`，也就是包含索引原始資料的那一段 `buffer`。 此外，它還指定了元素的 `count`（數量）、`type`（資料結構類型），以及 `componentType`（基本資料型別）。 在這個例子中，總共有 3 個 scalar 元素，且它們的 component type 是對應 `unsigned short` 型別的常數值
+第一個 accessor 描述的是幾何資料的索引（indices）。 它參考了索引為 0 的 `bufferView`，也就是包含索引原始資料的那一段 `buffer`。 此外，它還指定了元素的 `count`（數量）、`type`（資料結構類型），以及 `componentType`（基本資料型別）。 在這個例子中，總共有 3 個 scalar 元素，其 component type 為 `5123`，對應到 `unsigned short` 型別
 
 第二個 accessor 描述的是頂點位置（vertex positions）。 它透過索引為 1 的 `bufferView` 參考到相關的 buffer 資料區塊，並且它的 `count`、`type`、`componentType` 屬性說明了這裡有三個元素，每個元素是一個 3 維向量，且每個分量都是 `float` 型別
 
