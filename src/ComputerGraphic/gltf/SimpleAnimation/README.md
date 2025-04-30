@@ -317,3 +317,17 @@ rotations = [
 綜合以上資訊，這個 animation 物件的含義可以總結如下：
 
 在動畫過程中，動畫值從 rotations accessor 中取得，這些值會依據當前的模擬時間，根據 times accessor 中提供的關鍵影格時間，進行線性插值（LINEAR interpolation），然後會將插值得到的旋轉值寫入索引 0 的節點的 `"rotation"` 屬性中
+
+::: tip  
+簡單來說，sampler 是「一條動畫曲線」的原始資料來源，它會告訴你三件事：
+
+- `input`：哪個 accessor 是「時間」軸（通常是一堆 float）
+- `output`：哪個 accessor 是「值」的資料（如位置、旋轉、縮放）
+- `interpolation`：當時間落在兩個 keyframe 中間時，怎麼補值？（LINEAR / STEP / CUBICSPLINE）
+
+而 channel 是「把這條動畫曲線套用到某個節點屬性」的設定，會告訴你兩件事：
+
+- `sampler`：用哪條 sampler 當作動畫來源
+- `target.node`：要控制哪個節點（例如 node[0]）
+- `target.path`：要控制這個節點的哪個屬性（如 `"rotation"` / `"translation"` / `"scale"`）  
+:::
