@@ -1,6 +1,6 @@
 ---
 title: glTF：Animations
-date: 2025-04-24
+date: 2025-04-30
 tag: 
   - computer-graphic
   - gltf
