@@ -109,7 +109,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src="image/testTexture.png">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/SimpleTexture/image/testTexture.png?raw=true">
 (Image 13a: The image for the simple texture example.)
 
 </div>
@@ -118,7 +118,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src="image/simpleTexture.png">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/SimpleTexture/image/simpleTexture.png?raw=true">
 (Image 13b: A simple texture on a unit square.)
 
 </div>

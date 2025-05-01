@@ -39,7 +39,7 @@ glTF 採用這個 metallic-roughness 表示方式作為內建的材質模型其�
 
 <div class = "center-column">
 
-<img src="image/metallicRoughnessSpheres.png">
+<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Materials/image/metallicRoughnessSpheres.png?raw=true">
 (Image 10a: Spheres with different metallic- and roughness values.)
 
 </div>

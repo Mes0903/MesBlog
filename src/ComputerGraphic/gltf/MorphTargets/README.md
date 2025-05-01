@@ -45,7 +45,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src="image/simpleMorphInitial.png">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/MorphTargets/image/simpleMorphInitial.png?raw=true">
 (Image 18a: The initial triangle and morph target displacements.)
 
 </div>
@@ -80,7 +80,7 @@ renderedPrimitive.POSITION = primitive.POSITION
 
 <div class = "center-column">
 
-<img src="image/simpleMorphIntermediate.png">
+<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/MorphTargets/image/simpleMorphIntermediate.png?raw=true">
 (Image 18b: An intermediate state of the morph target animation.)
 
 </div>

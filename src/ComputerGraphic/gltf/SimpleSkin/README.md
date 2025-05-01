@@ -151,7 +151,7 @@ glTF 支援 vertex skinning（頂點綁定），這項功能可以根據骨架�
 
 <div class = "center-column">
 
-<img src="image/simpleSkin.gif">
+<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/SimpleSkin/image/simpleSkin.gif?raw=true">
 (Image 19a: A scene with simple vertex skinning.)
 
 </div>

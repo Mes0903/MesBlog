@@ -119,7 +119,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src="image/cameras.png">
+<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/SimpleCameras/image/cameras.png?raw=true">
 (Image 15a: The effect of rendering the scene with different cameras.)
 
 </div>
@@ -177,7 +177,5 @@ The new top-level element of this glTF asset is the `cameras` array, which conta
   }
 },
 ```
-
-The differences between perspective and orthographic cameras and their properties, the effect of attaching the cameras to the nodes, and the management of multiple cameras will be explained in detail in the [Cameras](gltfTutorial_016_Cameras.md) section.
 
 兩台相機都被放在位置 `[0.5, 0.5, 3.0]` 處，朝向場景中心，但因為它們使用不同的投影模式，最終渲染出來的視角感受會不同。 關於「透視相機 vs 正交相機」的差異、將相機掛載到節點上的效果、以及場景中管理多台相機的方法，會在下一節 Cameras 中做進一步說明

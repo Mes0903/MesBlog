@@ -100,7 +100,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src="image/simpleMaterial.png">
+<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/SimpleMaterial/image/simpleMaterial.png?raw=true">
 (Image 11a: A triangle with a simple material.)
 
 </div>

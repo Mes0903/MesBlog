@@ -13,7 +13,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src="https://github.com/Mes0903/MesBlog/raw/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/applications.png">
+<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/applications.png">
 （Image 1a: Screenshots of various websites and applications showing 3D models.）
 
 </div>
