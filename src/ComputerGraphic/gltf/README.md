@@ -5,6 +5,7 @@ tag:
   - computer-graphic
   - gltf
 category: computer-graphic
+star: true
 ---
 
 # glTF：glTF Tutorial
@@ -39,6 +40,29 @@ category: computer-graphic
 - [Morph Targets](https://github.com/KhronosGroup/glTF-Tutorials/tree/main/gltfTutorial/gltfTutorial_018_MorphTargets.md)
 - [Example: Simple Skin](https://github.com/KhronosGroup/glTF-Tutorials/tree/main/gltfTutorial/gltfTutorial_019_SimpleSkin.md)
 - [Skins](https://github.com/KhronosGroup/glTF-Tutorials/tree/main/gltfTutorial/gltfTutorial_020_Skins.md)
+
+對應的翻譯如下：
+
+- [Introduction](Introduction/)
+- [Basic glTF Structure](BasicGltfStructure/)
+- [Example: A Minimal glTF File](MinimalGltfFile/)
+- [Scenes and Nodes](ScenesNodes/)
+- [Buffers, BufferViews, and Accessors](BuffersBufferViewsAccessors/)
+- [Example: A Simple Animation](SimpleAnimation/)
+- [Animations](Animations/)
+- [Example: Simple Meshes](SimpleMeshes/)
+- [Meshes](Meshes/)
+- [Materials](Materials/)
+- [Example: A Simple Material](SimpleMaterial/)
+- [Textures, Images, and Samplers](TexturesImagesSamplers/)
+- [Example: A Simple Texture](SimpleTexture/)
+- [Example: An Advanced Material](AdvancedMaterial/)
+- [Example: Simple Cameras](SimpleCameras/)
+- [Cameras](Cameras/)
+- [Example: A Simple Morph Target](SimpleMorphTarget/)
+- [Morph Targets](MorphTargets/)
+- [Example: Simple Skin](SimpleSkin/)
+- [Skins](Skins/)
 
 **Acknowledgements:**
 
