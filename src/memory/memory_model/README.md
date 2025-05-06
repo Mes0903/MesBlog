@@ -9,6 +9,14 @@ category: memory
 
 # Memory Model
 
+<div class = "center-column">
+
+<img src = "https://github.com/Mes0903/MesBlog/tree/vuepress-theme-hope/src/memory/memory_model/image/shion.png">
+
+詩音畢業了嗚嗚嗚，鹽寶...... 我的鹽寶......（[圖片取自鹽寶的 Twitter](https://x.com/murasakishionch/status/1916085213568110734/photo/1)）
+
+</div>
+
 此篇為 Russ Cox 所寫的 [Hardware Memory Models](https://research.swtch.com/hwmm) 與 [Programming Language Memory Models](https://research.swtch.com/plmm) 的翻譯與筆記，進行了小幅度的修改與增減。 與原文相同，本文依據 [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/) 發佈
 
 本文內所有例子中的變數一開始都被初始化為 0
