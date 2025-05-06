@@ -20,6 +20,7 @@ export default sidebar([
         prefix: "/memory/",
         children: [
           "sw_reram/",
+          "memory_model/",
         ],
       },
       {

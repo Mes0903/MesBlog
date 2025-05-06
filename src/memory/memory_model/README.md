@@ -1,5 +1,5 @@
 ---
-title: (WIP) Memory Ordering
+title: Memory Model
 date: 2025-05-04
 tag: 
 - memory
@@ -7,7 +7,7 @@ tag:
 category: memory
 ---
 
-# Memory Ordering
+# Memory Model
 
 此篇為 Russ Cox 所寫的 [Hardware Memory Models](https://research.swtch.com/hwmm) 與 [Programming Language Memory Models](https://research.swtch.com/plmm) 的翻譯與筆記，進行了小幅度的修改與增減。 與原文相同，本文依據 [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/) 發佈
 
