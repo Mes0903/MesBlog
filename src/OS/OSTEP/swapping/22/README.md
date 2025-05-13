@@ -151,7 +151,7 @@ Belady（最佳策略的提出者）和他的同事們發現了一個有趣的�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/swapping/22/image/22-4.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/swapping/22/image/22-4.png">
 
 </div>
 
@@ -215,7 +215,7 @@ ASIDE: TYPES OF LOCALITY
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/swapping/22/image/22-6.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/swapping/22/image/22-6.png">
 
 </div>
 
@@ -227,7 +227,7 @@ Figure 22.6 畫出了這個實驗，包含 optimal、LRU、Random 和 FIFO 這�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/swapping/22/image/22-7.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/swapping/22/image/22-7.png">
 
 </div>
 
@@ -239,7 +239,7 @@ Figure 22.6 畫出了這個實驗，包含 optimal、LRU、Random 和 FIFO 這�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/swapping/22/image/22-8.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/swapping/22/image/22-8.png">
 
 </div>
 
@@ -283,7 +283,7 @@ LRU 這種策略通常比 FIFO 或 Random 更有效，因為後者可能會隨�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/swapping/22/image/22-9.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/swapping/22/image/22-9.png">
 
 </div>
 

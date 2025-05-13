@@ -47,7 +47,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Skins/image/simpleSkinOutline01.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/Skins/image/simpleSkinOutline01.png">
 (Image 20a: The geometry for the skinning example, with outline rendering, in its initial configuration.)
 
 </div>
@@ -103,7 +103,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Skins/image/skinInverseBindMatrix.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/Skins/image/skinInverseBindMatrix.png">
 (Image 20b: The transformation of the geometry with the inverse bind matrix of joint 1.)
 
 </div>
@@ -158,7 +158,7 @@ jointMatrix(j) = globalTransformOfJointNode(j) * inverseBindMatrixForJoint(j);
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Skins/image/skinJointMatrices.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/Skins/image/skinJointMatrices.png">
 (Image 20c: The transformation of the geometry done for joint 1.)
 
 </div>
@@ -240,7 +240,7 @@ void main(void)
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Skins/image/skinSkinMatrix.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/Skins/image/skinSkinMatrix.png">
 (Image 20d: Computation of the skin matrix.)
 
 </div>
@@ -249,7 +249,7 @@ void main(void)
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Skins/image/simpleSkinOutline02.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/Skins/image/simpleSkinOutline02.png">
 (Image 20e: The geometry for the skinning example, with outline rendering, during the animation.)
 
 </div>

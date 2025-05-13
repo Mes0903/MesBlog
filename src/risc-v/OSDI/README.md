@@ -82,7 +82,7 @@ operation 總共有四種變化：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/1.png">
 
 </div><br>
 
@@ -94,7 +94,7 @@ operation 總共有四種變化：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/2.png">
 
 </div><br>
 
@@ -112,7 +112,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/3.png">
 
 </div><br>
 
@@ -144,7 +144,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/4.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/4.png">
 
 </div><br>
 
@@ -173,7 +173,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/5.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/5.png">
 
 </div><br>
 
@@ -201,7 +201,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/6.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/6.png">
 
 </div><br>
 
@@ -597,7 +597,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/7.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/7.png">
 
 </div><br>
 
@@ -614,7 +614,7 @@ JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/8.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/8.png">
 
 </div><br>
 
@@ -634,7 +634,7 @@ RISC-V 中，每一個 privilege level 都對應到一組特定的暫存器，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/1.png">
 
 </div><br>
 
@@ -642,7 +642,7 @@ RISC-V 中，每一個 privilege level 都對應到一組特定的暫存器，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/2.png">
 
 </div><br>
 
@@ -933,7 +933,7 @@ extern uint32_t HEAP_SIZE;
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/3.png">
 
 </div><br>
 
@@ -1146,7 +1146,7 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/4.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/4.png">
 
 </div><br>
 
@@ -1156,7 +1156,7 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/5.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/5.png">
 
 </div><br>
 
@@ -1186,7 +1186,7 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/6.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/6.png">
 
 </div><br>
 
@@ -1194,7 +1194,7 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/7.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/7.png">
 
 </div><br>
 
@@ -1202,7 +1202,7 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/8.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/8.png">
 
 </div><br>
 
@@ -1210,7 +1210,7 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/9.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/9.png">
 
 </div><br>
 
@@ -1353,7 +1353,7 @@ csrw    mscratch, a0
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/10.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/10.png">
 
 </div><br>
 
@@ -1387,7 +1387,7 @@ csrw    mscratch, a0
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/11.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/11.png">
 
 </div><br>
 
@@ -1403,7 +1403,7 @@ csrw    mscratch, a0
 
     <div class = "center-column">
 
-    <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/12.png?raw=true">
+    <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/12.png">
 
     </div><br>
 
@@ -1411,7 +1411,7 @@ csrw    mscratch, a0
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/13.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/13.png">
 
 </div><br>
 
@@ -1423,7 +1423,7 @@ csrw    mscratch, a0
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/14.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/14.png">
 
 </div><br>
 
@@ -1435,7 +1435,7 @@ csrw    mscratch, a0
 + spec 內有附一張表格
     <div class = "center-column">
 
-    <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/15.png?raw=true">
+    <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/15.png">
 
     </div><br>
 
@@ -1445,7 +1445,7 @@ csrw    mscratch, a0
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/16.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/16.png">
 
 </div><br>
 
@@ -1459,7 +1459,7 @@ csrw    mscratch, a0
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/17.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/17.png">
 
 </div><br>
 
@@ -1521,7 +1521,7 @@ void trap_init()
 2. 設定 mepc，同時 PC 被設定為 mtvec；需要注意的是，對於exception，mepc 指向導致異常的指令；對於 interrupt，它指向被中斷的指令的下一條指令的位置
     <div class = "center-column">
 
-    <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/18.png?raw=true">
+    <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/18.png">
 
     </div><br>
 3. 根據 trap 的種類設定 mcause，並根據需要為 mtval 設定附加資訊
@@ -1621,7 +1621,7 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/19.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/19.png">
 
 </div><br>
 
@@ -1654,7 +1654,7 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/20.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/20.png">
 
 </div><br>
 
@@ -1666,7 +1666,7 @@ mie 用於控制 Interrupt 的開或關；前面有提到一個 mstatus，那個
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/21.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/21.png">
 
 </div><br>
 
@@ -1674,7 +1674,7 @@ mie 用於控制 Interrupt 的開或關；前面有提到一個 mstatus，那個
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/22.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/22.png">
 
 </div><br>
 
@@ -1684,7 +1684,7 @@ mie 用於控制 Interrupt 的開或關；前面有提到一個 mstatus，那個
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/23.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/23.png">
 
 </div><br>
 
@@ -1692,7 +1692,7 @@ mie 用於控制 Interrupt 的開或關；前面有提到一個 mstatus，那個
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/24.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/24.png">
 
 </div><br>
 
@@ -1704,7 +1704,7 @@ mie 用於控制 Interrupt 的開或關；前面有提到一個 mstatus，那個
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/25.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/25.png">
 
 </div><br>
 
@@ -1808,7 +1808,7 @@ static const MemMapEntry virt_memmap[] = {
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/26.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/26.png">
 
 </div><br>
 
@@ -1818,7 +1818,7 @@ static const MemMapEntry virt_memmap[] = {
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/27.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/27.png">
 
 </div><br>
 
@@ -1826,7 +1826,7 @@ static const MemMapEntry virt_memmap[] = {
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/28.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/28.png">
 
 </div><br>
 
@@ -1834,7 +1834,7 @@ static const MemMapEntry virt_memmap[] = {
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/29.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/29.png">
 
 </div><br>
 
@@ -1842,7 +1842,7 @@ static const MemMapEntry virt_memmap[] = {
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/30.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/30.png">
 
 </div><br>
 
@@ -1850,7 +1850,7 @@ static const MemMapEntry virt_memmap[] = {
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/31.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/31.png">
 
 </div><br>
 
@@ -1951,7 +1951,7 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/32.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/32.png">
 
 </div><br>
 
@@ -2026,7 +2026,7 @@ void uart_init()
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/33.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/33.png">
 
 </div><br>
 
@@ -2157,7 +2157,7 @@ OS 裡面的時間管理就是利用硬體的 time counter 完成的
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/34.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/34.png">
 
 </div><br>
 
@@ -2264,7 +2264,7 @@ switch_to:
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/35.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/35.png">
 
 </div><br>
 
@@ -2272,7 +2272,7 @@ switch_to:
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/36.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/36.png">
 
 </div><br>
 
@@ -2280,7 +2280,7 @@ switch_to:
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/37.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/37.png">
 
 </div><br>
 
@@ -2288,7 +2288,7 @@ switch_to:
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/38.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/38.png">
 
 </div><br>
 
@@ -2296,7 +2296,7 @@ switch_to:
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/39.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/39.png">
 
 </div><br>
 
@@ -2304,7 +2304,7 @@ switch_to:
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/40.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/40.png">
 
 </div><br>
 
@@ -2312,6 +2312,6 @@ switch_to:
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/OSDI/image/41.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/OSDI/image/41.png">
 
 </div>

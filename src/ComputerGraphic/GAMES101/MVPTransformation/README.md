@@ -42,7 +42,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/view1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/view1.png">
 
 (這三個相機拍出來的照片會一模一樣)
 
@@ -62,7 +62,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/view2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/view2.png">
 
 </div>
 
@@ -164,7 +164,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/projection1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/projection1.png">
 
 </div>
 
@@ -176,7 +176,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/projection2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/projection2.png">
  
 (img src: [From perspective picture to orthographic picture](https://stackoverflow.com/questions/36573283/from-perspective-picture-to-orthographic-picture))
 
@@ -194,7 +194,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/orthographic1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/orthographic1.png">
 
 </div>
 
@@ -206,7 +206,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/orthographic2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/orthographic2.png">
 
 </div>
 
@@ -252,7 +252,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/orthographic3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/orthographic3.png">
 
 </div>
 
@@ -271,7 +271,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/orthographic4.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/orthographic4.png">
 
 (n 為近平面距離相機的距離，z 為遠平面距離相機的距離)
 
@@ -472,7 +472,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/Frustum.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/Frustum.png">
 
 </div>
 
@@ -484,7 +484,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/Frustum2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/Frustum2.png">
 
 </div>
 
@@ -500,7 +500,7 @@ $$
 
 <div class="center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/screen.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/MVPTransformation/image/screen.png">
 
 </div>
 

@@ -72,7 +72,7 @@ operation 總共有四種變化：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/1.png">
 
 </div><br>
 
@@ -84,7 +84,7 @@ operation 總共有四種變化：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/2.png">
 
 </div><br>
 
@@ -102,7 +102,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/3.png">
 
 </div><br>
 
@@ -134,7 +134,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/4.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/4.png">
 
 </div><br>
 
@@ -163,7 +163,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/5.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/5.png">
 
 </div><br>
 
@@ -191,7 +191,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/6.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/6.png">
 
 </div><br>
 
@@ -587,7 +587,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/7.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/7.png">
 
 </div><br>
 
@@ -604,7 +604,7 @@ JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/risc-v-note/image/8.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/8.png">
 
 </div><br>
 

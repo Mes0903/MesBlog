@@ -40,7 +40,7 @@ Section 18~20 中縮寫很多，這邊統整一下：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/18-1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/18-1.png">
 
 </div>
 
@@ -86,7 +86,7 @@ movl <virtual address>, %eax
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/VPN.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/VPN.png">
 
 </div>
 
@@ -94,7 +94,7 @@ movl <virtual address>, %eax
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/VPN-2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/VPN-2.png">
 
 </div>
 
@@ -110,7 +110,7 @@ movl 21, %eax
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/VPN-3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/VPN-3.png">
 
 </div>
 
@@ -120,7 +120,7 @@ movl 21, %eax
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/18-3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/18-3.png">
 
 </div>
 
@@ -161,7 +161,7 @@ Figure 18.4 展示了 OS 記憶體中的 page table。 後面我們會看到，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/18-4.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/18-4.png">
 
 </div>
 
@@ -199,7 +199,7 @@ Figure 18.5 是一個來自 x86 架構的 PTE 範例：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/18-5.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/18-5.png">
 
 </div>
 
@@ -349,7 +349,7 @@ Figure 18.7 展示了前 5 次循環的過程：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/18-7.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/18/image/18-7.png">
 
 </div>
 

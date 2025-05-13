@@ -35,7 +35,7 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/BTS.png?raw=true" width = "25%">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/BTS.png" width = "25%">
 
 (典型的 BTS)  
 (img src: [wiki](https://zh.wikipedia.org/zh-tw/%E5%9F%BA%E5%9C%B0%E6%94%B6%E5%8F%91%E6%9C%BA%E7%AB%99))
@@ -58,7 +58,7 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/MSC-server.png?raw=true" width = "50%">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/MSC-server.png" width = "50%">
 
 (Lucent 於 2001~2006 部屬在 Ljubljana 的 MSC 服務器)  
 (img src: [wiki](https://en.wikipedia.org/wiki/Mobile_switching_centre_server#/media/File:Lucent_5ESS_GSM_Mobile_Switching_Centre.jpg))
@@ -69,7 +69,7 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/MSC-black.png?raw=true" width = "65%">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/MSC-black.png" width = "65%">
 
 (MSC 與 BSS 關係示意圖)
 
@@ -89,7 +89,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/HLR-black.png?raw=true" width = "55%">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/HLR-black.png" width = "55%">
 
 (HLR 與 VLR 示意圖)
 
@@ -107,7 +107,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/GSM-net-black.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/GSM-net-black.png">
 
 </div>
 
@@ -117,7 +117,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/same-plmn-black.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/same-plmn-black.png">
 
 </div>
 
@@ -127,7 +127,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/cross-plmn-black.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/cross-plmn-black.png">
 
 </div>
 
@@ -137,7 +137,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/to-pstn-black.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/to-pstn-black.png">
 
 </div>
 
@@ -149,7 +149,7 @@ GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/GPRS-black.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/GPRS-black.png">
 
 </div>
 
@@ -161,7 +161,7 @@ GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/UMTS-net-black.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/UMTS-net-black.png">
 
 </div>
 
@@ -235,7 +235,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
   <div class = "center-column">
 
-  <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/RIP-net-black.png?raw=true">
+  <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/RIP-net-black.png">
 
   </div>
 
@@ -454,7 +454,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
   <div class = "center-column">
 
-  <img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/EIGRP-black.png?raw=true">
+  <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/EIGRP-black.png">
 
   </div>
 

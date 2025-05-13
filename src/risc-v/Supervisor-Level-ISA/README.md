@@ -23,7 +23,7 @@ S-mode 無法窺探或取得任何來自更高 privilege mode（如 M-mode）的
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sstatus1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sstatus1.png">
 
 </div><br>
 
@@ -31,7 +31,7 @@ S-mode 無法窺探或取得任何來自更高 privilege mode（如 M-mode）的
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sstatus2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sstatus2.png">
 
 </div><br>
 
@@ -146,7 +146,7 @@ page table entry 可以參考下圖(Sv32 page table entry)
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv32_page_table_entry.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv32_page_table_entry.png">
 
 </div><br>
 
@@ -224,7 +224,7 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/stvec.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/stvec.png">
 
 </div>
 
@@ -261,7 +261,7 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sipsie.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sipsie.png">
 
 </div>
 
@@ -289,7 +289,7 @@ SSE (Supervisor Software Events) 是 SBI (Supervisor Binary Interface) 的一項
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sipsie2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sipsie2.png">
 
 </div>
 
@@ -339,7 +339,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/scounteren.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/scounteren.png">
 
 </div>
 
@@ -368,7 +368,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sepc.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sepc.png">
 
 </div>
 
@@ -386,7 +386,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制(hardware performance m
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/scause.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/scause.png">
 
 </div>
 
@@ -473,7 +473,7 @@ Synchronous exception 是指那些由當前指令本身引起的例外狀況，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/stval.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/stval.png">
 
 </div>
 
@@ -518,7 +518,7 @@ Synchronous exception 是指那些由當前指令本身引起的例外狀況，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/senvcfg.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/senvcfg.png">
 
 </div>
 
@@ -603,7 +603,7 @@ spec 的第 21 章為「Hypervisor extension (H-extension)」，當環境中沒�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/satp.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/satp.png">
 
 </div>
 
@@ -706,7 +706,7 @@ RISC-V 設計上把寫入 `satp` 與 TLB flush / page table fence 分離，讓�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sfence.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sfence.png">
 
 </div>
 
@@ -894,7 +894,7 @@ Sv32 的實作支援一個 32-bit 的虛擬位址空間，並以 page 進行劃�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv32_virtual_address.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv32_virtual_address.png">
 
 </div>
 
@@ -923,7 +923,7 @@ Sv32 的 PTE 格式如下圖所示：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv32_PTE.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv32_PTE.png">
 
 </div>
 
@@ -1201,7 +1201,7 @@ Sv39 的實作支援一個被劃分為多個 pages 的 39-bit 虛擬位址空間
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv39_va.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv39_va.png">
 
 </div>
 
@@ -1219,7 +1219,7 @@ Sv39 的 PTE 格式如下圖所示：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv39_PTE.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv39_PTE.png">
 
 </div>
 
@@ -1251,7 +1251,7 @@ Sv48 的實作支援一個 48-bit 的虛擬位址空間，並將其劃分為多�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv48_va.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv48_va.png">
 
 </div>
 
@@ -1261,7 +1261,7 @@ Sv48 的 PTE 格式如下圖所示：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv48_PTE.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv48_PTE.png">
 
 </div>
 
@@ -1281,7 +1281,7 @@ Sv57 的實作支援一個 57-bit 的虛擬位址空間，並將其劃分為多�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv57_va.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv57_va.png">
 
 </div>
 
@@ -1291,7 +1291,7 @@ Sv57 的 PTE 格式如下圖所示：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv57_PTE.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv57_PTE.png">
 
 </div>
 

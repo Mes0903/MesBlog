@@ -9,7 +9,7 @@ category: essay
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/essay/ShionGraduate/image/shion.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/essay/ShionGraduate/image/shion.png">
 
 </div><br>
 

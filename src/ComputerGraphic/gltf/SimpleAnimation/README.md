@@ -136,7 +136,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/SimpleAnimation/image/animatedTriangle.gif?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/SimpleAnimation/image/animatedTriangle.gif?">
 (Image 6a: A single, animated triangle.)
 
 </div>

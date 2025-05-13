@@ -66,11 +66,11 @@ PLIC 會獨立處理每個中斷目標，不會考慮不同中斷目標的元件
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/PLIC/image/1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/PLIC/image/1.png">
 
 (Figure 1. RISC-V PLIC Interrupt Architecture Block Diagram)
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/PLIC/image/2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/PLIC/image/2.png">
 
 (img src: [Tuesday @ 0900 RISC V Interrupts Krste Asanović, UC Berkeley & SiFive Inc](https://www.youtube.com/watch?v=iPbaG_wnNJY))
   
@@ -188,7 +188,7 @@ PLIC 硬體僅支援中斷的多播（multicasting），即所有啟用的目標
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/PLIC/image/3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/PLIC/image/3.png">
 
 (Figure 2. PLIC Interrupt Flow)
 

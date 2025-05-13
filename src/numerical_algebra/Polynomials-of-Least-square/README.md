@@ -18,7 +18,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/1.png">
 
 </div><br>
 
@@ -30,7 +30,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/2.png">
 
 </div><br>
 
@@ -44,7 +44,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/3.png">
 
 </div><br>
 
@@ -52,7 +52,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/4.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/4.png">
 
 </div><br>
 
@@ -62,7 +62,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/5.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/5.png">
 
 </div><br>
 
@@ -72,7 +72,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/6.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/6.png">
 
 </div><br>
 

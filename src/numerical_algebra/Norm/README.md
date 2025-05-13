@@ -23,7 +23,7 @@ order: 1
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.1.png">
 
 </div><br>
 
@@ -45,7 +45,7 @@ order: 1
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.2.png">
 
 </div><br>
 
@@ -55,7 +55,7 @@ order: 1
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.5.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.5.png">
 
 </div><br>
 
@@ -67,7 +67,7 @@ order: 1
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.3.png">
 
 </div><br>
 
@@ -77,7 +77,7 @@ order: 1
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/matrix_norm1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/matrix_norm1.png">
 
 </div><br>
 
@@ -91,7 +91,7 @@ A 是一個在 $R^{n\times n}$ 下的矩陣，它第 ij 個元素就寫成 $a_{i
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/matrix_norm2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/matrix_norm2.png">
 
 </div><br>
 
@@ -101,7 +101,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/matrix_norm3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/matrix_norm3.png">
 
 </div><br>
 
@@ -111,7 +111,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.16.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.16.png">
 
 </div><br>
 
@@ -119,7 +119,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.17.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.17.png">
 
 </div><br>
 
@@ -131,7 +131,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.13.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.13.png">
 
 </div><br>
 
@@ -141,7 +141,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.14.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.14.png">
 
 </div><br>
 
@@ -156,7 +156,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.15.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.15.png">
 
 </div><br>
 
@@ -166,7 +166,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/ax_b.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/ax_b.png">
 
 </div><br>
 
@@ -180,7 +180,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi1.png">
 
 </div><br>
 ### Jacobi's Method
@@ -189,7 +189,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi2.png">
 
 </div><br>
 
@@ -199,7 +199,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi3.png">
 
 </div><br>
 
@@ -209,7 +209,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi4.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi4.png">
 
 </div><br>
 
@@ -218,7 +218,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi5.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi5.png">
 
 </div><br>
 
@@ -226,7 +226,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi6.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi6.png">
 
 </div><br>
 
@@ -238,7 +238,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi7.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi7.png">
 
 </div><br>
 
@@ -246,7 +246,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi8.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi8.png">
 
 </div><br>
 
@@ -254,7 +254,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi9.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi9.png">
 
 </div><br>
 
@@ -262,7 +262,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi10.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi10.png">
 
 </div><br>
 
@@ -270,6 +270,6 @@ Step 4 的停止條件事可以被改寫的，上面這樣代表前一次迭代�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi11.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi11.png">
 
 </div><br>

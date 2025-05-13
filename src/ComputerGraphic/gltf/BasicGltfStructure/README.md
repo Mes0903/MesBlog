@@ -45,7 +45,7 @@ glTF 的核心是一個 JSON 檔案，這個檔案描述了整個 3D 場景的�
 
 <div class = "center-column">
 
-<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/BasicGltfStructure/image/gltfJsonStructure.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/BasicGltfStructure/image/gltfJsonStructure.png">
 （Image 2a: The glTF JSON structure.）
 
 </div>
@@ -72,7 +72,7 @@ glTF 的核心是一個 JSON 檔案，這個檔案描述了整個 3D 場景的�
 
 <div class = "center-column">
 
-<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/BasicGltfStructure/image/gltfStructure.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/BasicGltfStructure/image/gltfStructure.png">
 （Image 2b: The glTF structure.）
 
 </div>

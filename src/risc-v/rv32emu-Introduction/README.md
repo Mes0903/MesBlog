@@ -22,7 +22,7 @@ rv32emu 是針對 32 bit [RISC-V processor model](https://riscv.org/technical/sp
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/1.png">
 
 </div><br>
 
@@ -261,7 +261,7 @@ RISC-V 內將 Trap 分為 Exception 與 Interrupt，而 Interrupt 有三種，�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/2.png">
 
 (img src: [Tuesday @ 0900 RISC V Interrupts Krste Asanović, UC Berkeley & SiFive Inc](https://www.youtube.com/watch?v=iPbaG_wnNJY))
 
@@ -273,7 +273,7 @@ PLIC 內主要分為 PLIC Gateway 與 PLIC Core，當中斷源（Interrupt Sourc
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/3.png">
  
 (Figure 2. PLIC Interrupt Flow)
 
@@ -384,7 +384,7 @@ SBI 是 RISC-V 定義的一個位於 OS 和 Firmware 之間的介面，用來提
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/4.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/4.png">
 
 </div><br>
 

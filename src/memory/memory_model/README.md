@@ -11,7 +11,7 @@ category: memory
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/memory/memory_model/image/shion.png?raw=true" width=70%>
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/memory_model/image/shion.png" width=70%>
 
 詩音畢業了嗚嗚嗚，鹽寶...... 我的鹽寶......（[圖片取自鹽寶的 Twitter](https://x.com/murasakishionch/status/1916085213568110734/photo/1)）
 

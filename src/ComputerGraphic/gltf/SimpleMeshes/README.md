@@ -108,7 +108,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/SimpleMeshes/image/simpleMeshes.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/SimpleMeshes/image/simpleMeshes.png">
 (Image 8a: A simple mesh, attached to two nodes.)
 
 </div>

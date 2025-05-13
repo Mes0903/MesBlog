@@ -45,7 +45,7 @@ category: OS
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/20-1-2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/20-1-2.png">
 
 </div>
 
@@ -63,7 +63,7 @@ category: OS
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/VA.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/VA.png">
 
 </div>
 
@@ -117,7 +117,7 @@ Figure 20.3 的左邊是經典的 linear page table，即使中間那段 address
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/20-3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/20-3.png">
 
 </div>
 
@@ -165,7 +165,7 @@ Figure 20.4 展示了一個這樣的位址空間例子：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/20-4.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/20-4.png">
 
 </div>
 
@@ -179,7 +179,7 @@ Figure 20.4 展示了一個這樣的位址空間例子：
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/PDIndex.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/PDIndex.png">
 
 </div>
 
@@ -193,7 +193,7 @@ PDEAddr = PageDirBase + (PDIndex * sizeof(PDE))
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/PDIndex2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/PDIndex2.png">
 
 </div>
 
@@ -263,7 +263,7 @@ PhysAddr = (PTE.PFN << SHIFT) + offset = 00 1101 1100 0000 = 0x0DC0
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/VA2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/VA2.png">
 
 </div>
 
@@ -273,7 +273,7 @@ PhysAddr = (PTE.PFN << SHIFT) + offset = 00 1101 1100 0000 = 0x0DC0
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/VA3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/paging/20/image/VA3.png">
 
 </div>
 

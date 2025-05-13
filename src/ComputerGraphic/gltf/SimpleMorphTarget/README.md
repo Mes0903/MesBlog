@@ -215,7 +215,7 @@ The asset contains an animation that interpolates between the different morph ta
 
 <div class = "center-column">
 
-<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/SimpleMorphTarget/image/simpleMorph.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/SimpleMorphTarget/image/simpleMorph.png">
 (Image 17a: A triangle with two morph targets.)
 
 </div>

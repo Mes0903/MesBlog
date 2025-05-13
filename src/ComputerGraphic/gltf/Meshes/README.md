@@ -45,7 +45,7 @@ mesh primitive 會透過 `attributes` 字典來定義幾何資料，這些幾何
 
 <div class = "center-column">
 
-<img src="https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/ComputerGraphic/gltf/Meshes/image/meshPrimitiveAttributes.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/Meshes/image/meshPrimitiveAttributes.png">
 (Image 9a: Mesh primitive accessors containing the data of vertices.)
 
 </div>

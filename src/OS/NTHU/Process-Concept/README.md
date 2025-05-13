@@ -46,7 +46,7 @@ order: 3
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/1.png">
 
 </div><br>
 
@@ -68,7 +68,7 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/2.png">
 
 </div><br>
 
@@ -106,7 +106,7 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/3.png">
 
 </div><br>
 
@@ -116,7 +116,7 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/4.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/4.png">
 
 </div><br>
 
@@ -140,7 +140,7 @@ Context Switch 完成後就會開始執行 P1，所以會把 program counter 設
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/5.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/5.png">
 
 </div><br>
 
@@ -169,7 +169,7 @@ Process 在被 schedule 的過程中會被放在 OS 內部的 qeueu 裡面，他
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/6.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/6.png">
 
 </div><br>
 
@@ -179,7 +179,7 @@ Process 在被 schedule 的過程中會被放在 OS 內部的 qeueu 裡面，他
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/7.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/7.png">
 
 </div><br>
 
@@ -217,7 +217,7 @@ Process 要產生需要被 Parent create，所以我們一定可以把 Process �
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/8.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/8.png">
 
 </div><br>
 
@@ -286,7 +286,7 @@ L3  L3  L3  L3  // There will be 4 child processes
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/9.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/9.png">
 
 </div><br>
 
@@ -353,7 +353,7 @@ procedure consumer() {
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/10.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/10.png">
 
 </div><br>
 
@@ -363,7 +363,7 @@ procedure consumer() {
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/11.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Process-Concept/image/11.png">
 
 </div><br>
 

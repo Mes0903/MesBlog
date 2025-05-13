@@ -14,7 +14,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/1.png">
 
 </div><br>
 
@@ -26,7 +26,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/2.png">
 
 </div><br>
 
@@ -34,7 +34,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/3.png">
 
 </div><br>
 
@@ -42,7 +42,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/4.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/4.png">
 
 </div><br>
 
@@ -52,7 +52,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/5.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/5.png">
 
 </div><br>
 
@@ -62,7 +62,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/6.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/6.png">
 
 </div><br>
 
@@ -70,7 +70,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/7.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/7.png">
 
 </div><br>
 
@@ -78,7 +78,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/8.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/8.png">
 
 </div><br>
 
@@ -86,6 +86,6 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/9.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/9.png">
 
 </div>

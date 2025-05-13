@@ -18,7 +18,7 @@ $\alpha$ 要選來 minimize $\Phi(\vec x^{(k)})$，因為我們希望它越小�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/1.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/1.png">
 
 </div><br>
 
@@ -30,7 +30,7 @@ $\alpha$ 要選來 minimize $\Phi(\vec x^{(k)})$，因為我們希望它越小�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/2.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/2.png">
 
 </div><br>
 
@@ -38,7 +38,7 @@ $\alpha$ 要選來 minimize $\Phi(\vec x^{(k)})$，因為我們希望它越小�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/3.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/3.png">
 
 </div><br>
 
@@ -52,7 +52,7 @@ $\alpha$ 要選來 minimize $\Phi(\vec x^{(k)})$，因為我們希望它越小�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/4.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/4.png">
 
 </div><br>
 
@@ -60,7 +60,7 @@ $\alpha$ 要選來 minimize $\Phi(\vec x^{(k)})$，因為我們希望它越小�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/5.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/5.png">
 
 </div><br>
 
@@ -68,7 +68,7 @@ $\alpha$ 要選來 minimize $\Phi(\vec x^{(k)})$，因為我們希望它越小�
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/6.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/6.png">
 
 </div><br>
 
@@ -84,7 +84,7 @@ residual vector $\vec r^{(k)}$, k = 1, 2, ..., n，滿足 <$\vec r^{(k)}, \vec v
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/7.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/7.png">
 
 </div><br>
 
@@ -94,7 +94,7 @@ residual vector $\vec r^{(k)}$, k = 1, 2, ..., n，滿足 <$\vec r^{(k)}, \vec v
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/8.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/8.png">
 
 </div><br>
 
@@ -102,7 +102,7 @@ residual vector $\vec r^{(k)}$, k = 1, 2, ..., n，滿足 <$\vec r^{(k)}, \vec v
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/9.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/9.png">
 
 </div><br>
 
@@ -110,7 +110,7 @@ residual vector $\vec r^{(k)}$, k = 1, 2, ..., n，滿足 <$\vec r^{(k)}, \vec v
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/10.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/10.png">
 
 </div><br>
 
@@ -118,6 +118,6 @@ residual vector $\vec r^{(k)}$, k = 1, 2, ..., n，滿足 <$\vec r^{(k)}, \vec v
 
 <div class = "center-column">
 
-<img src = "https://github.com/Mes0903/MesBlog/blob/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/11.png?raw=true">
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Conjugate-Gradient/image/11.png">
 
 </div><br>
