@@ -74,7 +74,7 @@ operation 總共有四種變化：
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/1.png">
 
-</div><br>
+</div>
 
 指令最後會被翻譯為機器指令，裡面的 32 bits 都有對應的意思，以 32 bits 對齊，每個 32 bits 會照上面的圖被劃分為不同的區域(field)
 
@@ -86,7 +86,7 @@ operation 總共有四種變化：
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/2.png">
 
-</div><br>
+</div>
 
 opcode 的前兩位永遠為 11，而第 2~4 位是一組的，5~6 位是一組的，我們用一個例子來學習這個表格是怎麼看得：
 
@@ -104,7 +104,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/3.png">
 
-</div><br>
+</div>
 
 指令格式有 6 種，也就是第一張圖裡面的 R、I、S 那些：
 
@@ -136,7 +136,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/4.png">
 
-</div><br>
+</div>
 
 對應意義：
 + opcode(7)：0110011 (OP)
@@ -165,7 +165,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/5.png">
 
-</div><br>
+</div>
 
 對應意義：
 
@@ -193,7 +193,7 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/6.png">
 
-</div><br>
+</div>
 
 對應意義：
 + opcode (7)：0b0110111 (LUI)
@@ -589,7 +589,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/7.png">
 
-</div><br>
+</div>
 
 調用函式時地址的計算方法為先對 20 bits 寬的 `IMM` 乘以 2，然後進行 sign-extension，最後與 PC 相加，因此跳躍的範圍是以 PC 為基準，上下加減 1 MB
 
@@ -606,6 +606,6 @@ JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/risc-v-note/image/8.png">
 
-</div><br>
+</div>
 
 調用函式時地址的計算方法為先對 12 bits 寬的 `IMM` 進行 sign-extension，然後將其與 RS1 的值相加，得到最終的結果後將其最低位設為 0 (用以確保對齊)，因此跳躍的範圍是以 RS1 為基準，上下加減 2KB

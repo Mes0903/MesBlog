@@ -16,7 +16,7 @@ order: 3
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r1.png">
 
-</div><br>
+</div>
 
 畫成圖形可以像這樣：
 
@@ -24,7 +24,7 @@ order: 3
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r2.png">
 
-</div><br>
+</div>
 
 利用上一次的 $x^{(k-1)}$ 的資訊與透過某種方式獲得的向量 $x^*$ 來取得這一次的 $x^k$
 
@@ -36,7 +36,7 @@ w 是一個實數，而 $x^*$ 其實是個中間迭代出來的解，不管是�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r3.png">
 
-</div><br>
+</div>
 
 你把 $x^*$ 的 `*` 改成 k 就完全是 Gauss-Seidel 的通式了
 
@@ -48,7 +48,7 @@ w 是一個實數，而 $x^*$ 其實是個中間迭代出來的解，不管是�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r4.png">
 
-</div><br>
+</div>
 
 我們原本考慮的問題如果用 Gauss-Seidel 方法，不會收斂的話，這時候我們就可以考慮用 under-relaxation method。 而一個迭代法會不收斂就代表這個問題的迭代矩陣的譜半徑大於 1
 
@@ -60,7 +60,7 @@ w 是一個實數，而 $x^*$ 其實是個中間迭代出來的解，不管是�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r5.png">
 
-</div><br>
+</div>
 
 T 是這個問題的迭代矩陣，c 是一個跟 k 無關的向量
 
@@ -70,7 +70,7 @@ T 是這個問題的迭代矩陣，c 是一個跟 k 無關的向量
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r6.png">
 
-</div><br>
+</div>
 
 注意 T 的譜半徑會小於 1，因為收斂
 
@@ -80,7 +80,7 @@ T 是這個問題的迭代矩陣，c 是一個跟 k 無關的向量
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r7.png">
 
-</div><br>
+</div>
 
 那一樣像上次那樣寫成 D、L、U 的形式
 
@@ -88,6 +88,6 @@ T 是這個問題的迭代矩陣，c 是一個跟 k 無關的向量
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r8.png">
 
-</div><br>
+</div>
 
 可以看見我們一樣要解一個下三角矩陣的問題，那也一樣可以用 forward substitution 來快速解這個問題

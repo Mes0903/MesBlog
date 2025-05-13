@@ -25,7 +25,7 @@ order: 1
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.1.png">
 
-</div><br>
+</div>
 
 #### Def 7.2
 
@@ -47,7 +47,7 @@ order: 1
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.2.png">
 
-</div><br>
+</div>
 
 #### Def 7.5
 
@@ -57,7 +57,7 @@ order: 1
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.5.png">
 
-</div><br>
+</div>
 
 不一定要 two norm，N 通常是跟 epilson 有關的函數
 
@@ -69,7 +69,7 @@ order: 1
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.3.png">
 
-</div><br>
+</div>
 
 ### Matrix norm
 
@@ -79,7 +79,7 @@ order: 1
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/matrix_norm1.png">
 
-</div><br>
+</div>
 
 A 的 norm 會等於 A 乘上一個向量 x 再除上 x 向量的 norm，這個 x 向量不能為零，然後這整個東西取 max
 
@@ -93,7 +93,7 @@ A 是一個在 $R^{n\times n}$ 下的矩陣，它第 ij 個元素就寫成 $a_{i
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/matrix_norm2.png">
 
-</div><br>
+</div>
 
 one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，得到一個數字，然後再換下一行做一樣的事情，又得到一個數字，之後從這些數字裡面找最大的那個，這個最大的數字就是 A 的 one norm。 infinite norm 很像，只是是反過來對列(row) 來操作
 
@@ -103,7 +103,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/matrix_norm3.png">
 
-</div><br>
+</div>
 
 #### Def 7.16
 
@@ -113,7 +113,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.16.png">
 
-</div><br>
+</div>
 
 然後收斂會跟下面三點等價：
 
@@ -121,7 +121,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.17.png">
 
-</div><br>
+</div>
 
 ## Chapter 7-2：特徵值與特徵向量
 
@@ -133,7 +133,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.13.png">
 
-</div><br>
+</div>
 
 #### Def 7.14
 
@@ -143,7 +143,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.14.png">
 
-</div><br>
+</div>
 
 #### Thm 7.15
 
@@ -158,7 +158,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/7.15.png">
 
-</div><br>
+</div>
 
 ## Chapter 7-3 Jacobi 和 Gauss-Siedel 迭代法
 
@@ -168,7 +168,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/ax_b.png">
 
-</div><br>
+</div>
 
 紅色那根就是我們要求的向量，接著會有一個 $x_0$，然後我們每次都會透過某種方式算出一個綠色的向量，讓下一次的向量更接近 x，這就是迭代法
 
@@ -182,7 +182,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi1.png">
 
-</div><br>
+</div>
 ### Jacobi's Method
 
 先給一個 A 矩陣：
@@ -191,7 +191,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi2.png">
 
-</div><br>
+</div>
 
 下面推到第二列是我們把所有 i = j 的 $a_{ij}x_j$ 拉到外面，接著我們可以推出 $x_i$ 的等式
 
@@ -201,7 +201,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi3.png">
 
-</div><br>
+</div>
 
 可以看見這個數列基本上跟剛剛的等式一樣，差別就是我們在 $x_j$ 的上面標了上標 k-1，在 $x_i$ 上面標了上標 k，這樣我們就有了一個數列
 
@@ -211,7 +211,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi4.png">
 
-</div><br>
+</div>
 
 這邊 $\vec x$ 的解是 $(1,2,-1,1)^T$，那我們現在要用迭代法來算一次，我們先假設 $\vec x^{(0)} = (0,0,0,0)^T$，這代表 $x_1^{(0)} = 0$，$x_2^{(0)} = 0$，$x_3
 ^{(0)} = 0$，$x_4^{(0)} = 0$：
@@ -220,7 +220,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi5.png">
 
-</div><br>
+</div>
 
 代入上面的數列的式子，一直代下去，最後就可以找到一個很接近的解
 
@@ -228,7 +228,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi6.png">
 
-</div><br>
+</div>
 
 ### Matrix expression of Jacobi's method
 
@@ -240,7 +240,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi7.png">
 
-</div><br>
+</div>
 
 這樣我們就有：
 
@@ -248,7 +248,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi8.png">
 
-</div><br>
+</div>
 
 那我們就可以把 Jacobi 迭代法寫成：
 
@@ -256,7 +256,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi9.png">
 
-</div><br>
+</div>
 
 如此一來，pseudo code 就會長得像這樣：
 
@@ -264,7 +264,7 @@ one norm 就是對一行(column) 裡面的每個元素取絕對值加起來，�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi10.png">
 
-</div><br>
+</div>
 
 Step 4 的停止條件事可以被改寫的，上面這樣代表前一次迭代的值和現在的值兩個相減小於某個可容忍的值時就停止，這個叫做絕對誤差，我們也可以改得像這樣：
 
@@ -272,4 +272,4 @@ Step 4 的停止條件事可以被改寫的，上面這樣代表前一次迭代�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Norm/image/jacobi11.png">
 
-</div><br>
+</div>

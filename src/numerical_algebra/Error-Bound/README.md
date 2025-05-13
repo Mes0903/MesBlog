@@ -26,7 +26,7 @@ order: 4
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/1.png">
 
-</div><br>
+</div>
 
 A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們用手去解你會發現他是可逆的，然後解會是 $\vec x = (1,1)^T$
 
@@ -44,7 +44,7 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/2.png">
 
-</div><br>
+</div>
 
 我們先看一下上面的在說什麼，他的意思是逼近解跟真實解的絕對誤差會小於等於右邊那個東西，而下面那個則是逼近解與真實解的相對誤差會小於等於右邊那個式子
 
@@ -56,7 +56,7 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/3.png">
 
-</div><br>
+</div>
 
 也就是說雖然 $||\vec r||$ 很小，但 $||A||\cdot||A^{-1}||$ 很大的話仍然會爆掉：
 
@@ -64,7 +64,7 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/4.png">
 
-</div><br>
+</div>
 
 所以關鍵就是在 $||A||\cdot||A^{-1}||$
 
@@ -74,7 +74,7 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/5.png">
 
-</div><br>
+</div>
 
 #### Def 7.28
 
@@ -84,7 +84,7 @@ $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(co
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/6.png">
 
-</div><br>
+</div>
 
 如果 K(A) 接近 1，我們就說這個系統是良置的，如果遠遠大於 1，就說這個系統是病態的
 
@@ -94,7 +94,7 @@ $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(co
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/7.png">
 
-</div><br>
+</div>
 
 #### Thm 7.29
 
@@ -104,7 +104,7 @@ $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(co
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/8.png">
 
-</div><br>
+</div>
 
 那我們把它就代回 Ax = b：
 
@@ -112,7 +112,7 @@ $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(co
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/9.png">
 
-</div><br>
+</div>
 
 這時我們就會發現電腦裡面算出來的 $\bar x$ 和我們實際上的 x 的相對誤差是上圖下面那樣，一樣取決於 K(A)
 

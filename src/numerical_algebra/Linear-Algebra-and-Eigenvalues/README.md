@@ -22,7 +22,7 @@ A 的特徵值(eigen value) 會被包含在這些圓( $R = \cup_{i=1}^n R_i$ ) �
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Linear-Algebra-and-Eigenvalues/image/1.png">
 
-</div><br>
+</div>
 
 然後如果有 k 個圓的聯集和剩下的 n-k 個圓聯集沒有交集，那麼前者會包含 k 個特徵值，而後者則恰有 n-k 個特徵值
 
@@ -34,4 +34,4 @@ A 的特徵值(eigen value) 會被包含在這些圓( $R = \cup_{i=1}^n R_i$ ) �
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Linear-Algebra-and-Eigenvalues/image/2.png">
 
-</div><br>
+</div>

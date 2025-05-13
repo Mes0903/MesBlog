@@ -88,7 +88,7 @@ Linus Torvalds 在 15:25 時說
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/The_mind_behind_Linux/image/link_list1.png">
 
-</div><br>
+</div>
 
 而 Linus Torvalds 的想法則是拿一個指標指向「Node 裡面指向下一個 Node 的指標」，以「要更新的位址」為思考點來操作
 
@@ -98,7 +98,7 @@ Linus Torvalds 在 15:25 時說
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/The_mind_behind_Linux/image/link_list2.png">
 
-</div><br>
+</div>
 
 ### 簡單的實作
 

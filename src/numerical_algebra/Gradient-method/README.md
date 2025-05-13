@@ -16,7 +16,7 @@ order: 5
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/1.png">
 
-</div><br>
+</div>
 
 而怎麼去找 $\Phi$ 的最小值的方法就叫 Gradient Method
 
@@ -26,7 +26,7 @@ order: 5
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/2.png">
 
-</div><br>
+</div>
 
 而我們利用這個方法去找到每次的 $x^{(k)}$：
 
@@ -34,7 +34,7 @@ order: 5
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/3.png">
 
-</div><br>
+</div>
 
 也就是用上一步的 $x^{(k-1)}$，加上某一個純量(scalar) $\alpha_{k-1}$ 乘上更新的方向 $\vec p^{(k-1)}$
 
@@ -48,7 +48,7 @@ order: 5
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/4.png">
 
-</div><br>
+</div>
 
 所以 $\vec p^{(k-1)} = -\nabla\Phi(\vec x^{(k-1)})$ 就會是 $\vec x^{(k-1)}$ 那點的最大遞減方向，那麼 $\vec x^{(k-1)}$ 加上 $-\alpha_{k-1}\nabla\Phi(\vec x^{(k-1)})$ 就可以保證越來越小
 
@@ -64,7 +64,7 @@ order: 5
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/5.png">
 
-</div><br>
+</div>
 
 那我們可以做個簡單的操作來得到 residual vector 的 equation：
 
@@ -72,7 +72,7 @@ order: 5
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/6.png">
 
-</div><br>
+</div>
 
 #### Pseudo Code
 
@@ -82,4 +82,4 @@ order: 5
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Gradient-method/image/8.png">
 
-</div><br>
+</div>

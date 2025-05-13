@@ -453,7 +453,7 @@ $$
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/systolic2.png">
 
-</div><br>
+</div>
 
 上圖中有三個 PE，每個 PE 內有一個 register 用來存進來的 $X_i$，而每個 PE 的上方會有固定的 $w_i$ 數據傳入，PE 的內部有一個乘法器負責做乘法運算，運算完的結果會傳出來跟其他 PE 的運算結果做加法，整個做完後就是我們要的 $Y_1$ 了
 
@@ -463,7 +463,7 @@ $$
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/systolic3.png">
 
-</div><br>
+</div>
 
 而還有其他的方法，如孔院士提出的 broadcast inputs, move results, weights stay：
 
@@ -526,7 +526,7 @@ $$
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/systolic5.png">
 
-</div><br>
+</div>
 
 原先的矩陣乘法，一個 $N\times N$ 的矩陣，會需要做 $N\times N\times N$ 次的乘法，透過 Systolic Array，可以將運算降低至 $3N - 1$ 個 cycles
 
@@ -564,7 +564,7 @@ ReRAM 也可以有 Multi-level 的型態，在這種情況寫一個 ReRAM cell �
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/reram2.png">
 
-</div><br>
+</div>
 
 當我們設定 WL 上的電壓 $V_i$ 與對應的可變電阻 $G_i$ 時，BL 會產生對應的電流 $I_i$，以圖中的例子來說，利用歐姆定律，我們可以算出 $I_1 = V_1G_1 + V_2G_2$，$I_2$ 同理
 
@@ -589,7 +589,7 @@ $$
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/reram3.png">
 
-</div><br>
+</div>
 
 如此一來就完成了一個矩陣運算，另外，這種一個 Vector 與 Matrix 的乘法操作有個名字稱為 matrix-vector-multiplication，簡寫為 MVM，常出現在論文裡面
 
@@ -623,7 +623,7 @@ T -8  -5  -2  -3  -1   2
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/imp1.png">
 
-</div><br>
+</div>
 
 可以看見他將整個矩陣的運算優化到了 7 個 cycle
 
@@ -635,7 +635,7 @@ T -8  -5  -2  -3  -1   2
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/imp2.png">
 
-</div><br>
+</div>
 
 其中，當 `Sequence\#1` 等於 `Sequence\#2` 時，$S_{i,j}$ 為 match score，否則為 mismatch score
 
@@ -647,7 +647,7 @@ T -8  -5  -2  -3  -1   2
 
 Reference：[8-Bit Identity Comparator](https://www.renesas.com/us/en/products/memory-logic/standard-logic/fast-cmos-ttl-compatible-fct/74fct521t-8-bit-identity-comparator)
     
-</div><br>
+</div>
     
 其中的 XOR 可以用 NOR 實作出來：
 
@@ -657,7 +657,7 @@ Reference：[8-Bit Identity Comparator](https://www.renesas.com/us/en/products/m
 
 Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)
 
-</div><br>
+</div>
 
 ### NOR gate on ReRAM
 
@@ -680,7 +680,7 @@ Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/imp5.png">
 
-</div><br>
+</div>
 
 A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給定電壓，讓電流從左邊通過時，其電流如下：
 
@@ -688,7 +688,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/imp6.png">
 
-</div><br>
+</div>
 
 首先假設 CC 電流為 1mA：
 
@@ -703,7 +703,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/imp7.png">
 
-</div><br>
+</div>
 
 #### Truth table
 
@@ -721,7 +721,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 
 (我也不知道為什麼論文內的圖這麼糊)
 
-</div><br>
+</div>
 
 上圖是 NOR gate 的例子，電阻塗黃表示 1，塗白則為 0
 

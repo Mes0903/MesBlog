@@ -40,7 +40,7 @@ Interface 大家應該都很熟悉，其實只分兩個：
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/1.png">
 
-</div><br>
+</div>
 
 1. message passing
 
@@ -104,7 +104,7 @@ API 的目的是方便使用者使用，所以像 `abs()`，取絕對值的 func
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/2.png">
 
-</div><br>
+</div>
 
 ### Parameters Passing
 
@@ -134,7 +134,7 @@ system call 一樣是 function，所以也會有參數需要傳遞，一般來�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/3.png">
 
-</div><br>
+</div>
 
 ### Layered OS Architecture
 
@@ -148,7 +148,7 @@ system call 一樣是 function，所以也會有參數需要傳遞，一般來�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/4.png">
 
-</div><br>
+</div>
 
 好處是比較好 debug 和 maintain 了，因為一個 program 在執行時會有 call path，所以我們可以一層一層去 test
 
@@ -168,7 +168,7 @@ Microkernel 主要的想法是 kernel 的程式碼應該要越少越好，因為
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/5.png">
 
-</div><br>
+</div>
 
 缺點很明顯是效能又會變得更慢，因為每個 subsystem 都是在 user space，所以每次 subsystem 之間在溝通的時候都要透過 kernel，這都是 system call，前面的不管是 Layered 或 Simple，都是在 kernel space 裡面，所以在溝通的時候不會有 Interrupt，直接就可以 call
 
@@ -184,7 +184,7 @@ Modular 有一個很重要的點是它 loadable，也就是可以去 load kernel
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/6.png">
 
-</div><br>
+</div>
 
 kernel module 的運作可以看上圖中間右邊，只要是 system call 就會有 interrupt，interrupt 會到一個 table，Signal 的話是 interrupt vector，而 Trap 這邊也會有 interrupt table，前面說過通常是用 switch case 的方式來做，所以這 table 會有些 entry 是空的
 
@@ -206,7 +206,7 @@ VM 可以把底層的架構抽象化，在底層已經灌了一個 OS 的情況�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/OS-Structured/image/7.png">
 
-</div><br>
+</div>
 
 另外前面提到的虛擬化指的並不是去修改上圖 VM 上方的 kernel，而是指如何在硬體上方增加一個 layer 讓電腦可以同時執行很多個 VM
 

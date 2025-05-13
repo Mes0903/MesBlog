@@ -20,7 +20,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/1.png">
 
-</div><br>
+</div>
 
 ### 推導
 
@@ -32,7 +32,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/2.png">
 
-</div><br>
+</div>
 
 因為 A 是個 ill-condition 且稠密的矩陣，如果要解這個線性系統會很麻煩，非常沒有效率，因此我們就要換個建構多項式的方法，其中一種方法就是利用線性獨立來操作
 
@@ -46,7 +46,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/3.png">
 
-</div><br>
+</div>
 
 然後一樣找 gradient E = 0：
 
@@ -54,7 +54,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/4.png">
 
-</div><br>
+</div>
 
 ### 例子
 
@@ -64,7 +64,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/5.png">
 
-</div><br>
+</div>
 
 那個 $L_0$、$L_1$... 是我們取的 $\phi$
 
@@ -74,6 +74,6 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Polynomials-of-Least-square/image/6.png">
 
-</div><br>
+</div>
 
 那個 $T_0$、$T_1$... 是我們取的 $\phi$

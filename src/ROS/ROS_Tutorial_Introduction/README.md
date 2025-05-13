@@ -53,7 +53,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 (image source：[wikipedia](https://en.wikipedia.org/wiki/Client%E2%80%93server_model))
 
-</div><br>
+</div>
 
 客戶端(clients) 會去向伺服器請求資料，這邊這個伺服器裡面有很多資料，像是客戶的帳密、金額，或是你遊戲帳號裡面的寶物有哪些之類的。以早期的線上遊戲來說，每次客戶端有更改資料的動作時都會發送一個請求(request) 給伺服器，假設你打了怪，賺到了 10 元，它就會把這個資訊送到伺服器上，伺服器就會幫你記錄下來
 
@@ -71,7 +71,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 (image source：[link](https://ithelp.ithome.com.tw/articles/10216158))
 
-</div><br>
+</div>
 
 在這種架構下，每台電腦(節點)都同時是客戶端與伺服器端，所有人都負責儲存了全部或部分的所有資料，並且也都會處理收到的請求
 
@@ -85,7 +85,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 (image source：[link](https://www.researchgate.net/figure/P2P-architectures-at-a-glance-a-Centralized-architecture-b-Pure-P2P-architecture_fig2_332539196))
 
-</div><br>
+</div>
 
 上面這三個分別為
 
@@ -125,7 +125,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 (image source：RSL ROS Tutorial)
 
-</div><br>
+</div>
 
 我們會有一片樹梅派來跑 server 的 code，或是像我們一樣用主機來跑 server 的 code，然後各個零件能夠互相傳遞、存取資料
 
@@ -219,7 +219,7 @@ Message 在發布時我們會給它加上 Topic，妳可以把 Message 想像成
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub1.png">
 
-</div><br>
+</div>
 
 Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱，例如規劃路徑的 Node 希望和雷達的 Node 拿掃到的資料，那麼規劃路徑的 Node 就是 Subscriber，雷達的 Node 則是 Publisher
 
@@ -229,7 +229,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub2.png">
 
-</div><br>
+</div>
 
 而同一種 Topic 的 Message 也可以由不同的 Node 發布，也就是有不同的 Publisher 發布同樣 Topic 的 Message； 例如妳雷達有兩顆，而且妳為他們寫了兩個 Node，那麼這兩個 Node 都可以發布「雷達資料」這種 Topic 的 Message：
 
@@ -237,7 +237,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub3.png">
 
-</div><br>
+</div>
 
 同理，同一種 Topic 的 Message 也可以有不同的 Node 訂閱，有就是有不同的 Subscriber 訂閱同樣 Topic 的 Message； 例如規劃路徑的 Node 需要雷達的資料，建地圖的 Node 也需要雷達的資料，那這兩個 Node 都可以訂閱「雷達資料」這種 Topic 的 Message
 
@@ -245,7 +245,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub4.png">
 
-</div><br>
+</div>
 
 如果一個 Node 同時在收資料與發資料，那這個 Node 就同時是 Subcriber 與 Publisher
 
@@ -257,7 +257,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub5.png">
 
-</div><br>
+</div>
 
 一開始 Publisher 會先去向 Master 註冊，然後 Publisher 就會開始發布它的訊息(封包)；而當 Subscriber 需要相對應的訊息時就會去詢問 Master，那當它訂閱到那個 Topic 時它們就建立了連線，不再透過 Master 來傳遞資訊
 
@@ -285,7 +285,7 @@ Ubuntu 是基於 Debian，以桌面應用為主的 Linux 發行版。Ubuntu 有�
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/terminal.png">
 
-</div><br>
+</div>
 
 #### linux 基本指令 ：
 
@@ -409,7 +409,7 @@ rosrun turtlesim turtle_teleop_key
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/robot.png">
 
-</div><br>
+</div>
 
 ### Minibot & Turtlebot
 
@@ -427,7 +427,7 @@ gedit ~/.bashrc
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/setting1.png">
 
-</div><br>
+</div>
 
 ```bash
 source ~/.bashrc
@@ -437,7 +437,7 @@ source ~/.bashrc
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/setting2.png">
 
-</div><br>
+</div>
 
 #### 連線
 
@@ -487,7 +487,7 @@ gedit ~/.bashrc
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/setting3.png">
 
-</div><br>
+</div>
 
 
 <!-- ### minibot
@@ -528,7 +528,7 @@ roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/setting4.png">
 
-</div><br>
+</div>
 
 這代表你電腦中儲存的 Key 跟機器人上的不符合，你就執行他提示的指令
 
@@ -562,7 +562,7 @@ catkin 大致上把一個工作區劃分為以下三個區塊
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/catkin1.png">
 
-</div><br>
+</div>
 
 後兩個路徑由 catkin 系統自動生成、管理，我們日常的開發一般不會去涉及，而主要用到的是 src 資料夾，我們寫的 ROS 程式、網上下載的 ROS 原始碼包都存放在這裡
 
@@ -572,7 +572,7 @@ catkin 大致上把一個工作區劃分為以下三個區塊
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/catkin2.png">
 
-</div><br>
+</div>
 
 #### package結構
 
@@ -614,7 +614,7 @@ catkin_make
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/catkin3.png">
 
-</div><br>
+</div>
 
 編譯完後記得執行以下指令加入環境變數，不然你在 Terminal 上找不到你要執行的 code 喔
 

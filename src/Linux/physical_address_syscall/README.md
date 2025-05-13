@@ -68,7 +68,7 @@ Process type and features -> Linux guest support -> Support for running PVH gues
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build4.png">
 
-</div><br>
+</div>
 
 <!--
 Cryptographic API -> Certificates for signature checking
@@ -127,7 +127,7 @@ find . | cpio -o --format=newc | gzip > ../../linux-6.6/rootfs.img.gz
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/rootfs.png">
 
-</div><br>
+</div>
 
 ### Run Kernel
 
@@ -156,7 +156,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/add_system_call1.png">
 
-</div><br>
+</div>
 
 這行有四個部分，每項之間由空白或 tab 隔開，它們代表的意義是：
 
@@ -177,7 +177,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/add_system_call2.png">
 
-</div><br>
+</div>
 
 ### 實作自己的 system call
 
@@ -189,7 +189,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call1.png">
 
-</div><br>
+</div>
 
 這部分由 MMU 完成，其中在 IA32 架構下，涉及到主要的暫存器有 CR0, CR3。機器指令中出現的是邏輯地址，邏輯地址規則如下：
 
@@ -197,7 +197,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call2.png">
 
-</div><br>
+</div>
 
 在 Linux 中的邏輯地址對應於線性地址，也就是說 Intel 為了相容過往架構，把硬體設計搞得很複雜，Linux 核心的實作則予以簡化，並且在支援其他處理器架構時，儘量保持該原則
 
@@ -497,7 +497,7 @@ asmlinkage long sys_my_get_physical_addresses(void *);
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call3.png">
 
-</div><br>
+</div>
 
 新增一個檔案叫 `project1.c`，路徑是 `kernel/project1.c`
 
@@ -609,7 +609,7 @@ obj-y     = fork.o exec_domain.o panic.o \
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build_test.png">
 
-</div><br>
+</div>
 
 <details> <summary><span class = "yellow">範例 code</span></summary>
 
@@ -755,7 +755,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run1.png">
 
-</div><br>
+</div>
 
 按 enter 可以開始下指令，可以先 `ls` 看看：
 
@@ -763,7 +763,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run2.png">
 
-</div><br>
+</div>
 
 這裡面就有我們編譯好的執行檔了，直接執行它：
 
@@ -771,7 +771,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run3.png">
 
-</div><br>
+</div>
 
 ### 輸出：
 
@@ -943,7 +943,7 @@ hackmd 的排版讓表格不太好看，所以這邊截一下圖：
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/out1.png">
 
-</div><br>
+</div>
 
 把 memory layout 簡單畫出來：
 
@@ -951,7 +951,7 @@ hackmd 的排版讓表格不太好看，所以這邊截一下圖：
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/out2.png">
 
-</div><br>
+</div>
 
 字很醜不好意思
 

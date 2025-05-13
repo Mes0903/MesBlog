@@ -25,7 +25,7 @@ S-mode 無法窺探或取得任何來自更高 privilege mode（如 M-mode）的
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sstatus1.png">
 
-</div><br>
+</div>
 
 當 `SXLEN` 為 64 時格式如下圖：
 
@@ -33,7 +33,7 @@ S-mode 無法窺探或取得任何來自更高 privilege mode（如 M-mode）的
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sstatus2.png">
 
-</div><br>
+</div>
 
 - `SPP` 
   - `SPP` 位元表示 hart 在進入 S-mode 之前執行的特權等級
@@ -148,7 +148,7 @@ page table entry 可以參考下圖(Sv32 page table entry)
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/Supervisor-Level-ISA/image/sv32_page_table_entry.png">
 
-</div><br>
+</div>
 
 `SUM` 的機制可以防止 S-mode 下的軟體意外存取 user memory，作業系統可以在 `SUM=0` 的情況下執行大部分的程式碼，並在少數需要訪問 user memory 的情況下再暫時設定 `SUM`
 

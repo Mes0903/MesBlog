@@ -52,7 +52,7 @@ order: 1
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/1.png">
 
-</div><br>
+</div>
 
 最下面是硬體，上面則是我們寫的程式，程式大致上可以分成「和作業系統相關的」與「和作業系統無關的」，也就是圖上的 user mode 與 kernel mode，這在後面的章節會再提更多
 
@@ -112,7 +112,7 @@ OS 主要的考量、需求有二：
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/2.png">
 
-</div><br>
+</div>
 
 簡單來說就會長上圖最下面那樣，執行程式時 instruction 是 run 在 cpu 上的，需要用到的 data 會在 memory 裡面，最後可能寫到某個 Device 上面，看要儲存還是輸出之類的，這些是 control 的部分
 
@@ -126,7 +126,7 @@ OS 主要的考量、需求有二：
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/3.png">
 
-</div><br>
+</div>
 
 這邊 Cpu 想對一個 I/O Device，像是 Disk 做動作，例如讀寫資料
 
@@ -188,7 +188,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/4.png">
 
-</div><br>
+</div>
 
 假設有了 Interrupt，對於 I/O 而言就會像圖上這樣。cpu 在高電位代表他正在做他該做的事，在低電位代表他去處理別的程式的事情；而 I/O 則是反過來的，高電位代表 idle，低電位代表正在傳輸，而且花的時間可能會很長
 
@@ -202,7 +202,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/5.png">
 
-</div><br>
+</div>
 
 一開始 cpu 會下指令給 controller，讓它開始搬資料，cpu 可能還會給個 byte 的長度，像是 100 bytes，然後 controller 搬完後再去通知 cpu
 
@@ -234,7 +234,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/6.png">
 
-</div><br>
+</div>
 
 這整條是 memory，下面的是 user 的 Program，上面的是 OS。 
 
@@ -258,7 +258,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/7.png">
 
-</div><br>
+</div>
 
 跟前面不一樣的是，Trap 是 Program 主動需要 OS 幫忙的，所以會是一個 program 裡用了某個 system call，或是寫了某些不合法的操作，像是訪問了陣列大小以外的元素，或某個數字除以 0 了，造成 OS 需要來幫你處理後續
 
@@ -286,7 +286,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/8.png">
 
-</div><br>
+</div>
 
 上面三個分別為暫存器、快取、主記憶體，而後面的則統稱為次級儲存裝置 (Secondary Storage)。 越上層的速度越快，容量越小，反之越下層的速度越慢，但容量越大，價格也比較便宜
 
@@ -342,7 +342,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/9.png">
 
-</div><br>
+</div>
 
 所以可以看見讀取的速度和資料在哪裡就有關係了，如果資料剛好在磁頭的對面，妳就需要轉半圈才會讀到，這樣就會有多一個 access 的時間
 
@@ -356,7 +356,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/10.png">
 
-</div><br>
+</div>
 
 注意是 copy，不是搬移，如果是搬移，我們不稱它為 Cache。且 Copy 過去的資料是暫時性的資料，我們可以隨時砍掉它且不應該造成儲存資料的遺失
 
@@ -400,7 +400,7 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/11.png">
 
-</div><br>
+</div>
 
 平常某個 Program 在執行時是在 User mode 底下，而當它送 Interrupt 出來後那個 bit 就會 flip，進到 kernel mode，因為只要一發 Interrupt 就代表你 call 了 system call，而 system call 就會執行 OS 的程式
 
@@ -436,7 +436,7 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/12.png">
 
-</div><br>
+</div>
 
 先去檢查存取的 address 有沒有大於 base address，再去看有沒有小於 base address + limit，都通過慈可以存取 memory
 

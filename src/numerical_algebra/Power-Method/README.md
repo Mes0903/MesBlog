@@ -16,7 +16,7 @@ order: 10
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/1.png">
 
-</div><br>
+</div>
 
 在這個例子裏面，我們觀察到 eigenvector、eigenvalue 跟長期的外顯行為有關
 
@@ -28,7 +28,7 @@ order: 10
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/2.png">
 
-</div><br>
+</div>
 
 那麼就會有一個機率矩陣：
 
@@ -36,7 +36,7 @@ order: 10
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/3.png">
 
-</div><br>
+</div>
 
 #### Thm dominant eigenvalue
 
@@ -44,7 +44,7 @@ order: 10
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/4.png">
 
-</div><br>
+</div>
 
 #### Prop Power Method
 
@@ -54,7 +54,7 @@ order: 10
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/5.png">
 
-</div><br>
+</div>
 
 我們希望這個數列能很好的幫助我們去逼近 dominant eigenvalue
 
@@ -64,7 +64,7 @@ order: 10
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/6.png">
 
-</div><br>
+</div>
 
 這裡我們可以看到 Power Method 會產生一個很大的數字在矩陣前方，這個數字可以透過歸一化之類的方法來消除掉，我們這邊透過 scale down 的方法來做一次，在每步迭代前都先除上自己 norm：
 
@@ -72,7 +72,7 @@ order: 10
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/7.png">
 
-</div><br>
+</div>
 
 #### Thm dominant eigenvalue
 
@@ -80,7 +80,7 @@ order: 10
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/8.png">
 
-</div><br>
+</div>
 
 證明：
 

@@ -19,7 +19,7 @@ PE File 內部的格式是規定好的，也就是所謂的 PE file format，大
 
 (圖片[連結](https://www.researchgate.net/figure/Portable-executable-file-format_fig6_338355873))
 
-</div><br>
+</div>
 
 Header 是用來管理 PE file 的，包含了一些執行檔的重要資訊，而 Section 則包含了程式碼、常量、資料和圖片資源等等
 
@@ -70,7 +70,7 @@ start:
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/PE_bear.png">
 
-</div><br>
+</div>
 
 可以看見 demo.exe 由 DOS Header, DOS stub, NT Headers, Section Headers 與幾個 Sections 組成，那接下來就會依序介紹這些東西
 
@@ -82,7 +82,7 @@ PE file 最一開始的部分是 Dos Header，PE-bear 可以幫我們把這段 b
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/DOS_header1.png">
 
-</div><br>
+</div>
 
 解析為這樣：
 
@@ -90,7 +90,7 @@ PE file 最一開始的部分是 Dos Header，PE-bear 可以幫我們把這段 b
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/DOS_header2.png">
 
-</div><br>
+</div>
 
 DOS Header 是 PE File 中的起始位置，以前的功用是用來保持與 DOS 的兼容性與定位 NT Header，而現在的功用只剩下後者
 
@@ -165,7 +165,7 @@ typedef struct _IMAGE_NT_HEADERS {
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/NT_header.png">
 
-</div><br>
+</div>
 
 ### FileHeader
 
@@ -226,7 +226,7 @@ typedef struct _IMAGE_FILE_HEADER {
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/File_header1.png">
 
-</div><br>
+</div>
 
 這很長一串，用到的時候再查就好
 
@@ -257,7 +257,7 @@ Characteristics 記錄了這個檔案的屬性，會是以下這些值去做 `or
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/File_header2.png">
 
-</div><br>
+</div>
 
 ### Optional Header (可選頭)
 
@@ -342,7 +342,7 @@ typedef struct _IMAGE_SECTION_HEADER {
 
 (圖片[連結](https://tech-zealots.com/malware-analysis/pe-portable-executable-structure-malware-analysis-part-2/))
 
-</div><br>
+</div>
 
 Section Header 只負責記錄對應 Section 的重要屬性，像是 Section 的名字，大小，RVA 等等
 
@@ -370,7 +370,7 @@ Section Header 只負責記錄對應 Section 的重要屬性，像是 Section �
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/RVA.png">
 
-</div><br>
+</div>
 
 這邊假設每個 Section 的大小都小於 Alignment 的大小，所以一個 Section 的大小就是一個 Alignment 的大小。x86 下 FileAlignment 通常是 `0x200`，也就是 512 bytes，這也是一個硬碟扇區的大小。而 x86 下 SectionAlignment 通常是 `0x1000`
 

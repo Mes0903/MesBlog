@@ -24,7 +24,7 @@ rv32emu 是針對 32 bit [RISC-V processor model](https://riscv.org/technical/sp
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/1.png">
 
-</div><br>
+</div>
 
 為了模擬硬體，模擬器主要的邏輯為
 
@@ -386,7 +386,7 @@ SBI 是 RISC-V 定義的一個位於 OS 和 Firmware 之間的介面，用來提
 
 <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/risc-v/rv32emu-Introduction/image/4.png">
 
-</div><br>
+</div>
 
 #### SBI HSM Extension
 
