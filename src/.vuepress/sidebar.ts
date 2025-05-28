@@ -46,6 +46,7 @@ export default sidebar([
     text: "Cpp-Miner",
     collapsible: true,
     children: [
+      "",
       {
         text: "Miner 新手教學",
         collapsible: true,
@@ -72,6 +73,7 @@ export default sidebar([
           "Structured_Binding/",
           "Concept_SFINAE_DetectionIdiom/",
           "Dependent_Name/",
+          "Allocator_PMR/",
         ]
       },
       {
@@ -189,19 +191,18 @@ export default sidebar([
       {
         text: "OSTEP",
         collapsible: true,
-        prefix: "/OS/OSTEP/",
         children: [
           {
-            text: "Virtual Memory",
+            text: "Virtualization",
             collapsible: true,
-            prefix: "/OS/OSTEP/",
+            prefix: "/OS/OSTEP/Virtualization/",
             children: [
-              "paging/18/",
-              "paging/19/",
-              "paging/20/",
-              "swapping/21/",
-              "swapping/22/",
-              "memory_system/23/",
+              "18/",
+              "19/",
+              "20/",
+              "21/",
+              "22/",
+              "23/",
             ]
           },
         ]
@@ -232,7 +233,8 @@ export default sidebar([
     children: [
       "AboutMovingForward/",
       "RasterI/",
-      "ShionGraduate/"
+      "ShionGraduate/",
+      "FeelWithTheHeart/"
     ],
   },
 ]);
