@@ -205,6 +205,16 @@ export default sidebar([
               "23/",
             ]
           },
+          {
+            text: "Concurrency",
+            collapsible: true,
+            prefix: "/OS/OSTEP/Concurrency/",
+            children: [
+              "26/",
+              "27/",
+              "28/",
+            ]
+          },
         ]
       },
     ],
