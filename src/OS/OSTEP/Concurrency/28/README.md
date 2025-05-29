@@ -140,7 +140,9 @@ void unlock(lock_t *mutex) {
 
 <div class = "center-column">
 
-![alt text](image/28-2.png)
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/Concurrency/28/image/28-2.png">
+
+（Figure 28.2: Trace: No Mutual Exclusion）
 
 </div>
 

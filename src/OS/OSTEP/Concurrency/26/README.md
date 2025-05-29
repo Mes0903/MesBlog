@@ -23,7 +23,7 @@ category: OS
 
 <div class = "center-column">
 
-![](image/26-1.png)
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/Concurrency/26/image/26-1.png">
 
 （Figure 26-1：Single-Threaded And Multi-Threaded Address Spaces）
 
@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
 
 <div class = "center-column">
 
-![alt text](image/26-3.png)
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/Concurrency/26/image/26-3.png">
 
 （Figure 26.3：Thread Trace (1)）
 
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
 
 <div class = "center-column">
 
-![alt text](image/26-4.png)
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/Concurrency/26/image/26-4.png">
 
 （Figure 26.4：Thread Trace (2)）
 
@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
 
 <div class = "center-column">
 
-![alt text](image/26-5.png)
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/Concurrency/26/image/26-5.png">
 
 （Figure 26.5：Thread Trace (3)）
 
@@ -261,7 +261,7 @@ mov %eax, 0x8049a1c
 
 <div class = "center-column">
 
-![alt text](image/26-7.png)
+<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/Concurrency/26/image/26-7.png">
 
 （Figure 26.7: The Problem: Up Close and Personal）
 
