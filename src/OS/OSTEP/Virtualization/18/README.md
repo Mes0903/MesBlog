@@ -7,7 +7,7 @@ tag:
 category: OS
 ---
 
-# 18 Introduction to Paging
+# OSTEP 18：Introduction to Paging
 
 OS 有兩種方法，來解決大多數空間管理問題。 第一種是將空間分割成「不同長度」的片段，就像虛擬記憶體管理中的 segmentation。 但這個解決方法存在固有的問題，將空間切成不同長度的片段以後，空間本身會碎片化（fragmented），隨著時間推移，記憶體的分配會變得困難
 

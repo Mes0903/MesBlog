@@ -7,6 +7,8 @@ tag:
 category: OS
 ---
 
+# OSTEP 20：Advanced Page Tables
+
 我們現在要處理 paging 所帶來的第二個問題：page table 太大了，因此會佔用過多的記憶體。 讓我們從 linear page table 開始說起
 
 假設一個 32-bit 的位址空間（$2^{32}$ bytes），配上 4KB（$2^{12}$ bytes）大小的 page，以及一個 4-byte 大小的 PTE。 這樣的 address space 大約會有一百萬個 virtual page（$\frac{2^{32}}{2^{12}}$），乘上每個 PTE 的大小，你會發現 page table 的大小是 4MB 

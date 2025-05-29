@@ -7,7 +7,7 @@ tag:
 category: OS
 ---
 
-# 26 Concurrency and Threads 
+# OSTEP 26：Concurrency and Threads
 
 到目前為止，我們已經了解作業系統所提供的基本抽象層的演進。 我們看過如何把單一實體 CPU 轉變成多個虛擬 CPU，從而營造出多個程式同時執行的錯覺。 我們也了解如何為每個 process 建立一個龐大且私有的 virtual memory 的假象； 這個 address space 的抽象層讓每個程式都能表現得彷彿擁有自己的記憶體，但實際上 OS 正在背地裡把多個 address space multiplex 到同一份 physical memory（有時甚至 multiplex 到 disk）
 

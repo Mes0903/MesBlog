@@ -7,7 +7,7 @@ tag:
 category: OS
 ---
 
-# 19 Translation Lookaside Buffers
+# OSTEP 19：Translation Lookaside Buffers
 
 以 paging 作為支援虛擬記憶體的核心機制，可能會帶來顯著的效能開銷，paging 將位址空間切分為小而固定大小的單位（即 page），因此需要大量的對應資訊來完成轉譯，由於這些對應資訊通常儲存在實體記憶體中，paging 在邏輯上會導致程式每產生一個虛擬位址就要額外查一次記憶體，但在每次 instruction fetch 或明確的 load、store 操作之前，都先去記憶體查一次轉譯資訊，會非常慢，幾乎無法接受
 
