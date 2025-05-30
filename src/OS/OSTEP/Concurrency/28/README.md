@@ -655,13 +655,13 @@ void mutex_unlock(int* mutex)
   一篇非常出色的論文，比較了多種使用硬體原語構建鎖的方法，讓人能了解許多想法在現代硬體上的實際效能  
 
 - [D68] “Cooperating sequential processes” by Edsger W. Dijkstra. 1968. Available online here: http://www.cs.utexas.edu/users/EWD/ewd01xx/EWD123.PDF  
-  早期的經典論文之一，討論了 Dijkstra 提出的原始並發問題以及 Dekker 的解法  
+  早期的經典論文之一，討論了 Dijkstra 提出的原始並行問題以及 Dekker 的解法  
 
 - [H93] “MIPS R4000 Microprocessor User’s Manual” by Joe Heinrich. Prentice-Hall, June 1993. Available: http://cag.csail.mit.edu/raw/documents/R4400 Uman book Ed2.pdf  
   舊版 MIPS 使用手冊，建議趁尚可下載時儘早取得  
 
 - [H91] “Wait-free Synchronization” by Maurice Herlihy. ACM TOPLAS, Volume 13: 1, January 1991.  
-  一篇劃時代論文，介紹了構建並發資料結構的不同方法；由於複雜度較高，這些想法在實際部署中推廣較慢  
+  一篇劃時代論文，介紹了構建並行資料結構的不同方法；由於複雜度較高，這些想法在實際部署中推廣較慢  
 
 - [L81] “Observations on the Development of an Operating System” by Hugh Lauer. SOSP ’81, Pacific Grove, California, December 1981.  
   關於早期 PC 作業系統 Pilot OS 開發歷程的回顧性文章，內容充滿趣味與洞見，必讀  
@@ -682,7 +682,7 @@ void mutex_unlock(int* mutex)
   在此文中首次介紹了 Peterson 的演算法  
 
 - [R97] “What Really Happened on Mars?” by Glenn E. Reeves. Available on our site at: https://www.ostep.org/Citations/mars.html  
-  描述 Mars Pathfinder 任務中的 priority inversion 問題，強調並發程式正確性的重要性  
+  描述 Mars Pathfinder 任務中的 priority inversion 問題，強調並行程式正確性的重要性  
 
 - [S05] “Guide to porting from Solaris to Linux on x86” by Ajay Sood, April 29, 2005. Available: http://www.ibm.com/developerworks/linux/library/l-solar/  
   介紹如何將 Solaris 程式移植到 x86 上的 Linux，對實務工作有參考價值  
