@@ -20,6 +20,11 @@ img {
   align-items: center;
 }
 
+.center-column > [class*="language-"] {
+  align-self: stretch;
+  margin: 0;
+}
+
 h1 {
   color: #E8A635;
 }
