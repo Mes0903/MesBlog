@@ -56,6 +56,8 @@ int pthread_create(..., // first two args are the same
 
 請看圖 27.1 的範例：
 
+<div class = "center-column">
+
 ```c
 #include <stdio.h>
 #include <pthread.h>
@@ -80,8 +82,6 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-<div class = "center-column">
-
 （Figure 27.1: Creating a Thread）
 
 </div>
@@ -103,6 +103,8 @@ int pthread_join(pthread_t thread, void **value_ptr);
 第二個參數是指向回傳值的指標，也就是你期望接收的結果。 由於 thread 可以回傳任何東西，因此這個參數的型別是 `void *`。 而因為 `pthread_join()` 會修改這個參數的內容，所以你必須傳「指向該值的指標」，而不能直接傳該值本身
 
 請看下圖 27.2 的另一個範例：
+
+<div class = "center-column">
 
 ```c
 typedef struct { int a; int b; } myarg_t;
@@ -127,8 +129,6 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-<div class = "center-column">
-
 （Figure 27.2: Waiting for Thread Completion）
 
 </div>
@@ -138,6 +138,8 @@ int main(int argc, char *argv[]) {
 這裡有幾點要注意。 第一，實務上我們通常不需要這麼辛苦地包裝與解包參數。 比方說，如果 thread 不需要參數，我們建立它時直接傳 `NULL` 就好。 同樣地，如果我們不在意 thread 的回傳值，也可以在呼叫 `pthread_join()` 時傳入 `NULL`
 
 第二，如果你只要傳一個單值（例如 `long long int`），那就不需要把它包進結構體。 圖 27.3 是一個範例，這種情況下會簡單一點，因為不必用結構體包裝參數與回傳值：
+
+<div class = "center-column">
 
 ```c
 void *mythread(void *arg) {
@@ -155,8 +157,6 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 ```
-
-<div class = "center-column">
 
 （Figure 27.3: Simpler Argument Passing to a Thread）
 
@@ -220,6 +220,8 @@ assert(rc == 0); // always check success!
 
 這段程式碼的第二個問題是：它在呼叫 lock 和 unlock 時沒有檢查錯誤代碼。 就像你在 UNIX 系統中呼叫的幾乎所有函式一樣，這些函式也是可能失敗的！ 如果你沒檢查 return code，失敗就會默默發生，這在這種情況下可能會導致多個 thread 同時進入 critical section。 至少，你應該使用包裝函式來 assert 呼叫成功（就像圖 27.4 所示）； 如果是比較複雜（非玩具等級）的程式，不能單純出錯就 exit，那就應該檢查失敗狀態並採取適當的處理措施
 
+<div class = "center-column">
+
 ```c
 // Keeps code clean; only use if exit() OK upon failure
 void Pthread_mutex_lock(pthread_mutex_t *mutex) {
@@ -227,8 +229,6 @@ void Pthread_mutex_lock(pthread_mutex_t *mutex) {
     assert(rc == 0);
 }
 ```
-
-<div class = "center-column">
 
 （Figure 27.4: An Example Wrapper）
 

@@ -11,6 +11,8 @@ category: OS
 
 到目前為止，我們已經建立了鎖的概念，並且瞭解具備適當硬體與 OS 支援時，鎖可以如何正確建構。 可惜的是，鎖並不是編寫 concurrent 程式所需的唯一原語。 特別地，常有 thread 在繼續執行之前希望先檢查某個條件是否成立。 例如，parent thread 可能要等 child thread 執行完畢後才繼續（這通常稱為 `join()`）； 這種等待機制應該如何實作？ 讓我們來看看圖 30.1
 
+<div class = "center-column">
+
 ```c
 void* child(void* arg)
 {
@@ -30,8 +32,6 @@ int main(int argc, char* argv[])
 }
 ```
 
-<div class = "center-column">
-
 （Figure 30.1: A Parent Waiting For Its Child）
 
 </div>
@@ -45,6 +45,8 @@ parent: end
 ```
 
 如圖 30.2 所示，我們可以嘗試使用 shared variable。 這個解法大致上可行，但因為 parent 在自旋而浪費大量 CPU 時間，效率極低。 我們真正想要的是一種機制，能將 parent 置於睡眠狀態，直到所等待的條件（例如 child 執行完畢）成立為止
+
+<div class = "center-column">
 
 ```c
 int volatile done = 0;
@@ -67,8 +69,6 @@ int main(int argc, char* argv[])
 	return 0;
 }
 ```
-
-<div class = "center-column">
 
 （Figure 30.2: Parent Waiting For Child: Spin-based Approach）
 
@@ -100,6 +100,8 @@ pthread_cond_signal(pthread_cond_t *c);
 為簡潔起見，我們通常分別稱之為 `wait()` 和 `signal()`
 
 你會發現 `wait()` 的呼叫還帶了一個 mutex 參數，它假設呼叫時該 mutex 已被鎖定。 `wait()` 的責任是原子性地釋放該鎖，並將呼叫的 thread 置於睡眠； 當該 thread 被其他 thread signal 甦醒後，`wait()` 會在返回前重新獲取鎖。 這層設計複雜度旨在避免 thread 嘗試休眠時產生某些競爭條件。 讓我們看看 join 問題的解法（圖 30.3），以幫助理解：
+
+<div class = "center-column">
 
 ```c
 int done = 0;
@@ -140,8 +142,6 @@ int main(int argc, char* argv[])
 }
 ```
 
-<div class = "center-column">
-
 （Figure 30.3: Parent Waiting For Child: Use A Condition Variable）
 
 </div>
@@ -155,6 +155,8 @@ child 隨後執行，印出 `child`，然後呼叫 `thr_exit()` 喚醒 parent；
 最後要注意的是：parent 在判斷是否等待時使用了 while 迴圈，而非單純的 if。 雖然從程式邏輯看似非絕對必要，但這麼做總是較為妥當，後面我們會詳細說明其原因
 
 為了確保你理解 `thr_exit()` 與 `thr_join()` 各段程式碼的重要性，讓我們嘗試幾種替代實作。 首先，你可能好奇是否真的需要狀態變數 done。 如果程式像下面範例（圖 30.4）那樣撰寫，會怎麼樣？
+
+<div class = "center-column">
 
 ```c
 void thr_exit()
@@ -172,8 +174,6 @@ void thr_join()
 }
 ```
 
-<div class = "center-column">
-
 （Figure 30.4: Parent Waiting: No State Variable）
 
 </div>
@@ -181,6 +181,8 @@ void thr_join()
 遺憾的是，此作法有缺陷。 試想 child 一執行就立即呼叫 `thr_exit()`； 此時 child 會發出 signal，但因為此時尚無 thread 在等待，signal 不會喚醒任何人。 當 parent 執行到 `wait()` 時，就會直接陷入阻塞，且永遠不會被喚醒。 從此例，你應該體會到狀態變數 done 的重要性：它記錄了 thread 所關注的狀態值，並成為睡眠、喚醒與鎖機制的核心依據
 
 此處（圖 30.5）展示了另一個糟糕的實作範例。 在此範例中，我們假設執行 signal 和 wait 時不需要持有鎖：
+
+<div class = "center-column">
 
 ```c
 void thr_exit()
@@ -195,8 +197,6 @@ void thr_join()
 		Pthread_cond_wait(&c);
 }
 ```
-
-<div class = "center-column">
 
 （Figure 30.5: Parent Waiting: No Lock）
 
@@ -232,6 +232,8 @@ void thr_join()
 
 首先，我們需要一個共享緩衝區，生產者將資料放入其中，消費者則從中取出資料。 為了簡化，我們先只用一個整數欄位（你當然也可以想像放入一個指向資料結構的指標），並實作兩個內部 routine：將值放入共享緩衝區的 `put()`，以及從緩衝區取值的 `get()`。 詳細內容請參見圖 30.6：
 
+<div class = "center-column">
+
 ```c
 int buffer;
 int count = 0; // initially, empty
@@ -251,8 +253,6 @@ int get()
 }
 ```
 
-<div class = "center-column">
-
 （Figure 30.6: The Put And Get Routines (v1)）
 
 </div>
@@ -262,6 +262,8 @@ int get()
 接著我們需要實作一些 routine，它們必須知道何時可以存取緩衝區以放入或取出資料。 條件很明顯：只有在 count 為 0（緩衝區為空）時才放入資料，只有在 count 為 1（緩衝區已滿）時才取出資料。 若我們寫出讓生產者在緩衝區已滿時放入資料，或讓消費者在緩衝區為空時取出資料的同步程式碼，就是錯誤的（程式中的 `assert` 會觸發）
 
 這些工作將由兩種類型的執行緒完成，我們稱其中一組為生產者執行緒，另一組為消費者執行緒。 圖 30.7 顯示了生產者執行緒重複多次將整數放入共享緩衝區的程式碼，以及消費者執行緒持續不斷地從緩衝區取出資料並打印出每次取到的資料項的程式碼
+
+<div class = "center-column">
 
 ```c
 void* producer(void* arg)
@@ -282,8 +284,6 @@ void* consumer(void* arg)
 }
 ```
 
-<div class = "center-column">
-
 （Figure 30.7: Producer/Consumer Threads (v1)）
 
 </div>
@@ -293,6 +293,8 @@ void* consumer(void* arg)
 假設只有一個生產者和一個消費者。 顯然 `put()` 和 `get()` 這兩個都有包含 critical section，因為 `put()` 會更新緩衝區，`get()` 會從緩衝區讀取資料。 但僅在程式碼周圍加鎖並不足夠，我們需要更進一步的機制
 
 不出所料，這個進階機制就是 condition variable。 在這個（有問題的）初版實作（圖 30.8）中，我們只使用一個 condition variable cond 以及其對應的 mutex
+
+<div class = "center-column">
 
 ```c
 int loops; // must initialize somewhere...
@@ -327,8 +329,6 @@ void* consumer(void* arg)
 }
 ```
 
-<div class = "center-column">
-
 （Figure 30.8: Producer/Consumer: Single CV And If Statement）
 
 </div>
@@ -345,9 +345,7 @@ void* consumer(void* arg)
 
 <div class = "center-column">
 
-![alt text](image/30-9.png)
-
-（Figure 30.9: Thread Trace: Broken Solution (v1)）
+![（Figure 30.9: Thread Trace: Broken Solution (v1)）](image/30-9.png)
 
 </div>
 
@@ -358,6 +356,8 @@ void* consumer(void* arg)
 ### Better, But Still Broken: While, Not If
 
 幸好，要把它修好並不難（見圖 30.10），只要將 if 改為 while 即可。 現在當消費者 $T_{c1}$ 被喚醒時（鎖仍被持有），會立即重新檢查共享變數的狀態（c2）。 如果此時 buffer 為空，消費者就回到睡眠狀態（c3）。 同理，生產者的 if 也該改為 while（p2）
+
+<div class = "center-column">
 
 ```c
 int loops;
@@ -392,8 +392,6 @@ void* consumer(void* arg)
 }
 ```
 
-<div class = "center-column">
-
 （Figure 30.10: Producer/Consumer: Single CV And While）
 
 </div>
@@ -408,9 +406,7 @@ void* consumer(void* arg)
 
 <div class = "center-column">
 
-![alt text](image/30-11.png)
-
-（Figure 30.11: Thread Trace: Broken Solution (v2)）
+![（Figure 30.11: Thread Trace: Broken Solution (v2)）](image/30-11.png)
 
 </div>
 
@@ -419,6 +415,8 @@ void* consumer(void* arg)
 ### The Single Buffer Producer/Consumer Solution
 
 這裡的解法同樣很簡單：使用兩個 condition variables 而不是一個，用以正確地通知何種類型的執行緒在系統狀態改變時該被喚醒。 圖 30.12 展示了最終的程式碼：
+
+<div class = "center-column">
 
 ```c
 cond_t empty, fill;
@@ -452,8 +450,6 @@ void* consumer(void* arg)
 }
 ```
 
-<div class = "center-column">
-
 （Figure 30.12: Producer/Consumer: Two CVs And While）
 
 </div>
@@ -473,6 +469,8 @@ void* consumer(void* arg)
 我們現在已有一個可用的 producer/consumer 解法，而這最後一個修改能讓我們提升並行度與效率； 具體而言，我們增加緩衝區槽位，以便在進入睡眠前可生產多筆資料，同樣地也能在睡眠前消費多筆資料。 僅有單一生產者與單一消費者時，此做法能降低上下文切換，提高效率； 若有多個生產者或消費者（或兩者皆有），更能允許同時執行多重生產或消費動作，進一步提升並行性。 幸運的是，這對現有解法只需做小幅調整
 
 此正確解法的第一項修改在於緩衝區結構本身以及對應的 `put()` 和 `get()`（圖 30.13）：
+
+<div class = "center-column">
 
 ```c
 int buffer[MAX];
@@ -496,13 +494,13 @@ int get()
 }
 ```
 
-<div class = "center-column">
-
 （Figure 30.13: The Correct Put And Get Routines）
 
 </div>
 
 同時，我們微調生產者與消費者用以判斷是否該睡眠的條件。 接著示範正確的等待與 signaling 邏輯（圖 30.14）。 生產者僅在所有槽位皆已填滿時才進入睡眠（p2）； 同理，消費者僅在所有槽位皆為空時才睡眠（c2）。 就這樣，我們成功解決了 producer/consumer 問題
+
+<div class = "center-column">
 
 ```c
 cond_t empty, fill;
@@ -536,8 +534,6 @@ void* consumer(void* arg)
 }
 ```
 
-<div class = "center-column">
-
 （Figure 30.14: The Correct Producer/Consumer Synchronization）
 
 </div>
@@ -547,6 +543,8 @@ void* consumer(void* arg)
 我們現在再來看一個 condition variable 的應用範例。 這段程式碼取自 Lampson 與 Redell 關於 Pilot 的論文 [LR80]，正是這群人最先實作了前述的 Mesa 語意（其使用的語言也稱為 Mesa，因此得名）。
 
 他們遇到的問題可用一個簡易範例說明 —— 在一個多執行緒記憶體配置函式庫中會發生此情況。 圖 30.15 展示了可重現該問題的程式碼片段
+
+<div class = "center-column">
 
 ```c
 // how many bytes of the heap are free?
@@ -576,11 +574,9 @@ void free(void* ptr, int size)
 }
 ```
 
-<span class = "center-column">
-
 （Figure 30.15: Covering Conditions: An Example）
 
-</span>
+</div>
 
 如程式所示，當某執行緒呼叫記憶體配置程式時，可能得等待以釋出更多可用記憶體； 相反地，當執行緒釋放記憶體時，就會發出 signal 通知有更多記憶體可用。 然而，上述程式有個問題：當有多個執行緒在等待時，我們應該喚醒哪一個？
 

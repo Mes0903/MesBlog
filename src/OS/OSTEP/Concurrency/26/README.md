@@ -23,9 +23,7 @@ category: OS
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/Concurrency/26/image/26-1.png">
-
-（Figure 26-1：Single-Threaded And Multi-Threaded Address Spaces）
+![（Figure 26-1：Single-Threaded And Multi-Threaded Address Spaces）](image/26-1.png)
 
 </div>
 
@@ -50,6 +48,8 @@ category: OS
 ## 26.2 An Example: Thread Creation
 
 讓我們來深入一些細節。 假設我們想要執行一個程式，這個程式會建立兩個 threads，每個 thread 各自做獨立的工作，在這裡分別印出「A」或「B」。 相關程式碼如圖 26.2 所示：
+
+<div class = "center-column">
 
 ```c
 #include <stdio.h>
@@ -78,8 +78,6 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-<div class = "center-column">
-
 （Figure 26.2：Simple Thread Creation Code (`t0.c`)）
 
 </div>
@@ -92,9 +90,7 @@ int main(int argc, char *argv[]) {
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/Concurrency/26/image/26-3.png">
-
-（Figure 26.3：Thread Trace (1)）
+![（Figure 26.3：Thread Trace (1)）](image/26-3.png)
 
 </div>
 
@@ -102,9 +98,7 @@ int main(int argc, char *argv[]) {
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/Concurrency/26/image/26-4.png">
-
-（Figure 26.4：Thread Trace (2)）
+![（Figure 26.4：Thread Trace (2)）](image/26-4.png)
 
 </div>
 
@@ -112,9 +106,7 @@ int main(int argc, char *argv[]) {
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/Concurrency/26/image/26-5.png">
-
-（Figure 26.5：Thread Trace (3)）
+![（Figure 26.5：Thread Trace (3)）](image/26-5.png)
 
 </div>
 
@@ -125,6 +117,8 @@ int main(int argc, char *argv[]) {
 ## 26.3 Why It Gets Worse: Shared Data
 
 前面那個簡單的 thread 範例說明了如何建立 threads，以及它們如何因 scheduler 的決策而以不同順序執行。 不過，這個範例沒有展示 threads 在存取共享資料時會如何互動。 接下來，假設有兩個 threads 想要更新一個全域共享變數。 我們要研究的程式碼列在圖 26.6，如下是一些程式碼說明
+
+<div class = "center-column">
 
 ```c
 #include <stdio.h>
@@ -170,8 +164,6 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 ```
-
-<div class = "center-column">
 
 （Figure 26.6: Sharing Data: Uh Oh (t1.c)）
 
@@ -261,9 +253,7 @@ mov %eax, 0x8049a1c
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/Concurrency/26/image/26-7.png">
-
-（Figure 26.7: The Problem: Up Close and Personal）
+![（Figure 26.7: The Problem: Up Close and Personal）](image/26-7.png)
 
 </div>
 

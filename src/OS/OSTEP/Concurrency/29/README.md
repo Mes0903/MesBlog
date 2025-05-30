@@ -23,6 +23,8 @@ category: OS
 
 最簡單的資料結構之一是計數器。 它是一種常見且介面簡單的結構。 我們在圖 29.1 中定義了一個非並行的簡易計數器：
 
+<div class = "center-column">
+
 ```c
 typedef struct __counter_t {
 	int value;
@@ -49,8 +51,6 @@ int get(counter_t* c)
 }
 ```
 
-<div class = "center-column">
-
 （Figure 29.1: A Counter Without Locks）
 
 </div>
@@ -58,6 +58,8 @@ int get(counter_t* c)
 ### Simple But Not Scalable
 
 如你所見，非同步計數器是極為簡單的資料結構，只需極少程式碼即可實作。 接下來我們面臨的挑戰是：如何讓這段程式碼具備 thread safe？ 圖 29.2 展示了我們的做法：
+
+<div class = "center-column">
 
 ```c
 typedef struct __counter_t {
@@ -94,8 +96,6 @@ int get(counter_t* c)
 }
 ```
 
-<div class = "center-column">
-
 （Figure 29.2: A Counter With Locks）
 
 </div>
@@ -108,9 +108,7 @@ int get(counter_t* c)
 
 <div class = "center-column">
 
-![alt text](image/29-5.png)
-
-（Figure 29.5: Performance of Traditional vs. Approximate Counters）
+![（Figure 29.5: Performance of Traditional vs. Approximate Counters）](image/29-5.png)
 
 </div>
 
@@ -136,9 +134,7 @@ local-to-global 轉移的頻率由閾值 S 決定。 S 越小，counter 就越�
 
 <div class = "center-column">
 
-![alt text](image/29-3.png)
-
-（Figure 29.3: Tracing the Approximate Counters）
+![（Figure 29.3: Tracing the Approximate Counters）](image/29-3.png)
 
 </div>
 
@@ -150,13 +146,13 @@ local-to-global 轉移的頻率由閾值 S 決定。 S 越小，counter 就越�
 
 <div class = "center-column">
 
-![alt text](image/29-6.png)
-
-（Figure 29.6: Scaling Approximate Counters）
+![（Figure 29.6: Scaling Approximate Counters）](image/29-6.png)
 
 </div>
 
 在圖 29.4 中可以看到 approximate counter 的一個簡化版本。 建議你閱讀程式碼，或更好地，親自執行一些實驗，以更清楚地理解其運作原理：
+
+<div class = "center-column">
 
 ```c
 typedef struct __counter_t {
@@ -209,8 +205,6 @@ int get(counter_t* c)
 }
 ```
 
-<div class = "center-column">
-
 （Figure 29.4: Approximate Counter Implementation）
 
 </div>
@@ -226,6 +220,8 @@ int get(counter_t* c)
 接下來，我們研究一個更複雜的結構 —— linked list。 我們再次從基本方法開始，為了簡化起見，我們省略該列表可能具備的一些顯而易見的 routines，僅關注 concurrent insert 和 lookup，刪除等操作留給讀者自行思考
 
 圖 29.7 顯示了這個原始資料結構的程式碼：
+
+<div class = "center-column">
 
 ```c
 // basic node structure
@@ -278,8 +274,6 @@ int List_Lookup(list_t* L, int key)
 }
 ```
 
-<div class = "center-column">
-
 （Figure 29.7: Concurrent Linked List）
 
 </div>
@@ -291,6 +285,8 @@ int List_Lookup(list_t* L, int key)
 前者可行的原因在於 insert 的部分程式其實不需要加鎖，假設 `malloc()` 本身是 thread-safe 的，每個 thread 都可以安全呼叫而不會有競爭條件或其他並行錯誤，只有在更新共享列表時才需要持有鎖。
 
 至於 lookup routine，只需簡單地將搜尋主迴圈跳躍到單一 return 路徑，即可將程式中的鎖獲取/釋放點數量減少，從而降低意外引入錯誤（例如在 return 前忘記 unlock）的機率。 有關這些修改的詳細資料，請參見圖 29.8：
+
+<div class = "center-column">
 
 ```c
 void List_Init(list_t* L)
@@ -333,8 +329,6 @@ int List_Lookup(list_t* L, int key)
 }
 ```
 
-<div class = "center-column">
-
 （Figure 29.8: Concurrent Linked List: Rewritten）
 
 </div>
@@ -354,6 +348,8 @@ int List_Lookup(list_t* L, int key)
 ## 29.3 Concurrent Queues
 
 如你所知，總有一種對並行資料結構的標準做法：加一把大鎖。 對於 queue，我們就略過這種做法，你應該可以自行推敲。 取而代之地，我們來看看由 Michael 和 Scott 設計的一種具備更高並行度的 queue [MS98]。 這個 queue 使用的資料結構與程式碼見圖 29.9：
+
+<div class = "center-column">
 
 ```c
 typedef struct __node_t {
@@ -406,8 +402,6 @@ int Queue_Dequeue(queue_t* q, int* value)
 }
 ```
 
-<div class = "center-column">
-
 （Figure 29.9: Michael and Scott Concurrent Queue）
 
 </div>
@@ -423,6 +417,8 @@ Queues 在多執行緒應用中十分常見。 然而，此處使用的那種僅
 我們的討論以一個簡單且廣泛適用的並行資料結構 —— hash table 作為結尾。 我們將集中介紹一種不會自動擴容的簡易 hash table； 若要處理擴容，則需要額外的實作，我們將這部分留給讀者自行練習
 
 這個並行 hash table（圖 29.10）非常直觀，採用了我們先前建立的 concurrent linked lists 實作而成，且效能極佳。 其優異表現的關鍵在於，它不是對整個結構只使用一把鎖，而是對每個 hash bucket（由列表表示）各自加上一把鎖。 如此一來，就能允許大量並行操作同時進行
+
+<div class = "center-column">
 
 ```c
 #define BUCKETS (101)
@@ -449,8 +445,6 @@ int Hash_Lookup(hash_t* H, int key)
 }
 ```
 
-<div class = "center-column">
-
 （Figure 29.10: A Concurrent Hash Table）
 
 </div>
@@ -459,9 +453,7 @@ int Hash_Lookup(hash_t* H, int key)
 
 <div class = "center-column">
 
-![alt text](image/29-7.png)
-
-（Figure 29.11: Scaling Hash Tables）
+![（Figure 29.11: Scaling Hash Tables）](image/29-7.png)
 
 </div>
 
