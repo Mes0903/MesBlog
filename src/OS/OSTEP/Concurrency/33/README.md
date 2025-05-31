@@ -199,33 +199,25 @@ rc = write(sd, buffer, size)
 ## References
 
 - [A+02] “Cooperative Task Management Without Manual Stack Management” by Atul Adya, Jon Howell, Marvin Theimer, William J. Bolosky, John R. Douceur. USENIX ATC ’02, Monterey, CA, June 2002  
-
   這篇論文首次清楚闡述事件驅動併發的種種困難，並提出簡單的解決方案；同時探索了將執行緒與事件兩種併發管理方式融合於同一應用中的大膽構想
 
 - [FHK84] “Programming With Continuations” by Daniel P. Friedman, Christopher T. Haynes, Eugene E. Kohlbecker. In Program Transformation and Programming Environments, Springer Verlag, 1984  
-
   此篇論文是程式語言領域中關於 continuation（延續）的經典參考，對理解這一古老機制有不可或缺的價值
 
 - [N13] “Node.js Documentation” by the folks who built node.js. Available: nodejs.org/api  
-
   Node.js 是眾多新興框架之一，能讓你迅速構建網路服務與應用。每位現代系統駭客都應精通此類框架（通常不只一種），投入開發並成為專家
 
 - [O96] “Why Threads Are A Bad Idea (for most purposes)” by John Ousterhout. Invited Talk at USENIX ’96, San Diego, CA, January 1996  
-
   這場演講探討了執行緒在 GUI 應用程式（以及更廣泛場景）中的局限性。Ousterhout 在開發 Tcl/Tk 時累積的經驗，成為這些見解的基礎
 
 - [PDZ99] “Flash: An Efficient and Portable Web Server” by Vivek S. Pai, Peter Druschel, Willy Zwaenepoel. USENIX ’99, Monterey, CA, June 1999  
-
   此先驅論文介紹了在網際網路初興時期如何構建高效可移植的網頁伺服器；閱讀它可理解基礎設計並學習在缺乏非同步 I/O 支援時的混合解法
 
 - [SR05] “Advanced Programming in the UNIX Environment” by W. Richard Stevens and Stephen A. Rago. Addison-Wesley, 2005  
-
   這本書是 UNIX 系統程式設計的必備經典，任何細節問題幾乎都能在其中找到答案
 
 - [vB+03] “Capriccio: Scalable Threads for Internet Services” by Rob von Behren, Jeremy Condit, Feng Zhou, George C. Necula, Eric Brewer. SOSP ’03, Lake George, New York, October 2003  
-
   本文探討如何在大規模網路服務中有效運用執行緒，以對抗當時大量出現的事件驅動方法
 
 - [WCB01] “SEDA: An Architecture for Well-Conditioned, Scalable Internet Services” by Matt Welsh, David Culler, and Eric Brewer. SOSP ’01, Banff, Canada, October 2001  
-
   這篇論文提出結合執行緒、佇列與事件驅動處理的混合架構，為可擴展網路服務提供了新思路，其概念後續被 Google、Amazon 等公司採用

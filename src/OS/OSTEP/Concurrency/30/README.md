@@ -597,31 +597,24 @@ Lampson 與 Redell 建議的解法很直接：將上述程式中的 `pthread_con
 ## References
 
 - [D68] “Cooperating sequential processes” by Edsger W. Dijkstra. 1968. Available online: http://www.cs.utexas.edu/users/EWD/ewd01xx/EWD123.PDF.  
-
   另一篇 Dijkstra 的經典著作；閱讀他早期關於並行的論文，能讓你掌握許多基礎且重要的概念  
 
-- [D72] “Information Streams Sharing a Finite Buffer” by E.W. Dijkstra. Information Processing Letters 1: 179–180, 1972. http://www.cs.utexas.edu/users/EWD/ewd03xx/EWD329.PDF. 
-
+- [D72] “Information Streams Sharing a Finite Buffer” by E.W. Dijkstra. Information Processing Letters 1: 179–180, 1972. http://www.cs.utexas.edu/users/EWD/ewd03xx/EWD329.PDF.  
   這篇著名論文首次提出了生產者/消費者問題  
 
-- [D01] “My recollections of operating system design” by E.W. Dijkstra. April 2001. Available: http://www.cs.utexas.edu/users/EWD/ewd13xx/EWD1303.PDF.
-
+- [D01] “My recollections of operating system design” by E.W. Dijkstra. April 2001. Available: http://www.cs.utexas.edu/users/EWD/ewd13xx/EWD1303.PDF.  
   對於有興趣了解業界先驅如何提出「interrupts」甚至「a stack」等基本概念的人非常值得一讀  
 
-- [H74] “Monitors: An Operating System Structuring Concept” by C.A.R. Hoare. Communications of the ACM 17:10, pages 549–557, October 1974. 
-
+- [H74] “Monitors: An Operating System Structuring Concept” by C.A.R. Hoare. Communications of the ACM 17:10, pages 549–557, October 1974.  
   Hoare 在並行理論方面有不少貢獻；但他或許最為人知的，還是他對 Quicksort 的研究 —— 這或許是全世界最酷的排序演算法  
 
-- [L11] “Pthread_cond_signal Man Page” by Mysterious author. March 2011. Available online: http://linux.die.net/man/3/pthread_cond_signal.
-
+- [L11] “Pthread_cond_signal Man Page” by Mysterious author. March 2011. Available online: http://linux.die.net/man/3/pthread_cond_signal.  
   Linux 手冊頁展示了由於 signal/wakeup 程式碼中的 race condition，thread 可能產生 spurious wakeup 的簡單範例  
 
-- [LR80] “Experience with Processes and Monitors in Mesa” by B.W. Lampson, D.R. Redell. Communications of the ACM 23:2, pages 105–117, February 1980.
-
+- [LR80] “Experience with Processes and Monitors in Mesa” by B.W. Lampson, D.R. Redell. Communications of the ACM 23:2, pages 105–117, February 1980.  
   一篇關於如何在真實系統中實作 signaling 與 condition variables 的經典論文，也由此衍生出「Mesa semantics」一詞；較早由 Hoare [H74] 提出的語意則被稱為「Hoare semantics」  
 
-- [O49] “1984” by George Orwell. Secker and Warburg, 1949. 
-
+- [O49] “1984” by George Orwell. Secker and Warburg, 1949.  
   一部必讀經典小說，雖然有點直白，但引用最後一句話似乎也洩了劇透。政府在看嗎？我們覺得政府是「double plus good」  
 
 

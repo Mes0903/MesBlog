@@ -593,53 +593,40 @@ semaphores 是撰寫並行程式的強大又靈活的原語。 有些程式設�
 ## References
 
 - [B04] “Implementing Condition Variables with Semaphores” by Andrew Birrell. December 2004.  
-
   探討在 semaphore 基礎上實作 condition variables 的難度，以及作者與同事過程中犯下的錯誤，值得一讀  
 
 - [CB08] “Real-world Concurrency” by Bryan Cantrill, Jeff Bonwick. ACM Queue 6(5), September 2008.  
-
   由曾供職於 Sun 的核心駭客撰寫，分享實務並行程式碼中所面臨的真實問題  
 
 - [CHP71] “Concurrent Control with Readers and Writers” by P.J. Courtois, F. Heymans, D.L. Parnas. Communications of the ACM 14(10), October 1971.  
-
   首度提出 reader-writer 問題並給出簡易解法；後續研究則導入更複雜方案，此處略去  
 
 - [D59] “A Note on Two Problems in Connexion with Graphs” by E.W. Dijkstra. Numerische Mathematik 1, 269–271, 1959.  
-
   早在 1959 年即研究演算法，可想而知人們對計算的熱情；連接圖論中的最短路徑問題即出自此篇  
 
 - [D68a] “Go-to Statement Considered Harmful” by E.W. Dijkstra. CACM 11(3), March 1968.  
-
   被視為軟體工程領域早期宣言，譴責無限制使用 goto  
 
 - [D68b] “The Structure of the THE Multiprogramming System” by E.W. Dijkstra. CACM 11(5), 1968.  
-
   最早指出系統建構應採用分層模組化設計的論文之一  
 
 - [D71] “Hierarchical ordering of sequential processes” by E.W. Dijkstra. Information Processing Letters 1, 1972.  
-
   提出多項並行問題，包括用餐哲學家；可搭配維基百科頁面深入了解  
 
 - [D72] “Information Streams Sharing a Finite Buffer” by E.W. Dijkstra. Information Processing Letters 1, 179–180, 1972.  
-
   原始發表生產者/消費者（bounded buffer）問題的經典論文  
 
 - [D08] “The Little Book of Semaphores” by A.B. Downey. Available: http://greenteapress.com/semaphores/  
-
   免費且內容豐富的 semaphore 參考書，內含大量練習題，適合加深理解  
 
 - [GR92] “Transaction Processing: Concepts and Techniques” by Jim Gray, Andreas Reuter. Morgan Kaufmann, September 1992.  
-
   書中提到「第一批多處理器約在 1960 年具備 test-and-set 指令……雖然 Dijkstra 在多年後才因 semaphore 而聞名」，幽默有趣  
 
 - [H87] “Aspects of Cache Memory and Instruction Buffer Performance” by Mark D. Hill. Ph.D. Dissertation, U.C. Berkeley, 1987.  
-
   探索早期系統快取設計的量化研究，證明簡單 direct-mapped cache 優於複雜設計  
 
 - [L83] “Hints for Computer Systems Design” by Butler Lampson. ACM Operating Systems Review 15(5), October 1983.  
-
   Lampson 分享設計系統時的「提示」概念，其中一項即「不要泛化；泛化多半錯誤」  
 
 - [T99] “Re: NT kernel guy playing with Linux” by Linus Torvalds. June 27, 1999. Available: https://yarchive.net/comp/linux/semaphores.html  
-
   Linus 自述 semaphore 實用性，包括本文提到的 throttling 用例，內容略帶挖苦卻富資訊  

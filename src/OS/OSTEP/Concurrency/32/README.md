@@ -458,49 +458,37 @@ Tom West 以《Soul of a New Machine》[K81] 一書主角身分知名，他的�
 ## References
 
 - [B+87] “Concurrency Control and Recovery in Database Systems” by Philip A. Bernstein, Vassos Hadzilacos, Nathan Goodman. Addison-Wesley, 1987.  
-
   資料庫管理系統中並行控制與復原的經典著作，對資料庫領域的並行、deadlock 與相關議題有深入探討  
 
 - [C+71] “System Deadlocks” by E.G. Coffman, M.J. Elphick, A. Shoshani. ACM Computing Surveys 3(2), June 1971.  
-
   首度系統化闡述 deadlock 發生條件及處理方法的經典論文，後續研究紛紛引用  
 
-- [D64] “Een algorithme ter voorkoming van de dodelijke omarming” by Edsger Dijkstra. 1964. 
-
+- [D64] “Een algorithme ter voorkoming van de dodelijke omarming” by Edsger Dijkstra. 1964.  
   Dijkstra 最早指出並解決「致命擁抱」（deadly embrace，也即 deadlock）問題的論文  
 
 - [GD02] “MapReduce: Simplified Data Processing on Large Clusters” by Sanjay Ghemawat, Jeff Dean. OSDI ’04, October 2004.  
-
   開創大規模叢集資料處理時代的 MapReduce 架構論文，提出無需鎖即可完成平行計算的思路  
 
 - [H01] “A Pragmatic Implementation of Non-blocking Linked-lists” by Tim Harris. DISC 2001.  
-
   較現代的 lock-free 鏈結串列實作範例，展示不使用鎖的複雜性與挑戰  
 
 - [H91] “Wait-free Synchronization” by Maurice Herlihy. ACM TOPLAS 13(1), January 1991.  
-
   開創 wait-free 同步方法的先驅性論文，提出無鎖且保證有限步驟完成的同步設計  
 
 - [H93] “A Methodology for Implementing Highly Concurrent Data Objects” by Maurice Herlihy. ACM TOPLAS 15(5), November 1993.  
-
   系統性介紹 lock-free 與 wait-free 資料結構的論文，分別探討兩者的優劣與實作要點  
 
 - [J+08] “Deadlock Immunity: Enabling Systems To Defend Against Deadlocks” by Horatiu Jula, Daniel Tralamazza, Cristian Zamfir, George Candea. OSDI ’08, December 2008.  
-
   針對系統層面 deadlock 防禦提出創新思路的最新論文，示範如何免於重複陷入相同的 deadlock  
 
 - [K81] “Soul of a New Machine” by Tracy Kidder. Backbay Books, 2000 (reprint of 1980).  
-
   經典系統開發紀實，描述 Data General 團隊打造新機的點滴，是系統工程師必讀之作  
 
 - [K87] “Deadlock Detection in Distributed Databases” by Edgar Knapp. ACM Computing Surveys 19(4), December 1987.  
-
   分散式資料庫中 deadlock 偵測與復原技術的綜覽論文，並指引相關研究方向  
 
 - [L+08] “Learning from Mistakes—A Comprehensive Study on Real World Concurrency Bug Characteristics” by Shan Lu, Soyeon Park, Eunsoo Seo, Yuanyuan Zhou. ASPLOS ’08, March 2008.  
-
   首篇深入研究真實軟體中並行錯誤特性的論文，揭示非 deadlock 錯誤類型並驅動本章討論  
 
 - [T+94] “Linux File Memory Map Code” by Linus Torvalds et al. v5.2 source: mm/filemap.c.  
-
   Linux 記憶體對映程式碼中的 partial lock ordering 範例，展示實務中鎖策略的複雜性  

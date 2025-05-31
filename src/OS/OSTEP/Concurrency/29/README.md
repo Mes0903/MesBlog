@@ -474,37 +474,28 @@ int Hash_Lookup(hash_t* H, int key)
 ## Reference
 
 - [B+10] “An Analysis of Linux Scalability to Many Cores” by Silas Boyd-Wickizer, Austin T. Clements, Yandong Mao, Aleksey Pesterev, M. Frans Kaashoek, Robert Morris, Nickolai Zeldovich. OSDI ’10, Vancouver, Canada, October 2010.  
-
   這是一項關於 Linux 在多核心機器上效能表現的優秀研究，也提出了幾個簡單解法；文中包含一種巧妙的 sloppy counter 以解決可擴展計數問題
 
 - [BH73] “Operating System Principles” by Per Brinch Hansen. Prentice-Hall, 1973. Available: http://portal.acm.org/citation.cfm?id=540365.  
-
   這是最早期關於作業系統的經典著作之一，並提出了 monitors 作為並行原語，堪稱領先其時
 
 - [BC05] “Understanding the Linux Kernel (Third Edition)” by Daniel P. Bovet and Marco Cesati. O’Reilly Media, November 2005.  
-
   這本書是 Linux 核心的經典入門書籍，非常值得閱讀以深入了解內核運作
 
 - [C06] “The Search For Fast, Scalable Counters” by Jonathan Corbet. February 1, 2006. Available: https://lwn.net/Articles/170003.  
-
   LWN 上關於 Linux 最新技術的短文，簡要介紹了可擴展近似計數器，建議閱讀以掌握 Linux 中的最新進展
 
 - [L+13] “A Study of Linux File System Evolution” by Lanyue Lu, Andrea C. Arpaci-Dusseau, Remzi H. Arpaci-Dusseau, Shan Lu. FAST ’13, San Jose, CA, February 2013.  
-
   我們的研究論文回顧了近十年來 Linux 檔案系統的所有補丁，發現了許多有趣結果；完成此研究的過程相當艱辛，Lanyue Lu 必須手動檢視每一份補丁以理解其變更
 
 - [MS98] “Nonblocking Algorithms and Preemption-safe Locking on Multiprogrammed Shared-memory Multiprocessors” by M. Michael, M. Scott. Journal of Parallel and Distributed Computing, Vol. 51, No. 1, 1998.  
-
   Scott 教授與其團隊多年來一直走在並行演算法與資料結構的前沿，建議參閱其網站及相關論文以深入瞭解
 
 - [MS04] “Concurrent Data Structures” by Mark Moir and Nir Shavit. In Handbook of Data Structures and Applications (Editors D. Metha and S. Sahni). Chapman and Hall/CRC Press, 2004. Available: www.ostep.org/Citations/concurrent.pdf.  
-
   一本簡明卻相對完整的並行資料結構參考手冊，雖因時間較早而缺少部分最新研究，仍極具參考價值
 
 - [MM00] “Solaris Internals: Core Kernel Architecture” by Jim Mauro and Richard McDougall. Prentice Hall, October 2000.  
-
   這本 Solaris 核心架構專書也是經典之作，若想了解除 Linux 外的其他系統，值得細讀
 
 - [S+11] “Making the Common Case the Only Case with Anticipatory Memory Allocation” by Swaminathan Sundararaman, Yupu Zhang, Sriram Subramanian, Andrea C. Arpaci-Dusseau, Remzi H. Arpaci-Dusseau. FAST ’11, San Jose, CA, February 2011.  
-
   我們的研究透過在執行前配置所有可能需要的記憶體，移除了 kernel 內路徑中可能失敗的配置呼叫，從而提升系統健壯性  
