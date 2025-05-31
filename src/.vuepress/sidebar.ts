@@ -220,6 +220,14 @@ export default sidebar([
               "33/",
             ]
           },
+          {
+            text: "Persistence",
+            collapsible: true,
+            prefix: "/OS/OSTEP/Persistence/",
+            children: [
+              "36/",
+            ]
+          },
         ]
       },
     ],
