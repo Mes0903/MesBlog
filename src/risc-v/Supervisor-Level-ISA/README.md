@@ -1101,7 +1101,7 @@ RSW 欄位保留給 supervisor 軟體使用，實作（硬體）應忽略此欄�
 
 在兩種情況下，都要求 PTE 的更新具有原子性，以確保更新不會被其他對 page table 的寫入操作所打斷。 因為如果中間被打斷，可能會造成 A/D bit 被設在已被重新使用或回收的 PTE 上。 較簡單的實作可以改用觸發 page-fault exception 來避免這類問題
 
-A bit 與 D bit 不會被硬體主動清除。 若 supervisor 軟體不依賴 A/D bit（例如不需要 swap 到磁碟，或該 page 被用來映射 I/O 空間），則應該直接在 PTE 中將其設為 1，以提升效能
+A bit 與 D bit 不會被硬體主動清除。 若 supervisor 軟體不依賴 A/D bit（例如不需要 swap 到硬碟，或該 page 被用來映射 I/O 空間），則應該直接在 PTE 中將其設為 1，以提升效能
 :::
 
 任何層級的 PTE 都可以是 leaf PTE，因此除了 4 KiB 的 page，Sv32 也支援 4 MiB 的 megapage。 一個 megapage 必須在虛擬與實體位址上都對齊至 4 MiB 邊界，若實體位址未對齊，將會觸發 page-fault exception

@@ -69,7 +69,7 @@ While (STATUS == BUSY)
 
 協定包含四個步驟：
 1. 第一步，作業系統不斷讀取狀態暫存器，直到裝置準備好接收命令，我們稱此為輪詢（polling）裝置（基本上就是詢問它目前狀況）
-2. 第二步，作業系統將資料寫入資料暫存器； 例如，若此裝置為磁碟，可能需要多次寫入才能將一個磁碟區塊（例如 4KB）傳送到裝置。 當主 CPU 有參與資料傳輸（如本範例協定所示）時，我們稱之為 programmed I/O（PIO）
+2. 第二步，作業系統將資料寫入資料暫存器； 例如，若此裝置為硬碟，可能需要多次寫入才能將一個硬碟區塊（例如 4KB）傳送到裝置。 當主 CPU 有參與資料傳輸（如本範例協定所示）時，我們稱之為 programmed I/O（PIO）
 3. 第三步，作業系統將命令寫入命令暫存器； 如此做會隱含地告知裝置資料已就緒，並應開始處理該命令
 4. 最後，作業系統再度通過迴圈輪詢裝置，等待其完成（此時可能會取得錯誤代碼以表示成功或失敗）
 
@@ -199,10 +199,10 @@ DMA 的運作如下。 例如要將資料傳送到裝置時，OS 會將指令寫
 
 IDE 硬碟對系統提供了一個簡單介面，由四種暫存器組成：control、command block、status 以及 error。 這些暫存器可透過在特定「I/O 位址」（例如下方的 `0x3F6`）上使用 x86 架構的 `in` 與 `out` I/O 指令進行讀寫。 假設裝置已完成初始化，那與之互動的基本協定如下
 
-- 等待磁碟準備就緒：讀取 Status Register (`0x1F7`)，直到磁碟為 `READY` 且不為 `BUSY`
-- 將參數寫入 command 暫存器：寫入扇區數量、要存取的扇區的 logical block address (LBA)，以及磁碟編號（`master=0x00` 或 `slave=0x10`，因為 IDE 僅允許兩顆磁碟）至 command 暫存器 (`0x1F2 ~ 0x1F6`)
+- 等待硬碟準備就緒：讀取 Status Register (`0x1F7`)，直到硬碟為 `READY` 且不為 `BUSY`
+- 將參數寫入 command 暫存器：寫入扇區數量、要存取的扇區的 logical block address (LBA)，以及硬碟編號（`master=0x00` 或 `slave=0x10`，因為 IDE 僅允許兩顆硬碟）至 command 暫存器 (`0x1F2 ~ 0x1F6`)
 - 啟動 I/O：向 command 暫存器 (`0x1F7`) 寫入 `READ | WRITE` 指令
-- 資料傳輸（寫入時）：等待磁碟狀態為 `READY` 且 `DRQ`（磁碟請求資料），然後將資料寫入 data 埠
+- 資料傳輸（寫入時）：等待硬碟狀態為 `READY` 且 `DRQ`（硬碟請求資料），然後將資料寫入 data 埠
 - 處理中斷：最簡單的情況是每傳輸一個扇區處理一次中斷； 更複雜的做法則允許批次傳輸，直到整個傳輸完成後再觸發最後一次中斷
 - 錯誤處理：每次操作後都讀取 status 暫存器； 若 ERROR 位元為 1，就讀取 error 暫存器以取得詳細資訊
 
@@ -309,9 +309,9 @@ void ide_intr()
 
 該程式（初始化後）透過四個主要函式運作：
 
-- 第一個是 `ide_rw()`，它會將請求排入佇列（若還有其他請求在待處理），或直接透過 `ide_start_request()` 發送到磁碟； 在任一情況下，此例程都會等待請求完成，並將呼叫的 Process 置於 sleep
-- 第二個是 `ide_start_request()`，用來向磁碟發送請求（如果是寫入則同時傳送資料）； 此時會分別呼叫 x86 的 `in` 與 `out` 指令來讀取和寫入裝置暫存器
-- `ide_start_request()` 會用到第三個函式 `ide_wait_ready()`，以確保在發出請求前磁碟已經準備就緒
+- 第一個是 `ide_rw()`，它會將請求排入佇列（若還有其他請求在待處理），或直接透過 `ide_start_request()` 發送到硬碟； 在任一情況下，此例程都會等待請求完成，並將呼叫的 Process 置於 sleep
+- 第二個是 `ide_start_request()`，用來向硬碟發送請求（如果是寫入則同時傳送資料）； 此時會分別呼叫 x86 的 `in` 與 `out` 指令來讀取和寫入裝置暫存器
+- `ide_start_request()` 會用到第三個函式 `ide_wait_ready()`，以確保在發出請求前硬碟已經準備就緒
 - 最後，當發生中斷時會調用 `ide_intr()`； 此函式在請求為讀取時會從裝置讀取資料，並喚醒等待 I/O 完成的 Process，若 I/O 佇列中還有其他請求，則會透過 `ide_start_request()` 啟動下一次 I/O
 
 ## 36.9 Historical Notes
@@ -336,7 +336,7 @@ void ide_intr()
   對傳統與虛擬化環境中中斷合併技術的優秀調查與分析  
 
 - [AD14] “Operating Systems: Three Easy Pieces” (Chapters: Crash Consistency: FSCK and Journaling and Log-Structured File Systems) by Remzi Arpaci-Dusseau and Andrea Arpaci-Dusseau. Arpaci-Dusseau Books, 2014.  
-  關於檔案系統檢查與日誌結構檔案系統運作原理的章節，深入說明如何在低階層級檢測與修復磁碟裝置錯誤  
+  關於檔案系統檢查與日誌結構檔案系統運作原理的章節，深入說明如何在低階層級檢測與修復硬碟裝置錯誤  
 
 - [C01] “An Empirical Study of Operating System Errors” by Andy Chou, Junfeng Yang, Benjamin Chelf, Seth Hallem, Dawson Engler. SOSP ’01.  
   首批有系統地探討現代作業系統中錯誤數量的實證研究，顯示裝置驅動程式比核心主線程式碼的錯誤率高約七倍  
@@ -357,7 +357,7 @@ void ide_intr()
   一個優質的科技新聞彙整平台；2014 年曾一日內獲得百萬次章節下載，顯示其廣大影響力  
 
 - [L94] “AT Attachment Interface for Disk Drives” by Lawrence J. Lamers. Reference number: ANSI X3.221, 1994. Available: ftp://ftp.t10.org/t13/project/d0791r4c-ATA-1.pdf.  
-  關於磁碟驅動器介面標準的官方規範文件，內容較為艱澀，但對深入理解裝置介面非常重要  
+  關於硬碟驅動器介面標準的官方規範文件，內容較為艱澀，但對深入理解裝置介面非常重要  
 
 - [MR96] “Eliminating Receive Livelock in an Interrupt-driven Kernel” by Jeffrey Mogul, K. K. Ramakrishnan. USENIX ’96, January 1996.  
   探討如何消除基於中斷驅動核心中的接收 livelock，可謂網頁伺服器網路效能優化研究的先驅  

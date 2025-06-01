@@ -39,7 +39,7 @@ VMS 設計者的一大擔憂是 VAX 硬體中的 page 太小（只有 512 bytes�
 
 VMS 用兩種方式減輕 page table 對記憶體的壓力。 第一是將 user address space 分成兩段，VAX-11 為每個 process 提供 P0 與 P1 各一張 page table，這樣位於 stack 與 heap 之間未使用的空間就不需要配置 page table。 base 與 bounds register 的使用方式一樣，base register 存放該 segment 的 page table 起始位址，bounds 則存放大小（即 page-table entry 的數量）
 
-第二是 OS 進一步將 user 的 page tables（P0 與 P1）放入 kernel virtual memory 中。 這樣在配置或擴展 page table 時，kernel 就從自己的 virtual memory 中分配空間，也就是 segment S。 如果記憶體壓力太大，kernel 還可以把這些 page table 的 page swap 到磁碟，釋放出 physical memory
+第二是 OS 進一步將 user 的 page tables（P0 與 P1）放入 kernel virtual memory 中。 這樣在配置或擴展 page table 時，kernel 就從自己的 virtual memory 中分配空間，也就是 segment S。 如果記憶體壓力太大，kernel 還可以把這些 page table 的 page swap 到硬碟，釋放出 physical memory
 
 將 page table 放入 kernel virtual memory 會使得 address translation 更為複雜。 例如，要轉換 P0 或 P1 中的 virtual address 時，硬體要先去找對應的 PTE（在該 process 的 P0 或 P1 表中）；但要做到這點，硬體可能要先查 system page table（位於 physical memory），完成後才能知道 page table 本身在哪裡，最後再完成目標記憶體位置的查詢。 所幸這整個流程大多可由 VAX 的硬體 TLB 加速
 
@@ -73,7 +73,7 @@ VMS 用兩種方式減輕 page table 對記憶體的壓力。 第一是將 user 
 
 將 kernel 映射進每個 address space 有多個理由。 這種做法讓 kernel 的運作更容易，舉例來說，當 OS 接收到 user program 傳進來的 pointer（例如 `write()` system call）時，要從該 pointer 複製資料到 kernel 的結構就變得容易。 OS 的程式碼也能在不必擔心資料來自哪裡的情況下撰寫與編譯
 
-反過來說，如果 kernel 完全放在 physical memory 中，要做類似將 page table swap 出磁碟的操作會變得非常麻煩，若 kernel 有自己的 address space，從 user app 與 kernel 之間搬資料也會變得困難與痛苦。 透過這種設計（如今已普遍使用），kernel 幾乎就像是應用程式的一個受保護函式庫
+反過來說，如果 kernel 完全放在 physical memory 中，要做類似將 page table swap 出硬碟的操作會變得非常麻煩，若 kernel 有自己的 address space，從 user app 與 kernel 之間搬資料也會變得困難與痛苦。 透過這種設計（如今已普遍使用），kernel 幾乎就像是應用程式的一個受保護函式庫
 
 關於這個 address space 的最後一點是保護機制。 顯然 OS 不希望 user app 任意存取 OS 的資料或程式碼，因此，硬體必須支援 page 的不同保護層級來達成這點。 VAX 會透過 page table 中的 protection bits 來指定存取某個 page 所需的 CPU 權限等級。 系統資料與程式碼會設成較高的保護等級，user code 嘗試存取這些內容時會觸發 trap 進入 OS，通常就會終止該 process
 
@@ -108,9 +108,9 @@ VAX 中的 PTE 包含以下幾個位元，一個 valid bit、一個 4-bit 的 pr
 
 若另一個 process Q 需要一個 free page，就從 global clean list 的開頭拿一個。 不過，如果原本的 process P 在該 page 被回收前又發生 page fault，P 就能從 free list 或 dirty list 中把該 page 搶回來，從而避免一次昂貴的 disk access。 這些 global second-chance list 越大，segmented FIFO 的效能就越接近 LRU [RL81]
 
-VMS 使用的另一個最佳化方式，也有助於克服其小 page size 的缺點。 具體來說，因為 page 太小，swap 時的 disk I/O 容易變得效率低落，畢竟磁碟在進行大型傳輸時效率比較好。 為了提升 swap 時的 I/O 效率，VMS 加入了數個最佳化手法，其中最重要的是 clustering
+VMS 使用的另一個最佳化方式，也有助於克服其小 page size 的缺點。 具體來說，因為 page 太小，swap 時的 disk I/O 容易變得效率低落，畢竟硬碟在進行大型傳輸時效率比較好。 為了提升 swap 時的 I/O 效率，VMS 加入了數個最佳化手法，其中最重要的是 clustering
 
-透過 clustering，VMS 可以從 global dirty list 中一次抓出一大批 pages 並同時寫到磁碟（讓它們變成 clean 的）。 clustering 在現代系統中也很常見，因為 OS 可以在 swap space 中隨意安排 pages 的位置，從而將 pages 分群、減少寫入次數、增加單次寫入量，進而提升效能
+透過 clustering，VMS 可以從 global dirty list 中一次抓出一大批 pages 並同時寫到硬碟（讓它們變成 clean 的）。 clustering 在現代系統中也很常見，因為 OS 可以在 swap space 中隨意安排 pages 的位置，從而將 pages 分群、減少寫入次數、增加單次寫入量，進而提升效能
 
 ::: info  
 ASIDE: EMULATING REFERENCE BITS
@@ -143,7 +143,7 @@ COW 有許多用途。 舉例來說，共用函式庫可以透過 COW 的方式 
 ::: info  
 TIP: BE LAZY
 
-偷懶在生活和作業系統中都可以是一種美德。 延後處理一些工作，有時會對 OS 帶來很多好處。 第一，延後工作可以減少目前操作的 latency，提升反應速度，例如 OS 通常會馬上回報檔案寫入成功，但其實只是把資料存在記憶體中，稍後才真的寫入磁碟
+偷懶在生活和作業系統中都可以是一種美德。 延後處理一些工作，有時會對 OS 帶來很多好處。 第一，延後工作可以減少目前操作的 latency，提升反應速度，例如 OS 通常會馬上回報檔案寫入成功，但其實只是把資料存在記憶體中，稍後才真的寫入硬碟
 
 第二，延後工作有時會讓某些工作變得根本不需要做，例如如果某個檔案在寫入前就被刪除了，那就不用寫入了。 偷懶在生活中也有幫助，例如你拖延你的 OS 專題，可能會發現同學已經幫你發現 spec 中的 bug。 不過，要是你太懶，專題就趕不出來，分數會變差，老師會變得難過。不要讓老師難過  
 :::
@@ -354,7 +354,7 @@ Linux 也會用 memory-mapping `/dev/zero` 的方式來做 demand zeroing，並�
 
 - [BC05] “Understanding the Linux Kernel” by D. P. Bovet, M. Cesati. O’Reilly Media, November 2005. 眾多關於 Linux 的書之一，雖然過時了，但仍值得一讀
 
-- [C03] “The Innovator’s Dilemma” by Clayton M. Christenson. Harper Paperbacks, January 2003. 一本很棒的書，討論磁碟機產業與創新如何顛覆既有勢力。對商學院學生和電腦科學家都很有啟發性。說明了大型成功企業是如何徹底失敗的
+- [C03] “The Innovator’s Dilemma” by Clayton M. Christenson. Harper Paperbacks, January 2003. 一本很棒的書，討論硬碟機產業與創新如何顛覆既有勢力。對商學院學生和電腦科學家都很有啟發性。說明了大型成功企業是如何徹底失敗的
 
 - [C93] “Inside Windows NT” by H. Custer, D. Solomon. Microsoft Press, 1993. 一本非常詳細地從頭到尾說明 Windows NT 系統的書。內容很多，但確實是一本不錯的書
 
