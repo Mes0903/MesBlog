@@ -49,7 +49,7 @@ VMS 用兩種方式減輕 page table 對記憶體的壓力。 第一是將 user 
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/memory_system/23/image/23-1.png">
+![](image/23-1.png)
 
 </div>
 
@@ -168,7 +168,7 @@ Figure 23.2 顯示了一個典型（簡化後）的地址空間示意圖：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/memory_system/23/image/23-2.png">
+![](image/23-2.png)
 
 </div>
 
@@ -196,7 +196,7 @@ OS 在以下時機會參與其中：建立與刪除 process，以及 context swi
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/memory_system/23/image/page_table_structure.png">
+![](image/page_table_structure.png)
 
 </div>
 

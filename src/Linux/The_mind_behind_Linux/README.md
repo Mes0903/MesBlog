@@ -86,7 +86,7 @@ Linus Torvalds 在 15:25 時說
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/The_mind_behind_Linux/image/link_list1.png">
+![](image/link_list1.png)
 
 </div>
 
@@ -96,7 +96,7 @@ Linus Torvalds 在 15:25 時說
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/The_mind_behind_Linux/image/link_list2.png">
+![](image/link_list2.png)
 
 </div>
 

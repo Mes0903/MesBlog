@@ -86,7 +86,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/MinimalGltfFile/image/triangle.png">
+![](image/triangle.png)
 （Image 3a: A single triangle.）
 
 </div>

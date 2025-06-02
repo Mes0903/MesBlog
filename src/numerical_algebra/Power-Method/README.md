@@ -14,7 +14,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/1.png">
+![](image/1.png)
 
 </div>
 
@@ -26,7 +26,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/2.png">
+![](image/2.png)
 
 </div>
 
@@ -34,7 +34,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/3.png">
+![](image/3.png)
 
 </div>
 
@@ -42,7 +42,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/4.png">
+![](image/4.png)
 
 </div>
 
@@ -52,7 +52,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/5.png">
+![](image/5.png)
 
 </div>
 
@@ -62,7 +62,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/6.png">
+![](image/6.png)
 
 </div>
 
@@ -70,7 +70,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/7.png">
+![](image/7.png)
 
 </div>
 
@@ -78,7 +78,7 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/8.png">
+![](image/8.png)
 
 </div>
 
@@ -86,6 +86,6 @@ order: 10
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Power-Method/image/9.png">
+![](image/9.png)
 
 </div>

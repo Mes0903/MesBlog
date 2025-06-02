@@ -57,7 +57,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/Animations/image/animationSamplers.png">
+![](image/animationSamplers.png)
 (Image 7a: Animation samplers.)
 
 </div>
@@ -150,7 +150,7 @@ currentTranslation = previousTranslation + interpolationValue * (nextTranslation
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/Animations/image/animationChannels.png">
+![](image/animationChannels.png)
 (Image 7b: Animation channels.)
 
 </div>

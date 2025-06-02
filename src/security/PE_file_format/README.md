@@ -15,7 +15,7 @@ PE File 內部的格式是規定好的，也就是所謂的 PE file format，大
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/header_section.png">
+![](image/header_section.png)
 
 (圖片[連結](https://www.researchgate.net/figure/Portable-executable-file-format_fig6_338355873))
 
@@ -68,7 +68,7 @@ start:
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/PE_bear.png">
+![](image/PE_bear.png)
 
 </div>
 
@@ -80,7 +80,7 @@ PE file 最一開始的部分是 Dos Header，PE-bear 可以幫我們把這段 b
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/DOS_header1.png">
+![](image/DOS_header1.png)
 
 </div>
 
@@ -88,7 +88,7 @@ PE file 最一開始的部分是 Dos Header，PE-bear 可以幫我們把這段 b
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/DOS_header2.png">
+![](image/DOS_header2.png)
 
 </div>
 
@@ -163,7 +163,7 @@ typedef struct _IMAGE_NT_HEADERS {
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/NT_header.png">
+![](image/NT_header.png)
 
 </div>
 
@@ -224,7 +224,7 @@ typedef struct _IMAGE_FILE_HEADER {
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/File_header1.png">
+![](image/File_header1.png)
 
 </div>
 
@@ -255,7 +255,7 @@ Characteristics 記錄了這個檔案的屬性，會是以下這些值去做 `or
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/File_header2.png">
+![](image/File_header2.png)
 
 </div>
 
@@ -338,7 +338,7 @@ typedef struct _IMAGE_SECTION_HEADER {
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/Section_header.png">
+![](image/Section_header.png)
 
 (圖片[連結](https://tech-zealots.com/malware-analysis/pe-portable-executable-structure-malware-analysis-part-2/))
 
@@ -368,7 +368,7 @@ Section Header 只負責記錄對應 Section 的重要屬性，像是 Section �
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/security/PE_file_format/image/RVA.png">
+![](image/RVA.png)
 
 </div>
 

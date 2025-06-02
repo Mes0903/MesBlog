@@ -14,7 +14,7 @@ order: 7
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/1.png">
+![](image/1.png)
 
 (圖源：[wiki](https://upload.wikimedia.org/wikipedia/commons/8/84/%E6%95%A3%E7%82%B9%E5%9B%BE.jpg))
 
@@ -24,7 +24,7 @@ order: 7
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/2.png">
+![](image/2.png)
 
 (圖源：[wiki](https://upload.wikimedia.org/wikipedia/commons/d/d2/%E6%9C%80%E5%B0%8F%E4%BA%8C%E4%B9%98%E6%B3%95%E6%8B%9F%E5%90%88.jpg) )
 
@@ -44,7 +44,7 @@ $E_1(a_0, a_1) = \Sigma_{i=1}^{10} |y_i - (a_1x_i + a_0)|$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/3.png">
+![](image/3.png)
 
 </div>
 
@@ -64,7 +64,7 @@ $E_2(a_0, a_1) = \Sigma_{i=1}^{10} [\ y_i - (a_1x_i + a_0)\ ]^2$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/4.png">
+![](image/4.png)
 
 </div>
 
@@ -72,7 +72,7 @@ $E_2(a_0, a_1) = \Sigma_{i=1}^{10} [\ y_i - (a_1x_i + a_0)\ ]^2$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/5.png">
+![](image/5.png)
 
 </div>
 
@@ -84,7 +84,7 @@ $E_2(a_0, a_1) = \Sigma_{i=1}^{10} [\ y_i - (a_1x_i + a_0)\ ]^2$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/6.png">
+![](image/6.png)
 
 </div>
 
@@ -98,14 +98,14 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/7.png">
+![](image/7.png)
 
 </div>
 那一樣對他偏微：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/8.png">
+![](image/8.png)
 
 </div>
 
@@ -113,7 +113,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/9.png">
+![](image/9.png)
 
 </div>
 
@@ -125,7 +125,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/10.png">
+![](image/10.png)
 
 </div>
 
@@ -137,7 +137,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/11.png">
+![](image/11.png)
 
 </div>
 
@@ -149,7 +149,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/12.png">
+![](image/12.png)
 
 </div>
 
@@ -161,7 +161,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/13.png">
+![](image/13.png)
 
 </div>
 
@@ -173,7 +173,7 @@ $P_n(x) = a_nx^n + a_{n-1}x^{n-1} +\ ...\ + a_1x + a_0$，defree n < m - 1
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Least-Squares/image/14.png">
+![](image/14.png)
 
 </div>
 

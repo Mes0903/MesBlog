@@ -107,7 +107,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/GSM-net-black.png">
+![](image/GSM-net-black.png)
 
 </div>
 
@@ -117,7 +117,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/same-plmn-black.png">
+![](image/same-plmn-black.png)
 
 </div>
 
@@ -127,7 +127,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/cross-plmn-black.png">
+![](image/cross-plmn-black.png)
 
 </div>
 
@@ -137,7 +137,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/to-pstn-black.png">
+![](image/to-pstn-black.png)
 
 </div>
 
@@ -149,7 +149,7 @@ GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/GPRS-black.png">
+![](image/GPRS-black.png)
 
 </div>
 
@@ -161,7 +161,7 @@ GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/UMTS-net-black.png">
+![](image/UMTS-net-black.png)
 
 </div>
 
@@ -235,7 +235,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
   <div class = "center-column">
 
-  <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/RIP-net-black.png">
+  ![](image/RIP-net-black.png)
 
   </div>
 
@@ -454,7 +454,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
   <div class = "center-column">
 
-  <img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/EIGRP-black.png">
+  ![](image/EIGRP-black.png)
 
   </div>
 

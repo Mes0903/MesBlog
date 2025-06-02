@@ -60,13 +60,13 @@ Process type and features -> Linux guest support -> Support for running PVH gues
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build1.png">
+![](image/build1.png)
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build2.png">
+![](image/build2.png)
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build3.png">
+![](image/build3.png)
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build4.png">
+![](image/build4.png)
 
 </div>
 
@@ -125,7 +125,7 @@ find . | cpio -o --format=newc | gzip > ../../linux-6.6/rootfs.img.gz
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/rootfs.png">
+![](image/rootfs.png)
 
 </div>
 
@@ -154,7 +154,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/add_system_call1.png">
+![](image/add_system_call1.png)
 
 </div>
 
@@ -175,7 +175,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/add_system_call2.png">
+![](image/add_system_call2.png)
 
 </div>
 
@@ -187,7 +187,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call1.png">
+![](image/imp_system_call1.png)
 
 </div>
 
@@ -195,7 +195,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call2.png">
+![](image/imp_system_call2.png)
 
 </div>
 
@@ -374,7 +374,7 @@ struct 的詳細內容可以看看這篇：[linux内核那些事之struct page](
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/page_table.png">
+![](image/page_table.png)
 
 圖源：[關於Linux記憶體尋址與頁表處理的一些細節](https://www.cnblogs.com/QiQi-Robotics/p/15630380.html)   
 (圖很小，可以用新分頁打開來看一下)
@@ -495,7 +495,7 @@ asmlinkage long sys_my_get_physical_addresses(void *);
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/imp_system_call3.png">
+![](image/imp_system_call3.png)
 
 </div>
 
@@ -607,7 +607,7 @@ obj-y     = fork.o exec_domain.o panic.o \
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/build_test.png">
+![](image/build_test.png)
 
 </div>
 
@@ -753,7 +753,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run1.png">
+![](image/run1.png)
 
 </div>
 
@@ -761,7 +761,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run2.png">
+![](image/run2.png)
 
 </div>
 
@@ -769,7 +769,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/run3.png">
+![](image/run3.png)
 
 </div>
 
@@ -941,7 +941,7 @@ hackmd 的排版讓表格不太好看，所以這邊截一下圖：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/out1.png">
+![](image/out1.png)
 
 </div>
 
@@ -949,7 +949,7 @@ hackmd 的排版讓表格不太好看，所以這邊截一下圖：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/Linux/physical_address_syscall/image/out2.png">
+![](image/out2.png)
 
 </div>
 

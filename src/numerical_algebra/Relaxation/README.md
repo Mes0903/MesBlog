@@ -14,7 +14,7 @@ order: 3
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r1.png">
+![](image/r1.png)
 
 </div>
 
@@ -22,7 +22,7 @@ order: 3
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r2.png">
+![](image/r2.png)
 
 </div>
 
@@ -34,7 +34,7 @@ w 是一個實數，而 $x^*$ 其實是個中間迭代出來的解，不管是�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r3.png">
+![](image/r3.png)
 
 </div>
 
@@ -46,7 +46,7 @@ w 是一個實數，而 $x^*$ 其實是個中間迭代出來的解，不管是�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r4.png">
+![](image/r4.png)
 
 </div>
 
@@ -58,7 +58,7 @@ w 是一個實數，而 $x^*$ 其實是個中間迭代出來的解，不管是�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r5.png">
+![](image/r5.png)
 
 </div>
 
@@ -68,7 +68,7 @@ T 是這個問題的迭代矩陣，c 是一個跟 k 無關的向量
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r6.png">
+![](image/r6.png)
 
 </div>
 
@@ -78,7 +78,7 @@ T 是這個問題的迭代矩陣，c 是一個跟 k 無關的向量
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r7.png">
+![](image/r7.png)
 
 </div>
 
@@ -86,7 +86,7 @@ T 是這個問題的迭代矩陣，c 是一個跟 k 無關的向量
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Relaxation/image/r8.png">
+![](image/r8.png)
 
 </div>
 

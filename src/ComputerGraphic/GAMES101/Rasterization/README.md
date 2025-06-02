@@ -19,7 +19,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/CRT.png">
+![](image/CRT.png)
 
 </div>
 
@@ -43,7 +43,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/sampling.png">
+![](image/sampling.png)
 
 </div>
 
@@ -53,7 +53,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/sampling2.png">
+![](image/sampling2.png)
 
 </div>
 
@@ -63,7 +63,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/sampling3.png">
+![](image/sampling3.png)
 
 </div>
 
@@ -71,7 +71,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/sampling4.png">
+![](image/sampling4.png)
 
 </div>
 
@@ -105,7 +105,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/InTri.png">
+![](image/InTri.png)
 
 </div>
 
@@ -117,7 +117,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/InTri2.png">
+![](image/InTri2.png)
 
 </div>
 
@@ -131,7 +131,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/display.png">
+![](image/display.png)
 
 </div>
 
@@ -147,7 +147,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/BoundingBox.png">
+![](image/BoundingBox.png)
 
 </div>
 
@@ -157,7 +157,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/BoundingBox2.png">
+![](image/BoundingBox2.png)
 
 </div>
 
@@ -169,7 +169,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/moire.png">
+![](image/moire.png)
 
 </div>
 
@@ -197,7 +197,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/antialiasing.png">
+![](image/antialiasing.png)
 
 </div>
 
@@ -207,7 +207,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/antialiasing2.png">
+![](image/antialiasing2.png)
 
 </div>
 
@@ -215,7 +215,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/antialiasing3.png">
+![](image/antialiasing3.png)
 
 </div>
 
@@ -223,7 +223,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/antialiasing4.png">
+![](image/antialiasing4.png)
 
 </div>
 
@@ -233,7 +233,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/antialiasing5.png">
+![](image/antialiasing5.png)
 
 </div>
 
@@ -245,7 +245,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/frequency.png">
+![](image/frequency.png)
 
 </div>
 
@@ -255,7 +255,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/frequency2.png">
+![](image/frequency2.png)
 
 </div>
 
@@ -271,7 +271,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/fourier.png">
+![](image/fourier.png)
 
 </div>
 
@@ -283,7 +283,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/fourier2.png">
+![](image/fourier2.png)
 
 </div>
 
@@ -293,7 +293,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/fourier3.png">
+![](image/fourier3.png)
 
 </div>
 
@@ -305,7 +305,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/sampling3.png">
+![](image/sampling3.png)
 
 </div>
 
@@ -323,7 +323,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/filtering.png">
+![](image/filtering.png)
 
 </div>
 
@@ -339,7 +339,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/filtering2.png">
+![](image/filtering2.png)
 
 </div>
 
@@ -351,7 +351,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/filtering3.png">
+![](image/filtering3.png)
 
 </div>
 
@@ -361,7 +361,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/filtering4.png">
+![](image/filtering4.png)
 
 </div>
 
@@ -369,7 +369,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/filtering5.png">
+![](image/filtering5.png)
 
 </div>
 
@@ -385,7 +385,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/convolution.png">
+![](image/convolution.png)
 
 </div>
 
@@ -393,7 +393,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/convolution2.png">
+![](image/convolution2.png)
 
 </div>
 
@@ -401,7 +401,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/convolution3.png">
+![](image/convolution3.png)
 
 </div>
 
@@ -415,7 +415,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/convolutuon4.png">
+![](image/convolutuon4.png)
 
 </div>
 
@@ -437,7 +437,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/antialiasing6.png">
+![](image/antialiasing6.png)
 
 </div>
 
@@ -461,7 +461,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/antialiasing7.png">
+![](image/antialiasing7.png)
 
 </div>
 
@@ -479,7 +479,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/antialiasing8.png">
+![](image/antialiasing8.png)
 
 </div>
 
@@ -487,7 +487,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/antialiasing9.png">
+![](image/antialiasing9.png)
 
 </div>
 
@@ -503,7 +503,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/msaa.png">
+![](image/msaa.png)
 
 </div>
 
@@ -513,7 +513,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/msaa2.png">
+![](image/msaa2.png)
 
 </div>
 
@@ -521,7 +521,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/msaa3.png">
+![](image/msaa3.png)
 
 </div>
 
@@ -529,7 +529,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/msaa4.png">
+![](image/msaa4.png)
 
 </div>
 
@@ -537,7 +537,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/msaa5.png">
+![](image/msaa5.png)
 
 </div>
 
@@ -551,7 +551,7 @@ for (int x = 0; x < xmax; ++x)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/msaa6.png">
+![](image/msaa6.png)
 
 </div>
 
@@ -559,7 +559,7 @@ MSAA 的結果：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/msaa7.png">
+![](image/msaa7.png)
 
 </div>
 
@@ -583,7 +583,7 @@ MSAA（Multi-Sampling AA）則很聰明的只是在光柵化階段，判斷一�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/msaa8.png">
+![](image/msaa8.png)
 
 </div>
 
@@ -633,7 +633,7 @@ TAA 是 Temporal Anti-Aliasing 的縮寫，是最近幾年才剛剛興起的方�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/cube.png">
+![](image/cube.png)
 
 </div>
 
@@ -641,7 +641,7 @@ TAA 是 Temporal Anti-Aliasing 的縮寫，是最近幾年才剛剛興起的方�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/painter_problem.png">
+![](image/painter_problem.png)
 
 </div>
 
@@ -655,7 +655,7 @@ TAA 是 Temporal Anti-Aliasing 的縮寫，是最近幾年才剛剛興起的方�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/z_buffer.png">
+![](image/z_buffer.png)
 
 </div>
 
@@ -685,7 +685,7 @@ for each triangle T
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Rasterization/image/z_buffer2.png">
+![](image/z_buffer2.png)
 
 </div>
 

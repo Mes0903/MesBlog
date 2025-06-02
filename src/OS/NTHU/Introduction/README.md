@@ -50,7 +50,7 @@ order: 1
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/1.png">
+![](image/1.png)
 
 </div>
 
@@ -110,7 +110,7 @@ OS 主要的考量、需求有二：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/2.png">
+![](image/2.png)
 
 </div>
 
@@ -124,7 +124,7 @@ OS 主要的考量、需求有二：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/3.png">
+![](image/3.png)
 
 </div>
 
@@ -186,7 +186,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/4.png">
+![](image/4.png)
 
 </div>
 
@@ -200,7 +200,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/5.png">
+![](image/5.png)
 
 </div>
 
@@ -232,7 +232,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/6.png">
+![](image/6.png)
 
 </div>
 
@@ -256,7 +256,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/7.png">
+![](image/7.png)
 
 </div>
 
@@ -284,7 +284,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/8.png">
+![](image/8.png)
 
 </div>
 
@@ -340,7 +340,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/9.png">
+![](image/9.png)
 
 </div>
 
@@ -354,7 +354,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/10.png">
+![](image/10.png)
 
 </div>
 
@@ -398,7 +398,7 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/11.png">
+![](image/11.png)
 
 </div>
 
@@ -434,7 +434,7 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/NTHU/Introduction/image/12.png">
+![](image/12.png)
 
 </div>
 

@@ -9,7 +9,7 @@ category: essay
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/essay/AboutMovingForward/image/Lookback.png">
+![](image/Lookback.png)
 
 </div>
 

@@ -20,7 +20,7 @@ A 的特徵值(eigen value) 會被包含在這些圓( $R = \cup_{i=1}^n R_i$ ) �
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Linear-Algebra-and-Eigenvalues/image/1.png">
+![](image/1.png)
 
 </div>
 
@@ -32,6 +32,6 @@ A 的特徵值(eigen value) 會被包含在這些圓( $R = \cup_{i=1}^n R_i$ ) �
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Linear-Algebra-and-Eigenvalues/image/2.png">
+![](image/2.png)
 
 </div>

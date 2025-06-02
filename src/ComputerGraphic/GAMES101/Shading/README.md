@@ -13,7 +13,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/opening.png">
+![](image/opening.png)
 
 </div>
 
@@ -21,7 +21,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/opening2.png">
+![](image/opening2.png)
 
 </div>
 
@@ -41,7 +41,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/blinn_phong.png">
+![](image/blinn_phong.png)
 
 </div>
 
@@ -55,7 +55,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/shading_point.png">
+![](image/shading_point.png)
 
 </div>
 
@@ -67,7 +67,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/shading_point2.png">
+![](image/shading_point2.png)
 
 </div>
 
@@ -81,7 +81,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/lambert.png">
+![](image/lambert.png)
 
 </div>
 
@@ -95,7 +95,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/light_falloff.png">
+![](image/light_falloff.png)
 
 </div>
 
@@ -107,7 +107,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/diffusion.png">
+![](image/diffusion.png)
 
 </div>
 
@@ -120,7 +120,7 @@ $I/r^2$ 是著色點的光強，而 $n \cdot l$ 為兩向量的夾角，表示�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/kd.png">
+![](image/kd.png)
 
 </div>
 
@@ -134,7 +134,7 @@ $I/r^2$ 是著色點的光強，而 $n \cdot l$ 為兩向量的夾角，表示�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/specular.png">
+![](image/specular.png)
 
 </div>
 
@@ -142,7 +142,7 @@ $I/r^2$ 是著色點的光強，而 $n \cdot l$ 為兩向量的夾角，表示�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/half_vector.png">
+![](image/half_vector.png)
 
 </div>
 
@@ -162,7 +162,7 @@ $I/r^2$ 是著色點的光強，而 $n \cdot l$ 為兩向量的夾角，表示�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/reflection_lobe.png">
+![](image/reflection_lobe.png)
 
 </div>
 
@@ -172,7 +172,7 @@ $I/r^2$ 是著色點的光強，而 $n \cdot l$ 為兩向量的夾角，表示�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/specular2.png">
+![](image/specular2.png)
 
 </div>
 
@@ -186,7 +186,7 @@ $I/r^2$ 是著色點的光強，而 $n \cdot l$ 為兩向量的夾角，表示�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/ambient.png">
+![](image/ambient.png)
 
 </div>
 
@@ -200,7 +200,7 @@ $I/r^2$ 是著色點的光強，而 $n \cdot l$ 為兩向量的夾角，表示�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/blinn_phong2.png">
+![](image/blinn_phong2.png)
 
 </div>
 
@@ -220,7 +220,7 @@ $I/r^2$ 是著色點的光強，而 $n \cdot l$ 為兩向量的夾角，表示�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/shading_frequency.png">
+![](image/shading_frequency.png)
 
 </div>
 
@@ -238,7 +238,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/flat_shading.png">
+![](image/flat_shading.png)
 
 </div>
 
@@ -248,7 +248,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/gouraud_shading.png">
+![](image/gouraud_shading.png)
 
 </div>
 
@@ -260,7 +260,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/phong_shading.png">
+![](image/phong_shading.png)
 
 </div>
 
@@ -272,7 +272,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/frequency_compare.png">
+![](image/frequency_compare.png)
 
 </div>
 
@@ -290,7 +290,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/per_vertex_normal_vector.png">
+![](image/per_vertex_normal_vector.png)
 
 </div>
 
@@ -306,7 +306,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/per_pixel_normal_vector.png">
+![](image/per_pixel_normal_vector.png)
 
 </div>
 
@@ -322,7 +322,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_mapping.png">
+![](image/texture_mapping.png)
 
 </div>
 
@@ -336,7 +336,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_mapping2.png">
+![](image/texture_mapping2.png)
 
 </div>
 
@@ -346,7 +346,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture2.png">
+![](image/texture2.png)
 
 </div>
 
@@ -364,7 +364,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_coordinate.png">
+![](image/texture_coordinate.png)
 
 </div>
 
@@ -376,7 +376,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture3.png">
+![](image/texture3.png)
 
 </div>
 
@@ -384,7 +384,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture4.png">
+![](image/texture4.png)
 
 </div>
 
@@ -402,7 +402,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/BC1.png">
+![](image/BC1.png)
 
 </div>
 
@@ -414,7 +414,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/BC2.png">
+![](image/BC2.png)
 
 </div>
 
@@ -424,7 +424,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/BC3.png">
+![](image/BC3.png)
 
 </div>
 
@@ -432,7 +432,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/BC4.png">
+![](image/BC4.png)
 
 </div>
 
@@ -440,7 +440,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/BC5.png">
+![](image/BC5.png)
 
 </div>
 
@@ -448,7 +448,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/BC6.png">
+![](image/BC6.png)
 
 </div>
 
@@ -472,7 +472,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_magnification.png">
+![](image/texture_magnification.png)
 
 </div>
 
@@ -484,7 +484,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bilinear.png">
+![](image/bilinear.png)
 
 </div>
 
@@ -494,7 +494,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bilinear2.png">
+![](image/bilinear2.png)
 
 </div>
 
@@ -504,7 +504,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bilinear3.png">
+![](image/bilinear3.png)
 
 </div>
 
@@ -526,7 +526,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_magnification2.png">
+![](image/texture_magnification2.png)
 
 </div>
 
@@ -536,7 +536,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_magnification3.png">
+![](image/texture_magnification3.png)
 
 </div>
 
@@ -546,7 +546,7 @@ flat shading 對應到最左邊的球，將三角形的法向量求出來，這�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture_magnification4.png">
+![](image/texture_magnification4.png)
 
 </div>
 
@@ -568,7 +568,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap.png">
+![](image/mipmap.png)
 
 </div>
 
@@ -578,7 +578,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap2.png">
+![](image/mipmap2.png)
 
 </div>
 
@@ -586,7 +586,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap3.png">
+![](image/mipmap3.png)
 
 </div>
 
@@ -594,7 +594,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap4.png">
+![](image/mipmap4.png)
 
 </div>
 
@@ -610,7 +610,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap5.png">
+![](image/mipmap5.png)
 
 </div>
 
@@ -618,7 +618,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap6.png">
+![](image/mipmap6.png)
 
 </div>
 
@@ -628,7 +628,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap7.png">
+![](image/mipmap7.png)
 
 </div>
 
@@ -636,7 +636,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap8.png">
+![](image/mipmap8.png)
 
 </div>
 
@@ -644,7 +644,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/mipmap9.png">
+![](image/mipmap9.png)
 
 </div>
 
@@ -656,7 +656,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/anisotropic_filtering.png">
+![](image/anisotropic_filtering.png)
 
 </div>
 
@@ -672,7 +672,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/environment_lighting.png">
+![](image/environment_lighting.png)
 
 </div>
 
@@ -682,7 +682,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/environment_lighting2.png">
+![](image/environment_lighting2.png)
 
 </div>
 
@@ -690,7 +690,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/environment_lighting3.png">
+![](image/environment_lighting3.png)
 
 </div>
 
@@ -700,7 +700,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/environment_lighting4.png">
+![](image/environment_lighting4.png)
 
 </div>
 
@@ -710,7 +710,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/environment_lighting5.png">
+![](image/environment_lighting5.png)
 
 </div>
 
@@ -720,7 +720,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bump_mapping.png">
+![](image/bump_mapping.png)
 
 </div>
 
@@ -728,7 +728,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bump_mapping1.png">
+![](image/bump_mapping1.png)
 
 </div>
 
@@ -738,7 +738,7 @@ Mipmap 的想法是從一張圖預先生成一系列的圖，看個例子：
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bump_mapping2.png">
+![](image/bump_mapping2.png)
 
 </div>
 
@@ -774,7 +774,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/bump_mapping3.png">
+![](image/bump_mapping3.png)
 
 </div>
 
@@ -790,7 +790,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/3d_texture.png">
+![](image/3d_texture.png)
 
 </div>
 
@@ -804,7 +804,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/volume_rendering.png">
+![](image/volume_rendering.png)
 
 </div>
 
@@ -816,7 +816,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/precomputed_shading.png">
+![](image/precomputed_shading.png)
 
 </div>
 
@@ -836,7 +836,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/graphic_pipeline.png">
+![](image/graphic_pipeline.png)
 
 </div>
 
@@ -844,7 +844,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/MVP.png">
+![](image/MVP.png)
 
 </div>
 
@@ -852,7 +852,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/rasterization.png">
+![](image/rasterization.png)
 
 </div>
 
@@ -860,7 +860,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/z_buffer.png">
+![](image/z_buffer.png)
 
 </div>
 
@@ -868,7 +868,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/shading.png">
+![](image/shading.png)
 
 </div>
 
@@ -878,7 +878,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/Shading/image/texture.png">
+![](image/texture.png)
 
 </div>
 

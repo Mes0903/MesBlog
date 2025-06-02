@@ -119,7 +119,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/SimpleCameras/image/cameras.png">
+![](image/cameras.png)
 (Image 15a: The effect of rendering the scene with different cameras.)
 
 </div>

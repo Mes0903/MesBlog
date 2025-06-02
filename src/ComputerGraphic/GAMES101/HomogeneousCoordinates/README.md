@@ -350,7 +350,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/HomogeneousCoordinates/image/image.png">
+![](image/image.png)
 
 </div>
 
@@ -358,7 +358,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/HomogeneousCoordinates/image/image-1.png">
+![](image/image-1.png)
 
 </div>
 
@@ -366,7 +366,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/HomogeneousCoordinates/image/image-2.png">
+![](image/image-2.png)
 
 </div>
 
@@ -374,7 +374,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/GAMES101/HomogeneousCoordinates/image/image-3.png">
+![](image/image-3.png)
 
 </div>
 

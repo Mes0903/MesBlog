@@ -386,7 +386,7 @@ Score Matrix 填充完畢後，開始從最大值的位置回溯，找到最佳�
 
 <div class = "center-column">    
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/sw.png">
+![](image/sw.png)
 
 圖源：[Smith-Waterman算法、Needleman-Wunsch算法的算法原理及算法比较](https://blog.csdn.net/yohjob/article/details/89144032)
 
@@ -414,7 +414,7 @@ Systolic Array 是由孔祥重院士提出的，問題的起因是把東西從 c
 
 <div class = "center-column">
     
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/systolic1.png">
+![](image/systolic1.png)
 
 圖源：[Kung, "Why systolic architectures?," in Computer, vol. 15, no. 1, pp. 37-46, Jan. 1982, doi: 10.1109/MC.1982.1653825.](https://ieeexplore.ieee.org/document/1653825)
     
@@ -451,7 +451,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/systolic2.png">
+![](image/systolic2.png)
 
 </div>
 
@@ -461,7 +461,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/systolic3.png">
+![](image/systolic3.png)
 
 </div>
 
@@ -469,7 +469,7 @@ $$
 
 <div class = "center-column">
     
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/systolic4.png">
+![](image/systolic4.png)
 
 圖源：[Kung, "Why systolic architectures?," in Computer, vol. 15, no. 1, pp. 37-46, Jan. 1982, doi: 10.1109/MC.1982.1653825.](https://ieeexplore.ieee.org/document/1653825)
     
@@ -524,7 +524,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/systolic5.png">
+![](image/systolic5.png)
 
 </div>
 
@@ -544,7 +544,7 @@ ReRAM 是一種新型的非揮發性記憶體，所謂的「非揮發性」表�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/reram1.png">
+![](image/reram1.png)
 
 圖源：[R. Liu, D. Mahalanabis, H. J. Barnaby and S. Yu, "Investigation of Single-Bit and Multiple-Bit Upsets in Oxide RRAM-Based 1T1R and Crossbar Memory Arrays," in IEEE Transactions on Nuclear Science, vol. 62, no. 5, pp. 2294-2301, Oct. 2015, doi: 10.1109/TNS.2015.2465164.](https://ieeexplore.ieee.org/document/7274484)
 
@@ -562,7 +562,7 @@ ReRAM 也可以有 Multi-level 的型態，在這種情況寫一個 ReRAM cell �
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/reram2.png">
+![](image/reram2.png)
 
 </div>
 
@@ -587,7 +587,7 @@ $$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/reram3.png">
+![](image/reram3.png)
 
 </div>
 
@@ -621,7 +621,7 @@ T -8  -5  -2  -3  -1   2
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/imp1.png">
+![](image/imp1.png)
 
 </div>
 
@@ -633,7 +633,7 @@ T -8  -5  -2  -3  -1   2
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/imp2.png">
+![](image/imp2.png)
 
 </div>
 
@@ -643,7 +643,7 @@ T -8  -5  -2  -3  -1   2
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/imp3.png">
+![](image/imp3.png)
 
 Reference：[8-Bit Identity Comparator](https://www.renesas.com/us/en/products/memory-logic/standard-logic/fast-cmos-ttl-compatible-fct/74fct521t-8-bit-identity-comparator)
     
@@ -653,7 +653,7 @@ Reference：[8-Bit Identity Comparator](https://www.renesas.com/us/en/products/m
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/imp4.png">
+![](image/imp4.png)
 
 Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)
 
@@ -678,7 +678,7 @@ Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/imp5.png">
+![](image/imp5.png)
 
 </div>
 
@@ -686,7 +686,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/imp6.png">
+![](image/imp6.png)
 
 </div>
 
@@ -701,7 +701,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/imp7.png">
+![](image/imp7.png)
 
 </div>
 
@@ -717,7 +717,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/memory/sw_reram/image/imp8.png">
+![](image/imp8.png)
 
 (我也不知道為什麼論文內的圖這麼糊)
 

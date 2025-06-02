@@ -49,7 +49,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/p2p1.png">
+![](image/p2p1.png)
 
 (image source：[wikipedia](https://en.wikipedia.org/wiki/Client%E2%80%93server_model))
 
@@ -67,7 +67,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/p2p2.png">
+![](image/p2p2.png)
 
 (image source：[link](https://ithelp.ithome.com.tw/articles/10216158))
 
@@ -81,7 +81,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/p2p3.png">
+![](image/p2p3.png)
 
 (image source：[link](https://www.researchgate.net/figure/P2P-architectures-at-a-glance-a-Centralized-architecture-b-Pure-P2P-architecture_fig2_332539196))
 
@@ -121,7 +121,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/p2p4.png">
+![](image/p2p4.png)
 
 (image source：RSL ROS Tutorial)
 
@@ -217,7 +217,7 @@ Message 在發布時我們會給它加上 Topic，妳可以把 Message 想像成
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub1.png">
+![](image/pub_sub1.png)
 
 </div>
 
@@ -227,7 +227,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub2.png">
+![](image/pub_sub2.png)
 
 </div>
 
@@ -235,7 +235,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub3.png">
+![](image/pub_sub3.png)
 
 </div>
 
@@ -243,7 +243,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub4.png">
+![](image/pub_sub4.png)
 
 </div>
 
@@ -255,7 +255,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/pub_sub5.png">
+![](image/pub_sub5.png)
 
 </div>
 
@@ -283,7 +283,7 @@ Ubuntu 是基於 Debian，以桌面應用為主的 Linux 發行版。Ubuntu 有�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/terminal.png">
+![](image/terminal.png)
 
 </div>
 
@@ -407,7 +407,7 @@ rosrun turtlesim turtle_teleop_key
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/robot.png">
+![](image/robot.png)
 
 </div>
 
@@ -425,7 +425,7 @@ gedit ~/.bashrc
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/setting1.png">
+![](image/setting1.png)
 
 </div>
 
@@ -435,7 +435,7 @@ source ~/.bashrc
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/setting2.png">
+![](image/setting2.png)
 
 </div>
 
@@ -485,7 +485,7 @@ gedit ~/.bashrc
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/setting3.png">
+![](image/setting3.png)
 
 </div>
 
@@ -526,7 +526,7 @@ roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/setting4.png">
+![](image/setting4.png)
 
 </div>
 
@@ -560,7 +560,7 @@ catkin 大致上把一個工作區劃分為以下三個區塊
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/catkin1.png">
+![](image/catkin1.png)
 
 </div>
 
@@ -570,7 +570,7 @@ catkin 大致上把一個工作區劃分為以下三個區塊
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/catkin2.png">
+![](image/catkin2.png)
 
 </div>
 
@@ -612,7 +612,7 @@ catkin_make
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/catkin3.png">
+![](image/catkin3.png)
 
 </div>
 

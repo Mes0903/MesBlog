@@ -49,7 +49,7 @@ swap space 的大小很重要，因為它最終決定了系統在某一時間點
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/OS/OSTEP/swapping/21/image/21-1.png">
+![](image/21-1.png)
 
 </div>
 

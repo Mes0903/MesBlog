@@ -46,7 +46,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/contentPipeline.png">
+![](image/contentPipeline.png)
 （Image 1b: The 3D content pipeline today.）
 
 </div>
@@ -64,7 +64,7 @@ glTF 的目標是建立一個用來描述 3D 內容的標準，使其適合直�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/Introduction/image/contentPipelineWithGltf.png">
+![](image/contentPipelineWithGltf.png)
 （Image 1c: The 3D content pipeline with glTF.）
 
 </div>

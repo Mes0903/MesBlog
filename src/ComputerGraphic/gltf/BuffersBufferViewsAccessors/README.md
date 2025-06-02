@@ -29,7 +29,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/BuffersBufferViewsAccessors/image/buffer.png">
+![](image/buffer.png)
 (Image 5a: The buffer data, consisting of 44 bytes.)
 
 </div>
@@ -66,7 +66,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/BuffersBufferViewsAccessors/image/bufferBufferView.png">
+![](image/bufferBufferView.png)
 (Image 5b: The buffer views, referring to parts of the buffer.)
 
 </div>
@@ -150,7 +150,7 @@ accessor 指向的資料可能會被傳送到顯卡作為渲染用的資料，�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/BuffersBufferViewsAccessors/image/bufferBufferViewAccessor.png">
+![](image/bufferBufferViewAccessor.png)
 (Image 5c: The accessors defining how to interpret the data of the buffer views.)
 
 </div>
@@ -210,7 +210,7 @@ accessor 指向的資料可能會被傳送到顯卡作為渲染用的資料，�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/BuffersBufferViewsAccessors/image/aos.png">
+![](image/aos.png)
 (Image 5d: Interleaved accessors in one buffer view.)
 
 </div>
@@ -326,7 +326,7 @@ quantize 基本上就是在做壓縮，你直接查 mesh quantize 或 gltf quant
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/BuffersBufferViewsAccessors/image/simpleSparseAccessor.png">
+![](image/simpleSparseAccessor.png)
 (Image 5e: The result of rendering the simple sparse accessor asset.)
 
 </div>
@@ -379,7 +379,7 @@ quantize 基本上就是在做壓縮，你直接查 mesh quantize 或 gltf quant
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/BuffersBufferViewsAccessors/image/simpleSparseAccessorDescription.png">
+![](image/simpleSparseAccessorDescription.png)
 (Image 5f: The substitution that is done with the sparse accessor.)
 
 </div>

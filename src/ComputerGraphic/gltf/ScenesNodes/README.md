@@ -45,7 +45,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/ScenesNodes/image/sceneGraph.png">
+![](image/sceneGraph.png)
 (Image 4a: The scene graph representation stored in the glTF JSON.)
 
 </div>

@@ -24,7 +24,7 @@ order: 4
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/1.png">
+![](image/1.png)
 
 </div>
 
@@ -42,7 +42,7 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/2.png">
+![](image/2.png)
 
 </div>
 
@@ -54,7 +54,7 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/3.png">
+![](image/3.png)
 
 </div>
 
@@ -62,7 +62,7 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/4.png">
+![](image/4.png)
 
 </div>
 
@@ -72,7 +72,7 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/5.png">
+![](image/5.png)
 
 </div>
 
@@ -82,7 +82,7 @@ $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(co
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/6.png">
+![](image/6.png)
 
 </div>
 
@@ -92,7 +92,7 @@ $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(co
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/7.png">
+![](image/7.png)
 
 </div>
 
@@ -102,7 +102,7 @@ $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(co
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/8.png">
+![](image/8.png)
 
 </div>
 
@@ -110,7 +110,7 @@ $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(co
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/9.png">
+![](image/9.png)
 
 </div>
 
@@ -120,6 +120,6 @@ $||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(co
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Error-Bound/image/10.png">
+![](image/10.png)
 
 </div>

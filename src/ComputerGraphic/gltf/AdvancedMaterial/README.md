@@ -22,7 +22,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/AdvancedMaterial/image/materials.png">
+![](image/materials.png)
 (Image 14a: An example of a material where the surface properties are defined via textures.)
 
 </div>
@@ -33,7 +33,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/AdvancedMaterial/image/advancedMaterial_roughness.png">
+![](image/advancedMaterial_roughness.png)
 (Image 14b: The influence of the roughness texture.)
 
 </div>
@@ -42,7 +42,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/AdvancedMaterial/image/advancedMaterial_metallic.png">
+![](image/advancedMaterial_metallic.png)
 (Image 14c: The influence of the metallic texture.)
 
 </div>
@@ -51,7 +51,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/AdvancedMaterial/image/advancedMaterial_emissive.png">
+![](image/advancedMaterial_emissive.png)
 (Image 14d: The emissive part of the texture.)
 
 </div>
@@ -60,7 +60,7 @@ category: computer-graphic
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/AdvancedMaterial/image/advancedMaterial_normal.png">
+![](image/advancedMaterial_normal.png)
 (Image 14e: The effect of a normal map.)
 
 </div>

@@ -14,7 +14,7 @@ order: 2
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Gauss-Seidel/image/gs1.png">
+![](image/gs1.png)
 
 </div>
 
@@ -22,7 +22,7 @@ order: 2
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Gauss-Seidel/image/gs2.png">
+![](image/gs2.png)
 
 </div>
 
@@ -36,7 +36,7 @@ order: 2
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Gauss-Seidel/image/gs3.png">
+![](image/gs3.png)
 
 </div>
 
@@ -44,7 +44,7 @@ order: 2
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Gauss-Seidel/image/gs4.png">
+![](image/gs4.png)
 
 </div>
 
@@ -74,7 +74,7 @@ $\quad$ $\vec {x_0} = x$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Gauss-Seidel/image/gs5.png">
+![](image/gs5.png)
 
 </div>
 
@@ -86,6 +86,6 @@ $\quad$ $\vec {x_0} = x$
 
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/numerical_algebra/Gauss-Seidel/image/gs6.png">
+![](image/gs6.png)
 
 </div>

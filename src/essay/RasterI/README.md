@@ -33,7 +33,7 @@ Alan Jian 大神實作了一個基於 TBDR 架構，針對 real-time rasterizati
 ⁡
 <div class = "center-column">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/essay/RasterI/image/TBDR.png">
+![](image/TBDR.png)
 
 </div>
 
