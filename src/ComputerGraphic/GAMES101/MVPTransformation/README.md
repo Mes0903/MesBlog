@@ -29,7 +29,29 @@ category: computer-graphic
 
 ## Model-View Transformation
 
-先來看 model-view transformation，我們的目的是要生出一個以相機為原點的座標系。 因此現在來想想，該如何在電腦裡面擺放一個相機，這需要三個資訊：
+先來看 model-view transformation，我們的目的是要生出一個以相機為原點的座標系。 首先先講 model transoformation，由於 model transformation 一般來說比較隨意，所以老師也沒多提，這邊補充一下
+
+model transformation 取決於你想把物體放到世界座標系的哪裡，同時套用你要做的旋轉跟伸縮即可，因此你可以用上一章學到的三種矩陣來組合而成，直接給大家看 code 可能比較好理解：
+
+```cpp
+glm::mat4 GameObject::calculateTransformMatrix_() const
+{
+	glm::mat4 t = glm::mat4(1.0f);
+
+	// Apply transformations in the order: Scale -> Rotate -> Translate
+	t = glm::translate(t, position);
+	t = glm::rotate(t, glm::radians(rotationDeg.x), glm::vec3(1, 0, 0));
+	t = glm::rotate(t, glm::radians(rotationDeg.y), glm::vec3(0, 1, 0));
+	t = glm::rotate(t, glm::radians(rotationDeg.z), glm::vec3(0, 0, 1));
+	t = glm::scale(t, scale);
+
+	return t;
+}
+```
+
+這是我自己引擎裡面更新 model matrix 的函式，基本上就是把 Identity matrix 依序乘上平移、旋轉、伸縮矩陣就可以了。 這裡面的參數串接到了 ImGUI 的介面上，所以在引擎裡面是可以用拉桿之類的元件調整模型位置的
+
+那接下來我們就繼續來看 view transformation，首先思考一下，該如何在電腦裡面擺放一個相機，這需要三個資訊：
 
 - Position $\vec e$  
   相機的位置
@@ -155,7 +177,7 @@ x_{-g}                   & y_{-g}                   & z_{-g} & 0\\
 \end{bmatrix}
 $$
 
-至此，我們就成功完成 model-view transformation 了
+接著只要把它與 model matrix 組合起來就可以了。 至此，我們就成功完成 model-view transformation 了
 
 ## Projection Transformation
 
