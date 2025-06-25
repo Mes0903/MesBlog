@@ -46,7 +46,7 @@ export default sidebar([
     text: "Cpp-Miner",
     collapsible: true,
     children: [
-      "",
+      "Cpp-Miner/",
       {
         text: "Miner 新手教學",
         collapsible: true,
