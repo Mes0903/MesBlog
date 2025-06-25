@@ -1,5 +1,5 @@
 ---
-title: Games101：Geometry（幾何）
+title: （WIP）Games101：Geometry（幾何）
 date: 2025-06-04
 tag: 
   - computer-graphic
@@ -51,9 +51,9 @@ category: computer-graphic
 
 顯式幾何的缺點是，當給我們一個三維空間中的點，我們很難去判斷一個點在不在目標幾何的表面上，或說表面的內或外
 
-## More Implicit Representations in Computer Graphics
+## Implicit Representations in Computer Graphics
 
-現在我們從隱式的幾何開始介紹，如剛剛所講的，隱式的問題在於不直觀，例如下圖：
+現在我們再來多介紹一些隱式的幾何，如剛剛所講的，隱式的問題在於不直觀，例如下圖：
 
 ![](image/implicit.png)
 
@@ -116,4 +116,28 @@ category: computer-graphic
 ![](image/fractals.png)
 
 分形比較麻煩的是在渲染的時候會引起強烈的走樣，因為它的變化頻率實在是太高了，其渲染是一個挑戰
+
+## Explicit Representations in Computer Graphics
+
+顯式的幾何也是有各種不同的方法，像是：
+
+- triangle meshes
+- Bezier surfaces
+- subdivision surfaces
+- NURBS
+- point clouds
+
+後面我們會再來一一介紹，首先先從最簡單的開始：點雲
+
+### point clouds
+
+點雲在做的事是，不以節點組成表面來描述一個物體，而是把物體表面的每個點都獨立表示出來。 這樣一來只要點足夠多，表示的就能足夠細緻，自然而然就看不到點與點之間的縫隙，也就形成表面了
+
+而一個點自然以空間中的 $x$、$y$、$z$ 就能夠表示了，因此它就是一個 $x$、$y$、$z$ 的列表，非常簡單，看個例子：
+
+![alt text](image/point_cloud.png)
+
+以右邊的雕像來說，你可以看到它上半部分的點雲密度非常大，因此我們可以很清楚的看到物體的表面。 接著慢慢往雕像的下半部分看，你可以看到面中間已經開始有些縫隙了，點雲的密度慢慢變得稀疏了。 到了最下面，你已經看不出面的存在了。 由此可見，要用點雲表示出一個複雜的模型，會需要非常非常多的點
+
+人們通常在做掃描建模的時候，得到的輸出都是點雲的形式，這自然而然會有個問題：要如何把點雲轉成三角形面？ 這個有很多的研究在做
 
