@@ -175,3 +175,27 @@ JEDEC 製造商 ID 通常會被編碼成一串 1-byte 的 continuation code（`0
 後面提到的 Implementation 欄位慣例可以用來區分同一微架構設計的不同分支，包括依據組織進行區分。 `misa` 暫存器也有助於辨別設計上的不同變體  
 :::
 
+### 3.1.4. Machine Implementation ID (`mimpid`) Register
+
+`mimpid` CSR 提供一個用來編碼該處理器實作版本的唯一值。 所有實作都必須保證能讀取這個暫存器。 如果其回傳 0，表示該欄位未被實作。 Implementation 的值應該反映的是 RISC-V 處理器本身的設計版本，而不是與其周邊相關的系統
+
+![（Figure 5. Machine Implementation ID (`mimpid`) register）](image/mimpid.png)
+
+::: info  
+這個欄位的格式由微架構原始碼提供者自行決定，但標準工具通常會將其以十六進位字串顯示，且不會有前導或尾端的 0，因此 Implementation 的值可以採用左對齊（也就是從最高有效位的 nibble 開始填入），並將各個子欄位對齊至 nibble 的邊界，以便於人閱讀  
+:::
+
+::: tips  
+一個 nibble 是 4 個 bit（半個 byte）
+
+從最高有效位的 nibble 開始填入的意思是，當你把一個 `mimpid` 的值寫進去時，是從左到右填 hex 數字，像這樣：
+
+```
+mimpid = 0x12345678
+         ↑        ↑
+       MS nibble   LS nibble
+```
+
+這樣稱為「從 most-significant nibble 向下填（nibble down）」。 相對的，「right-justified」就是從最小有效位（右邊）往左填
+:::
+
