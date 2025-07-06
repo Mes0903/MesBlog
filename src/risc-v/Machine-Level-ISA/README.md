@@ -432,3 +432,44 @@ RISC-V 的指令格式固定為 little-endian，目的是將指令編碼與當�
 
 然而，將指令固定為 little-endian 的設計對於需編碼或解碼指令的 RISC-V 軟體仍有影響。 在 big-endian 模式下，這類軟體必須注意，顯式執行的 load 與 store 的端序會與指令的端序相反，因此可能需要在 load 後與 store 前進行位元組順序的轉換  
 ::::
+
+#### 3.1.6.6. Virtualization Support in `mstatus` Register
+
+`TVM`（Trap Virtual Memory）是個 WARL 的欄位，用來攔截 supervisor 的虛擬記憶體管理操作。 當 `TVM=1` 時，若在 S-mode 執行期間嘗試讀寫 `satp` CSR，或執行 `SFENCE.VMA` 或 `SINVAL.VMA` 指令，會觸發 illegal-instruction exception。 當 `TVM=0` 時，這些操作在 S-mode 是被允許的。若系統不支援 S-mode，`TVM` 為唯讀的 0
+
+::: tip
+- `satp` CSR 是用來設定虛擬記憶體的 page table base address 與模式的控制暫存器
+- `TVM` 這個位元讓 hypervisor 可以攔截 guest OS 針對虛擬記憶體的操作，例如修改 `satp` 或執行 TLB flush。 透過這種方式，hypervisor 可以控制 guest OS 對 page table 的管理，以便延遲或同步更新 shadow page table
+:::
+
+:::: info  
+TVM 機制透過允許 guest OS 執行於 S-mode 上（而非傳統上使用 U-mode 虛擬化）來提升虛擬化效能。 這種方式免除了大多數攔截 S-mode CSR 存取的需求
+
+透過攔截對 `satp` 的存取，以及攔截 `SFENCE.VMA` 與 `SINVAL.VMA` 這兩個指令，便能夠提供延遲建立 shadow page table 的切入點
+
+::: tip  
+- Shadow page table 是 hypervisor 管理虛擬記憶體的一種技巧，它將 guest 的虛擬記憶體對應到 host 的實體記憶體
+- Lazy populate 表示「延遲填入」，直到 guest OS 嘗試切換記憶體上下文時才動態建立對應的 shadow page table
+- 當 guest OS 要寫 `satp` 或做 TLB 同步操作時，就會觸發 trap，hypervisor 可以在那時建立或更新 shadow page table  
+:::  
+::::
+
+`TW`（Timeout Wait）位元是個 WARL 的欄位，用來攔截 `WFI` 指令（詳見第 3.3.3 節）。 當 `TW=0` 時，除非有其他原因禁止，否則在低權限模式下仍可執行 `WFI`。 當 `TW=1` 時，若在低權限模式下執行 `WFI`，且在實作所定義的有限時間內未完成，該指令會觸發 illegal-instruction exception。 某些實作在 `TW=1` 時，可能會選擇讓所有低權限下的 `WFI` 都立即觸發 exception，即使當下由於中斷被全域禁止（`xIE=0`），而有正在等待觸發地中斷也一樣。 若系統中沒有比 M-mode 更低的權限模式，則 `TW` 為唯讀的 0
+
+::: tip
+> 即使當下由於中斷被全域禁止（`xIE=0`），而有正在等待觸發地中斷也一樣
+
+如果有中斷源觸發中斷，但 `xIE = 0`，此時中斷會被「暫時擱置（pending）」，不會馬上進入 trap handler。 而這句話的意思是，在 `WFI` 執行的當下，即使有某個中斷事件發生，但因為全域中斷 enable 的位元（如 `MIE`）是關掉的，導致那中斷可能等等才會被處理，在這種情況下，`WFI` 一樣會觸發 illegal-instruction exception（如果 `TW=1`）  
+:::
+
+::: info  
+攔截 `WFI` 指令可用來觸發 world switch（世界切換）到另一個 guest OS，而非讓目前的 guest 白白空轉  
+:::
+
+當系統實作有支援 S-mode 時，在 U-mode 下執行 `WFI` 指令會導致 illegal-instruction exception，除非該指令能在實作定義的某個有限時間內完成。 未來的版本可能會加入某個功能，以允許 S-mode 能夠選擇性地允許 U-mode 執行 `WFI`，但這種功能只有在 `TW = 0` 時才會生效
+
+`TSR`（Trap SRET）位是一個 WARL 的欄位，用來支援攔截 S-mode 的例外返回指令 `SRET`。 當 `TSR = 1` 時，在 S-mode 執行 `SRET` 會觸發 illegal-instruction exception。 當 `TSR = 0` 時，S-mode 可以正常執行 `SRET`。 若系統不支援 S-mode，則 TSR 為唯讀的 0
+
+::: info  
+在不支援 hypervisor extension 的實作中，攔截 `SRET` 是模擬 hypervisor 功能所必需的  
+:::
