@@ -629,3 +629,10 @@ Machine mode 和 Supervisor mode 共用同一組 `FS`、`VS` 與 `XS` 位元。 
 加上這些 extension 的狀態都屬於 user process 的 context，只要中斷結束後還是回到原本的 user process，那 extension 狀態根本不用動。 所以第二句話才說如果只是處理中斷，不用切出 user process，那就不要動 extension 的狀態； 而如果中斷導致了 process 的切換，那才會需要依照 `FS`、`VS`、`XS` 的 Dirty 狀態來判斷要不要儲存 extension 的狀態  
 :::  
 ::::
+
+#### 3.1.6.8. Previous Expected Landing Pad (ELP) State in `mstatus` Register
+
+Zicfilp extension 新增了 `SPELP` 和 `MPELP` 欄位，這兩個欄位會記錄之前的 `ELP`，並根據第 22.1.2 節中的說明進行更新。 `xPELP` 欄位的編碼如下：
+
+- `0`：`NO_LP_EXPECTED`，預期接下來「不」會有 landing pad 指令
+- `1`：`LP_EXPECTED`，預期接下來會有 landing pad 指令
