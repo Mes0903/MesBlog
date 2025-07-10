@@ -473,3 +473,159 @@ TVM 機制透過允許 guest OS 執行於 S-mode 上（而非傳統上使用 U-m
 ::: info  
 在不支援 hypervisor extension 的實作中，攔截 `SRET` 是模擬 hypervisor 功能所必需的  
 :::
+
+#### 3.1.6.7. Extension Context Status in `mstatus` Register
+
+支援大量擴充功能是 RISC-V 的主要目標之一，因此我們定義了一個標準介面，讓特權模式下的程式碼（特別是 supervisor 等級的作業系統）在不需修改的情況下，就能支援任意的 user-mode 狀態擴充
+
+::: info  
+截至目前，V extension（向量擴充）是唯一一個在 floating-point CSR 與資料暫存器之外，還額外定義狀態的標準擴充  
+:::
+
+`FS[1:0]` 和 `VS[1:0]` 是 WARL 的欄位，`XS[1:0]` 是唯讀的欄位，它們的目的是透過追蹤目前 floating-point 單元與其他 user-mode 擴充的狀態來減少 context save/restore 的成本。 `FS` 欄位編碼了浮點單元的狀態，包括 `f0–f31` 的浮點暫存器，以及 `fcsr`、`frm`、`fflags` 這三個 CSR。 `VS` 欄位編碼了 vector 擴充的狀態，包括 `v0–v31` 的向量暫存器，以及 `vcsr`、`vxrm`、`vxsat`、`vstart`、`vl`、`vtype`、`vlenb` 這些 CSR。 `XS` 欄位編碼了其他 user-mode 擴充及其對應狀態的狀態資訊
+
+::: tip  
+每次發生 context switch（如中斷或 task 切換）時 OS 都需要儲存/還原使用者狀態，透過 `FS` 和 `VS` 欄位可以知道這些狀態是否被使用過，如果沒被使用就可以省略 save/restore 動作。 `XS` 用來代表其他自訂 user-mode 擴充的狀態是否有作用  
+:::
+
+這些欄位可供 context switch routine 查閱，以快速判斷是否需要進行狀態的儲存或還原。 若需要儲存/還原，則通常會需要額外的指令或 CSRs 來完成或優化這個流程。
+
+::: info  
+這個設計預期大多數的 context switch 不需要儲存/還原 floating-point 的單元或其他擴充的狀態，因此提供了一個 `SD` 位元（State Dirty）作為快速檢查用途  
+:::
+
+`FS`、`VS`、與 `XS` 這三個欄位都使用與 Table 11 相同的狀態編碼，其有四種可能的狀態值，分別是 `Off`、`Initial`、`Clean`、與 `Dirty`：
+
+<span class = "center-column">
+
+| Status | FS and VS Meaning | XS Meaning                              |
+|--------|-------------------|-----------------------------------------|
+| 0      | Off               | All off                                 |
+| 1      | Initial           | None dirty or clean, some on            |
+| 2      | Clean             | None dirty, some clean                  |
+| 3      | Dirty             | Some dirty                              |
+
+（Table 11. Encoding of FS[1:0], VS[1:0], and XS[1:0] status fields）
+
+</span>
+
+如果實作支援 F extension，那麼 `FS` 欄位不能是唯讀的 0。 如果系統同時不支援 F extension 與 S-mode，那麼 `FS` 為唯讀的 0。 如果有支援 S-mode 但沒支援 F extension，那麼 `FS` 欄位可以選擇是否要為唯讀的 0
+
+:::: info  
+對於支援 S-mode 但不支援 F extension 的實作，標準允許（但不強制）將 `FS` 設為唯讀的 0。 有些實作會選擇不把 `FS` 設成唯讀的 0，這樣才能讓 S-mode 和 U-mode 透過進入 M-mode 的「invisible trap」來模擬 F extension
+
+::: tip
+這樣的設計可以讓作業系統以為有 F extension，實際上所有浮點操作都會進 trap 交給 M-mode 模擬，此時 OS 仍需要追蹤 `FS` 的狀態變化，因此 `FS` 就不能是唯讀的 0
+:::
+::::
+
+如果實作中有提供向量暫存器 `v`，那麼 `VS` 欄位就不能是唯讀的 0。 如果系統中既沒有暫存器 `v`，也不支援 S-mode，那麼 `VS` 為唯讀的 0。 如果有 S-mode 但沒有暫存器 `v`，那麼 `VS` 可以選擇是否要為唯讀的 0
+
+在沒有額外 user-mode 擴充（需要保存狀態）的 hart 中，`XS` 欄位是唯讀的 0。 每個具有狀態的額外擴充都會提供一個 CSR 欄位，來編碼與 `XS` 對應的狀態。 `XS` 是用來彙總所有這些擴充狀態的摘要資訊，如上方 Table 11 所示
+
+::: info  
+`XS` 欄位的值會反映所有 user 擴充狀態中最高的狀態等級（例如只要有 `Dirty` 就是 `Dirty`）。 不過個別的擴充可以用和 `XS` 不同的編碼格式來表示自己的狀態  
+:::
+
+`SD` 位元是一個唯讀的位元，用來總結 `FS`、`VS` 或 `XS` 中是否有任何一個欄位為 dirty 的狀態，必須將擴充的 user context 儲存到記憶體中。 若 `FS`、`VS`、`XS` 全部都是唯讀的 0，那麼 `SD` 也必定是 0
+
+當某個 extension 的狀態被設為 `Off` 時，任何試圖讀寫該 extension 狀態的指令都會觸發 illegal-instruction exception。 當狀態是 `Initial` 時，該 extension 的狀態應該具有某個預設常數值。 若為 `Clean`，表示目前的狀態可能已與初始值不同，但與上次儲存 context 時的值一致。 若為 `Dirty`，代表自從上次儲存 context 後，狀態可能已經被改變了
+
+::: tip
+每次 context switch，作業系統會根據 `FS`/`VS`/`XS` 等欄位來決定是否要儲存那些 extension 的狀態（像浮點暫存器、vector 暫存器等等）。 因此當你的 context 被 switch out 的時候：
+
+- 若狀態是 `Dirty` → 代表你這段期間有「改動」那塊 extension 的狀態
+  - 所以當要把你「切出去」（context save）時，要把你「改過的內容」儲存下來，如 `f0`~`f31`
+- 若狀態是 `Clean` → 表示你沒有動那塊狀態，自上次儲存以來都沒改過
+  - 所以你在這次被切出去時就不需要再重新儲存（因為上次儲存的版本就還有效）  
+:::
+
+在儲存 context 時，只有當狀態為 `Dirty` 時，負責的高權限程式碼才需要將該狀態寫入記憶體，然後可以把 extension 狀態重設為 `Clean`。 在還原 context 時，只有當狀態是 `Clean` 時才需要從記憶體載入狀態（在還原階段，狀態不應該是 `Dirty`）。 如果狀態是 `Initial`，為了避免安全性問題，還原 context 時必須將其設為初始常數值，但這不需要存取記憶體，舉例來說，可以將浮點暫存器全部初始化為立即值 0
+
+高權限程式碼會在儲存 context 前讀取 `FS` 與 `XS` 欄位。 在回復 user context 時，高權限程式碼會直接設定 `FS`，而 `XS` 是透過寫入各個 extension 的狀態暫存器時間接設定的。 無論當下的權限模式為何，這些狀態欄位也都可能會在執行指令期間自動更新
+
+User-mode ISA 的擴充常常會包含額外的 user-mode 狀態，這些狀態可能遠比基本的整數暫存器多，而且可能只有某些應用才會使用這些擴充，或只會在某些短暫的階段用到。 為了提升效能，user-mode 擴充可以定義額外的指令，讓 user-mode 軟體可以將單元重設為初始狀態，甚至直接關閉該單元
+
+例如，一個 coprocessor 使用前可能需要先被 configure，用完之後則可以 unconfigure。 unconfigure 狀態在 context 儲存時會被視為 `Initial`。 如果在 unconfigure 和下一次 configure 的期間，執行的還是同一個應用程式，那就不需要真的在 unconfigure 時初始化狀態，因為這些狀態對那個 process 來說是本地的。 也就是說，設定為 `Initial` 只會導致 context restore 時將 coprocessor 狀態設為常數值，而不需要在每次 unconfigure 時都初始化
+
+::: tip  
+「unconfigure」會把 coprocessor 狀態標記成 `Initial`。 按照 RISC-V 的設計，`Initial` 表示「這個狀態在 context restore 時才需要被初始化為固定常數值（例如 0）」，但如果程式本身沒被切出去，還在持續跑，那就不需要真的花時間去 reset，因為狀態還會繼續被使用  
+:::
+
+當執行一條 user-mode 的指令將某個單元（如浮點或向量單元）關閉並將其設為 Off 的狀態後，若之後有其他指令試圖在這單元尚未重新啟用前使用它，則會觸發 illegal-instruction exception。 若某個 user-mode 指令要重新開啟這個單元，也必須確保該單元的狀態已正確初始化，因為在這段期間內可能已經有其他 context 使用過這個單元了
+
+修改 `FS` 的設定不會影響浮點暫存器狀態的內容。 具體來說，把 `FS` 設成 Off 並不會抹除暫存器的內容，把 `FS` 設成 `Initial` 也不會清除它。 `VS` 的設定也同樣不會影響向量暫存器的內容。 不過對於其他的 extension，在設為 Off 時其可能會選擇不保留其狀態
+
+實作上可以用不精確地方式來追蹤浮點暫存器的 `Dirty` 狀態，例如即使其內容沒有被修改，也直接將其標記為 `Dirty`。 某些實作中，即便是沒改變浮點狀態的指令，也可能會導致狀態從 `Initial` 或 `Clean` 轉變為 `Dirty`。 而有些實作甚至完全不追蹤 `Dirty` 狀態，此時 `FS` 僅會出現 `Off` 和 `Dirty` 兩種狀態，若試圖把 `FS` 設為 `Initial` 或 `Clean`，實際上會變成 `Dirty`
+
+::: info  
+`FS` 可能會因為錯誤的 speculative execution 而被意外寫成 `Dirty`。 有些平台會選擇禁止 speculative execution 對 `FS` 進行寫入操作，以防潛在的 side channel  
+:::
+
+若 `FS` 是 `Initial` 或 `Clean` 的，此時如果某指令對浮點暫存器或 `fcsr` 進行了明確或隱式的寫入，但其實沒有改變內容，則實作可以自行定義是否要讓 `FS` 轉變為 `Dirty`
+
+對向量暫存器的 `Dirty` 狀態，實作也可以採用類似不精確的方式來追蹤，例如在軟體試圖將 `VS` 設為 `Initial` 或 `Clean` 時，實際上會直接將其設成 `Dirty` 等。 當 `VS` 為 `Initial` 或 `Clean` 時，若某個指令寫入了向量暫存器或 CSR，但沒改變其內容，則實作也可以自行定義是否要讓 `VS` 轉變為 `Dirty`
+
+表格 12 顯示了 `FS`、`VS` 和 `XS` 狀態位元的所有可能狀態轉移。 注意，標準的浮點與向量 extension 並不支援 user-mode 的 unconfigure 或 enable/disable 等用來切換狀態的指令：
+
+<span class = "center-column">
+
+| <span class = "purple">**Current State / Action**</span> | <span class = "purple">**Off**</span>     | <span class = "purple">**Initial**</span> | <span class = "purple">**Clean**</span>   | <span class = "purple">**Dirty**</span>   |
+|----------------------------|-------------|-------------|-------------|-------------|
+| <span class = "purple">**At context save in privileged code**</span> |||||
+| Save state?                | No          | No          | No          | Yes         |
+| Next state                 | Off         | Initial     | Clean       | Clean       |
+| <span class = "purple">**At context restore in privileged code**</span> |||||
+| Restore state?            | No          | Yes, to initial | Yes, from memory | N/A      |
+| Next state                | Off         | Initial     | Clean       | N/A         |
+| <span class = "purple">**Execute instruction to read state**</span> |||||
+| Action?                   | Exception   | Execute     | Execute     | Execute     |
+| Next state                | Off         | Initial     | Clean       | Dirty       |
+| <span class = "purple">**Execute instruction that possibly modifies state, including configuration**</span> |||||
+| Action?                   | Exception   | Execute     | Execute     | Execute     |
+| Next state                | Off         | Dirty       | Dirty       | Dirty       |
+| <span class = "purple">**Execute instruction to unconfigure unit**</span> |||||
+| Action?                   | Exception   | Execute     | Execute     | Execute     |
+| Next state                | Off         | Initial     | Initial     | Initial     |
+| <span class = "purple">**Execute instruction to disable unit**</span> |||||
+| Action?                   | Execute     | Execute     | Execute     | Execute     |
+| Next state                | Off         | Off         | Off         | Off         |
+| <span class = "purple">**Execute instruction to enable unit**</span> |||||
+| Action?                   | Execute     | Execute     | Execute     | Execute     |
+| Next state                | Initial     | Initial     | Initial     | Initial     |
+
+（Table 12. `FS`, `VS`, and `XS` state transitions）
+
+</span>
+
+系統提供標準的特權指令來初始化、儲存與還原 extension 狀態，透過將該狀態視為不透明物件的方式，使 S-mode 的程式碼不需要了解所新增 extension 狀態的細節。 
+
+:::: info
+許多 coprocessor extension 只會於有限的情境中被使用，因此軟體可以在使用完後安全地取消設定，甚至停用這些單元。 這能減少大型、有狀態的 coprocessor 所帶來的 context switch 負擔
+
+::: tip  
+「取消設定（unconfigure）」與「停用（disable）」是指讓這些單元進入 `Initial` 或 `Off` 狀態，如此可以避免在 context switch 時不必要地儲存與還原這些不再使用的狀態  
+:::
+
+標準將浮點狀態與其他 extension 狀態區分開來，是因為當系統有浮點單元時，浮點暫存器是標準呼叫慣例的一部分，其不能像其他 extension 一樣輕易地被停用，因此 user-mode 的軟體無法得知何時可以安全地停用浮點單元  
+::::
+
+`XS` 欄位提供所有新增 extension 狀態的總結資訊，但 extension 本身可能會維護額外的微架構位元，以進一步減少 context 儲存與還原的負擔。 `SD` 是唯讀位元，當 `FS`、`VS` 或 `XS` 中任一欄位處於 `Dirty` 的狀態（例如 `SD = (FS == 0b11 OR XS == 0b11 OR VS == 0b11)`）時，`SD` 會被設為 1。 這讓 privileged code 可以快速判斷是否要儲存除了整數暫存器與 `pc` 以外的 context
+
+浮點單元的狀態總是透過標準指令（`F`、`D` 和/或 `Q`）來初始化、儲存與還原，而 privileged code 必須知道 FLEN 的值，以決定每個 `f` 暫存器應保留多少空間
+
+::: tip  
+FLEN 表示浮點暫存器的實體寬度（例如 32、64、128）  
+:::
+
+Machine mode 和 Supervisor mode 共用同一組 `FS`、`VS` 與 `XS` 位元。 Supervisor-level 的軟體通常會直接使用這些欄位來紀錄那些和它所儲存的 context 對應的狀態。 而 Machine-level 的軟體在儲存與還原其對應版本的 extension 狀態時，必須採取更保守的作法
+
+:::: info  
+在任何合理的使用情境中，user 與 supervisor 之間的 context switch 次數應該遠多於切換到其他特權層的次數。 請注意，coprocessor 不應要求在處理非同步中斷時儲存與還原其 context，除非該中斷會導致 user-level context 的切換
+
+:::  tip  
+對於第二句話，是因為大部分中斷的處理不會影響使用者層的執行狀態。 許多中斷（像是硬體計時器、I/O 完成中斷）只是要求 OS 執行一些簡單的管理任務，例如更新排程器、收發資料或清除旗標等。 這些任務通常不會直接切換到另一個 user process，也不需要觸及 user-mode extension（像是浮點暫存器、vector 暫存器等）
+
+加上這些 extension 的狀態都屬於 user process 的 context，只要中斷結束後還是回到原本的 user process，那 extension 狀態根本不用動。 所以第二句話才說如果只是處理中斷，不用切出 user process，那就不要動 extension 的狀態； 而如果中斷導致了 process 的切換，那才會需要依照 `FS`、`VS`、`XS` 的 Dirty 狀態來判斷要不要儲存 extension 的狀態  
+:::  
+::::
