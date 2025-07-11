@@ -514,9 +514,9 @@ TVM 機制透過允許 guest OS 執行於 S-mode 上（而非傳統上使用 U-m
 :::: info  
 對於支援 S-mode 但不支援 F extension 的實作，標準允許（但不強制）將 `FS` 設為唯讀的 0。 有些實作會選擇不把 `FS` 設成唯讀的 0，這樣才能讓 S-mode 和 U-mode 透過進入 M-mode 的「invisible trap」來模擬 F extension
 
-::: tip
-這樣的設計可以讓作業系統以為有 F extension，實際上所有浮點操作都會進 trap 交給 M-mode 模擬，此時 OS 仍需要追蹤 `FS` 的狀態變化，因此 `FS` 就不能是唯讀的 0
-:::
+::: tip  
+這樣的設計可以讓作業系統以為有 F extension，實際上所有浮點操作都會進 trap 交給 M-mode 模擬，此時 OS 仍需要追蹤 `FS` 的狀態變化，因此 `FS` 就不能是唯讀的 0  
+:::  
 ::::
 
 如果實作中有提供向量暫存器 `v`，那麼 `VS` 欄位就不能是唯讀的 0。 如果系統中既沒有暫存器 `v`，也不支援 S-mode，那麼 `VS` 為唯讀的 0。 如果有 S-mode 但沒有暫存器 `v`，那麼 `VS` 可以選擇是否要為唯讀的 0
@@ -636,3 +636,54 @@ Zicfilp extension 新增了 `SPELP` 和 `MPELP` 欄位，這兩個欄位會記�
 
 - `0`：`NO_LP_EXPECTED`，預期接下來「不」會有 landing pad 指令
 - `1`：`LP_EXPECTED`，預期接下來會有 landing pad 指令
+
+### 3.1.7. Machine Trap-Vector Base-Address (`mtvec`) Register
+
+`mtvec` 暫存器是一個 MXLEN-bit 的 WARL 類型可讀寫暫存器，用來儲存 trap vector 的設定，包含一個向量基底位址（BASE）以及向量模式（MODE）
+
+![](image/mtvec.png)
+
+`mtvec` 暫存器必須被實作，但其內容可以被設為唯讀的。 若該暫存器可寫，其可接受的值範圍會依照實作而有所不同。 BASE 欄位的值必須對齊至 4-byte 邊界，而 MODE 的設定可能會對 BASE 的對齊提出更嚴格的限制。 請注意，CSR 中只包含 BASE 位址的第 `XLEN-1` 到第 `2` 位元。 實際作為位址使用時，最低的兩個位元會自動補 0，以形成一個符合 4-byte 對齊要求的 XLEN-bit 位址
+
+::: info  
+標準在 trap vector 基底位址的設計上提供了高度的彈性。 一方面，我們不希望低階實作需要儲存太多額外狀態； 另一方面，我們也希望保有對大型系統的靈活支援能力
+:::
+
+<span class = "center-column">
+
+| Value | Name     | Description                                               |
+|-------|----------|-----------------------------------------------------------|
+| 0     | Direct   | All traps set `pc` to BASE                                |
+| 1     | Vectored | Asynchronous interrupts set `pc` to BASE + 4 × cause      |
+| ≥2    | ---      | *Reserved*                                                |
+
+（Table 13. Encoding of mtvec MODE field.）
+
+</span>
+
+MODE 欄位的編碼方式如表 13 所示。 當 MODE 設為 `Direct` 時，所有進入 machine mode 的 trap 都會把 `pc` 設定為 BASE 欄位中的位址。 而當 MODE 設為 `Vectored` 時，所有同步例外依然會跳到 BASE，但中斷則會跳到 BASE 加上中斷原因編號乘以 4 的偏移位址。 例如，一個 machine mode 的 timer 中斷（見表 14）會讓 `pc` 被設為 `BASE + 0x1c`
+
+不同的實作可能會對不同的模式有不一樣的對齊要求。 特別是 `Vectored` 模式可能會比 `Direct` 模式要求更嚴格的對齊
+
+::: info  
+在 `Vectored` 模式中採用較粗的對齊，可以讓 vectoring 的實作在硬體上不需要加法器。 Reset 和 NMI 的向量位址則由平台規格來指定  
+:::
+
+::: tip  
+RISC-V 處理 trap（包含例外與中斷）時，會根據 `mtvec` 的設定來決定要跳到哪裡執行 trap handler。 而這個跳躍方式由 `mtvec` 的 MODE 欄位所控制：
+
+- `MODE = 0`（Direct）：無論是同步例外還是中斷，都跳到 BASE 指定的同一個位址
+- `MODE = 1`（Vectored）：
+  - 同步例外（exception）仍跳到 BASE
+  - 中斷（interrupt）會跳到 `BASE + 4 × cause`（cause 為中斷原因的編號）
+
+所以這是設計 trap handler 分派機制的方式，目的是給作業系統一個機制來處理不同中斷來源的函式（類似 interrupt vector table 的概念）
+
+而因為 `Vectored` 模式會跳到 `BASE + 4 × cause`，所以硬體會把 BASE 當成一個跳躍表的起點，每個 entry 間隔 4 bytes。 如果 BASE 本身不是某種對齊的話，可能會讓硬體在實作上變複雜，需要額外的加法器來做位址計算。 
+因此，RISC-V 規範才允許不同的實作針對不同的 MODE 設計出「不同的對齊限制」。
+
+例如：
+
+- `Direct` 模式只需要 BASE 是 4-byte 對齊就夠了（因為就跳去那裡執行）
+- `Vectored` 模式可能會要求 BASE 是 128-byte 對齊，這樣就可以用簡單的移位運算而非加法器來找出第 n 個 handler 的位址（`cause << 2`）  
+:::
