@@ -743,3 +743,100 @@ trap delegation 只能從 machine mode 向下轉交下層權限的 trap，但不
 ::: tip  
 `mcause = 11` 是 machine-mode 的 `ecall`，U/S-mode 根本不會觸發這個例外，所以 `medeleg[11]` 被設計成硬體保證為 0  
 :::
+
+### 3.1.9. Machine Interrupt (`mip` and `mie`) Registers
+
+`mip` 暫存器是一個 MXLEN 位元的可讀寫暫存器，用來表示目前有哪些中斷已被掛起（pending）； 而 `mie` 是對應的可讀寫暫存器，用來控制各中斷是否啟用。 中斷原因編號 `i`（可參考 `mcause`，見第 3.1.15 節）對應到 `mip` 與 `mie` 中的第 `i` 個位元。 位元 0 到 15 保留給標準中斷使用，而第 16 位以上則保留給平台定義使用
+
+::: info  
+保留給平台使用的中斷可以由平台自行定義用途，也可以指定為自訂用途  
+:::
+
+![（Figure 13. Machine Interrupt-Pending (`mip`) register.）](image/mip.png)
+
+![（Figure 14. Machine Interrupt-Enable (`mie`) register）](image/mie.png)
+
+一個會讓處理器陷入 M-mode（也就是切換到 M-mode 處理）的中斷 `i` 需滿足下列所有條件：
+- (a) 當前權限模式是 M 且 `mstatus` 中的 `MIE` 位元為 1，或當前處於比 M-mode 更低的權限層級
+- (b) 中斷編號 `i` 的位元在 `mip` 與 `mie` 中都被設為 1
+- (c) 若存在 `mideleg` 暫存器，則 `i` 的對應位元在 `mideleg` 中必須是 0（表示未委託）
+
+::: tip  
+1. 權限狀態允許中斷：
+    - 若已在 M-mode，還必須 `mstatus.MIE = 1`（中斷總開關）才會進入中斷
+    - 若目前在 S-mode 或 U-mode，那就不需要檢查 `mstatus.MIE`，因為中斷都會先升權限進 M-mode 或 S-mode
+2. 中斷來源條件成立：
+    - `mip[i] = 1` → 中斷來源已經掛起
+    - `mie[i] = 1` → 允許該中斷來源
+3. 委託情況：
+    - 若有 `mideleg[i] = 1`，那這個中斷就會被委託給 S-mode，而不是進 M-mode
+    - 反過來說，只有 `mideleg[i] = 0`，才會由 M-mode 處理  
+:::
+
+上述中斷 trap 成立的條件，必須在中斷來源在 `mip` 中變成掛起或取消掛起的固定時間內被評估，也必須在執行 `xRET` 指令之後，或對相關 CSR（像是 `mip`、`mie`、`mstatus`、`mideleg`）進行寫入後立即重新評估。 針對 M-mode 的中斷會優先於所有針對較低權限層級的中斷
+
+`mip` 暫存器中的每個位元都可能是可寫的，也可能是唯讀的。 當 `mip` 的第 `i` 位是可寫的時，可以透過寫入 0 來清除中斷 `i` 的掛起狀態。 若中斷 `i` 被掛起，但其在 `mip` 中的對應位元是唯讀的，實作上必須提供其他機制來清除該中斷的掛起狀態
+
+只要某個中斷可能會進入掛起狀態，那麼其對應的 `mie` 位元就必須是可寫的。 那些不可寫的 `mie` 位元必須是唯讀的 0，表示永遠不能啟用該中斷。 `mip` 與 `mie` 暫存器中標準定義的部分（第 0 到 15 位元）格式如圖 15 與圖 16 所示
+
+![（Figure 15. Standard portion (bits 15:0) of `mip`.）](image/mip_portion.png)
+
+![（Figure 16. Standard portion (bits 15:0) of `mie`.）](image/mie_portion.png)
+
+:::: info  
+machine-level 的中斷暫存器負責處理少數幾個核心中斷來源，這些來源被指派了固定的服務優先順序以簡化設計。 而外部中斷控制器則可以實作更複雜的優先排序機制，對大量中斷來源進行管理，最後再將它們多工輸入到 machine-level 的中斷來源中
+
+::: tip  
+machine-level (`mip`, `mie`) 處理的是「根中斷來源」，如軟體、timer、外部中斷。 外部中斷控制器（如 PLIC）可以管理更多中斷來源（例如 GPIO、UART、Ethernet），PLIC 會根據內部設定的優先權做 arbitration，然後把最高優先權的中斷送到 `MEIP`，這樣 machine-level 就只需要處理一個外部中斷來源了  
+:::
+
+不可遮蔽中斷（non-maskable interrupt, NMI）不會透過 `mip` 暫存器顯示，因為在執行 NMI 的 trap handler 時，處理器就會隱含地知道 NMI 已經發生了  
+::::
+
+`mip.MEIP` 與 `mie.MEIE` 分別是 machine-level 外部中斷的掛起與啟用位元。 `MEIP` 在 `mip` 中是唯讀的，由平台特定的外部中斷控制器負責設定與清除
+
+`mip.MTIP` 與 `mie.MTIE` 分別是 machine-mode timer 中斷的掛起與啟用位元。 `MTIP` 在 `mip` 中是唯讀的，並透過寫入 memory-mapped machine-mode timer compare 暫存器來清除
+
+`mip.MSIP` 與 `mie.MSIE` 分別是 machine-level 軟體中斷的掛起與啟用位元。 `MSIP` 在 `mip` 中是唯讀的，透過存取記憶體映射的控制暫存器來設定，通常由其他 hart 用來觸發 machine-level 的跨核心中斷（IPI）。 同一個 hart 也可以透過這個記憶體映射的控制暫存器寫入自己的 `MSIP`。 如果系統只有一個 hart，或平台改用外部中斷（`MEI`）提供跨核心中斷，那麼 `mip.MSIP` 與 `mie.MSIE` 可以是唯讀的 0
+
+如果系統沒有實作 supervisor mode，則 `mip` 中的 `SEIP`、`STIP`、`SSIP` 與 `mie` 中的 `SEIE`、`STIE``、SSIE` 這幾個位元都會是唯讀的 0。 若系統實作了 supervisor mode，則 `mip.SEIP` 與 `mie.SEIE` 分別是 supervisor-level 外部中斷的掛起與啟用位元。 `SEIP` 在 `mip` 中是可寫的，M-mode 軟體可以寫入該位元，藉此通知 S-mode 有外部中斷掛起。 此外，平台級的中斷控制器也可以產生 supervisor-level 外部中斷
+
+該中斷的掛起狀態由兩個來源的 logical-OR 操作決定：一是由軟體可寫的 `SEIP` 位元，二是中斷控制器送出的訊號。 在使用 CSR 指令讀取 `mip` 時，所讀到的 `SEIP` 值會是這兩者的 OR 結果； 但在對 `SEIP` 寫入值時，則不會考慮控制器送出的訊號。 只有軟體可寫的 `SEIP` 位元會參與 `CSRRS`/`CSRRC` 等 CSR 指令的讀寫流程
+
+::: info  
+舉例來說，若我們將軟體可寫的 `SEIP` bit 稱為 `B`，而外部中斷控制器送入的訊號稱為 `E`，那麼執行 `csrrs t0, mip, t1` 時，`t0[9]` 會被設為 `B || E`，接著 `B` 被寫為 `B || t1[9]`。 若執行 `csrrw t0, mip, t1`，那 `t0[9]` 一樣會設為 `B || E`，而 `B` 則被寫為 `t1[9]`。 在這兩種情況下，`B` 的值都不會受到 `E` 的影響
+
+`SEIP` 的這種行為設計，是為了讓較高權限層級能夠安全地模擬外部中斷，而不會導致真實的外部中斷被忽略。 為此，CSR 指令在處理 `SEIP` 時的行為也針對這個需求做了些微修改
+:::
+
+::: tip  
+`SEIP` 是一個由兩個來源組成的虛擬位元（OR 結果）。 `mip.SEIP` 可由 M-mode 軟體手動設定（模擬中斷），同時外部中斷控制器也可能送入訊號（真實中斷）。 當你讀取 `mip.SEIP` 時，會看到這兩者的 OR 結果，但當你修改 `mip.SEIP` 時（用 CSR 指令），你只能影響軟體可寫的那個 bit，而無法修改控制器送進來的訊號，這讓 M-mode 可以安全地「模擬」S-mode 中斷，不會蓋掉真實的外部中斷  
+:::
+
+若系統支援 supervisor mode，則 `mip.STIP` 與 `mie.STIE` 分別為 S-mode timer 中斷的掛起與啟用位元。 `STIP` 是可寫的，M-mode 軟體可以透過寫入該位元，將 timer 中斷送給 S-mode
+
+若系統支援 supervisor mode，則 `mip.SSIP` 與 `mie.SSIE` 分別為 S-mode 軟體中斷的掛起與啟用位元。 `SSIP` 是可寫的，也可以由平台特定的中斷控制器設為 1
+
+若系統實作了 Sscofpmf 擴充指令集，則 `mip.LCOFIP` 與 `mie.LCOFIE` 為本地計數器溢位中斷的掛起與啟用位元。 `mip.LCOFIP` 是可讀寫的，會在任何一個 `mhpmeventn.OF` 位元被設為 1 時反映中斷請求。 若未實作 Sscofpmf 擴充，則這兩個位元為唯讀的 0
+
+當多個中斷同時指向 M-mode 處理時，它們的優先順序如下（由高到低）：`MEI`、`MSI`、`MTI`、`SEI`、`SSI`、`STI`、`LCOFI`
+
+::: info  
+machine-level 中斷的固定優先順序是根據以下原則所設計的：
+
+- 高權限模式的中斷必須比低權限模式的中斷優先處理，以支援搶佔（preemption）
+- 位於第 16 位以上的 machine-level 平台特定中斷來源，其優先順序由平台定義，但通常會被設為最高優先，以支援極快速的本地向量化中斷（local vectored interrupts）
+- 外部中斷優先於內部中斷（如 timer 與 software），因為外部中斷通常來自需要低延遲服務的裝置
+- 軟體中斷優先於內部 timer 中斷，因為 timer 中斷通常用於分時（time slicing），精確度不是最重要； 而軟體中斷則常用於多核心間的訊息傳遞。 當需要高精度計時時，可以避免使用軟體中斷，或將高精度 timer 中斷經由其他中斷路徑傳送。 此外，軟體中斷被放在 `mip` 的最低四個位元，是為了方便軟體操作，能在單一 CSR 指令中以 5-bit 立即數設定  
+:::
+
+在 supervisor mode 中，`mip` 與 `mie` 暫存器的受限視圖（restricted views）分別對應為 `sip` 與 `sie` 暫存器。 當某個中斷被設定在 `mideleg` 中委託給 S-mode 時，它會在 `sip` 中變得可見，並且可以透過 `sie` 來控制是否啟用。 否則，對應的位元在 `sip` 與 `sie` 中都會是唯讀的 0
+
+::: tip  
+`mip`/`mie` 是 machine-mode 全域可見的中斷狀態，而 `sip`/`sie` 是 S-mode 的視角（受限版本）：
+
+- `sip`：只顯示 S-mode 有權處理的中斷來源（依 `mideleg` 設定）
+- `sie`：只允許 S-mode 啟用/關閉自己能處理的中斷
+
+換句話說，這兩個暫存器的內容是從 `mip`/`mie`「根據 mideleg 過濾出來」的可見子集  
+:::
