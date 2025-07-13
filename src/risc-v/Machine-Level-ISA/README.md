@@ -687,3 +687,59 @@ RISC-V 處理 trap（包含例外與中斷）時，會根據 `mtvec` 的設定�
 - `Direct` 模式只需要 BASE 是 4-byte 對齊就夠了（因為就跳去那裡執行）
 - `Vectored` 模式可能會要求 BASE 是 128-byte 對齊，這樣就可以用簡單的移位運算而非加法器來找出第 n 個 handler 的位址（`cause << 2`）  
 :::
+
+### 3.1.8. Machine Trap Delegation (`medeleg` and `mideleg`) Registers
+
+預設情況下，所有 privilege level 所產生的 trap 都會由 machine mode 處理。 不過 machine-mode 的 handler 可以透過 `MRET` 指令（見 3.3.2 節）將 trap 回傳給對應的低權限層級。 為了提升效能，實作上可以提供 `medeleg` 和 `mideleg` 這兩個具有個別讀寫位元的暫存器，用來指定哪些例外或中斷可以直接由較低權限層級處理。 machine exception delegation 暫存器（`medeleg`）是 64-bit 的可讀寫暫存器，而 machine interrupt delegation 暫存器（`mideleg`）則是 MXLEN 位元的可讀寫暫存器
+
+在支援 S-mode 的 hart 中，`medeleg` 和 `mideleg` 這兩個暫存器是必要的。 只要設定對應的位元，當 S-mode 或 U-mode 發生對應的 trap，就會被轉交給 S-mode 的 trap handler 處理。 而在不支援 S-mode 的 hart 中，這兩個暫存器就不應該存在
+
+::: tip
+delegation 是讓 machine mode 把 trap 權限下放給 S-mode 的機制。 所以如果一個 hart 根本沒支援 S-mode，那麼 `medeleg` 和 `mideleg` 就沒有存在的必要，甚至在硬體上也應該被省略。 注意這裡也提到即使 trap 是在 U-mode 發生的，只要有對應的 delegation，它仍會跳到 S-mode，而不是直接給 U-mode handler  
+:::
+
+:::: info  
+在版本 1.9.1 與更早的版本中，這些暫存器即便存在，在只有 M-mode，或只有 M/U 而沒有 N 個 hart 的情況下，其值也會固定為零。 但其實沒有必要強制這些情況下的值一定為零，因為 `misa` 暫存器已經能夠指出這些暫存器是否存在
+
+::: tip  
+在舊版中，這些暫存器即使存在，也不能改值（等於硬體焊死為 0）。 但後來標準放寬了這個限制，因為是否支援 delegation，可以直接從 `misa` 暫存器查出，而不必限制 `medeleg`/`mideleg` 一定要回傳 0，以讓硬體實作更有彈性  
+:::  
+::::
+
+當 trap 被委託給 S-mode 時，`scause` 暫存器會寫入 trap 的原因，`sepc` 會寫入觸發 trap 的指令的虛擬位址，`stval` 會寫入與例外相關的額外資訊； `mstatus` 中的 `SPP` 欄位會記錄當下的權限模式，`SPIE` 會寫入當時 `SIE` 的值，而 `SIE` 本身會被清除。 而 `mcause`、`mepc`、`mtval` 以及 `mstatus` 中的 `MPP` 與 `MPIE` 欄位則不會被更新
+
+實作可以選擇只支援部分可委託的 trap。 要確認支援了哪些 bit，可以嘗試把 `medeleg` 或 `mideleg` 的每個位元都設為 1，然後讀回來看哪些位元仍然是 1，就能知道哪些 trap 是可以被委託的
+
+實作上不可以讓 `medeleg` 中的任何位元是唯讀的 1，也就是說，只要是可委託的同步 trap，都必須支援能將其設為「不委託」的狀況。 同樣地，`mideleg` 中對應到 machine-level 中斷的位元，也不能被設成唯讀的 1（但對於較低層級的中斷則可以）
+
+::: tip  
+這段是對硬體實作的限制：即使 trap 可以被委託，也必須允許「選擇不委託」，這樣作業系統才能保有控制權。 不能硬把某些中斷永遠委託下去（唯讀的 1），否則會限制 OS 的彈性  
+:::
+
+::: info  
+在版本 1.11 及更早的版本中，`mideleg` 中的所有位元都被禁止設為唯讀的 1。 另外，平台規範仍可以額外加上自己的限制  
+:::
+
+trap 永遠不會從高權限層級轉移給低權限層級處理。 舉例來說，即使 M-mode 已經把 illegal-instruction 的例外委託給 S-mode，當 M-mode 自己執行了非法指令時，這個 trap 還是會在 M-mode 被處理，而不會被委託給 S-mode。 相反地，trap 可以「水平處理」。 同樣的例子中，如果 S-mode 軟體執行了非法指令，那這個 trap 就會在 S-mode 被處理
+
+::: tip  
+trap delegation 只能從 machine mode 向下轉交下層權限的 trap，但不能逆向（往下層回傳）。 也就是說，當某個權限層級自己出錯（觸發 exception），它必須自己處理，不會「往下委託」。 但如果是一個較低層級（例如 S-mode 或 U-mode）觸發的 trap，那麼可以透過 `medeleg`/`mideleg` 的設定，決定是否讓該層直接處理，或轉交給 M-mode  
+:::
+
+當中斷被委託時，委託者所在的權限層級將會對該中斷進行遮蔽（mask）。 例如，若 supervisor timer interrupt（STI）已透過設定 `mideleg[5]` 委託給 S-mode，那麼在 M-mode 執行期間就不會接收到 STI。 相反地，若 `mideleg[5]` 為清除狀態（未委託），那 STI 就可以在任一權限層級被觸發，並會統一交由 M-mode 處理
+
+::: tip  
+這裡說明 delegation 的副作用：一旦將某中斷委託給 S-mode，M-mode 就再也不會接收到這個中斷了。 這是一種設計保證，避免不同層級重複處理同一個 trap。 所以若你將 `mideleg[5]` 設為 1，表示 STI 被委託給 S-mode，那麼即使當下是 M-mode，也會忽略這個中斷  
+:::
+
+![（Figure 11. Machine Exception Delegation (`medeleg`) register.）](image/medeleg.png)
+
+`medeleg` 對應每一種同步例外（如表 14 所示）都分配一個位元位置，這個位元的位置與 `mcause` 暫存器回傳的值相同（例如設定第 8 位元，就代表允許將 user-mode 的環境呼叫交給較低權限的 trap handler 處理）。 當 `XLEN=32` 時，`medelegh` 是一個 32-bit 的可讀寫暫存器，對應到 `medeleg` 的第 63 到 32 位元。 當 `XLEN=64` 時，`medelegh` 不存在
+
+![（Figure 12. Machine Interrupt Delegation (`mideleg`) Register.）](image/mideleg.png)
+
+`mideleg` 儲存的是各個中斷類型的委託設定位元，其位元排列方式與 mip 暫存器相同（例如 STIP 中斷的委託控制位元位於第 5 位）。 對於不可能在低權限模式發生的例外，其對應的 `medeleg` 位元應該是唯讀的 0。 特別是 `medeleg[11]` 要是唯讀的 0； `medeleg[16]` 也要是唯讀的 0，因為 double trap 是不可委託的
+
+::: tip  
+`mcause = 11` 是 machine-mode 的 `ecall`，U/S-mode 根本不會觸發這個例外，所以 `medeleg[11]` 被設計成硬體保證為 0  
+:::
