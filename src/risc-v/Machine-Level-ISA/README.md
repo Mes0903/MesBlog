@@ -918,3 +918,21 @@ M-mode 提供了一組基本的硬體效能監控功能。 `mcycle` CSR 用來�
 
 由於 `mtime` 計數器可以在多個 core 間共用，因此無法透過 `mcountinhibit` 機制來抑制  
 :::
+
+### 3.1.13. Machine Scratch (`mscratch`) Register
+
+`mscratch` 是一個 MXLEN 位元的可讀寫暫存器，專門保留給 machine mode 使用。 一般來說，它用來存放一個指向 machine-mode 下 hart 本地 context 區域的指標，並會在進入 M-mode trap handler 時與使用者暫存器進行交換
+
+::: tip  
+`mscratch` 就像是 OS trap handler 專用的小筆記本，用來在 trap 發生時臨時儲存使用者狀態、指標或 context。 因為每個 hart 都有自己一份 `mscratch`，所以你可以安全地儲存與 hart 相關的資料，而不需要一開始就開堆疊空間或找備用暫存器
+
+上方講的「使用者暫存器（user register）」是指在 U-mode 下可使用的一般暫存器（general-purpose registers），也就是我們常講的那些 x0-x31 的暫存器  
+:::
+
+![（Figure 20. Machine-mode scratch register.）](image/mscratch.png)
+
+::: info  
+MIPS ISA 為作業系統保留了兩個使用者暫存器（`k0`/`k1`）。 雖然這種方式實作起來快速簡單，但也會減少使用者可用的暫存器，且不容易擴充到更多權限層級或處理巢狀 trap。 此外，在回到使用者模式前，還可能需要清除這兩個暫存器，才能避免潛在的安全漏洞並提供可預期的除錯行為
+
+RISC-V 的使用者 ISA 被設計來支援多種不同的特權系統環境，因此我們不想讓任何與作業系統相關的特性污染使用者層級的 ISA。 RISC-V 提供 CSR swap 指令，可以快速地將值儲存或還原到 `mscratch` 暫存器。 和 MIPS 設計不同，作業系統可以在使用者 context 執行期間，持續在 `mscratch` 中保留值  
+:::
