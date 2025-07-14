@@ -1070,3 +1070,62 @@ software-check exception 是一種同步例外，當執行違反了某些由 ISA
 
 hardware-error exception 是一種同步例外，當指令（無論是顯式或隱式）存取到損毀或無法修復的資料時便會觸發。 這裡的「資料」泛指 RISC-V hart 中所使用的所有資訊。 當此例外發生時，`xepc` 暫存器會記錄導致存取錯誤的指令位址，而 `xtval` 則會被設為 0，或是記錄該次指令抓取、load、store 所嘗試存取的虛擬位址。 hardware-error 例外的優先順序由實作自行定義，但通常會在發現錯誤時的那個階段觸發  
 :::
+
+### 3.1.16. Machine Trap Value (`mtval`) Register
+
+`mtval` 是一個 MXLEN 位元的可讀寫暫存器，其格式如圖 23 所示。 當 trap 發生並進入 M-mode 時，`mtval` 會被設為 0，或是被寫入某些與例外相關的資訊，協助軟體處理該 trap。 除此之外，實作本身不會寫入 `mtval`，但軟體可以自行寫入。 哪些例外需要將 `mtval` 寫入具意義的資訊、哪些必須無條件設為 0、哪些可以兩者皆可，會由硬體平台規範決定。 如果硬體平台規定所有例外都不會讓 `mtval` 寫入非零值，則 `mtval` 是唯讀的 0
+
+![（Figure 23. Machine Trap Value (`mtval`) register.）](image/mtval.png)
+
+如果在指令擷取（fetch）、load 或 store 時發生了 breakpoint、位址未對齊、access fault 或 page fault 等例外，且 `mtval` 被寫入了非零值，那麼 `mtval` 會記錄觸發例外的虛擬位址。 當啟用基於 page 的虛擬記憶體時，即使是實體記憶體的 access-fault 例外，也會將觸發錯誤的虛擬位址寫入 `mtval`。 這樣的設計可以降低多數實作（尤其是有硬體 page-table walker 的）資料路徑成本
+
+若某次 misaligned 的 load 或 store 導致 access fault 或 page fault，而 `mtval` 被寫入非零值，則 `mtval` 會記錄觸發錯誤的那個存取區段的虛擬位址
+
+::: tip  
+Misaligned access 通常會跨越多個位址範圍（例如跨兩個 page），如果其中一段合法、另一段違規，那 `mtval` 會記錄「違規」的那段虛擬位址，用來幫助錯誤分析時釐清是 load/store 哪一部分出錯  
+:::
+
+若在支援可變長度指令的 hart 上發生 instruction access-fault 或 page-fault，而 `mtval` 被寫入非零值，那麼 `mtval` 將包含造成錯誤的那段指令的虛擬位址，而 `mepc` 則會指向該指令的起始位址
+
+在 illegal-instruction 例外時，`mtval` 也可以選擇性地用來回傳觸發錯誤的指令位元內容（此時 `mepc` 指向該指令在記憶體中的位址）。 如果 `mtval` 被寫入非零值，它會記錄以下三個中最短者：
+
+- 實際造成錯誤的整條指令
+- 該指令的前 ILEN 位
+- 該指令的前 MXLEN 位
+
+此時寫入 `mtval` 的內容會靠右對齊，其餘高位補 0
+
+::: tip  
+RISC-V 指令為定長或變長（16、32、48、64 bits 以上）的，若遇到非法指令，可以選擇把那段錯誤的 opcode 填入 `mtval` 來幫助除錯系統分析錯誤指令，若長度超過 MXLEN，也會截斷並右對齊。 這段機制是「可選的」，不是所有實作都會這樣做  
+:::
+
+::: info  
+在 `mtval` 中記錄出錯的指令可以降低指令模擬（emulation）的開銷，特別是在指令未對齊時，能避免多次部分讀取指令的情況，也可能避免資料快取未命中或從未快取的記憶體中慢速地讀取指令。 此外，若有其他 agent 正在修改指令記憶體（例如在動態翻譯系統中可能發生），則還會有原子性問題
+
+此機制要求在觸發 trap 前，必須先將整段指令（或至少前 MXLEN 個位元）抓取進 `mtval`。 這個要求不會造成實作上的限制，因為實作通常在解碼前就會先抓整段指令，這也能讓軟體 handler 的邏輯更簡單。
+
+如果 `mtval` 的值為 0，可能表示不支援該功能，或是抓到了一條非法的全零指令。 可透過從 `mepc` 所指位置的記憶體讀取指令來判斷是哪一種情況（或者，也可以在執行前透過系統設定資訊判斷該如何安裝正確的 trap handler）  
+:::
+
+當 trap 是由 software-check 例外引起時，`mtval` 會記錄導致例外的原因。 下列是已定義的編碼：
+
+- `0`：無資訊提供
+- `2`：Landing Pad Fault，由 Zicfilp extension 定義（見 22.1 節）
+- `3`：Shadow Stack Fault，由 Zicfiss extension 定義（見 22.2 節）
+
+::: tip  
+software-check exception 是軟體保護機制（如 CFI、shadow stack）檢查失敗時發出的例外，這段設計給安全性相關 extension 用，會以 `mtval` 記錄是哪種失敗（例如 call-return 不匹配、非法跳躍）。 「landing pad」與「shadow stack」都與 control flow integrity 有關  
+:::
+
+對於其他的 trap，`mtval` 會被設為 0，但未來的標準可能會重新定義其他 trap 的 `mtval` 寫入行為
+
+若 `mtval` 不是唯讀的 0，那它是個 WARL 暫存器，必須能表示所有有效的虛擬位址與 0，但不需要能表示所有不合法的位址。 在寫入 `mtval` 前，實作可以把一個不合法的位址轉換成另一個 `mtval` 能接受的不合法位址。 如果系統實作了回傳錯誤指令內容的功能，則 `mtval` 也必須能表示從 $0$ 到 $2^N$ 之間所有的值，其中 `N` 是 MXLEN 和 ILEN 中較小者
+
+::: tip  
+`mtval` 至少要能裝下：
+
+- 所有合法虛擬位址（例外位址）
+- 所有 MXLEN/ILEN 長度內的 opcode（若支援回報指令內容）
+
+不需要支援完整 64-bit 地址空間內的所有值，只要能報錯就好  
+:::
