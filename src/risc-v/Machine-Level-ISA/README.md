@@ -1237,3 +1237,20 @@ Ssdbltrp 擴充在 `menvcfg` 中新增了 double-trap-enable（`DTE`）欄位。
 當 `XLEN=32` 時，`menvcfgh` 是一個 32 位元的讀寫暫存器，對應到 `menvcfg` 的第 63 至 32 位元。 當 `XLEN=64` 時，`menvcfgh` 暫存器不存在
 
 若不支援 U-mode，則 `menvcfg` 與 `menvcfgh` 暫存器都不存在
+
+### 3.1.19. Machine Security Configuration (`mseccfg`) Register
+
+`mseccfg` 是一個選用的 64 位元讀寫暫存器，其格式如圖 26 所示，用於控制安全性功能
+
+![（Figure 26. Machine security configuration (`mseccfg`) register.）](image/mseccfg.png)
+
+- `SSEED` 與 `USEED` 欄位的定義由 entropy-source 擴充 Zkr 提供
+- `RLB`、`MMWP`、與 `MML` 欄位的定義由 PMP-enhancement 擴充 Smepmp 提供
+- `PMM` 欄位的定義由 Smmpm 擴充提供
+
+Zicfilp 擴充在 `mseccfg` 中新增了 `MLPE` 欄位。 當 `MLPE` 欄位為 1 時，Zicfilp 擴充會在 M-mode 中啟用。 當 `MLPE` 欄位為 0 時，Zicfilp 擴充不會在 M-mode 中啟用，且以下規則將適用於 M-mode：
+
+- hart 不會更新 `ELP` 狀態； 其狀態維持為 `NO_LP_EXPECTED`
+- `LPAD` 指令將作為 no-op（空操作）執行
+
+僅當 `XLEN=32` 時，`mseccfgh` 是一個 32 位元的讀寫暫存器，對應 `mseccfg` 的第 63 至 32 位元。 當 `XLEN=64` 時，`mseccfgh` 暫存器不存在
