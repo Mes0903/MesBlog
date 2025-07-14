@@ -902,3 +902,19 @@ M-mode 提供了一組基本的硬體效能監控功能。 `mcycle` CSR 用來�
 ::::
 
 若 hart 有實作 U-mode，則必須提供 `mcounteren` 暫存器，但其中所有欄位都屬於 WARL，可設定為唯讀的 0，表示當在較低權限模式中讀取對應計數器時會觸發 illegal-instruction 例外。 若 hart 未實作 U-mode，則不應存在 `mcounteren` 暫存器
+
+### 3.1.12. Machine Counter-Inhibit (`mcountinhibit`) Register
+
+![（Figure 19. Counter-inhibit `mcountinhibit` register）](image/mcountinhibit.png)
+
+`mcountinhibit` 是一個 32-bit 的 WARL 暫存器，用來控制哪些硬體效能監控計數器會遞增。 這個暫存器的設定只影響計數器是否遞增，不會影響它們的可存取性。 當 `mcountinhibit` 中的 `CY`、`IR` 或 `HPMn` 位元為 0 時，`mcycle`、`minstret` 或 `mhpmcountern` 會照常遞增。 當這些位元為 1 時，對應的計數器將停止遞增
+
+若同一個 core 上的多個 hart 共用 `mcycle` CSR，則 `mcountinhibit` 的 `CY` 欄位也會在這些 hart 間共用，因此其他的 hart 是能看見對 `mcountinhibit.CY` 的寫入的
+
+若實作中未提供 `mcountinhibit` 暫存器，則視為該暫存器的所有位元皆為 0（正常遞增）
+
+::: info  
+當不需要 `mcycle` 與 `minstret` 計數器時，最好能有條件地抑制它們，以降低能耗。 將所有計數器的抑制功能集中在單一 CSR 中，也讓這些計數器能被原子性地取樣（be atomically sampled）
+
+由於 `mtime` 計數器可以在多個 core 間共用，因此無法透過 `mcountinhibit` 機制來抑制  
+:::
