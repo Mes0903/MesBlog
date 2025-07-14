@@ -1141,3 +1141,99 @@ software-check exception 是軟體保護機制（如 CFI、shadow stack）檢查
 ::: info  
 設定資料結構（configuration data structure）的格式與結構尚未標準化。 某些實作中，`mconfigptr` 可能會是硬編碼的固定值； 也有可能允許設定其內容，使其在 CSR 讀取時回傳不同的值。 舉例來說，`mconfigptr` 可能會對應到某個記憶體映射的暫存器，而該暫存器會在開機過程中由平台或 M-mode 軟體設定  
 :::
+
+### 3.1.18. Machine Environment Configuration (`menvcfg`) Register
+
+`menvcfg` 是一個 64-bit 的可讀寫 CSR，如圖 25 所示，用來控制低於 M-mode（如 S-mode 或 U-mode）所處的執行環境的某些特性
+
+![（Figure 25. Machine environment configuration (`menvcfg`) register.）](image/menvcfg.png)
+
+如果 `menvcfg` 中的 `FIOM`（Fence of I/O implies Memory）位元被設為 1，那麼在低於 M-mode 的模式下執行的 FENCE 指令時，原本「只針對 device I/O」的存取順序要求會同時套用到主記憶體的存取順序上，加強順序的約束。 表 16 詳細說明了在 `FIOM=1` 的情況下，FENCE 指令中的 `PI`、`PO`、`SI`、`SO` 這些欄位在低權限模式下的改變
+
+同樣地，當 `FIOM=1` 時，如果某個低於 M-mode 的環境中，有 atomic 指令存取的是被視為 device I/O 的區域，且該指令設有 `aq`（acquire）與/或 `rl`（release）位元，則該指令的存取順序會同時套用到 device I/O 與主記憶體上
+
+如果不支援 S-mode，或是 `satp.MODE` 為唯讀的 0（即永遠是 Bare 模式），則實作可以將 `FIOM` 設為唯讀的 0
+
+<span class = "center-column">
+
+| Instruction bit | Meaning when set                                                         |
+|------------------|-------------------------------------------------------------------------|
+| PI               | Predecessor device input and memory reads (PR implied)                  |
+| PO               | Predecessor device output and memory writes (PW implied)                |
+| SI               | Successor device input and memory reads (SR implied)                    |
+| SO               | Successor device output and memory writes (SW implied)                  |
+
+（Table 16. Modified interpretation of FENCE predecessor and successor sets for modes less privileged than M when `FIOM=1`）
+
+</span>
+
+::: info  
+`menvcfg` 中的 `FIOM` 位元之所以存在，是為了讓 M-mode 可以模擬第 21 章中的 hypervisor extension，而該 extension 中的 hypervisor CSR henvcfg 也有相對應的 FIOM 位元  
+:::
+
+`PBMTE` 位元控制是否允許在 S-mode 與 G-stage 位址轉譯中使用 Svpbmt 擴充功能（即對 `satp` 或 `hgatp` 所指向的 page table 使用）。 當 `PBMTE=1` 時，Svpbmt 在 S-mode 與 G-stage 位址轉譯中可用。 當 `PBMTE=0` 時，實作會視同 Svpbmt 未被實作。 若 Svpbmt 本身就未實作，則 `PBMTE` 為唯讀的 0。 此外，若實作支援 hypervisor 擴充，當 `menvcfg.PBMTE` 為 0 時，`henvcfg.PBMTE` 也是唯讀的 0
+
+修改 `menvcfg.PBMTE` 之後，在 `rs1=x0` 且 `rs2=x0` 的狀況下執行 `SFENCE.VMA`，便能夠根據 page table entries 中與 `PBMT` 欄位相關的位址轉譯快取。 若實作支援 hypervisor 擴充，請參見第 21.5.3 節的其他同步需求
+
+若系統實作了 Svadu 擴充，則 `ADUE` 位元會控制是否啟用硬體對 PTE 中 `A`/`D`（Accessed/Dirty）位元的自動更新功能。 當 `ADUE=1` 時，在 S-mode 位址轉譯期間會啟用硬體自動更新 `A`/`D` 位元，並且實作會視同 S-mode 位址轉譯中的 Svade 擴充未被實作
+
+若有實作 hypervisor 擴充，當 `ADUE=1` 時，G-stage 位址轉譯期間也會啟用硬體 `A`/`D` 位元更新，並且實作會視同 G-stage 中的 Svade 擴充未被實作
+
+當 `ADUE=0` 時，實作會視同 S-mode 與 G-stage 位址轉譯中的 Svade 擴充已被實作。 若未實作 Svadu，則 `ADUE` 為唯讀的 0。 此外，若實作了 hypervisor 擴充，當 `menvcfg.ADUE` 為 0 時，`henvcfg.ADUE` 也是唯讀的 0
+
+::: tip  
+- Svadu：代表硬體支援自動更新 `A`/`D` bits 的能力
+- Svade：表示不支援硬體更新，每次需要更新 `A`/`D` bits 時都會觸發 page fault，交由軟體處理
+
+這兩個擴充是互斥的，也就是說一個系統只能啟用其中之一：
+
+- 當 `ADUE = 1`，表示使用 Svadu 模式
+- 當 `ADUE = 0`，表示使用 Svade 模式
+
+在某些平台或應用中，硬體不支援自動設定 `A`/`D` bits，或是出於簡化硬體、增強安全性或 debug 的目的，會選擇不讓硬體直接更新 page table。 此時便會使用 Svade 擴充，強迫在需要更新 `A`/`D` bits 時觸發 page fault 讓軟體（OS）來處理
+
+這樣軟體可以完全掌控 page table 的狀態，避免未授權的硬體寫入，以實作例如「唯讀的頁面」在第一次存取後才變為有效的策略（例如延遲分配）。 缺點是效能會受到影響，因為每次需要更新 `A`/`D` bits 都要陷入 OS 處理一次 page fault
+
+有些系統支援 Svadu 和 Svade 兩種行為，因此需要一個方式來控制目前使用哪種行為。 而這就是 `menvcfg.ADUE` 所扮演的角色
+
+當 `ADUE = 1`：
+
+- 使用 Svadu，硬體會自動更新 A/D 位元
+- Svade 被視為未實作（即不會發生 page fault）
+
+當 `ADUE = 0`：
+
+- 使用 Svade，A/D bits 不會被硬體寫入，每次更新都要透過 page fault
+- Svadu 被視為未實作  
+:::
+
+::: info  
+Svade 擴充要求在需要設定 PTE 的 `A`/`D` 位元時觸發 page fault，因此當 `ADUE=0` 時，表示已實作 Svade 擴充  
+:::
+
+若系統實作了 Smcdeleg 擴充，則 `CDE`（Counter Delegation Enable）欄位用來控制是否允許將 Zicntr 與 Zihpm 計數器委派（delegate）給 S-mode 使用。 當 `CDE=1` 時，Smcdeleg 擴充啟用（詳見第 9 章）。 當 `CDE=0` 時，Smcdeleg 與 Ssccfg 擴充被視為未實作的。 若未實作 Smcdeleg 擴充，則 `CDE` 為唯讀的 0
+
+- `STCE` 欄位的定義由 Sstc 擴充提供
+- `CBZE` 欄位的定義由 Zicboz 擴充提供
+- `CBCFE` 與 `CBIE` 欄位的定義由 Zicbom 擴充提供
+- `PMM` 欄位的定義由 Smnpm 擴充提供 
+
+Zicfilp 擴充在 `menvcfg` 中新增了 `LPE` 欄位。 當 `LPE=1` 且系統實作了 S-mode 時，Zicfilp 會在 S-mode 中啟用。 若 `LPE=1` 且未實作 S-mode，則會在 U-mode 中啟用。 當 `LPE=0` 時，Zicfilp 不會在 S-mode 中啟用，而下面兩條規則將適用於 S-mode。 若 S-mode 未實作，則下面兩條規則適用於 U-mode：
+
+- hart 不會更新 `ELP`（Expected Landing Pad）的狀態； 其狀態維持為 `NO_LP_EXPECTED`
+- `LPAD` 指令會作為 no-op（空操作）執行
+
+Zicfiss 擴充在 `menvcfg` 中新增了 `SSE` 欄位。 當 `SSE=1` 時，Zicfiss 擴充會在 S-mode 中啟用。 當 `SSE=0` 時，以下規則將適用於所有低於 M-mode 的權限模式（即 S-mode 與 U-mode）：
+
+- 32-bit 的 Zicfiss 指令會退回為 Zimop 所定義的行為
+- 16-bit 的 Zicfiss 指令則依據 Zcmop（compressed instruction markers for opcodes）來解釋
+- 在虛擬機層的 page table（VS/S-stage）中的編碼 `pte.xwr=010b` 會被視為「保留（reserved）」的意涵
+- `SSAMOSWAP.W/D` 會觸發 illegal-instruction exception
+
+當 `menvcfg.SSE` 為 0 時，`henvcfg.SSE` 與 `senvcfg.SSE` 欄位為唯讀的 0
+
+Ssdbltrp 擴充在 `menvcfg` 中新增了 double-trap-enable（`DTE`）欄位。 當 `menvcfg.DTE` 為 0 時，實作的行為等同於未實作 Ssdbltrp。 當 Ssdbltrp 未被實作時，`sstatus.SDT`、`vsstatus.SDT`、與 `henvcfg.DTE` 位元為唯讀的 0
+
+當 `XLEN=32` 時，`menvcfgh` 是一個 32 位元的讀寫暫存器，對應到 `menvcfg` 的第 63 至 32 位元。 當 `XLEN=64` 時，`menvcfgh` 暫存器不存在
+
+若不支援 U-mode，則 `menvcfg` 與 `menvcfgh` 暫存器都不存在
