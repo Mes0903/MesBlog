@@ -936,3 +936,36 @@ MIPS ISA 為作業系統保留了兩個使用者暫存器（`k0`/`k1`）。 雖�
 
 RISC-V 的使用者 ISA 被設計來支援多種不同的特權系統環境，因此我們不想讓任何與作業系統相關的特性污染使用者層級的 ISA。 RISC-V 提供 CSR swap 指令，可以快速地將值儲存或還原到 `mscratch` 暫存器。 和 MIPS 設計不同，作業系統可以在使用者 context 執行期間，持續在 `mscratch` 中保留值  
 :::
+
+### 3.1.14. Machine Exception Program Counter (`mepc`) Register
+
+![（Figure 21. Machine exception program counter register.）](image/mepc.png)
+
+`mepc` 是一個 MXLEN 位元的可讀寫暫存器，其格式如圖 21 所示。 `mepc` 的最低位元（`mepc[0]`）總是為 0。 若實作僅支援 `IALIGN=32`，則最低兩個位元（`mepc[1:0]`）總是為 0
+
+若某個實作允許 IALIGN 為 16 或 32（例如透過改變 CSR `misa`），那麼只要 IALIGN 為 32，讀取 `mepc` 時就會遮蔽 `mepc[1]`，讓它看起來為 0。 這個遮蔽也適用於 MRET 指令所隱式進行的讀取。 即使被遮蔽，在 `IALIGN=32` 時仍然可以寫入 `mepc[1]`
+
+::: tip  
+在支援壓縮指令（`IALIGN=16`）的系統中，`mepc` 可能會有位址不是 4-byte 對齊的情況（例如對齊到 2-byte 即可）。 但當 IALIGN 被設定為 32 時（即禁用壓縮指令），所有指令必須 4-byte 對齊，這時：
+
+- 讀出 `mepc` 時會強制將 `mepc[1]` 遮蔽為 0
+- 但你還是可以寫入 `mepc[1]`，只是讀的時候會被遮掉，不會造成錯誤
+
+這樣做的目的是為了保證 MRET 回去的 `pc` 是合法對齊的，即使 `mepc` 裡面有暫時不合法的位元  
+:::
+
+`mepc` 是一個 WARL 類型的暫存器，其必須能夠儲存所有合法的虛擬位址，但不需要能儲存所有可能的非法位址。 在寫入 `mepc` 之前，實作可以將非法位址轉換成 `mepc` 可容納的另一個非法位址再寫入
+
+:::: info  
+當未啟用 address translation 時，虛擬位址與實體位址相等。 因此，`mepc` 能夠表示的位址集合，必須包含那些可作為合法 PC 或有效位址的實體位址
+
+::: tip  
+這邊只是在表達，如果虛擬位址等於實體位址（如沒開 paging），則 `mepc` 要能記住實體指令的位置  
+:::  
+::::
+
+當 trap 發生並進入 M-mode 時，`mepc` 會被寫入發生中斷或例外的那條指令的虛擬位址。 除此之外，實作不會主動寫入 `mepc`，但軟體可以明確地寫入它
+
+::: tip  
+每當 trap 發生（例外、interrupt），系統會把「正在執行那條指令的位址」存進 `mepc`，通常這個值會用來在 trap handler 執行完之後，透過 `mret` 回到原本程式位置，但軟體（例如 OS 或 hypervisor）也可以自己寫入 `mepc`，讓 `mret` 回到指定位置（例如 context switch 時）  
+:::
