@@ -867,3 +867,38 @@ M-mode 提供了一組基本的硬體效能監控功能。 `mcycle` CSR 用來�
 
 要注意操作順序：應先讀高位、再讀低位； 或先寫低位、再寫高位，以避免跨越溢位時讀取不一致。 這對統計精度非常關鍵，尤其是高頻率事件（如 clock cycles）極易溢位  
 :::
+
+### 3.1.11. Machine Counter-Enable (`mcounteren`) Register
+
+`mcounteren` 是一個 32-bit 的暫存器，用來控制硬體效能監控計數器是否開放讓下一個較低的權限模式存取。 這個暫存器的設定僅影響存取權限。 讀寫 `mcounteren` 並不會影響底層的計數器，它們會持續累積計數，即使當前無法被存取
+
+::: tip  
+`mcounteren`（machine counter enable）只存在於 M-mode 中，它的目的是讓 M-mode 軟體（如 hypervisor 或 kernel）決定是否讓 S-mode 或 U-mode 讀到計數器值。 即使你禁止 U-mode 或 S-mode 存取 `cycle`、`instret` 等，它們還是照樣在背景中遞增  
+:::
+
+![（Figure 18. Counter-enable (`mcounteren`) register.）](image/mcounteren.png)
+
+當 `mcounteren` 中的 `CY`、`TM`、`IR` 或 `HPMn` 位元為 0 時，在 S-mode 或 U-mode 中讀取 `cycle`、`time`、`instret` 或 `hpmcountern` 時會觸發 illegal-instruction 例外。 若這些位元為 1，則對應的暫存器在下一層實作的權限模式中是可讀的（若有實作 S-mode，則為 S-mode，否則為 U-mode）
+
+::: info  
+這些 counter-enable 位元能以最少的硬體支援兩種常見情境：
+- 對於不需要高效能計時器與計數器的 hart，M-mode 軟體可以攔截存取並用軟體實作所有功能
+- 對於需要高效能計數但又不需隱藏底層硬體資訊的 hart，可以直接開放低權限模式存取這些計數器  
+:::
+
+`cycle`、`instret` 和 `hpmcountern` 這些 CSR 是 `mcycle`、`minstret` 和 `mhpmcountern` 的唯讀鏡像（shadow）。 `time` CSR 是 memory-mapped `mtime` 暫存器的唯讀鏡像。 同樣地，當 XLEN 為 32 時，`cycleh`、`instreth` 與 `hpmcounternh` 是 `mcycleh`、`minstreth` 與 `mhpmcounternh` 的唯讀鏡像； 而 `timeh` 是 memory-mapped `mtime` 的上半部（高 32 位元）的唯讀鏡像，而 `time` 則是下半部分（低 32 位元）的唯讀鏡像
+
+:::: info  
+實作可以將對 `time` 與 `timeh` CSR 的讀取轉換成對 memory-mapped `mtime` 的讀取，也可以由 M-mode 軟體模擬此功能，提供給低權限模式使用
+
+::: tip
+`time` 並不是一個真正的硬體 CSR，而是對 `mtime`（一個 memory-mapped 的 64-bit register）的代理：
+
+- 若平台支援，可以讓 CPU 直接從 `mtime` 讀資料回來 → CSR 讀取是快速的
+- 若平台不支援，則 M-mode 需要 trap 並模擬這個行為 → 延遲較大，但能保持一致性  
+
+另外上方我將 shadow 翻為鏡像，它的語意是「反映出來但無法直接修改的版本」，也可以理解為 view  
+:::  
+::::
+
+若 hart 有實作 U-mode，則必須提供 `mcounteren` 暫存器，但其中所有欄位都屬於 WARL，可設定為唯讀的 0，表示當在較低權限模式中讀取對應計數器時會觸發 illegal-instruction 例外。 若 hart 未實作 U-mode，則不應存在 `mcounteren` 暫存器
