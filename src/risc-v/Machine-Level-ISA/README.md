@@ -840,3 +840,30 @@ machine-level 中斷的固定優先順序是根據以下原則所設計的：
 
 換句話說，這兩個暫存器的內容是從 `mip`/`mie`「根據 mideleg 過濾出來」的可見子集  
 :::
+
+### 3.1.10. Hardware Performance Monitor
+
+M-mode 提供了一組基本的硬體效能監控功能。 `mcycle` CSR 用來記錄當前 hart 所在的處理器核心所執行過的時鐘週期數； `minstret` CSR 則記錄該 hart 已完成（retired）的指令數。 在所有 RV32 與 RV64 架構中，`mcycle` 與 `minstret` 都為 64 位元的精度
+
+這些計數器暫存器在 hart 被重設後，其初始值為未定，但可以由軟體寫入特定值。 任何對 CSR 的寫入，會在該指令本身執行完成後才生效。 `mcycle` CSR 在某些情況下可能由同一個處理器核心上的多個 hart 共同持有，此時寫入 `mcycle` 的內容將對這些 hart 來說都是可見的。 平台應提供一種機制，來指出哪些 hart 共享同一個 `mcycle` CSR
+
+::: tip
+計數器一開機不保證初始為 0，軟體（如 OS）若要準確統計，應主動歸零。 若一個核心有多個 hart（例如 SMT 多執行緒核心），這些 hart 可能共用同一個 `mcycle`，這可能會造成統計交疊，所以平台（如 SBI 或 device tree）應提供是否共用的資訊給 OS（否則 OS 無法判斷計數器準確性）  
+:::
+
+硬體效能監控系統還包含額外的 29 個 64-bit 的事件計數器，分別為 `mhpmcounter3` 到 `mhpmcounter31`。 每個計數器都對應一個事件選擇器 CSR，稱為 `mhpmevent3` 到 `mhpmevent31`，這些都是 64-bit 的 WARL 暫存器，用來控制該計數器會對哪一種事件進行計數。 事件的意義由平台定義，但事件編號 0 被定義為「不計數」。 所有計數器原則上都應被實作，但實作可以透過讓該計數器與對應事件選擇器都固定為唯讀的 0 以符合合法的定義
+
+![（Figure 17. Hardware performance monitor counters.）](image/h_monitor_counter.png)
+
+`mhpmcounter` 系列是 WARL 類型的暫存器，在 RV32 與 RV64 架構下皆支援最多 64-bit 精度
+
+當 XLEN 為 32 時，對 `mcycle`、`minstret`、`mhpmcountern` 與 `mhpmeventn` 這些 CSR 的讀取會傳回對應暫存器的第 31–0 位元，而寫入則僅會改變第 31–0 位元； 對應的高位元部分可以透過 `mcycleh`、`minstreth`、`mhpmcounternh` 與 `mhpmeventnh` CSR 來讀寫，這些會回傳對應暫存器的第 63–32 位元。 `mhpmeventnh` CSR 只有在實作了 Sscofpmf 擴充時才會提供
+
+::: tip  
+即使在 32-bit 系統下，這些暫存器的實際寬度仍是 64-bit，只是要透過分開存取（上下半部）。 這是 32-bit 架構下存取 64-bit CSR 的典型設計方式：
+
+- `mcycle`、`mhpmcounterN`：低 32 bit（bits 0–31）
+- `mcycleh`、`mhpmcounterNh`：高 32 bit（bits 32–63）
+
+要注意操作順序：應先讀高位、再讀低位； 或先寫低位、再寫高位，以避免跨越溢位時讀取不一致。 這對統計精度非常關鍵，尤其是高頻率事件（如 clock cycles）極易溢位  
+:::
