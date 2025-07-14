@@ -1129,3 +1129,15 @@ software-check exception 是軟體保護機制（如 CFI、shadow stack）檢查
 
 不需要支援完整 64-bit 地址空間內的所有值，只要能報錯就好  
 :::
+
+### 3.1.17. Machine Configuration Pointer (`mconfigptr`) Register
+
+`mconfigptr` 是一個 MXLEN 位元寬的唯讀 CSR，如圖 24 所示，其內容為某個設定資料結構的實體位址。 軟體可以透過這個資料結構來取得 hart、平台以及相關設定的資訊。 `mconfigptr` 必須要被實作，但其值可以為 0，表示設定資料結構不存在，或是必須透過其他機制來取得該資料結構的位置
+
+![（Figure 24. Machine Configuration Pointer (`mconfigptr`) register.）](image/mconfigptr.png)
+
+這個指標的位元對齊程度必須不少於 MXLEN。 也就是說，如果 MXLEN 是 $8 \times n$，則 `mconfigptr` 的第 $log_2{n–1}$ 位元到第 0 位元必須為 0
+
+::: info  
+設定資料結構（configuration data structure）的格式與結構尚未標準化。 某些實作中，`mconfigptr` 可能會是硬編碼的固定值； 也有可能允許設定其內容，使其在 CSR 讀取時回傳不同的值。 舉例來說，`mconfigptr` 可能會對應到某個記憶體映射的暫存器，而該暫存器會在開機過程中由平台或 M-mode 軟體設定  
+:::
