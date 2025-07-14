@@ -969,3 +969,104 @@ RISC-V 的使用者 ISA 被設計來支援多種不同的特權系統環境，�
 ::: tip  
 每當 trap 發生（例外、interrupt），系統會把「正在執行那條指令的位址」存進 `mepc`，通常這個值會用來在 trap handler 執行完之後，透過 `mret` 回到原本程式位置，但軟體（例如 OS 或 hypervisor）也可以自己寫入 `mepc`，讓 `mret` 回到指定位置（例如 context switch 時）  
 :::
+
+### 3.1.15. Machine Cause (`mcause`) Register
+
+`mcause` 是一個 MXLEN 位元的可讀寫暫存器，其格式如圖 22 所示。 當 trap 發生並進入 M-mode 時，`mcause` 會被寫入一個表示該 trap 事件原因的代碼。 除此之外，實作不會主動寫入 `mcause`，但軟體可以自行明確地寫入它
+
+![（Figure 22. Machine Cause (`mcause`) register.）](image/mcause.png)
+
+如果 trap 是由中斷所引起的，則 `mcause` 暫存器中的 Interrupt 位元會被設為 1。 Exception Code 欄位則包含一個代碼，用以標示最近一次的例外或中斷。 表 14 列出了所有可能的 machine-level 例外代碼。 Exception Code 是一個 WLRL 欄位，因此只能保證能正確儲存被支援的例外代碼
+
+load 與 load-reserved 指令會產生 load 類型的例外，而 store、store-conditional 與 AMO 指令則會產生 store/AMO 類型的例外
+
+::: info  
+可以透過檢查 `mcause` 的符號位元來快速將中斷與其他 trap 區分開。 左移一次可以去除 interrupt bit，並將 Exception Code 做為索引使用，用於查詢 trap vector table
+
+我們並不區分特權指令例外與非法指令例外。 這簡化了整體架構，也能隱藏某些高特權指令是否被實作的細節。 負責處理 trap 的特權層可以自行決定是否需要區分這些情況，以及要視某個目標 opcode 為非法還是特權的  
+:::
+
+<span class = "center-column">
+
+| Interrupt | Exception Code | Description                            |
+|-----------|----------------|----------------------------------------|
+| 1         | 0              | *Reserved*                             |
+| 1         | 1              | Supervisor software interrupt          |
+| 1         | 2              | *Reserved*                             |
+| 1         | 3              | Machine software interrupt             |
+| 1         | 4              | *Reserved*                             |
+| 1         | 5              | Supervisor timer interrupt             |
+| 1         | 6              | *Reserved*                             |
+| 1         | 7              | Machine timer interrupt                |
+| 1         | 8              | *Reserved*                             |
+| 1         | 9              | Supervisor external interrupt          |
+| 1         | 10             | *Reserved*                             |
+| 1         | 11             | Machine external interrupt             |
+| 1         | 12             | *Reserved*                             |
+| 1         | 13             | Counter-overflow interrupt             |
+| 1         | 14–15          | *Reserved*                             |
+| 1         | ≥16            | *Designated for platform use*          |
+| 0         | 0              | Instruction address misaligned         |
+| 0         | 1              | Instruction access fault               |
+| 0         | 2              | Illegal instruction                    |
+| 0         | 3              | Breakpoint                             |
+| 0         | 4              | Load address misaligned                |
+| 0         | 5              | Load access fault                      |
+| 0         | 6              | Store/AMO address misaligned           |
+| 0         | 7              | Store/AMO access fault                 |
+| 0         | 8              | Environment call from U-mode           |
+| 0         | 9              | Environment call from S-mode           |
+| 0         | 10             | *Reserved*                             |
+| 0         | 11             | Environment call from M-mode           |
+| 0         | 12             | Instruction page fault                 |
+| 0         | 13             | Load page fault                        |
+| 0         | 14             | *Reserved*                             |
+| 0         | 15             | Store/AMO page fault                   |
+| 0         | 16             | Double trap                            |
+| 0         | 17             | *Reserved*                             |
+| 0         | 18             | Software check                         |
+| 0         | 19             | Hardware error                         |
+| 0         | 20–23          | *Reserved*                             |
+| 0         | 24–31          | *Designated for custom use*            |
+| 0         | 32–47          | *Reserved*                             |
+| 0         | 48–63          | *Designated for custom use*            |
+| 0         | ≥64            | *Reserved*                             |
+
+（Table 14. Machine cause (`mcause`) register values after trap.）
+
+</span>
+
+<span class = "center-column">
+
+| Priority  | Exc.Code      | Description                                                                 |
+|-----------|---------------|-----------------------------------------------------------------------------|
+| *Highest* | 3             | Instruction address breakpoint                                              |
+|           | 12, 1         | During instruction address translation: First encountered page fault or access fault |
+|           | 1             | With physical address for instruction: Instruction access fault             |
+|           | 2             | Illegal instruction                                                         |
+|           | 0             | Instruction address misaligned                                              |
+|           | 8, 9, 11      | Environment call                                                            |
+|           | 3             | Environment break                                                           |
+|           | 3             | Load/store/AMO address breakpoint                                           |
+|           | 4, 6          | Optionally: Load/store/AMO address misaligned                               |
+|           | 13, 15, 5, 7  | During address translation for an explicit memory access: First encountered page fault or access fault |
+|           | 5, 7          | With physical address for an explicit memory access: Load/store/AMO access fault |
+| *Lowest*  | 4, 6          | If not higher priority: Load/store/AMO address misaligned                   |
+
+（Table 15. Synchronous exception priority in decreasing priority order）
+
+</span>
+
+當虛擬位址被轉換為實體位址時，位址轉譯演算法會決定要觸發哪一種例外。 load/store/AMO 的 address-misaligned 例外，可能比 page fault 或 access fault 優先，也可能較晚發生
+
+::: info  
+load/store/AMO 的 misaligned 與 page fault 例外的相對優先順序由實作自行決定，以因應兩種設計情境的需求。 若某實作完全不支援 misaligned 存取，那麼在不執行位址轉譯與存取保護檢查的情況下，其可直接觸發 misaligned 例外。 反之，若只在部分實體位址上支援 misaligned 存取，則實作必須先進行位址轉譯與檢查，確定是否允許這次 misaligned 存取，這種情況下觸發 page fault 或 access fault 是較合適的
+
+指令位址的 breakpoint 例外與資料位址的 breakpoint（也稱為 watchpoint），以及由 EBREAK 指令觸發的 environment break 例外，雖然擁有相同的 cause 編號，但其優先順序不同
+
+instruction address-misaligned 例外是由控制流程指令（如 jump、call）跳往未對齊的目標位址時觸發的，而不是在抓取指令時觸發的。 因此，這類例外的優先順序低於其他 instruction address 類型的例外
+
+software-check exception 是一種同步例外，當執行違反了某些由 ISA 擴充定義的檢查或斷言條件時會觸發，這些檢查的目的在於保障軟體資產的完整性，例如控制流程或記憶體存取的約束。 當此例外發生時，`xtval` 暫存器會被設為 0，或是設為該擴充定義的具體值。 這類例外的優先順序依其原因而定，由對應的擴充規範決定
+
+hardware-error exception 是一種同步例外，當指令（無論是顯式或隱式）存取到損毀或無法修復的資料時便會觸發。 這裡的「資料」泛指 RISC-V hart 中所使用的所有資訊。 當此例外發生時，`xepc` 暫存器會記錄導致存取錯誤的指令位址，而 `xtval` 則會被設為 0，或是記錄該次指令抓取、load、store 所嘗試存取的虛擬位址。 hardware-error 例外的優先順序由實作自行定義，但通常會在發現錯誤時的那個階段觸發  
+:::
