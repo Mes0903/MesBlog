@@ -1418,3 +1418,14 @@ interrupt trap 會發生在 `WFI` 指令的下一條指令上，因此從 trap h
 
 這種「等待事件」的指令模式也可以應用在未來的擴充，例如等待記憶體位置改變或等待訊息抵達  
 ::::
+
+### 3.3.4. Custom SYSTEM Instructions
+
+![（Figure 29. SYSTEM instruction encodings designated for custom use.）](image/3_3_4.png)
+
+如圖 29 所示，`SYSTEM` 的 major opcode 的某個子區段被保留作為自訂用途。 標準建議這些自訂指令也使用第 29、28 位元來指定所需的最低特權模式，就像其他 `SYSTEM` 指令一樣
+
+::: tip  
+opcode 為 `1110011` 的指令屬於 `SYSTEM` 指令，你可以在 [RV32/64G Instruction Set Listings
+](https://github.com/riscv/riscv-isa-manual/blob/main/src/rv-32-64g.adoc) 中直接搜尋 `1110011` 看看具體有哪些指令，最常見的如 `ECALL` 和 `EBREAK` 都是 `SYSTEM` 指令，還有 Zicsr Standard Extension 內的指令也都是  
+:::
