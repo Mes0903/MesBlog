@@ -1334,3 +1334,33 @@ sw a0, 0(t1)     # New value.
 :::
 
 `ECALL` 與 `EBREAK` 會將目標特權模式的 `epc` 暫存器設為該指令本身的位址，而不是下一條指令的位址。 由於 `ECALL` 與 `EBREAK` 所觸發的是同步例外（synchronous exception），因此它們不會被視為已完成（retired）的指令，也不應增加 `minstret` CSR 的計數
+
+### 3.3.2. Trap-Return Instructions
+
+![](image/3_3_2.png)
+
+用來從 trap 返回的指令都被編碼在 `PRIV` 這個次分類的指令編碼範圍（minor opcode）
+
+為了在處理完 trap 後返回原本的執行流程，每個特權層級都有各自的 trap return 指令：`MRET` 與 `SRET`。 其中系統一定要提供 `MRET`； 而若系統支援 supervisor mode，則也必須提供 `SRET`。 否則，執行 `SRET` 應該要觸發 illegal-instruction 例外。 當 `mstatus` 中的 `TSR` 位元為 1 時，執行 `SRET` 也應觸發 illegal-instruction 例外，如第 3.1.6.6 節所述
+
+::: tip  
+`TSR=1`（Trap SRET bit）表示不允許從 S-mode 使用 `SRET` 返回，因此也要觸發非法指令例外  
+:::
+
+`xRET` 指令可以在其對應的特權模式 `x` 或更高模式中執行。執行低特權模式的 `xRET` 指令時，會從暫存的中斷允許狀態與特權模式堆疊中回復（pop）相應的值。 若試圖在低於 `x` 的特權模式下執行 `xRET` 指令，則會觸發 illegal-instruction 例外。 除了如第 3.1.6.1 節所述操作特權堆疊之外，`xRET` 還會將 `pc` 設為對應 `xepc` 暫存器中儲存的位址
+
+若系統支援 A 擴充（Atomic extension），則 `xRET` 指令可以清除任何未完成的 `LR` 位址保留，但不強制必須清除。 若 trap handler 需要清除保留，應該在執行 `xRET` 前明確地這麼做（例如透過執行一個假的 `SC` 指令）
+
+::: tip  
+在 RISC-V 的原子操作中，`LR`/`SC`（Load-Reserved / Store-Conditional）搭配使用，用來實作 atomic CAS 等功能。 `LR` 會建立一個地址保留區，之後的 `SC` 只有在這個區域沒有被其他 CPU 或 trap 影響過的情況下才會成功
+
+問題是，如果中間發生 trap 而跳出該流程，這個保留區仍可能繼續存在。 這裡說的是：`xRET` 可以幫忙清掉這個保留，但不一定會清，因此如果你要保證清除，要自己在 handler 中用 `SC` 把它清掉，否則可能會造成之後的 `SC` 意外成功或失敗  
+:::
+
+:::: info  
+如果 `xRET` 指令總是清除 `LR` 的保留，那麼就無法使用除錯器逐步執行 `LR`/`SC` 的序列了
+
+::: tip  
+如果 `xRET` 會自動清掉 `LR` 保留區，那麼開發者在用 debugger 單步執行程式時，每經過一次 trap 返回（例如中斷或除錯點），`SC` 就會失敗，因為 `LR` 的狀態每次都被清掉了  
+:::  
+::::
