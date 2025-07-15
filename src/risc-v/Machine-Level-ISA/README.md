@@ -1314,3 +1314,23 @@ sw a0, 0(t1)     # New value.
 :::
 
 `time` 這個 CSR 是 `mtime` 記憶體映射暫存器的唯讀鏡像（shadow）。 當 XLEN 為 32 時，`timeh` CSR 是 `mtime` 高 32 位元的唯讀鏡像，而 `time` 則對應 `mtime` 的低 32 位元。 當 `mtime` 改變時，這些變化最終一定會反映在 `time` 與 `timeh` 上，但不一定會立即反映
+
+## 3.3. Machine-Mode Privileged Instructions
+
+### 3.3.1. Environment Call and Breakpoint
+
+![](image/3_3_1.png)
+
+`ECALL` 指令用來向支援的執行環境提出請求。當它在 U-mode、S-mode 或 M-mode 中執行時，分別會觸發 `environment-call-from-U-mode`、`environment-call-from-S-mode` 或 `environment-call-from-M-mode` 的例外，指令本身不會執行任何其他操作
+
+::: info  
+`ECALL` 針對不同特權模式產生不同的例外，讓系統能夠選擇性地委派處理這些 environment call 例外。 以類 Unix 作業系統為例，常見的做法是將 `environment-call-from-U-mode` 例外委派給 S-mode 處理，而不委派其他類型  
+:::
+
+`EBREAK` 指令通常由除錯器使用，用來將控制權轉回除錯環境。 除非外部除錯環境另行接管，否則 `EBREAK` 會觸發一個 breakpoint 例外，並不執行其他任何操作
+
+::: info  
+如本手冊第 I 卷中 "C" 標準壓縮指令擴充所描述，`C.EBREAK` 指令的操作與 `EBREAK` 指令相同  
+:::
+
+`ECALL` 與 `EBREAK` 會將目標特權模式的 `epc` 暫存器設為該指令本身的位址，而不是下一條指令的位址。 由於 `ECALL` 與 `EBREAK` 所觸發的是同步例外（synchronous exception），因此它們不會被視為已完成（retired）的指令，也不應增加 `minstret` CSR 的計數
