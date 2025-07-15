@@ -1254,3 +1254,63 @@ Zicfilp 擴充在 `mseccfg` 中新增了 `MLPE` 欄位。 當 `MLPE` 欄位為 1
 - `LPAD` 指令將作為 no-op（空操作）執行
 
 僅當 `XLEN=32` 時，`mseccfgh` 是一個 32 位元的讀寫暫存器，對應 `mseccfg` 的第 63 至 32 位元。 當 `XLEN=64` 時，`mseccfgh` 暫存器不存在
+
+## 3.2. Machine-Level Memory-Mapped Registers
+
+### 3.2.1. Machine Timer (`mtime` and `mtimecmp`) Registers
+
+平台會提供一個 real-time 的計數器，這個計數器會以記憶體映射（memory-mapped）的方式暴露為一個可由 M-mode 讀寫的暫存器 `mtime`。 `mtime` 必須以固定頻率遞增，平台也必須提供一種機制，用來確定 `mtime` 的每次遞增（tick）所代表的時間週期。 當計數溢位時，`mtime` 暫存器會回繞（wrap around）
+
+::: tip  
+「wrap around」是因為硬體資源有限，當暫存器達到其位數所能表示的最大值時，就會重新從零開始  
+:::
+
+在所有 RV32 與 RV64 系統上，`mtime` 暫存器都為 64-bit 的精度。 平台也會提供一個 64-bit 的、以記憶體映射方式實作的 M-mode 計時比較暫存器 `mtimecmp`。 當 `mtime` 的值大於或等於 `mtimecmp` 時，就會有一個 machine timer interrupt 成為 pending 狀態（這些值被當成無號整數來比較）。 這個中斷會持續維持 posted 狀態，直到 `mtimecmp` 的值大於 `mtime`（通常是因為寫入 `mtimecmp` 而造成的）。 只有在啟用中斷且 `mie` 暫存器中的 `MTIE` 位元被設成 1 時，這個中斷才會真正地被處理（taken）
+
+![（Figure 27. Machine time register (memory-mapped control register).）](image/mtime.png)
+
+![（Figure 28. Machine time compare register (memory-mapped control register).）](image/mtimecmp.png)
+
+::: info  
+這套 timer 的機制使用的是 wall-clock time，而不是 cycle counter，目的是支援現代處理器採用動態電壓與頻率調整（DVFS），透過時脈頻率高度變動的情況來節省能源
+
+提供準確的實時時鐘（RTC）相對成本較高（需要石英或 MEMS 振盪器），而且即使系統其他部分關機時，它也必須持續運作，因此系統中通常只會有一個 RTC，並且位於與處理器不同的時脈/電壓的領域中。 因此，這個 RTC 必須被系統中所有的 hart 共用，對 RTC 的存取可能會產生電壓層級轉換與時脈領域切換的代價。 因此，將 `mtime` 設計為記憶體映射的暫存器，會比做成 CSR 更為自然
+
+較低權限等級（如 supervisor-mode 或 user-mode）沒有自己專屬的 `timecmp` 暫存器。 相對地，machine-mode 的軟體可以透過將下一次的 timer 中斷時間寫入 `mtimecmp`，來實作任意數量的虛擬計時器
+
+在簡單的固定頻率系統中，可以用同一個時鐘同時作為 cycle counting 與 wall-clock time 的依據  
+:::
+
+當 `mtime` 和 `mtimecmp` 之間的比較結果改變時，其變化最終一定會反映在 `MTIP` 上，但不一定會立即反映 
+
+:::: info  
+若一個中斷處理函式將 `mtimecmp` 加一之後立刻返回，可能會發生一次非預期（spurious）的 timer interrupt，因為在這之間 `MTIP` 可能還沒被清除。 所有軟體都應該假設可能會發生這種情況，但大多數軟體可以假設這種情況極為罕見。 與其持續輪詢（poll）`MTIP` 直到它清除，大多時候更有效率的做法是偶爾容忍一次 spurious timer interrupt
+
+::: tip  
+當更新 `mtimecmp` 的時候，有可能還沒等硬體取消中斷 pending 狀態（清除 `MTIP`），處理器就又跳回原本程式，結果觸發了額外一次中斷。 雖然這是「非預期」的行為，但不會造成致命問題，只要 handler 設計妥當即可。 這也是許多實時系統允許某些「假中斷」存在的原因  
+:::  
+::::
+
+在 RV32 的系統中，每次對記憶體映射的 `mtimecmp` 寫入只能更新 64-bit 中的其中一個 32-bit 區段。 當系統是 RV64 的架構時，可以對 `mtime` 和 `mtimecmp` 暫存器進行 64-bit 自然對齊的記憶體存取，這些操作同時具備原子性（atomic）
+
+以下這段程式碼示範在 RV32 的系統中如何正確設定一個 64-bit 的 `mtimecmp` 值，避免在寫入過程中產生中間狀態，進而觸發非預期的 timer interrupt。 假設系統採用 little-endian 且這些暫存器位於具有強順序保證的 I/O 區域中。 先將 `-1` 寫入 `mtimecmp` 的低 32 位元，能避免在設定過程中產生中間值，使 `mtimecmp` 短暫變得比原始值與新值中較小者還小，進而觸發非預期的 timer interrupt：
+
+```asm
+# New comparand is in a1:a0.
+li t0, -1
+la t1, mtimecmp
+sw t0, 0(t1)     # No smaller than old value.
+sw a1, 4(t1)     # No smaller than new value.
+sw a0, 0(t1)     # New value.
+```
+
+::: tip  
+有這種寫入順序是因為在 RV32 的架構中，一次只能寫入 32-bit，而 `mtimecmp` 是個 64-bit 的暫存器，這代表你必須分兩次寫入上下位元，這就會產生一個問題：
+
+- 當你寫完低位（32-bit）但還沒寫完高位時，`mtimecmp` 會處於一個「不完整」的中間值
+- 如果這個中間值剛好小於目前 `mtime` 的值，那麼硬體會誤判為「時間到了」，並觸發一個 timer interrupt
+
+因此上面先把低位寫成了最大值（`-1 = 0xFFFFFFFF`）：這樣不管高位是什麼，整個 `mtimecmp` 都會暫時變成一個極大值，比 `mtime` 大很多，不會觸發中斷。 接著寫入高位（a1），如此暫存器就有了正確的高 32-bit，且低位還是 `0xFFFFFFFF`，整體仍然比 `mtime` 大。 最後再寫回真正的低位（a0），這樣就成功形成新的 `mtimecmp` 值了  
+:::
+
+`time` 這個 CSR 是 `mtime` 記憶體映射暫存器的唯讀鏡像（shadow）。 當 XLEN 為 32 時，`timeh` CSR 是 `mtime` 高 32 位元的唯讀鏡像，而 `time` 則對應 `mtime` 的低 32 位元。 當 `mtime` 改變時，這些變化最終一定會反映在 `time` 與 `timeh` 上，但不一定會立即反映
