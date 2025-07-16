@@ -1371,7 +1371,7 @@ sw a0, 0(t1)     # New value.
 
 `WFI`（Wait for Interrupt）指令會通知硬體實作，目前這個 hart 可以暫停執行，直到有中斷可能需要被處理再回來繼續。 執行 `WFI` 也可以讓硬體平台知道，應優先將合適的中斷導向這個 hart。 `WFI` 可以在所有的特權模式中使用，也可以選擇性地開放給 U-mode 使用。 當 `mstatus` 中的 `TW` 位元為 1 時，執行這條指令可能會觸發 illegal-instruction 例外，如第 3.1.6.6 節所述
 
-當 hart 處於暫停狀態時，只要有已啟用的中斷進入了 pending 狀態，或之後變為 pending 狀態，則由 interrupt trap 就會在 `WFI` 的下一條指令發生。 也就是說，執行會跳進中斷處理常式，並將 `mepc` 設為 `pc + 4`
+當 hart 處於暫停狀態時，只要有已啟用的中斷進入了 pending 狀態，或之後變為 pending 狀態，則由 interrupt trap 就會在 `WFI` 的下一條指令發生。 也就是說，執行會跳進中 interrupt handler，並將 `mepc` 設為 `pc + 4`
 
 :::: info  
 interrupt trap 會發生在 `WFI` 指令的下一條指令上，因此從 trap handler 簡單返回後，會繼續執行 WFI 之後的程式碼
@@ -1467,3 +1467,17 @@ opcode 為 `1110011` 的指令屬於 `SYSTEM` 指令，你可以在 [RV32/64G In
 
 `mcause` 在 reset 時的取值可能會與同步例外發生時的 `mcause` 值重複。 但這種重疊不會造成混淆，因為 reset 時的 `pc` 通常會被設為與其他 trap 不同的位址  
 :::
+
+## 3.5. Non-Maskable Interrupts
+
+不可屏蔽中斷（NMI）僅用於處理硬體錯誤情況，其會無視 hart 中斷啟用位元的狀態，立即跳躍至實作定義的 NMI 向量位址，於 M-mode 中執行。 `mepc` 暫存器會被寫入當時被中斷的指令的虛擬位址，而 `mcause` 則會被設定為一個表示該 NMI 來源的值。 由於如此，NMI 可能會覆寫當前 M-mode interrupt handler 中的暫存器狀態
+
+::: tip  
+NMI（Non-Maskable Interrupt）是一種特別的中斷，不能被遮蔽（mask）或關閉，即使 `MIE`、`SIE` 等中斷啟用位元是 0，也照樣會觸發。 它通常只用來處理致命的硬體錯誤，例如 ECC 錯誤、電源異常、clock fault 等
+
+NMI 跳躍到的處理器程式碼位置是實作定義的向量（NMI vector），不同硬體平台可以有不同的設計。 即使當下已經正在執行 M-mode 的中 interrupt handler，NMI 還是可以強行進來並覆蓋（可能破壞）原本的 `mepc`、`mcause` 等狀態  
+:::
+
+NMI 所寫入的 `mcause` 值由實作決定。 `mcause` 的最高位元（Interrupt bit）應該被設為 1，以表明這是一個中斷。 Exception Code 的值 0 被保留用來表示「未知原因」，而那些不區分 NMI 來源的實作，應將 Exception Code 設為 0
+
+與 reset 不同，NMI 不會重設處理器狀態，因此可以進行錯誤診斷、錯誤回報，甚至有可能限制硬體錯誤的影響範圍
