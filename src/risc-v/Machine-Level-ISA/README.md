@@ -1628,3 +1628,43 @@ Atomicity 類型的 PMA（實體記憶體屬性）會描述某段位址區域支
 
 當軟體在支援等級為 RsrvNonEventual 的記憶體位置上使用 `LR`/`SC` 操作時，若偵測到操作無法順利進行，應提供替代的備援機制  
 :::
+
+### 3.6.4. Misaligned Atomicity Granule PMA
+
+misaligned atomicity granule 這種 PMA 提供對「未對齊 AMO」的有限支援。 若系統有定義這項 PMA，則會指定一個 misaligned atomicity granule 的大小，這個大小是「自然對齊的 2 的冪次方位元組數」。 支援的值以 `MAGNN` 表示，例如 `MAG16` 表示此 granule 的大小至少為 16 個位元組
+
+::: tip  
+granule 是「最小單位」的意思。 misaligned atomicity granule 就是 允許 misaligned 原子性操作的最小對齊區塊大小。 舉例來說，若平台支援 MAG16（也就是 16 bytes granule），那代表只要你這次的記憶體操作「所有被存取的 byte 都落在同一個 16-byte 區塊內」，那麼就可以：
+
+- 不用強制對齊
+- 可以保證原子性
+
+因為 MAG 是「自然對齊、2 的次方大小」的單位，`MAG16` 就是每 16 bytes 一個區塊，而這些區塊會以自然對齊方式切開：
+
+- 第 1 個 granule 是從 0x00 開始，到 0x0F（共 16 個位元組）
+- 第 2 個 granule 是從 0x10 開始，到 0x1F
+- 第 3 個 granule 是從 0x20 開始，到 0x2F
+- 以此類推，每次跳 16 個 bytes
+
+此時如果你的 AMO、load/store 指令存取的是落在同一個 granule 內的位元組，例如你用了 0x03 ~ 0x0A（8 bytes），那就會有上面的保證； 但如果跨了不同的 granule，例如 0x0B ~ 0x12，那就不行  
+:::
+
+misaligned atomicity granule 這項 PMA 僅適用於：基本 ISA 所定義的 AMO、load 與 store 指令，以及在 F、D、Q 擴充中定義的、大小不超過 XLEN 的 load 與 store 指令。 如果這些指令所存取的所有位元組都落在同一個 misaligned atomicity granule 內，該指令就不會因位址未對齊而觸發例外，而且就 RVWMO 記憶體一致性模型而言，這筆操作會視為一個原子性的記憶體操作
+
+若某個未對齊 AMO 存取了一段未定義 misaligned atomicity granule PMA 的區域，或是存取的位元組未全部落在同一個 granule 內，那麼該指令就會觸發 exception。 對於一般的 load 與 store 指令，若存取這類區域或其位元組跨越了多個 granule，也可能會觸發例外，或者雖然操作成功但不保證具備原子性。 某些平台會在這類情況下觸發 access-fault，而不是 address-misaligned exception，代表該指令不應被 trap handler 模擬
+
+::: tip  
+RISC-V 的設計哲學是「軟體可替代硬體」，所以理論上，如果處理器不支援某個行為，它可以拋出 trap 交給 OS 用軟體模擬完成這個行為。 這也是為什麼有 alignment fault：這是一個可以透過 trap 轉交給 OS 做的事，例如 Linux 中就有 [`do_trap_load_misaligned`](https://elixir.bootlin.com/linux/v6.15.6/source/arch/riscv/kernel/traps.c#L242) 來處理
+
+所以這邊特別提說是 access-fault 而不是 address-misaligned exception，就是想強調這條指令連模擬都不允許，整條根本不合法。 這種情況常發生在：
+
+- 特定記憶體區域（像是 memory-mapped I/O）根本不接受這種存取方式
+- 這筆存取跨越了 atomic granule（例如你用 AMO 指令跨過了 MAG16 邊界）
+- 平台設計時就不打算支援某些 misaligned 行為，連模擬都不提供  
+:::
+
+::: info  
+- `LR`/`SC` 指令不受此 PMA 影響，因此只要未對齊就一定會觸發例外
+- 向量記憶體存取（vector memory access）也不受影響，即使位元組落在同一個 granule 裡，也不保證具有原子性
+- 隱式的記憶體存取（implicit accesses） 同樣不受此 PMA 影響  
+:::
