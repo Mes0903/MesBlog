@@ -105,13 +105,13 @@ Extensions 欄位用來代表標準 extension 是否存在，每個英文字母�
 - 若「U」這個 bit 是 1，表示該實作支援 user mode。 若「U」是 0，則表示該實作可能不支援 user mode
 
 ::: info  
-`misa` 這個 CSR 向 machine-mode 程式碼提供一個簡單的 CPU 功能目錄。 若要取得更詳細的資訊，可以在 machine mode 中去探查其他 machine 級的暫存器，並在開機過程中檢查系統中其他 ROM 區域的內容
+`misa` 這個 CSR 向 M-mode 程式碼提供一個簡單的 CPU 功能目錄。 若要取得更詳細的資訊，可以在 machine mode 中去探查其他 machine 級的暫存器，並在開機過程中檢查系統中其他 ROM 區域的內容
 
 我們要求較低權限等級的程式不要直接讀取 CPU 暫存器來判斷可用的功能，而是應透過 environment call 來取得資訊。 這樣可以讓虛擬化層能夠改變各層級所觀察到的 ISA，並支援更豐富的指令介面，同時不會增加硬體設計的負擔  
 :::
 
 ::: tip
-「environment call」指的是 `ecall` 指令，例如 user-mode 要詢問「這個 CPU 有沒有支援浮點運算」，不能直接讀 `misa`，而應該下 `ecall` 給 OS。 這樣虛擬機器（hypervisor）或 OS 可以偽裝或限制 guest OS / user 看到的 CPU 能力（例如安全考量）
+「environment call」指的是 `ecall` 指令，例如 U-mode 要詢問「這個 CPU 有沒有支援浮點運算」，不能直接讀 `misa`，而應該下 `ecall` 給 OS。 這樣虛擬機器（hypervisor）或 OS 可以偽裝或限制 guest OS / user 看到的 CPU 能力（例如安全考量）
 
 若允許低權限程式直接讀 CSR，就很難在虛擬化環境中實現資源隔離或靈活管理，這個設計讓 hardware 不需要在各層提供多份資訊，而由 software/OS 控制資訊揭露方式，讓系統更有彈性  
 :::
@@ -213,13 +213,13 @@ mimpid = 0x12345678
 
 `mstatus` 是一個 MXLEN 位元寬的可讀寫暫存器，其格式在 RV32 中如圖 7 所示，在 RV64 中如圖 8 所示。 `mstatus` 用來記錄並控制該 hart 當前的作業狀態。 在 S-level ISA 中，`mstatus` 的受限版本被稱為 `sstatus` 暫存器
 
-![（Figure 7. Machine-mode status (`mstatus`) register for RV32）](image/mstatus-32.png)
+![（Figure 7. M-mode status (`mstatus`) register for RV32）](image/mstatus-32.png)
 
-![（Figure 8. Machine-mode status (`mstatus`) register for RV64）](image/mstatus-64.png)
+![（Figure 8. M-mode status (`mstatus`) register for RV64）](image/mstatus-64.png)
 
 僅對 RV32 而言，`mstatush` 是一個 32 位元的可讀寫暫存器，其格式如圖 9 所示。 `mstatush` 的第 30 到 4 位通常對應到 RV64 中 `mstatus` 的第 62 到 36 位所包含的欄位。 欄位 SD、SXL 和 UXL 在 `mstatush` 中並不存在
 
-![（Figure 9. Additional machine-mode status (`mstatush`) register for RV32.）](image/mstatush.png)
+![（Figure 9. Additional M-mode status (`mstatush`) register for RV32.）](image/mstatush.png)
 
 #### 3.1.6.1. Privilege and Global Interrupt-Enable Stack in `mstatus` register
 
@@ -378,7 +378,7 @@ HINT 指令是一種「無作用指令」，常用來對 CPU 下 hint 或佔位�
 `MPRV`（Modify PRiVilege）位元會改變 load 和 store 指令的實際執行權限等級。 當 `MPRV=0` 時，load 和 store 會依照當前權限模式來執行對應的位址轉換與保護機制。 當 `MPRV=1` 時，load 和 store 的記憶體位址會以 `MPP` 所指定的權限模式進行位址轉換、保護與位元端序處理，而非當前權限模式。 指令的位址轉換與保護則不受 `MPRV` 的影響。 若不支援 U-mode，`MPRV` 為唯讀的 0。 當 `MRET` 或 `SRET` 指令將權限模式切換為低於 M-mode 的模式時，也會將 `MPRV` 設為 0
 
 ::: tip  
-`MPRV=1` 時，即便程式目前在 M-mode，load/store 會用 `MPP`（可能是 S 或 U）的權限執行，這可用來模擬 user-mode 行為，像是 kernel 模擬存取使用者資料，但指令的 fetch 還是會用目前權限模式來處理，不會因 `MPRV` 改變  
+`MPRV=1` 時，即便程式目前在 M-mode，load/store 會用 `MPP`（可能是 S 或 U）的權限執行，這可用來模擬 U-mode 行為，像是 kernel 模擬存取使用者資料，但指令的 fetch 還是會用目前權限模式來處理，不會因 `MPRV` 改變  
 :::
 
 `MXR`（Make eXecutable Readable）位元會改變 load 指令對虛擬記憶體的存取判定。 當 `MXR=0` 時，只有標記為可讀（`R=1`）的 page 能被成功讀取。 當 `MXR=1` 時，標記為可讀或可執行（`R=1` 或 `X=1`）的 page 都能被成功讀取。 當系統沒有啟用以 page 為基礎的虛擬記憶體機制時，`MXR` 沒有作用。 若系統不支援 S-mode，`MXR` 為唯讀的 0
@@ -426,7 +426,7 @@ Volume I 將 hart 的位址空間定義為一個大小為 $2^{\text{XLEN}}$ byte
 換句話說，地址編號不會變，只有「同一個數值在記憶體中是從高位放前還是後」會變。 這定義可確保 CPU 對所有記憶體地址行為一致，只有資料解釋方式不同  
 :::
 
-標準的 RISC-V ABI 預期僅支援 pure little-endian 或 pure big-endian，不支援混合端序。 不過，架構仍定義了端序控制機制，允許例如一個使用某種端序的作業系統執行另一種端序的 user-mode 程式。 設計上也考慮到了某些非標準用途，例如讓軟體依需求動態切換記憶體存取的端序
+標準的 RISC-V ABI 預期僅支援 pure little-endian 或 pure big-endian，不支援混合端序。 不過，架構仍定義了端序控制機制，允許例如一個使用某種端序的作業系統執行另一種端序的 U-mode 程式。 設計上也考慮到了某些非標準用途，例如讓軟體依需求動態切換記憶體存取的端序
 
 RISC-V 的指令格式固定為 little-endian，目的是將指令編碼與當前的端序設定解耦，這對硬體與軟體皆有好處。 否則，例如 assembler 或 disassembler 就必須隨時知道目前的端序模式，即使執行期間該端序可能會動態變更。 相對地，若指令端序固定，就能讓某些經過特別撰寫的軟體在二進位層級達到端序無關的效果，類似位置無關（position-independent）的程式碼
 
@@ -476,16 +476,16 @@ TVM 機制透過允許 guest OS 執行於 S-mode 上（而非傳統上使用 U-m
 
 #### 3.1.6.7. Extension Context Status in `mstatus` Register
 
-支援大量擴充功能是 RISC-V 的主要目標之一，因此我們定義了一個標準介面，讓特權模式下的程式碼（特別是 supervisor 等級的作業系統）在不需修改的情況下，就能支援任意的 user-mode 狀態擴充
+支援大量擴充功能是 RISC-V 的主要目標之一，因此我們定義了一個標準介面，讓特權模式下的程式碼（特別是 supervisor 等級的作業系統）在不需修改的情況下，就能支援任意的 U-mode 狀態擴充
 
 ::: info  
 截至目前，V extension（向量擴充）是唯一一個在 floating-point CSR 與資料暫存器之外，還額外定義狀態的標準擴充  
 :::
 
-`FS[1:0]` 和 `VS[1:0]` 是 WARL 的欄位，`XS[1:0]` 是唯讀的欄位，它們的目的是透過追蹤目前 floating-point 單元與其他 user-mode 擴充的狀態來減少 context save/restore 的成本。 `FS` 欄位編碼了浮點單元的狀態，包括 `f0–f31` 的浮點暫存器，以及 `fcsr`、`frm`、`fflags` 這三個 CSR。 `VS` 欄位編碼了 vector 擴充的狀態，包括 `v0–v31` 的向量暫存器，以及 `vcsr`、`vxrm`、`vxsat`、`vstart`、`vl`、`vtype`、`vlenb` 這些 CSR。 `XS` 欄位編碼了其他 user-mode 擴充及其對應狀態的狀態資訊
+`FS[1:0]` 和 `VS[1:0]` 是 WARL 的欄位，`XS[1:0]` 是唯讀的欄位，它們的目的是透過追蹤目前 floating-point 單元與其他 U-mode 擴充的狀態來減少 context save/restore 的成本。 `FS` 欄位編碼了浮點單元的狀態，包括 `f0–f31` 的浮點暫存器，以及 `fcsr`、`frm`、`fflags` 這三個 CSR。 `VS` 欄位編碼了 vector 擴充的狀態，包括 `v0–v31` 的向量暫存器，以及 `vcsr`、`vxrm`、`vxsat`、`vstart`、`vl`、`vtype`、`vlenb` 這些 CSR。 `XS` 欄位編碼了其他 U-mode 擴充及其對應狀態的狀態資訊
 
 ::: tip  
-每次發生 context switch（如中斷或 task 切換）時 OS 都需要儲存/還原使用者狀態，透過 `FS` 和 `VS` 欄位可以知道這些狀態是否被使用過，如果沒被使用就可以省略 save/restore 動作。 `XS` 用來代表其他自訂 user-mode 擴充的狀態是否有作用  
+每次發生 context switch（如中斷或 task 切換）時 OS 都需要儲存/還原使用者狀態，透過 `FS` 和 `VS` 欄位可以知道這些狀態是否被使用過，如果沒被使用就可以省略 save/restore 動作。 `XS` 用來代表其他自訂 U-mode 擴充的狀態是否有作用  
 :::
 
 這些欄位可供 context switch routine 查閱，以快速判斷是否需要進行狀態的儲存或還原。 若需要儲存/還原，則通常會需要額外的指令或 CSRs 來完成或優化這個流程。
@@ -521,7 +521,7 @@ TVM 機制透過允許 guest OS 執行於 S-mode 上（而非傳統上使用 U-m
 
 如果實作中有提供向量暫存器 `v`，那麼 `VS` 欄位就不能是唯讀的 0。 如果系統中既沒有暫存器 `v`，也不支援 S-mode，那麼 `VS` 為唯讀的 0。 如果有 S-mode 但沒有暫存器 `v`，那麼 `VS` 可以選擇是否要為唯讀的 0
 
-在沒有額外 user-mode 擴充（需要保存狀態）的 hart 中，`XS` 欄位是唯讀的 0。 每個具有狀態的額外擴充都會提供一個 CSR 欄位，來編碼與 `XS` 對應的狀態。 `XS` 是用來彙總所有這些擴充狀態的摘要資訊，如上方 Table 11 所示
+在沒有額外 U-mode 擴充（需要保存狀態）的 hart 中，`XS` 欄位是唯讀的 0。 每個具有狀態的額外擴充都會提供一個 CSR 欄位，來編碼與 `XS` 對應的狀態。 `XS` 是用來彙總所有這些擴充狀態的摘要資訊，如上方 Table 11 所示
 
 ::: info  
 `XS` 欄位的值會反映所有 user 擴充狀態中最高的狀態等級（例如只要有 `Dirty` 就是 `Dirty`）。 不過個別的擴充可以用和 `XS` 不同的編碼格式來表示自己的狀態  
@@ -544,7 +544,7 @@ TVM 機制透過允許 guest OS 執行於 S-mode 上（而非傳統上使用 U-m
 
 高權限程式碼會在儲存 context 前讀取 `FS` 與 `XS` 欄位。 在回復 user context 時，高權限程式碼會直接設定 `FS`，而 `XS` 是透過寫入各個 extension 的狀態暫存器時間接設定的。 無論當下的權限模式為何，這些狀態欄位也都可能會在執行指令期間自動更新
 
-User-mode ISA 的擴充常常會包含額外的 user-mode 狀態，這些狀態可能遠比基本的整數暫存器多，而且可能只有某些應用才會使用這些擴充，或只會在某些短暫的階段用到。 為了提升效能，user-mode 擴充可以定義額外的指令，讓 user-mode 軟體可以將單元重設為初始狀態，甚至直接關閉該單元
+U-mode ISA 的擴充常常會包含額外的 U-mode 狀態，這些狀態可能遠比基本的整數暫存器多，而且可能只有某些應用才會使用這些擴充，或只會在某些短暫的階段用到。 為了提升效能，U-mode 擴充可以定義額外的指令，讓 U-mode 軟體可以將單元重設為初始狀態，甚至直接關閉該單元
 
 例如，一個 coprocessor 使用前可能需要先被 configure，用完之後則可以 unconfigure。 unconfigure 狀態在 context 儲存時會被視為 `Initial`。 如果在 unconfigure 和下一次 configure 的期間，執行的還是同一個應用程式，那就不需要真的在 unconfigure 時初始化狀態，因為這些狀態對那個 process 來說是本地的。 也就是說，設定為 `Initial` 只會導致 context restore 時將 coprocessor 狀態設為常數值，而不需要在每次 unconfigure 時都初始化
 
@@ -552,7 +552,7 @@ User-mode ISA 的擴充常常會包含額外的 user-mode 狀態，這些狀態�
 「unconfigure」會把 coprocessor 狀態標記成 `Initial`。 按照 RISC-V 的設計，`Initial` 表示「這個狀態在 context restore 時才需要被初始化為固定常數值（例如 0）」，但如果程式本身沒被切出去，還在持續跑，那就不需要真的花時間去 reset，因為狀態還會繼續被使用  
 :::
 
-當執行一條 user-mode 的指令將某個單元（如浮點或向量單元）關閉並將其設為 Off 的狀態後，若之後有其他指令試圖在這單元尚未重新啟用前使用它，則會觸發 illegal-instruction exception。 若某個 user-mode 指令要重新開啟這個單元，也必須確保該單元的狀態已正確初始化，因為在這段期間內可能已經有其他 context 使用過這個單元了
+當執行一條 U-mode 的指令將某個單元（如浮點或向量單元）關閉並將其設為 Off 的狀態後，若之後有其他指令試圖在這單元尚未重新啟用前使用它，則會觸發 illegal-instruction exception。 若某個 U-mode 指令要重新開啟這個單元，也必須確保該單元的狀態已正確初始化，因為在這段期間內可能已經有其他 context 使用過這個單元了
 
 修改 `FS` 的設定不會影響浮點暫存器狀態的內容。 具體來說，把 `FS` 設成 Off 並不會抹除暫存器的內容，把 `FS` 設成 `Initial` 也不會清除它。 `VS` 的設定也同樣不會影響向量暫存器的內容。 不過對於其他的 extension，在設為 Off 時其可能會選擇不保留其狀態
 
@@ -566,7 +566,7 @@ User-mode ISA 的擴充常常會包含額外的 user-mode 狀態，這些狀態�
 
 對向量暫存器的 `Dirty` 狀態，實作也可以採用類似不精確的方式來追蹤，例如在軟體試圖將 `VS` 設為 `Initial` 或 `Clean` 時，實際上會直接將其設成 `Dirty` 等。 當 `VS` 為 `Initial` 或 `Clean` 時，若某個指令寫入了向量暫存器或 CSR，但沒改變其內容，則實作也可以自行定義是否要讓 `VS` 轉變為 `Dirty`
 
-表格 12 顯示了 `FS`、`VS` 和 `XS` 狀態位元的所有可能狀態轉移。 注意，標準的浮點與向量 extension 並不支援 user-mode 的 unconfigure 或 enable/disable 等用來切換狀態的指令：
+表格 12 顯示了 `FS`、`VS` 和 `XS` 狀態位元的所有可能狀態轉移。 注意，標準的浮點與向量 extension 並不支援 U-mode 的 unconfigure 或 enable/disable 等用來切換狀態的指令：
 
 <span class = "center-column">
 
@@ -607,7 +607,7 @@ User-mode ISA 的擴充常常會包含額外的 user-mode 狀態，這些狀態�
 「取消設定（unconfigure）」與「停用（disable）」是指讓這些單元進入 `Initial` 或 `Off` 狀態，如此可以避免在 context switch 時不必要地儲存與還原這些不再使用的狀態  
 :::
 
-標準將浮點狀態與其他 extension 狀態區分開來，是因為當系統有浮點單元時，浮點暫存器是標準呼叫慣例的一部分，其不能像其他 extension 一樣輕易地被停用，因此 user-mode 的軟體無法得知何時可以安全地停用浮點單元  
+標準將浮點狀態與其他 extension 狀態區分開來，是因為當系統有浮點單元時，浮點暫存器是標準呼叫慣例的一部分，其不能像其他 extension 一樣輕易地被停用，因此 U-mode 的軟體無法得知何時可以安全地停用浮點單元  
 ::::
 
 `XS` 欄位提供所有新增 extension 狀態的總結資訊，但 extension 本身可能會維護額外的微架構位元，以進一步減少 context 儲存與還原的負擔。 `SD` 是唯讀位元，當 `FS`、`VS` 或 `XS` 中任一欄位處於 `Dirty` 的狀態（例如 `SD = (FS == 0b11 OR XS == 0b11 OR VS == 0b11)`）時，`SD` 會被設為 1。 這讓 privileged code 可以快速判斷是否要儲存除了整數暫存器與 `pc` 以外的 context
@@ -624,7 +624,7 @@ Machine mode 和 Supervisor mode 共用同一組 `FS`、`VS` 與 `XS` 位元。 
 在任何合理的使用情境中，user 與 supervisor 之間的 context switch 次數應該遠多於切換到其他特權層的次數。 請注意，coprocessor 不應要求在處理非同步中斷時儲存與還原其 context，除非該中斷會導致 user-level context 的切換
 
 :::  tip  
-對於第二句話，是因為大部分中斷的處理不會影響使用者層的執行狀態。 許多中斷（像是硬體計時器、I/O 完成中斷）只是要求 OS 執行一些簡單的管理任務，例如更新排程器、收發資料或清除旗標等。 這些任務通常不會直接切換到另一個 user process，也不需要觸及 user-mode extension（像是浮點暫存器、vector 暫存器等）
+對於第二句話，是因為大部分中斷的處理不會影響使用者層的執行狀態。 許多中斷（像是硬體計時器、I/O 完成中斷）只是要求 OS 執行一些簡單的管理任務，例如更新排程器、收發資料或清除旗標等。 這些任務通常不會直接切換到另一個 user process，也不需要觸及 U-mode extension（像是浮點暫存器、vector 暫存器等）
 
 加上這些 extension 的狀態都屬於 user process 的 context，只要中斷結束後還是回到原本的 user process，那 extension 狀態根本不用動。 所以第二句話才說如果只是處理中斷，不用切出 user process，那就不要動 extension 的狀態； 而如果中斷導致了 process 的切換，那才會需要依照 `FS`、`VS`、`XS` 的 Dirty 狀態來判斷要不要儲存 extension 的狀態  
 :::  
@@ -690,7 +690,7 @@ RISC-V 處理 trap（包含例外與中斷）時，會根據 `mtvec` 的設定�
 
 ### 3.1.8. Machine Trap Delegation (`medeleg` and `mideleg`) Registers
 
-預設情況下，所有 privilege level 所產生的 trap 都會由 machine mode 處理。 不過 machine-mode 的 handler 可以透過 `MRET` 指令（見 3.3.2 節）將 trap 回傳給對應的低權限層級。 為了提升效能，實作上可以提供 `medeleg` 和 `mideleg` 這兩個具有個別讀寫位元的暫存器，用來指定哪些例外或中斷可以直接由較低權限層級處理。 machine exception delegation 暫存器（`medeleg`）是 64-bit 的可讀寫暫存器，而 machine interrupt delegation 暫存器（`mideleg`）則是 MXLEN 位元的可讀寫暫存器
+預設情況下，所有 privilege level 所產生的 trap 都會由 machine mode 處理。 不過 M-mode 的 handler 可以透過 `MRET` 指令（見 3.3.2 節）將 trap 回傳給對應的低權限層級。 為了提升效能，實作上可以提供 `medeleg` 和 `mideleg` 這兩個具有個別讀寫位元的暫存器，用來指定哪些例外或中斷可以直接由較低權限層級處理。 machine exception delegation 暫存器（`medeleg`）是 64-bit 的可讀寫暫存器，而 machine interrupt delegation 暫存器（`mideleg`）則是 MXLEN 位元的可讀寫暫存器
 
 在支援 S-mode 的 hart 中，`medeleg` 和 `mideleg` 這兩個暫存器是必要的。 只要設定對應的位元，當 S-mode 或 U-mode 發生對應的 trap，就會被轉交給 S-mode 的 trap handler 處理。 而在不支援 S-mode 的 hart 中，這兩個暫存器就不應該存在
 
@@ -734,14 +734,14 @@ trap delegation 只能從 machine mode 向下轉交下層權限的 trap，但不
 
 ![（Figure 11. Machine Exception Delegation (`medeleg`) register.）](image/medeleg.png)
 
-`medeleg` 對應每一種同步例外（如表 14 所示）都分配一個位元位置，這個位元的位置與 `mcause` 暫存器回傳的值相同（例如設定第 8 位元，就代表允許將 user-mode 的環境呼叫交給較低權限的 trap handler 處理）。 當 `XLEN=32` 時，`medelegh` 是一個 32-bit 的可讀寫暫存器，對應到 `medeleg` 的第 63 到 32 位元。 當 `XLEN=64` 時，`medelegh` 不存在
+`medeleg` 對應每一種同步例外（如表 14 所示）都分配一個位元位置，這個位元的位置與 `mcause` 暫存器回傳的值相同（例如設定第 8 位元，就代表允許將 U-mode 的環境呼叫交給較低權限的 trap handler 處理）。 當 `XLEN=32` 時，`medelegh` 是一個 32-bit 的可讀寫暫存器，對應到 `medeleg` 的第 63 到 32 位元。 當 `XLEN=64` 時，`medelegh` 不存在
 
 ![（Figure 12. Machine Interrupt Delegation (`mideleg`) Register.）](image/mideleg.png)
 
 `mideleg` 儲存的是各個中斷類型的委託設定位元，其位元排列方式與 mip 暫存器相同（例如 STIP 中斷的委託控制位元位於第 5 位）。 對於不可能在低權限模式發生的例外，其對應的 `medeleg` 位元應該是唯讀的 0。 特別是 `medeleg[11]` 要是唯讀的 0； `medeleg[16]` 也要是唯讀的 0，因為 double trap 是不可委託的
 
 ::: tip  
-`mcause = 11` 是 machine-mode 的 `ecall`，U/S-mode 根本不會觸發這個例外，所以 `medeleg[11]` 被設計成硬體保證為 0  
+`mcause = 11` 是 M-mode 的 `ecall`，U/S-mode 根本不會觸發這個例外，所以 `medeleg[11]` 被設計成硬體保證為 0  
 :::
 
 ### 3.1.9. Machine Interrupt (`mip` and `mie`) Registers
@@ -795,7 +795,7 @@ machine-level (`mip`, `mie`) 處理的是「根中斷來源」，如軟體、tim
 
 `mip.MEIP` 與 `mie.MEIE` 分別是 machine-level 外部中斷的掛起與啟用位元。 `MEIP` 在 `mip` 中是唯讀的，由平台特定的外部中斷控制器負責設定與清除
 
-`mip.MTIP` 與 `mie.MTIE` 分別是 machine-mode timer 中斷的掛起與啟用位元。 `MTIP` 在 `mip` 中是唯讀的，並透過寫入 memory-mapped machine-mode timer compare 暫存器來清除
+`mip.MTIP` 與 `mie.MTIE` 分別是 M-mode timer 中斷的掛起與啟用位元。 `MTIP` 在 `mip` 中是唯讀的，並透過寫入 memory-mapped M-mode timer compare 暫存器來清除
 
 `mip.MSIP` 與 `mie.MSIE` 分別是 machine-level 軟體中斷的掛起與啟用位元。 `MSIP` 在 `mip` 中是唯讀的，透過存取記憶體映射的控制暫存器來設定，通常由其他 hart 用來觸發 machine-level 的跨核心中斷（IPI）。 同一個 hart 也可以透過這個記憶體映射的控制暫存器寫入自己的 `MSIP`。 如果系統只有一個 hart，或平台改用外部中斷（`MEI`）提供跨核心中斷，那麼 `mip.MSIP` 與 `mie.MSIE` 可以是唯讀的 0
 
@@ -833,7 +833,7 @@ machine-level 中斷的固定優先順序是根據以下原則所設計的：
 在 supervisor mode 中，`mip` 與 `mie` 暫存器的受限視圖（restricted views）分別對應為 `sip` 與 `sie` 暫存器。 當某個中斷被設定在 `mideleg` 中委託給 S-mode 時，它會在 `sip` 中變得可見，並且可以透過 `sie` 來控制是否啟用。 否則，對應的位元在 `sip` 與 `sie` 中都會是唯讀的 0
 
 ::: tip  
-`mip`/`mie` 是 machine-mode 全域可見的中斷狀態，而 `sip`/`sie` 是 S-mode 的視角（受限版本）：
+`mip`/`mie` 是 M-mode 全域可見的中斷狀態，而 `sip`/`sie` 是 S-mode 的視角（受限版本）：
 
 - `sip`：只顯示 S-mode 有權處理的中斷來源（依 `mideleg` 設定）
 - `sie`：只允許 S-mode 啟用/關閉自己能處理的中斷
@@ -921,7 +921,7 @@ M-mode 提供了一組基本的硬體效能監控功能。 `mcycle` CSR 用來�
 
 ### 3.1.13. Machine Scratch (`mscratch`) Register
 
-`mscratch` 是一個 MXLEN 位元的可讀寫暫存器，專門保留給 machine mode 使用。 一般來說，它用來存放一個指向 machine-mode 下 hart 本地 context 區域的指標，並會在進入 M-mode trap handler 時與使用者暫存器進行交換
+`mscratch` 是一個 MXLEN 位元的可讀寫暫存器，專門保留給 machine mode 使用。 一般來說，它用來存放一個指向 M-mode 下 hart 本地 context 區域的指標，並會在進入 M-mode trap handler 時與使用者暫存器進行交換
 
 ::: tip  
 `mscratch` 就像是 OS trap handler 專用的小筆記本，用來在 trap 發生時臨時儲存使用者狀態、指標或 context。 因為每個 hart 都有自己一份 `mscratch`，所以你可以安全地儲存與 hart 相關的資料，而不需要一開始就開堆疊空間或找備用暫存器
@@ -929,7 +929,7 @@ M-mode 提供了一組基本的硬體效能監控功能。 `mcycle` CSR 用來�
 上方講的「使用者暫存器（user register）」是指在 U-mode 下可使用的一般暫存器（general-purpose registers），也就是我們常講的那些 x0-x31 的暫存器  
 :::
 
-![（Figure 20. Machine-mode scratch register.）](image/mscratch.png)
+![（Figure 20. M-mode scratch register.）](image/mscratch.png)
 
 ::: info  
 MIPS ISA 為作業系統保留了兩個使用者暫存器（`k0`/`k1`）。 雖然這種方式實作起來快速簡單，但也會減少使用者可用的暫存器，且不容易擴充到更多權限層級或處理巢狀 trap。 此外，在回到使用者模式前，還可能需要清除這兩個暫存器，才能避免潛在的安全漏洞並提供可預期的除錯行為
@@ -1276,7 +1276,7 @@ Zicfilp 擴充在 `mseccfg` 中新增了 `MLPE` 欄位。 當 `MLPE` 欄位為 1
 
 提供準確的實時時鐘（RTC）相對成本較高（需要石英或 MEMS 振盪器），而且即使系統其他部分關機時，它也必須持續運作，因此系統中通常只會有一個 RTC，並且位於與處理器不同的時脈/電壓的領域中。 因此，這個 RTC 必須被系統中所有的 hart 共用，對 RTC 的存取可能會產生電壓層級轉換與時脈領域切換的代價。 因此，將 `mtime` 設計為記憶體映射的暫存器，會比做成 CSR 更為自然
 
-較低權限等級（如 supervisor-mode 或 user-mode）沒有自己專屬的 `timecmp` 暫存器。 相對地，machine-mode 的軟體可以透過將下一次的 timer 中斷時間寫入 `mtimecmp`，來實作任意數量的虛擬計時器
+較低權限等級（如 S-mode 或 U-mode）沒有自己專屬的 `timecmp` 暫存器。 相對地，M-mode 的軟體可以透過將下一次的 timer 中斷時間寫入 `mtimecmp`，來實作任意數量的虛擬計時器
 
 在簡單的固定頻率系統中，可以用同一個時鐘同時作為 cycle counting 與 wall-clock time 的依據  
 :::
@@ -1315,7 +1315,7 @@ sw a0, 0(t1)     # New value.
 
 `time` 這個 CSR 是 `mtime` 記憶體映射暫存器的唯讀鏡像（shadow）。 當 XLEN 為 32 時，`timeh` CSR 是 `mtime` 高 32 位元的唯讀鏡像，而 `time` 則對應 `mtime` 的低 32 位元。 當 `mtime` 改變時，這些變化最終一定會反映在 `time` 與 `timeh` 上，但不一定會立即反映
 
-## 3.3. Machine-Mode Privileged Instructions
+## 3.3. M-mode Privileged Instructions
 
 ### 3.3.1. Environment Call and Breakpoint
 
@@ -1428,4 +1428,42 @@ interrupt trap 會發生在 `WFI` 指令的下一條指令上，因此從 trap h
 ::: tip  
 opcode 為 `1110011` 的指令屬於 `SYSTEM` 指令，你可以在 [RV32/64G Instruction Set Listings
 ](https://github.com/riscv/riscv-isa-manual/blob/main/src/rv-32-64g.adoc) 中直接搜尋 `1110011` 看看具體有哪些指令，最常見的如 `ECALL` 和 `EBREAK` 都是 `SYSTEM` 指令，還有 Zicsr Standard Extension 內的指令也都是  
+:::
+
+## 3.4. Reset
+
+當系統重置（reset）時，每個 hart 的特權模式都會被設為 M-mode。 `mstatus` 暫存器中的 `MIE` 與 `MPRV` 欄位會被重設為 `0`。 若系統支援 little-endian 的記憶體存取，則 `mstatus` 或 `mstatush` 中的 `MBE` 欄位也會被重設為 `0`。 `misa` 暫存器則會被重設為啟用該實作支援的所有擴充指令集，如第 3.1.1 節所述。 若實作支援 "A" 標準擴充，則在重置後不會有任何有效的 load reservation（任何 `LR` 建立的保留狀態會在 reset 被清除）
+
+程式計數器 `pc` 會被設為實作定義的重置向量位址。 `mcause` 暫存器會設為一個表示重置原因的值。 所有可寫的 PMP 暫存器中的 `A` 與 `L` 欄位會被重設為 0，除非平台對某些 PMP 暫存器的 `A` 或 `L` 欄位定義了不同的重設值。 若實作包含 hypervisor 擴充，則 `hgatp.MODE` 與 `vsatp.MODE` 欄位會被設為 0。 若實作包含 Smrnmi 擴充，則 `mnstatus.NMIE` 欄位會被設為 0。 若實作包含 Zicfilp 擴充，則 `mseccfg.MLPE` 欄位會被設為 0。 所有其他的 hart 狀態在重置後都為未指定（UNSPECIFIED）。 所有 WARL 欄位在重置後都不應包含非法值
+
+::: tip  
+這段說明當一個 RISC-V hart 被 reset 時它的各種暫存器和狀態應該被設為什麼。 重點摘要如下：
+
+- 特權與中斷控制初始化
+  - hart 一開始一定是 M-mode，這樣能保證從開機開始，OS 或 bootloader 有完整控制權
+  - `MIE = 0`：中斷關閉
+  - `MPRV = 0`：表示後續記憶體存取不會使用之前保存的特權模式
+- 終端模式、擴充與大小端設定
+  - 若支援 little-endian，`MBE = 0` 表示使用 little-endian
+  - `misa` 設定為當前實作支援的最大指令集組合（A/I/M/F/D/V...等），但不是用來限制，而是用來反映硬體功能
+  - `pc` 是重置後程式的起點，但具體位址由硬體廠商定義（實作定義）
+- 關於原子操作與 load reservation
+  - 若支援 "A"（atomic）擴充，任何 `LR` 建立的保留狀態會在 reset 被清除
+- 安全與虛擬化
+  - PMP（Physical Memory Protection）欄位 A（模式）與 L（lock）會清除為 0，避免上鎖狀態殘留
+  - 若支援 hypervisor，`hgatp` / `vsatp`（虛擬記憶體管理暫存器）會重設為無效狀態
+  - 若支援 Smrnmi（非 maskable 中斷），`NMIE` 會清除為 0，確保初始化時不會進入 NMI
+  - 若支援 Zicfilp（code integrity control），`MLPE`（low privilege execution）會設為 0
+- WARL 設定合法性
+  - 所有 WARL（Write Any, Read Legal）欄位都必須包含一個合法值
+- 其他狀態未定義
+  - 除以上明確列出的暫存器外，所有其他狀態皆為未指定（UNSPECIFIED），即軟體不得依賴其初始值  
+:::
+
+`mcause` 暫存器在重置後的值由實作決定。 若實作不區分不同的重置情況，則應回傳 0。 若實作有區分不同的重置情況，則應僅在「最完整的重置」中回傳 0
+
+::: info  
+有些設計可能會有多種不同的重置原因（例如：開機重置、外部硬體重置、電壓過低、watchdog 超時、從睡眠模式喚醒等），而 M-mode 的軟體或除錯工具可能需要辨識這些原因
+
+`mcause` 在 reset 時的取值可能會與同步例外發生時的 `mcause` 值重複。 但這種重疊不會造成混淆，因為 reset 時的 `pc` 通常會被設為與其他 trap 不同的位址  
 :::
