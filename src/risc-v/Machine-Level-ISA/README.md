@@ -1578,3 +1578,53 @@ I/O 區段可以指定它支援哪些資料寬度的讀、寫或執行組合。 
 ::: info  
 類 Unix 的作業系統通常會要求所有可快取的主記憶體區段都必須支援 page-table walk  
 :::
+
+### 3.6.3. Atomicity PMAs
+
+Atomicity 類型的 PMA（實體記憶體屬性）會描述某段位址區域支援哪些原子性操作指令。 對於原子指令的支援可以分為兩大類：`LR`/`SC`（Load-Reserved/Store-Conditional）與 `AMOs`（Atomic Memory Operations）
+
+::: info  
+有些平台可能會規定，所有可快取的主記憶體區段都必須支援 attached processors 所需的所有原子操作  
+:::
+
+#### 3.6.3.1. AMO PMA
+
+在 AMO（Atomic Memory Operation）中，支援程度可以分為四個等級：AMONone、AMOSwap、AMOLogical 與 AMOArithmetic
+
+- AMONone 表示該記憶體區段不支援任何 AMO 指令
+- AMOSwap 表示只支援 `amoswap` 指令
+- AMOLogical 表示除了支援 `amoswap` 外，也支援所有邏輯型 AMO 指令（如 `amoand`, `amoor`, `amoxor`）
+- AMOArithmetic 則表示支援 RISC-V 所有的 AMO 指令
+
+對於每個支援等級，只要底層記憶體區段支援該寬度的讀寫操作，就支援該寬度的自然對齊 AMO。 主記憶體與 I/O 區段可以只支援處理器所支援的原子操作中的一部分，或甚至完全不支援
+
+::: info  
+建議在可能的情況下，I/O 區段至少提供 AMOLogical 的支援
+:::
+
+<span class = "center-column">
+
+| AMO Class       | Supported Operations                                                                      |
+|----------------|--------------------------------------------------------------------------------------------|
+| AMONone        | *None*                                                                                     |
+| AMOSwap        | `amoswap`                                                                                  |
+| AMOLogical     | above + `amoand`, `amoor`, `amoxor`                                                        |
+| AMOArithmetic  | above + `amoadd`, `amomin`, `amomax`, `amominu`, `amomaxu`                                 |
+
+（Table 17. Classes of AMOs supported by I/O regions.）
+
+</span>
+
+#### 3.6.3.2. Reservability PMA
+
+對於 `LR`/`SC`（Load-Reserved / Store-Conditional）操作，有三種支援等級，反映記憶體區域對「可保留性（reservability）」與「最終成功性（eventuality）」的支援組合：RsrvNone、RsrvNonEventual、與 RsrvEventual
+
+- RsrvNone 表示該區段不支援任何 `LR`/`SC` 操作（這個位置無法保留）
+- RsrvNonEventual 表示支援 `LR`/`SC` 操作（位置可保留），但不保證按照非特權 ISA 規範中所述的「eventual success」執行
+- RsrvEventual 表示支援 `LR`/`SC`，並且保證最終成功，如 ISA 規範所述
+
+::: info  
+我們建議主記憶體區段在可能的情況下應該提供 RsrvEventual 等級的支援。 大多數 I/O 區段不會支援 `LR`/`SC` 存取，因為這類操作通常需要建構在快取一致性（cache-coherence）的機制上，但有些 I/O 區段可能支援 RsrvNonEventual 或 RsrvEventual
+
+當軟體在支援等級為 RsrvNonEventual 的記憶體位置上使用 `LR`/`SC` 操作時，若偵測到操作無法順利進行，應提供替代的備援機制  
+:::
