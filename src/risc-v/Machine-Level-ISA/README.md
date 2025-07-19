@@ -40,7 +40,7 @@ MXL（Machine XLEN）欄位會編碼這顆 hart 所使用的整數基礎 ISA 的
 :::
 
 ::: info  
-我們可以透過檢查讀取到的 `misa` 值的正負號，或是透過將該值左移一位並再檢查一次正負號，來判斷基礎位寬。 這些檢查可以用組合語言寫，不需要事先知道該 hart 的 register 寬度（MXLEN）。 基礎位寬的公式是 $MXLEN = 2^{MXL + 4}$  
+我們可以透過檢查讀取到的 `misa` 值的正負號，或是透過將該值左移一位並再檢查一次正負號，來判斷基礎位寬。 這些檢查可以用組合語言寫，不需要事先知道該 hart 的 register 寬度（MXLEN）。 基礎位寬的公式是 <code>MXLEN = 2<sup>MXL + 4</sup></code>  
 
 如果 `misa` 為 0，也可以用另一種方法來推得基礎位寬：將立即數 2 放入一個暫存器，然後將其左移 31 位元。 若結果為 0，則該 hart 是 RV32；否則就是 RV64  
 :::
@@ -420,7 +420,7 @@ HINT 指令是一種「無作用指令」，常用來對 CPU 下 hint 或佔位�
 :::: info  
 若 `MBE`、`SBE`、`UBE` 皆為唯讀的 0，則表示該實作僅支援 little-endian 記憶體存取。 若 `MBE` 為唯讀的 1，且在支援 S-mode 與 U-mode 的情況下 `SBE` 與 `UBE` 也皆為唯讀的 1，則表示該實作僅支援 big-endian 記憶體存取（指令抓取除外）
 
-Volume I 將 hart 的位址空間定義為一個大小為 $2^{\text{XLEN}}$ bytes 且位址連續的環狀序列。 位址與 byte location 之間的對應關係是固定的，不會受到端序模式的影響。 端序模式只會決定多位元組資料（例如 halfword、word 等）在記憶體中位元組的映射順序
+Volume I 將 hart 的位址空間定義為一個大小為 2<sup>XLEN</sup> bytes 且位址連續的環狀序列。 位址與 byte location 之間的對應關係是固定的，不會受到端序模式的影響。 端序模式只會決定多位元組資料（例如 halfword、word 等）在記憶體中位元組的映射順序
 
 ::: tip  
 換句話說，地址編號不會變，只有「同一個數值在記憶體中是從高位放前還是後」會變。 這定義可確保 CPU 對所有記憶體地址行為一致，只有資料解釋方式不同  
@@ -1119,7 +1119,7 @@ software-check exception 是軟體保護機制（如 CFI、shadow stack）檢查
 
 對於其他的 trap，`mtval` 會被設為 0，但未來的標準可能會重新定義其他 trap 的 `mtval` 寫入行為
 
-若 `mtval` 不是唯讀的 0，那它是個 WARL 暫存器，必須能表示所有有效的虛擬位址與 0，但不需要能表示所有不合法的位址。 在寫入 `mtval` 前，實作可以把一個不合法的位址轉換成另一個 `mtval` 能接受的不合法位址。 如果系統實作了回傳錯誤指令內容的功能，則 `mtval` 也必須能表示從 $0$ 到 $2^N$ 之間所有的值，其中 `N` 是 MXLEN 和 ILEN 中較小者
+若 `mtval` 不是唯讀的 0，那它是個 WARL 暫存器，必須能表示所有有效的虛擬位址與 0，但不需要能表示所有不合法的位址。 在寫入 `mtval` 前，實作可以把一個不合法的位址轉換成另一個 `mtval` 能接受的不合法位址。 如果系統實作了回傳錯誤指令內容的功能，則 `mtval` 也必須能表示從 0 到 2<sup>N</sup> 之間所有的值，其中 `N` 是 MXLEN 和 ILEN 中較小者
 
 ::: tip  
 `mtval` 至少要能裝下：
@@ -1523,7 +1523,17 @@ PMA 是底層硬體的內建屬性，在系統執行過程中通常不會變化�
 
 對所有實體記憶體的存取操作，無論是否經過虛擬記憶體轉換（即使已完成虛實位址轉換），都必須進行 PMA 檢查。 為了輔助系統除錯，我們強烈建議在可行情況下，RISC-V 處理器需能對違反 PMA 的實體存取的動作進行精確的 trap
 
-這類精確的 PMA 違規會表現為指令、載入或儲存的 access-fault 例外，並與虛擬記憶體的 page-fault 例外有所區別。 不過，在某些情況下是無法做到精確 trap 的，例如在存取某些舊式匯流排架構時，這些架構會將「存取失敗」視為裝置探測的一部分。 此時，來自周邊裝置的錯誤回應會以不精確的 bus-error 中斷來報告
+::: tip  
+這邊的「精確」與 precise exception/interrupt 指的是同樣的意思。 在這邊表示當 trap 被拋出時，處理器保證：
+
+- 在發生故障的指令之前，所有指令都已完全執行（retired）並更新了架構狀態
+- 故障之後的所有指令都還沒有開始、或即使開始也沒有對架構狀態留下任何副作用
+- 保存的程式計數器 (`PC`) 精確指向引發 trap 的那條指令（若 trap 是同步的）
+
+換句話說，從軟體觀點來看，程式執行到發生 trap 的那條指令時就「暫停」下來了，之前的都算數、之後的都沒發生，好像在一條完美的順序化機器上執行一樣  
+:::
+
+這類精確的 PMA 違規會表現為指令、載入或儲存的 access-fault 例外，並與虛擬記憶體的 page-fault 例外有所區別。 不過，在某些情況下是無法做到精確的 trap 的，例如在存取某些舊式匯流排架構時，這些架構會將「存取失敗」視為裝置探測的一部分。 此時，來自周邊裝置的錯誤回應會以不精確的 bus-error 中斷來報告
 
 ::: tip  
 PMA 不是軟體管理的資料結構（不像 page table），而是有獨立的硬體「PMA 檢查器」負責實體位址的屬性驗證。 由於絕大多數記憶體區段的屬性（可讀寫、可執行、可快取）在系統設計階段就已知，因此可以寫死在電路中（hardwire），但如果是執行期可組態的區段，像是 SRAM 分成 cacheable / uncacheable，用戶端就可以透過 memory-mapped registers 動態設定
@@ -1813,7 +1823,7 @@ Idempotency PMA（冪等性物理記憶體屬性）描述某個位址區域的�
 對於非冪等區域，不得提前或以推測方式進行隱式讀寫（implicit reads/writes），但以下情況例外：
 
 - 當執行非推測性的隱式讀取時，實作允許額外讀取該讀取位址所在的自然對齊的 2 的次方大小區域內的其他位元組
-- 當執行非推測性的指令抓取（instruction fetch）時，實作允許額外讀取下一個相同大小的自然對齊 2 的次方區域（位址以 $2^{XLEN}$ 為模）。 這些額外的讀取結果可用來滿足之後的提前或推測性隱式讀取。 這些自然對齊的 2 的次方區域大小由實作決定，但在使用 page-based 的虛擬記憶體系統中，其大小不得超過最小支援的頁面大小
+- 當執行非推測性的指令抓取（instruction fetch）時，實作允許額外讀取下一個相同大小的自然對齊 2 的次方區域（位址以 2<sup>XLEN</sup> 為模）。 這些額外的讀取結果可用來滿足之後的提前或推測性隱式讀取。 這些自然對齊的 2 的次方區域大小由實作決定，但在使用 page-based 的虛擬記憶體系統中，其大小不得超過最小支援的頁面大小
 
 ::: tip  
 複習一些的背景知識：
@@ -1835,4 +1845,174 @@ Idempotency PMA（冪等性物理記憶體屬性）描述某個位址區域的�
   若只能抓恰好 4 bytes 指令，頻寬利用率極低。 而多抓「下一塊」可填 FIFO，仍屬非推測性（因為程式計數器必然會走過去）
 
 因此規格允許「一次合法讀」→「順手再抓同一對齊區塊或下一塊」，但只能在確定需要的那一刻（非推測性）才做，且區塊大小有限制  
+:::
+
+## 3.7. Physical Memory Protection
+
+為了強化安全性並隔離錯誤，理想的作法是限制同一顆 hart 上的軟體可存取的實體位址範圍。 選配的 PMP（physical memory protection）單元為每顆 hart 提供了 machine-mode 控制暫存器，可針對每個實體記憶體區域指定讀、寫、執行的權限。 PMP 的權限檢查會與第 3.6 節描述的 PMA 檢查並行進行
+
+PMP 權限設定的粒度（region size）隨平台而異； 標準編碼可支援最小 4 byte 的區段。 一些區域的權限也可以被硬體「焊死」，例如某些位址範圍可能只能由 M-mode 存取，永遠不會向較低特權層開放
+
+::: info  
+各種平台對「實體記憶體保護」的需求差異極大，因此有些平台可能會增補或替換本節介紹的 PMP 機制，使用其他形式的保護結構  
+:::
+
+PMP 檢查適用於所有「有效特權模式」為 S 或 U 的存取，例如：
+
+- S/U 模式的指令抓取與資料存取
+- 當 `mstatus.MPRV=1` 且 `mstatus.MPP` 指向 S 或 U 時，M-mode 代其他模式執行的資料存取
+- page table 的遍歷（其有效模式為 S）
+
+平台還能讓 PMP 進一步套用到 M-mode 的存取（可選），此時 PMP 暫存器會被鎖定，除非重新上電，否則連 M-mode 軟體也無法修改。 簡單來說，PMP 可以「給」原本沒有權限的 S/U 模式存取能力，也可以「拿走」原本全能的 M-mode 權限
+
+任何違反 PMP 地操作都會在處理器端「精確地」觸發例外
+
+::: tip  
+- PMA 面向「硬體性能與正確性」，像是快取、對齊、總線序等物理屬性。 可能在匯流排仲裁器/MMC/AXI slave 等裡面硬編，對軟體完全透明
+- PMP 則面向「安全與隔離」，像是哪個 privilege、哪段程式能碰哪塊記憶體等。 做在每顆核內的 CSR + 比較器，與核心 pipeline 同步，比較容易標準化  
+:::
+
+### 3.7.1. Physical Memory Protection CSRs
+
+每一個 PMP 項目由一個 8 位元的組態暫存器（configuration register）與一個 MXLEN 位元的位址暫存器（address register）描述
+
+- 有些 PMP 設定可能會使用「前一個 PMP 項目」的位址暫存器
+- 架構最多支援 64 個 PMP 項目。 實作可以選擇提供 0、16 或 64 個項目，但必須從編號最小的項目開始實作
+- 所有 PMP 相關的 CSR 欄位都是 WARL，也可能是唯讀的零
+  - 這些 CSR 只允許 M-mode 存取
+
+為了減少行程切換的開銷，PMP 的組態暫存器會被緊密地打包進 CSR：
+
+- 在 RV32 中，使用 16 個 CSR（`pmpcfg0` ~ `pmpcfg15`）來存放 `pmp0cfg` ~ `pmp63cfg` 這 64 個 PMP 設定，如圖 30 所示
+- 在 RV64 中，使用 8 個偶數編號的 CSR（`pmpcfg0`、`pmpcfg2` ... `pmpcfg14`） 來存放跟上方一樣的 64 組 PMP 設定，如圖 31 所示
+- 在 RV64 中，奇數編號的組態暫存器 `pmpcfg1`、`pmpcfg3` ... `pmpcfg15` 是非法的（不存在）
+
+::: info  
+在 RV64 中，項目 `8` ~ `15` 的組態存放於 `pmpcfg2`（而不是 `pmpcfg1`）。 這樣的設計可降低同時支援不同 MXLEN（32 與 64 位元）時的成本，因為在 RV32 與 RV64 裡，項目 `8` ~ `11` 的設定都位於 `pmpcfg2` 的低 32 位元（bits 31:0）  
+:::
+
+![（Figure 30. RV32 PMP configuration CSR layout.）](image/rv32_pmp.png)
+
+![（Figure 31. RV64 PMP configuration CSR layout.）](image/rv64_pmp.png)
+
+PMP 位址暫存器為 CSR，名稱為 `pmpaddr0` ~ `pmpaddr63`：
+
+- 在 RV32 中，每一個 `pmpaddr` 暫存器對應到 34 位元實體位址的第 33:2 位（如圖 32）
+- 在 RV64 中，每一個 `pmpaddr` 暫存器對應到 56 位元實體位址的第 55:2 位（如圖 33）
+
+由於部分實體位址位元可能未實作，因此 `pmpaddr` 為 WARL 欄位
+
+::: tip  
+位址暫存器用來保存「這一條 PMP 條目要保護的實體位址範圍」，讓硬體在執行階段能快速判斷某次存取是否落在受限區域內，具體編碼方式見後方章節  
+:::
+
+::: info  
+第 12.3 節介紹的 Sv32 page base 虛擬記憶體方案在 RV32 上支援 34 位元的實體位址，因此 PMP 也必須支援超過 XLEN 位元的位址寬度。 第 12.4 與 12.5 節介紹的 Sv39 與 Sv48 則支援 56 位元實體位址，因此 RV64 的 PMP 位址暫存器亦以 56 位元為上限  
+:::
+
+![（Figure 32. PMP address register format, RV32.）](image/rv32_pmpADR.png)
+
+![（Figure 33. PMP address register format, RV64.）](image/rv64_pmpADR.png)
+
+圖 34 顯示了 PMP 組態暫存器的格式：
+
+- 如果設置了 `R`、`W`、`X` 位，其分別表示該 PMP 項目允許讀取、寫入、指令執行
+- 任一位清零，即代表拒絕對應的存取型別
+- `R`、`W`、`X` 合起來是一個 WARL 欄位； 其中 `R = 0` 且 `W = 1` 的組合保留不使用
+
+另外兩個欄位 `A` 與 `L` 會在後續小節說明
+
+![（Figure 34. PMP configuration register format.）](image/pmp_cfg.png)
+
+- 若嘗試從未獲得執行權限的 PMP 區域抓取指令，處理器會拋出 instruction access-fault 例外
+- 若執行 load 或 load-reserved 指令去存取一個無讀取權限的 PMP 區域，會拋出 load access-fault 例外
+- 若執行 store、store-conditional 或 AMO 指令去存取一個無寫入權限的 PMP 區域，則會拋出 store access-fault 例外
+
+::: tip  
+這些 fault 都是精確例外，`pc` 會停在造成違規的那條指令，方便作業系統處理  
+:::
+
+#### 3.7.1.1. Address Matching
+
+PMP 組態暫存器中的 `A` 欄位用來編碼對應 PMP 位址暫存器的位址比對模式，其編碼如表 18
+
+- 當 `A = 0` 時，該 PMP 項目被停用，不會對應任何位址
+- 另外還支援兩種模式：
+  - 自然對齊的 2 的冪次範圍（naturally aligned power-of-2 regions，簡稱 NAPOT），其中包含特殊個案 NA4（自然對齊的 4 位元組範圍）
+  - 任意範圍的上界（top boundary of an arbitrary range，簡稱 TOR）
+  - 這些模式都可達到 4 byte 的粒度
+
+<span class = "center-column">
+
+| A | Name  | Description                                      |
+|---|-------|--------------------------------------------------|
+| 0 | OFF   | Null region (disabled)                           |
+| 1 | TOR   | Top of range                                     |
+| 2 | NA4   | Naturally aligned four-byte region               |
+| 3 | NAPOT | Naturally aligned power-of-two region, ≥8 bytes  |
+
+（Table 18. Encoding of A field in PMP configuration registers）
+
+</span>
+
+::: tip  
+位址暫存器並不一定是直接存著一段位址範圍，其會利用 `A` 欄位來表示：「這顆位址暫存器如何描述一段範圍？」，然後再依規則把位址範圍解析出來  
+:::
+
+NAPOT 會利用相關的位址暫存器的低位元來編碼其區域大小，如表 19 所示：
+
+<span class = "center-column">
+
+| pmpaddr           | pmpcfg.A | Match type and size                |
+|-------------------|----------|------------------------------------|
+| yyyy...​yyyy       | NA4      | 4-byte NAPOT range                 |
+| yyyy...​yyy0       | NAPOT    | 8-byte NAPOT range                 |
+| yyyy...​yy01       | NAPOT    | 16-byte NAPOT range                |
+| yyyy...​y011       | NAPOT    | 32-byte NAPOT range                |
+| ...               | ...      | ...                                |
+| yy01...​1111       | NAPOT    | 2<sup>XLEN</sup>-byte NAPOT range            |
+| y011...​1111       | NAPOT    | 2<sup>(XLEN+1)</sup>-byte NAPOT range        |
+| 0111...​1111       | NAPOT    | 2<sup>(XLEN+2)</sup>-byte NAPOT range        |
+| 1111...​1111       | NAPOT    | 2<sup>(XLEN+3)</sup>-byte NAPOT range        |
+
+（Table 19. NAPOT range encoding in PMP address and configuration registers）
+
+</span>
+
+::: tip  
+把位址暫存器最後出現的「連續 1」的數目當作要的區塊範圍。 有 N 個連續的 1 → 大小為 2<sup>(N+3)</sup>，而起點為上表中 `y` 的部分。 舉個例子，假設 `XLEN = 32`，如果我們想要用 NAPOT 表示 `0x2040_0000` ~ `0x2080_0000`（4 MiB 區段），則：
+
+- 4 MiB 是 2<sup>22</sup> bit，因此 N 為 19
+- 由於要對齊到 2<sup>k</sup> Bytes，因此起始位址的最後 k bit 一定都是 0
+  - 例如大小為 2<sup>22</sup> = 4 MiB 時，起始位址的末 22 bit 皆為 0
+  - 以這邊來說，`0x2040_0000 = 0b0010_0000_0100_0000_0000_0000_0000_0000`
+  - 因此 significant bit 的部分為 `0b0010_0000_01`（去掉 trailing 0）
+- 直接把 significant bit 的部分填入上表中的 `y`，與 19 個 trailing 1 組合後可以得到 `0b1000_0001_0111_1111_1111_1111_1111`，也就是 `0x817ffff`
+- [reddit](https://www.reddit.com/r/RISCV/comments/ypu6kx/how_to_convert_a_range_of_memory_to_pmpaddrx_for/) 上看到了一個推導後的公式，為 `(base >> 2) + (size >> 3) - 1`
+- 由於我們有 34-bit 的 address space，但只有 32-bit 的暫存器，因此在 NAPOT 模式下沒有辦法使用小於 8 bytes 的區域
+  - 最小的 region 編碼為 `yyyy...​yyy0` 這組，base address 有 31-bit，因此大小至少會有 2<sup>34 - 31</sup> bytes  
+:::
+
+當 TOR 模式被選取時，相關的位址暫存器表示範圍的上界，而前一個 PMP 的位址暫存器則表示下界。 若第 i 項的 `A` 被設為 TOR，則它會比對所有滿足 <code>pmpaddr<sub>i-1</sub> ≤ y < pmpaddr<sub>i</sub></code> 的位址（不論 <code>pmpcfg<sub>i-1</sub></code> 的內容）。 若項目 0 的 `A` 被設為 TOR（<code>pmpcfg<sub>i</sub>.A = 1</code>），則視下界為 0，因此比對條件為 <code>y < pmpaddr<sub>0</sub></code>
+
+::: info  
+若滿足 <code>pmpaddr<sub>i-1</sub> ≥ pmpaddr<sub>i</sub></code> 且 <code>pmpcfg<sub>i</sub>.A = TOR</code>，則第 i 個 PMP 項目不會匹配任何位址  
+:::
+
+雖然 PMP 最小可支援 4 位元組的區域，但平台可以指定更粗（coarser）的 PMP 區域。 一般而言，PMP 的基本粒度為 2<sup>G + 2</sup> 位元組，且所有 PMP 區域的粒度必須一致
+
+- 當 G ≥ 1 時，NA4 模式不可使用
+- 當 G ≥ 2 且 <code>pmpcfg<sub>i</sub>.A[1] = 1</code>（即 NAPOT 模式）時，<code>pmpaddr<sub>i</sub>[G-2:0]</code> 應全為 1
+- 當 G ≥ 1 且 <code>pmpcfg<sub>i</sub>.A[1] = 0</code>（即 OFF 或 TOR 模式）時，<code>pmpaddr<sub>i</sub>[G-1:0]</code> 應全為 0
+- 位元 <code>pmpaddr<sub>i</sub>[G-1:0]</code> 不影響 TOR 的地址比對
+- 改變 <code>pmpcfg<sub>i</sub>.A[1]</code> 雖會改變從 <code>pmpaddr<sub>i</sub></code> 讀出的值，但不會改動暫存於該暫存器的實際資料，尤其是 <code>pmpaddr<sub>i</sub>[G-1]</code> 在 NAPOT → TOR/OFF → NAPOT 的切換過程中仍會維持原始值
+
+::: info  
+軟體可透過下列流程取得 PMP 的實際粒度：
+
+1. 往 `pmp0cfg` 寫 0
+2. 將 `pmpaddr0` 全寫入 1
+3. 再讀回 `pmpaddr0`
+
+若讀回值中「最低位的 1（least-significant bit set）」位於索引 G，則 PMP 的粒度為 2<sup>G + 2</sup> 位元組  
 :::
