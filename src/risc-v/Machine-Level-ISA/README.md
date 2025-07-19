@@ -2016,3 +2016,19 @@ NAPOT 會利用相關的位址暫存器的低位元來編碼其區域大小，�
 
 若讀回值中「最低位的 1（least-significant bit set）」位於索引 G，則 PMP 的粒度為 2<sup>G + 2</sup> 位元組  
 :::
+
+#### 3.7.1.2. Locking and Privilege Mode
+
+`L` 位元表示這個 PMP 項目已被鎖定，此時對組態暫存器以及相關位址暫存器的寫入都會被忽略。 直到該 hart 重新啟動之前，被鎖定的 PMP 項目都會保持在鎖定狀態。 若第 i 個 PMP 項目處於鎖定狀態，則對 <code>pmp<sub>i</sub>cfg</code> 與 <code>pmpaddr<sub>i</sub></code> 的寫入都無效。 另外，如果第 i 個 PMP 項目已鎖定且 <code>pmp<sub>i</sub>cfg.A</code> 被設為 TOR，則對 <code>pmpaddr<sub>i-1</sub></code> 的寫入也同樣無效
+
+::: tip  
+首先對於組態的設定，spec 中用 <code>pmp<sub>i</sub>cfg</code> 來表示第 i 個區域的設定，並用 <code>pmpcfg<sub>i</sub></code> 來表示第 i 個組態暫存器。 前者為設定的內容，會依照前面講述的規則存在對應的組態暫存器中
+
+再來「鎖定」的效果不只會保護 <code>pmp<sub>i</sub>cfg</code>，連同對應的位址暫存器也會被一起凍結。 只要 `L` 位元被設成 1，就算是最高權限的 M-mode 也改不了。 而在 TOR 模式下還會把上一個位址暫存器（<code>pmpaddr<sub>i-1</sub></code>）一併鎖住，因為 TOR 需要成對的上下界來描述一個區段  
+:::
+
+::: info  
+即使 `A` 欄位被設為 OFF，只要把 `L` 位元設定為 1，該 PMP 項目仍會被鎖定  
+:::
+
+除了鎖定 PMP 項目之外，`L` 位元還能決定是否要強制套用 `R`/`W`/`X` 的權限到 M-mode 的存取上。 當 `L` 位元為 1 時，所有特權模式都必須遵守這些權限。 當 `L` 位元為 0 時，凡是符合該 PMP 項目的 M-mode 存取都會被允許，此時 `R`/`W`/`X` 權限僅限制 S 與 U 模式
