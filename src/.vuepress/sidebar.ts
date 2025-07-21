@@ -97,9 +97,10 @@ export default sidebar([
     children: [
       "OSDI/",
       "risc-v-note/",
+      "Machine-Level-ISA/",
+      "Supervisor-Level-ISA/",
       "ACLINT/",
       "PLIC/",
-      "Supervisor-Level-ISA/",
       "rv32emu-Introduction/",
     ],
   },
