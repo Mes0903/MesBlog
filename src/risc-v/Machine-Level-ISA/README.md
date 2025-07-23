@@ -38,7 +38,7 @@ category: risc-v
 ::: tip  
 在 RISC-V 規格裡有三種基礎整數指令集（base integer ISA）：RV32I、RV64I、RV128I，它們的 XLEN 分別為 32、64、128 bit
 
-對某一顆 hart 而言，`misa.MXL` 編碼出它的本地（native）XLEN，稱為 MXLEN； M-mode 永遠以這個寬度運作。 這個寬度也就是 `x0` ... `x31` 實體暫存器的硬體位數，以及像 `add`, `sub`, `sll` 等整數 ALU 指令一次處理的位數
+對某一顆 hart 而言，`misa.MXL` 編碼出它的本地（native）XLEN，稱為 MXLEN； M-mode 永遠以這個寬度運作。 這個寬度也就是 `x0` ... `x31` 暫存器的硬體位數，以及像 `add`, `sub`, `sll` 等整數 ALU 指令一次處理的位數
 
 如同 S-mode ISA 裡面提到的，XLEN 是 CPU 處理整數時的位元寬度，RV32I / RV64I / RV128I 分別對應 `XLEN = 32/64/128`  
 :::
@@ -455,7 +455,7 @@ WARL（Write Any Read Legal）意味著實作可以拒絕不合法的寫入（�
 當任何模式的 XLEN 被設為小於該 hart 所支援的最大位元寬度時，所有操作都必須忽略來源暫存器中超出 XLEN 的位元，並且必須將運算結果做符號延伸（sign-extend）填滿整個最大位元寬度的目的暫存器。 同樣地，超出 XLEN 的 `pc` 位元也會被忽略，而當寫入 `pc` 時，也必須做符號延伸填滿最大支援的 XLEN
 
 ::: tip  
-- XLEN 是該 mode 下的寄存器與地址的位數
+- XLEN 是該 mode 下的寄存器與位址的位數
 - `SXL=1` 表示 `SXLEN=32`，`SXL=2` 表示 `SXLEN=64`（與 MXL 的編碼一致）
   - 若不支援 S-mode，硬體就會讓 `SXL=0`（即沒有 S-mode）
 - U-mode 可設為 32 或 64-bit，但不能高於上層模式
@@ -540,7 +540,7 @@ HINT 指令是一種「無作用指令」，常用來對 CPU 下 hint 或佔位�
 Volume I 將 hart 的位址空間定義為一個大小為 2<sup>XLEN</sup> bytes 且位址連續的環狀序列。 位址與 byte location 之間的對應關係是固定的，不會受到端序模式的影響。 端序模式只會決定 multibyte 的資料（例如 halfword、word 等）與 memory bytes 的映射順序
 
 ::: tip  
-換句話說，地址編號不會變，只有「同一個數值在記憶體中是從高位放前還是後」會變。 這定義可確保 CPU 對所有記憶體地址行為一致，只有資料解釋方式不同  
+換句話說，位址編號不會變，只有「同一個數值在記憶體中是從高位放前還是後」會變。 這定義可確保 CPU 對所有記憶體位址行為一致，只有資料解釋方式不同  
 :::
 
 標準的 RISC-V ABI 預期僅支援 pure little-endian 或 pure big-endian，不支援混合端序。 不過，架構仍定義了端序控制機制，允許例如一個使用某種端序的作業系統執行另一種端序的 U-mode 程式。 設計上也考慮到了某些非標準用途，例如讓軟體依需求動態切換記憶體存取的端序
@@ -565,7 +565,7 @@ TVM 機制透過允許 guest OS 執行於 S-mode 上（而非傳統上使用 U-m
 透過攔截對 `satp` 的存取，以及攔截 `SFENCE.VMA` 與 `SINVAL.VMA` 這兩個指令，便能夠提供延遲建立 shadow page table 的切入點
 
 ::: tip  
-- Shadow page table 是 hypervisor 管理虛擬記憶體的一種技巧，它將 guest 的虛擬記憶體對應到 host 的實體記憶體
+- Shadow page table 是 hypervisor 管理虛擬記憶體的一種技巧，它將 guest 的虛擬記憶體對應到 host 的物理記憶體
 - Lazy populate 表示「延遲填入」，直到 guest OS 嘗試切換記憶體上下文時才動態建立對應的 shadow page table
 - 當 guest OS 要寫 `satp` 或做 TLB 同步操作時，就會觸發 trap，hypervisor 可以在那時建立或更新 shadow page table  
 :::  
@@ -749,7 +749,7 @@ U-mode ISA 的擴充常常會包含額外的 U-mode 狀態，這些狀態可能�
 浮點單元的狀態總是透過標準指令（`F`、`D` 和/或 `Q`）來初始化、儲存與還原，而 privileged code 必須知道 FLEN 的值，以決定每個 `f` 暫存器應保留多少空間
 
 ::: tip  
-FLEN 表示浮點暫存器的實體寬度（例如 32、64、128）  
+FLEN 表示浮點暫存器的物理寬度（例如 32、64、128）  
 :::
 
 M-mode 和 S-mode 共用同一組 `FS`、`VS` 與 `XS` 位元。 Supervisor-level 的軟體通常會直接使用這些欄位來紀錄那些和它所儲存的 context 對應的狀態。 而 Machine-level 的軟體在儲存與還原其對應版本的 extension 狀態時，必須採取更保守的作法
@@ -1090,10 +1090,10 @@ RISC-V 的使用者 ISA 被設計來支援多種不同的特權系統環境，�
 `mepc` 是一個 WARL 類型的暫存器，其必須能夠儲存所有合法的虛擬位址，但不需要能儲存所有可能的非法位址。 在寫入 `mepc` 之前，實作可以將非法位址轉換成另一個 `mepc` 可接受的非法位址再寫入
 
 :::: info  
-當未啟用 address translation 時，虛擬位址與實體位址相等。 因此，`mepc` 能夠表示的位址集合，必須包含那些可作為合法 PC 或有效位址的實體位址
+當未啟用 address translation 時，虛擬位址與物理位址相等。 因此，`mepc` 能夠表示的位址集合，必須包含那些可作為合法 PC 或有效位址的物理位址
 
 ::: tip  
-這邊只是在表達，如果虛擬位址等於實體位址（如沒開 paging），則 `mepc` 要能記住實體指令的位置  
+這邊只是在表達，如果虛擬位址等於物理位址（如沒開 paging），則 `mepc` 要能記住指令的物理位置  
 :::  
 ::::
 
@@ -1190,10 +1190,10 @@ load 與 load-reserved 指令會產生 load 類型的例外，而 store、store-
 
 </span>
 
-當虛擬位址被轉換為實體位址時，位址轉譯演算法會決定要觸發哪一種例外。 load/store/AMO 的 address-misaligned 例外，可能比 page fault 或 access fault 優先，也可能較晚發生
+當虛擬位址被轉換為物理位址時，位址轉譯演算法會決定要觸發哪一種例外。 load/store/AMO 的 address-misaligned 例外，可能比 page fault 或 access fault 優先，也可能較晚發生
 
 ::: info  
-load/store/AMO 的 misaligned 與 page fault 例外的相對優先順序由實作自行決定，以因應兩種設計情境的需求。 若某實作完全不支援 misaligned 存取，那麼在不執行位址轉譯與存取保護檢查的情況下，其可直接觸發 misaligned 例外。 反之，若只在部分實體位址上支援 misaligned 存取，則實作必須先進行位址轉譯與檢查，確定是否允許這次 misaligned 存取，這種情況下觸發 page fault 或 access fault 是較合適的
+load/store/AMO 的 misaligned 與 page fault 例外的相對優先順序由實作自行決定，以因應兩種設計情境的需求。 若某實作完全不支援 misaligned 存取，那麼在不執行位址轉譯與存取保護檢查的情況下，其可直接觸發 misaligned 例外。 反之，若只在部分物理位址上支援 misaligned 存取，則實作必須先進行位址轉譯與檢查，確定是否允許這次 misaligned 存取，這種情況下觸發 page fault 或 access fault 是較合適的
 
 指令位址的 breakpoint 例外與資料位址的 breakpoint（也稱為 watchpoint），以及由 EBREAK 指令觸發的 environment break 例外，雖然擁有相同的 cause 編號，但其優先順序不同
 
@@ -1210,7 +1210,7 @@ hardware-error exception 是一種同步例外，當指令（無論是顯式或�
 
 ![（Figure 23. Machine Trap Value (`mtval`) register.）](image/mtval.png)
 
-如果在指令擷取（fetch）、load 或 store 時發生了 breakpoint、位址未對齊、access fault 或 page fault 等例外，且 `mtval` 被寫入了非零值，那麼 `mtval` 會記錄觸發例外的虛擬位址。 當啟用 page-based 的虛擬記憶體時，即使是實體記憶體的 access-fault 例外，也會將觸發錯誤的虛擬位址寫入 `mtval`。 這樣的設計可以降低多數實作（尤其是有硬體 page-table walker 的）資料路徑成本
+如果在指令擷取（fetch）、load 或 store 時發生了 breakpoint、位址未對齊、access fault 或 page fault 等例外，且 `mtval` 被寫入了非零值，那麼 `mtval` 會記錄觸發例外的虛擬位址。 當啟用 page-based 的虛擬記憶體時，即使是物理記憶體的 access-fault 例外，也會將觸發錯誤的虛擬位址寫入 `mtval`。 這樣的設計可以降低多數實作（尤其是有硬體 page-table walker 的）資料路徑成本
 
 若某次 misaligned 的 load 或 store 導致 access fault 或 page fault，且 `mtval` 被寫入了非零值，則 `mtval` 會記錄觸發錯誤的那個存取區段的虛擬位址
 
@@ -1260,12 +1260,12 @@ software-check exception 是軟體保護機制（如 CFI、shadow stack）檢查
 - 所有合法虛擬位址（例外位址）
 - 所有 MXLEN/ILEN 長度內的 opcode（若支援回報指令內容）
 
-不需要支援完整 64-bit 地址空間內的所有值，只要能報錯就好  
+不需要支援完整 64-bit 位址空間內的所有值，只要能報錯就好  
 :::
 
 ### 3.1.17. Machine Configuration Pointer (`mconfigptr`) Register
 
-`mconfigptr` 是一個 MXLEN 位元寬的唯讀 CSR，如圖 24 所示，其內容為某個「設定資料結構（configuration data structure）」的實體位址。 軟體可以透過這個資料結構來取得 hart、平台以及相關設定的資訊。 `mconfigptr` 必須要被實作，但其值可以為 0，表示設定資料結構不存在，或是必須透過其他機制來取得該資料結構的位置
+`mconfigptr` 是一個 MXLEN 位元寬的唯讀 CSR，如圖 24 所示，其內容為某個「設定資料結構（configuration data structure）」的物理位址。 軟體可以透過這個資料結構來取得 hart、平台以及相關設定的資訊。 `mconfigptr` 必須要被實作，但其值可以為 0，表示設定資料結構不存在，或是必須透過其他機制來取得該資料結構的位置
 
 ![（Figure 24. Machine Configuration Pointer (`mconfigptr`) register.）](image/mconfigptr.png)
 
@@ -1489,7 +1489,7 @@ sw a0, 0(t1)     # New value.
 若系統支援 A 擴充（Atomic extension），則 `xRET` 指令可以清除任何未完成的 `LR` 位址保留，但不強制要清除。 若 trap handler 需要清除保留，應該在執行 `xRET` 前就顯式地清除它（例如透過執行一個假的 `SC` 指令）
 
 ::: tip  
-在 RISC-V 的原子操作中，`LR`/`SC`（Load-Reserved / Store-Conditional）要搭配使用，以實作 atomic CAS 等功能。 `LR` 會建立一個地址保留區，之後的 `SC` 只有在這個區域沒有被其他 CPU 或 trap 影響過的情況下才會成功
+在 RISC-V 的原子操作中，`LR`/`SC`（Load-Reserved / Store-Conditional）要搭配使用，以實作 atomic CAS 等功能。 `LR` 會建立一個位址保留區，之後的 `SC` 只有在這個區域沒有被其他 CPU 或 trap 影響過的情況下才會成功
 
 問題是，如果中間發生 trap 而跳出該流程，這個保留區仍可能繼續存在。 這裡說的是：`xRET` 可以幫忙清掉這個保留，但不一定會清，因此如果你要保證清除，要自己在 handler 中用 `SC` 把它清掉，否則可能會造成之後的 `SC` 意外成功或失敗  
 :::
@@ -1641,14 +1641,14 @@ NMI 所寫入的 `mcause` 值由實作決定。 `mcause` 的最高位元（Inter
 
 ## 3.6. Physical Memory Attributes
 
-一個完整系統的實體記憶體映射包含了多個不同的位址範圍，其中有些對應到記憶體區段，有些則對應到記憶體映射的控制暫存器，而這些區段中有些可能是無法存取的。 有些記憶體區段可能不支援讀取、寫入或執行； 有些可能不支援 subword 或 subblock 存取； 有些可能不支援原子操作； 也有些區段可能不具備快取一致性或採用了不同的記憶體模型
+一個完整系統的物理記憶體映射包含了多個不同的位址範圍，其中有些對應到記憶體區段，有些則對應到記憶體映射的控制暫存器，而這些區段中有些可能是無法存取的。 有些記憶體區段可能不支援讀取、寫入或執行； 有些可能不支援 subword 或 subblock 存取； 有些可能不支援原子操作； 也有些區段可能不具備快取一致性或採用了不同的記憶體模型
 
-記憶體映射的控制暫存器在存取寬度、是否支援原子操作、以及讀寫是否具有副作用（side effect）等方面也有所不同。 在 RISC-V 系統中，這些機器的實體位址空間中的每個區段的屬性與能力，被稱為 physical memory attributes（PMAs）。 本節將說明 RISC-V 中 PMA 的術語，以及系統如何實作與檢查這些屬性
+記憶體映射的控制暫存器在存取寬度、是否支援原子操作、以及讀寫是否具有副作用（side effect）等方面也有所不同。 在 RISC-V 系統中，這些機器的物理位址空間中的每個區段的屬性與能力，被稱為 physical memory attributes（PMAs）。 本節將說明 RISC-V 中 PMA 的術語，以及系統如何實作與檢查這些屬性
 
-PMA 是底層硬體的內建屬性，在系統執行過程中通常不會變化。 與第 3.7 節所描述的實體記憶體保護（PMP）值不同，PMA 不會隨著執行環境的改變而改變。 某些記憶體區段的 PMA 是在晶片設計階段就固定下來的，例如內建的 ROM； 否則就是在電路板設計階段決定的，像是可能會由哪些裝置接到了晶片外部匯流排上來決定
+PMA 是底層硬體的內建屬性，在系統執行過程中通常不會變化。 與第 3.7 節所描述的物理記憶體保護（PMP）值不同，PMA 不會隨著執行環境的改變而改變。 某些記憶體區段的 PMA 是在晶片設計階段就固定下來的，例如內建的 ROM； 否則就是在電路板設計階段決定的，像是可能會由哪些裝置接到了晶片外部匯流排上來決定
 
 ::: tip  
-PMA 描述的是系統中每個實體記憶體位址區段的硬體屬性。 這些屬性會決定：
+PMA 描述的是系統中每個物理記憶體位址區段的硬體屬性。 這些屬性會決定：
 
 - 這個位址能不能讀寫或執行
 - 是否能用 byte / halfword / word 存取
@@ -1674,11 +1674,11 @@ PMA 描述的是系統中每個實體記憶體位址區段的硬體屬性。 這
 - 動態組態：某些硬體可以在 runtime 改變功能，如 SoC 裡的 RAM 既可以當快取、也可以關閉快取用作共享區域，這會讓同一段位址在不同情境下有不同 PMA  
 :::
 
-大多數系統都需要在指令執行流程後期（當實體位址已知時），由硬體動態地檢查某些 PMA，因為不是所有操作都能套用在所有實體記憶體位址上，而某些操作還需要知道當下 PMA 的組態設定。 在其他架構中，部分 PMA 通常會被指定在虛擬記憶體的 page table 裡，並透過 TLB 提供給 pipeline 參考，但這種做法會把與平台綁定的資訊注入虛擬化層中，若每個 page-table entry 沒正確初始化對應的屬性，可能會造成系統錯誤。 此外，page table 支援的 page 大小可能不適合描述實體記憶體中的屬性區段，進而導致位址空間碎裂，與浪費寶貴的 TLB 項目
+大多數系統都需要在指令執行流程後期（當物理位址已知時），由硬體動態地檢查某些 PMA，因為不是所有操作都能套用在所有物理記憶體位址上，而某些操作還需要知道當下 PMA 的組態設定。 在其他架構中，部分 PMA 通常會被指定在虛擬記憶體的 page table 裡，並透過 TLB 提供給 pipeline 參考，但這種做法會把與平台綁定的資訊注入虛擬化層中，若每個 page-table entry 沒正確初始化對應的屬性，可能會造成系統錯誤。 此外，page table 支援的 page 大小可能不適合描述物理記憶體中的屬性區段，進而導致位址空間碎裂，與浪費寶貴的 TLB 項目
 
-在 RISC-V 架構中，PMA 的定義與檢查是由一個稱為 PMA 檢查器（PMA checker）的獨立硬體元件來負責的。 在許多情況下，各個實體位址區段的屬性會在系統設計階段就被確定，並且可以直接以硬體邏輯寫入 PMA 檢查器中。 若某些區段的屬性可於執行期間被調整，則平台可以提供對應的 memory-mapped 控制暫存器，依照各區段所需的粒度來設定這些屬性（例如一段 on-chip SRAM 可根據應用需求靈活配置為可快取或不可快取區段）
+在 RISC-V 架構中，PMA 的定義與檢查是由一個稱為 PMA 檢查器（PMA checker）的獨立硬體元件來負責的。 在許多情況下，各個物理位址區段的屬性會在系統設計階段就被確定，並且可以直接以硬體邏輯寫入 PMA 檢查器中。 若某些區段的屬性可於執行期間被調整，則平台可以提供對應的 memory-mapped 控制暫存器，依照各區段所需的粒度來設定這些屬性（例如一段 on-chip SRAM 可根據應用需求靈活配置為可快取或不可快取區段）
 
-對所有實體記憶體的存取操作，無論是否經過虛擬記憶體轉換（即使已完成虛實位址轉換），都必須進行 PMA 檢查。 為了輔助系統除錯，我們強烈建議在可行情況下，RISC-V 處理器需能對違反 PMA 的實體存取的動作進行精確的 trap
+對所有物理記憶體的存取操作，無論是否經過虛擬記憶體轉換（即使已完成虛實位址轉換），都必須進行 PMA 檢查。 為了輔助系統除錯，我們強烈建議在可行情況下，RISC-V 處理器需能對違反 PMA 的物理記憶體存取進行精確的 trap
 
 ::: tip  
 這邊的「精確」與 precise exception/interrupt 指的是同樣的意思。 在這邊表示當 trap 被拋出時，處理器保證：
@@ -1693,14 +1693,14 @@ PMA 描述的是系統中每個實體記憶體位址區段的硬體屬性。 這
 這類精確的 PMA 違規會表現為指令、載入或儲存的 access-fault 例外，並與虛擬記憶體的 page-fault 例外有所區別。 不過，在某些情況下是無法做到精確的 trap 的，例如在存取某些舊式匯流排架構時，這些架構會將「存取失敗」視為裝置探測的一部分。 此時，來自周邊裝置的錯誤回應會以不精確的 bus-error 中斷來報告
 
 ::: tip  
-PMA 不是軟體管理的資料結構（不像 page table），而是有獨立的硬體「PMA 檢查器」負責實體位址的屬性驗證。 由於絕大多數記憶體區段的屬性（可讀寫、可執行、可快取）在系統設計階段就已知，因此可以寫死在電路中（hardwire），但如果是執行期可組態的區段，像是 SRAM 分成 cacheable / uncacheable，用戶端就可以透過 memory-mapped registers 動態設定
+PMA 不是軟體管理的資料結構（不像 page table），而是有獨立的硬體「PMA 檢查器」負責物理位址的屬性驗證。 由於絕大多數記憶體區段的屬性（可讀寫、可執行、可快取）在系統設計階段就已知，因此可以寫死在電路中（hardwire），但如果是執行期可組態的區段，像是 SRAM 分成 cacheable / uncacheable，用戶端就可以透過 memory-mapped registers 動態設定
 
-所有實體記憶體的存取（包括已經經過虛擬地址轉換的）都會通過 PMA 檢查。 若違規（例如：對不支援原子操作的區段執行 AMO），理想情況下應該要精確地發出 trap，產生類似 access-fault 的例外（這不同於 page-fault，是完全實體層的錯）
+所有物理記憶體的存取（包括已經經過虛擬位址轉換的）都會通過 PMA 檢查。 若違規（例如：對不支援原子操作的區段執行 AMO），理想情況下應該要精確地發出 trap，產生類似 access-fault 的例外
 
-但有些老舊的系統（legacy bus）沒辦法做到這麼精準，例如裝置探測時故意去「試探」不支援的地址，這種情況下就只好以不精確（imprecise）的 bus-error 中斷來報告  
+但有些老舊的系統（legacy bus）沒辦法做到這麼精準，例如裝置探測時故意去「試探」不支援的位址，這種情況下就只好以不精確（imprecise）的 bus-error 中斷來報告  
 :::
 
-軟體也必須能讀取 PMA，以便正確存取特定裝置，或正確設定其他會存取記憶體的硬體元件（例如 DMA 引擎）。 由於 PMA 是與特定實體平台的結構密切綁定的，因此許多細節都具有平台特定性，軟體用來獲得 PMA 資訊的方式也同樣具有平台特定性。 某些裝置（尤其是老舊匯流排）無法提供 PMA 探測機制，因此若嘗試進行不被支援的存取，則會回應錯誤或逾時。 通常，平台特定的 M-mode 程式碼會負責解析 PMA，最終會將這些資訊以某種標準格式提供給較低權限層級的軟體
+軟體也必須能讀取 PMA，以便正確存取特定裝置，或正確設定其他會存取記憶體的硬體元件（例如 DMA 引擎）。 由於 PMA 是與特定物理平台的結構密切綁定的，因此許多細節都具有平台特定性，軟體用來獲得 PMA 資訊的方式也同樣具有平台特定性。 某些裝置（尤其是老舊匯流排）無法提供 PMA 探測機制，因此若嘗試進行不被支援的存取，則會回應錯誤或逾時。 通常，平台特定的 M-mode 程式碼會負責解析 PMA，最終會將這些資訊以某種標準格式提供給較低權限層級的軟體
 
 若平台支援動態重新配置 PMA，則會提供一個介面，讓使用者將屬性設定請求傳遞給 M-mode 的驅動程式，由其正確地重新配置平台。 例如，對某些記憶體區段切換其快取屬性時，可能會涉及平台特定的操作（例如快取清除），而這些操作只有在 M-mode 下才能執行
 
@@ -1752,7 +1752,7 @@ I/O 區段可以指定它支援哪些資料寬度的讀、寫或執行組合。 
 
 ### 3.6.3. Atomicity PMAs
 
-Atomicity 類型的 PMA（實體記憶體屬性）會描述某段位址區域支援哪些原子性的操作指令。 對於原子指令的支援可以分為兩大類：`LR`/`SC`（Load-Reserved/Store-Conditional）與 `AMOs`（Atomic Memory Operations）
+Atomicity 類型的 PMA（物理記憶體屬性）會描述某段位址區域支援哪些原子性的操作指令。 對於原子指令的支援可以分為兩大類：`LR`/`SC`（Load-Reserved/Store-Conditional）與 `AMOs`（Atomic Memory Operations）
 
 :::: info  
 有些平台可能會規定，所有可快取的主記憶體區段都必須支援 attached processors 所需的所有原子操作
@@ -1885,12 +1885,12 @@ RISC-V 的設計哲學是「軟體可替代硬體」，所以理論上，如果�
 一致性（Coherence）是針對單一物理位址定義的屬性，它表示由某個 agent（處理器或裝置）對該位址的寫入，最終會被系統中其他的一致性 agent 看到。 一致性不應與記憶體一致性模型（memory consistency model）混淆，後者定義的是：在整體記憶體系統中，某次讀取操作在給定過去讀寫歷史的前提下，可能讀出哪些值。 在 RISC-V 平台中，不鼓勵使用硬體不具一致性（hardware-incoherent）的區域，因為它可能會增加軟體複雜度、降低效能並增加能耗
 
 ::: tip  
-- Coherence：針對「單一物理位址」的保證。 不同 agent（如 CPU、DMA）對某個位址所看到的值最終會一致。 換句話說就是「我寫了某地址，其他人最終會看到這個值」
+- Coherence：針對「單一物理位址」的保證。 不同 agent（如 CPU、DMA）對某個位址所看到的值最終會一致。 換句話說就是「我寫了某位址，其他人最終會看到這個值」
 - Consistency Model：針對「所有記憶體操作的順序語義」而定義的。 當有多個記憶體操作時，從不同 agent 的觀點來看，它們看到的結果可能會不一樣，這由系統定義的 memory model（如 RVWMO、TSO、SC）來規範
 
 舉例來說：
 
-- Coherence 關注點：若 Core A 寫入地址 `0x80000000`，Core B 是否最終也會看到該值？
+- Coherence 關注點：若 Core A 寫入位址 `0x80000000`，Core B 是否最終也會看到該值？
 - Consistency 關注點：如果 Core A 分別寫入 x 和 y，Core B 會先看到哪個？ 這涉及整體順序問題  
 :::
 
@@ -2014,26 +2014,26 @@ RISC-V 的設計哲學是「軟體可替代硬體」，所以理論上，如果�
 
 ## 3.7. Physical Memory Protection
 
-為了強化安全性並隔離錯誤，理想的作法是限制同一顆 hart 上的軟體可存取的實體位址範圍。 選配的 PMP（physical memory protection）單元為每顆 hart 提供了 machine-mode 控制暫存器，可針對每個實體記憶體區域指定讀、寫、執行的權限。 PMP 的權限檢查會與第 3.6 節描述的 PMA 檢查並行進行
+為了強化安全性並隔離錯誤，理想的作法是限制同一顆 hart 上的軟體可存取的物理位址範圍。 選配的 PMP（physical memory protection）單元為每顆 hart 提供了 machine-mode 控制暫存器，可針對每個物理記憶體區域指定讀、寫、執行的權限。 PMP 的權限檢查會與第 3.6 節描述的 PMA 檢查並行進行
 
 PMP 權限設定的粒度（region size）隨平台而異； 標準編碼可支援最小 4 byte 的區段。 一些區域的權限也可以被硬體「焊死」，例如某些位址範圍可能只能由 M-mode 存取，永遠不會向較低特權層開放
 
 ::: info  
-各種平台對「實體記憶體保護」的需求差異極大，因此有些平台可能會增補或替換本節介紹的 PMP 機制，使用其他形式的保護結構  
+各種平台對「物理記憶體保護」的需求差異極大，因此有些平台可能會增補或替換本節介紹的 PMP 機制，使用其他形式的保護結構  
 :::
 
 PMP 檢查適用於所有「有效特權模式」為 S 或 U 的存取，例如：
 
 - S/U 模式的指令抓取與資料存取
 - 當 `mstatus.MPRV=1` 且 `mstatus.MPP` 指向 S 或 U 時，M-mode 代其他模式執行的資料存取
-- page table 的遍歷（其有效模式為 S）
+- page table 的走訪（其有效模式為 S）
 
 平台還能讓 PMP 進一步套用到 M-mode 的存取（可選），此時 PMP 暫存器會被鎖定，除非重新上電，否則連 M-mode 軟體也無法修改。 簡單來說，PMP 可以「給」原本沒有權限的 S/U 模式存取能力，也可以「拿走」原本全能的 M-mode 權限
 
 任何違反 PMP 地操作都會在處理器端「精確地」觸發例外
 
 ::: tip  
-- PMA 面向「硬體性能與正確性」，像是快取、對齊、總線序等物理屬性。 可能在匯流排仲裁器/MMC/AXI slave 等裡面硬編，對軟體完全透明
+- PMA 面向「硬體性能與正確性」，像是快取、對齊、總線序等物理屬性。 可能在匯流排仲裁器 / MMC / AXI slave 等裡面硬編，對軟體完全透明
 - PMP 則面向「安全與隔離」，像是哪個 privilege、哪段程式能碰哪塊記憶體等。 做在每顆核內的 CSR + 比較器，與核心 pipeline 同步，比較容易標準化  
 :::
 
@@ -2046,11 +2046,15 @@ PMP 檢查適用於所有「有效特權模式」為 S 或 U 的存取，例如�
 - 所有 PMP 相關的 CSR 欄位都是 WARL，也可能是唯讀的零
   - 這些 CSR 只允許 M-mode 存取
 
-為了減少行程切換的開銷，PMP 的組態暫存器會被緊密地打包進 CSR：
+為了減少 context switch 的開銷，PMP 的組態暫存器會被緊密地（densely）打包進 CSR：
 
 - 在 RV32 中，使用 16 個 CSR（`pmpcfg0` ~ `pmpcfg15`）來存放 `pmp0cfg` ~ `pmp63cfg` 這 64 個 PMP 設定，如圖 30 所示
 - 在 RV64 中，使用 8 個偶數編號的 CSR（`pmpcfg0`、`pmpcfg2` ... `pmpcfg14`） 來存放跟上方一樣的 64 組 PMP 設定，如圖 31 所示
 - 在 RV64 中，奇數編號的組態暫存器 `pmpcfg1`、`pmpcfg3` ... `pmpcfg15` 是非法的（不存在）
+
+::: tip  
+對於組態的設定，spec 中用 <code>pmp<sub>i</sub>cfg</code> 來表示第 i 個區域的設定，並用 <code>pmpcfg<sub>i</sub></code> 來表示第 i 個組態暫存器。 前者為設定的內容，會依照上面的規則儲存在對應的組態暫存器中  
+:::
 
 ::: info  
 在 RV64 中，項目 `8` ~ `15` 的組態存放於 `pmpcfg2`（而不是 `pmpcfg1`）。 這樣的設計可降低同時支援不同 MXLEN（32 與 64 位元）時的成本，因為在 RV32 與 RV64 裡，項目 `8` ~ `11` 的設定都位於 `pmpcfg2` 的低 32 位元（bits 31:0）  
@@ -2062,17 +2066,17 @@ PMP 檢查適用於所有「有效特權模式」為 S 或 U 的存取，例如�
 
 PMP 位址暫存器為 CSR，名稱為 `pmpaddr0` ~ `pmpaddr63`：
 
-- 在 RV32 中，每一個 `pmpaddr` 暫存器對應到 34 位元實體位址的第 33:2 位（如圖 32）
-- 在 RV64 中，每一個 `pmpaddr` 暫存器對應到 56 位元實體位址的第 55:2 位（如圖 33）
+- 在 RV32 中，每一個 `pmpaddr` 暫存器對應到 34 位元物理位址的第 2 至 33 位（如圖 32）
+- 在 RV64 中，每一個 `pmpaddr` 暫存器對應到 56 位元物理位址的第 2 至 55 位（如圖 33）
 
-由於部分實體位址位元可能未實作，因此 `pmpaddr` 為 WARL 欄位
+由於部分物理位址的位元可能未被實作，因此 `pmpaddr` 為 WARL 欄位
 
 ::: tip  
-位址暫存器用來保存「這一條 PMP 項目要保護的實體位址範圍」，讓硬體在執行階段能快速判斷某次存取是否落在受限區域內，具體編碼方式見後方章節  
+位址暫存器用來保存「這一條 PMP 項目要保護的物理位址範圍」，讓硬體在執行階段能快速判斷某次存取是否落在受限區域內，具體編碼方式見後方章節  
 :::
 
 ::: info  
-第 12.3 節介紹的 Sv32 page base 虛擬記憶體方案在 RV32 上支援 34 位元的實體位址，因此 PMP 也必須支援超過 XLEN 位元的位址寬度。 第 12.4 與 12.5 節介紹的 Sv39 與 Sv48 則支援 56 位元實體位址，因此 RV64 的 PMP 位址暫存器亦以 56 位元為上限  
+第 12.3 節介紹的 Sv32 page base 虛擬記憶體方案在 RV32 上支援 34 位元的物理位址，因此 PMP 也必須支援超過 XLEN 位元的位址寬度。 第 12.4 與 12.5 節介紹的 Sv39 與 Sv48 則支援 56 位元物理位址，因此 RV64 的 PMP 位址暫存器亦以 56 位元為上限  
 :::
 
 ![（Figure 32. PMP address register format, RV32.）](image/rv32_pmpADR.png)
@@ -2121,7 +2125,7 @@ PMP 組態暫存器中的 `A` 欄位用來編碼對應 PMP 位址暫存器的位
 </span>
 
 ::: tip  
-位址暫存器並不一定是直接存著一段位址範圍，其會利用 `A` 欄位來表示：「這顆位址暫存器如何描述一段範圍？」，然後再依規則把位址範圍解析出來  
+位址暫存器並不一定是直接存著一段位址範圍，其會利用 `A` 欄位來表示「這顆位址暫存器如何描述一段範圍？」，然後再依規則把位址範圍解析出來  
 :::
 
 NAPOT 會利用相關的位址暫存器的低位元來編碼其區域大小，如表 19 所示：
@@ -2169,7 +2173,7 @@ NAPOT 會利用相關的位址暫存器的低位元來編碼其區域大小，�
 - 當 G ≥ 1 時，NA4 模式不可使用
 - 當 G ≥ 2 且 <code>pmpcfg<sub>i</sub>.A[1] = 1</code>（即 NAPOT 模式）時，<code>pmpaddr<sub>i</sub>[G-2:0]</code> 應全為 1
 - 當 G ≥ 1 且 <code>pmpcfg<sub>i</sub>.A[1] = 0</code>（即 OFF 或 TOR 模式）時，<code>pmpaddr<sub>i</sub>[G-1:0]</code> 應全為 0
-- 位元 <code>pmpaddr<sub>i</sub>[G-1:0]</code> 不影響 TOR 的地址比對
+- 位元 <code>pmpaddr<sub>i</sub>[G-1:0]</code> 不影響 TOR 的位址比對
 - 改變 <code>pmpcfg<sub>i</sub>.A[1]</code> 雖會改變從 <code>pmpaddr<sub>i</sub></code> 讀出的值，但不會改動暫存於該暫存器的實際資料，尤其是 <code>pmpaddr<sub>i</sub>[G-1]</code> 在 NAPOT → TOR/OFF → NAPOT 的切換過程中仍會維持原始值
 
 ::: info  
@@ -2187,9 +2191,7 @@ NAPOT 會利用相關的位址暫存器的低位元來編碼其區域大小，�
 `L` 位元表示這個 PMP 項目已被鎖定，此時對組態暫存器以及相關位址暫存器的寫入都會被忽略。 直到該 hart 重新啟動之前，被鎖定的 PMP 項目都會保持在鎖定狀態。 若第 i 個 PMP 項目處於鎖定狀態，則對 <code>pmp<sub>i</sub>cfg</code> 與 <code>pmpaddr<sub>i</sub></code> 的寫入都無效。 另外，如果第 i 個 PMP 項目已鎖定且 <code>pmp<sub>i</sub>cfg.A</code> 被設為 TOR，則對 <code>pmpaddr<sub>i-1</sub></code> 的寫入也同樣無效
 
 ::: tip  
-首先對於組態的設定，spec 中用 <code>pmp<sub>i</sub>cfg</code> 來表示第 i 個區域的設定，並用 <code>pmpcfg<sub>i</sub></code> 來表示第 i 個組態暫存器。 前者為設定的內容，會依照前面講述的規則存在對應的組態暫存器中
-
-再來「鎖定」的效果不只會保護 <code>pmp<sub>i</sub>cfg</code>，連同對應的位址暫存器也會被一起凍結。 只要 `L` 位元被設成 1，就算是最高權限的 M-mode 也改不了。 而在 TOR 模式下還會把上一個位址暫存器（<code>pmpaddr<sub>i-1</sub></code>）一併鎖住，因為 TOR 需要成對的上下界來描述一個區段  
+「鎖定」的效果不只會保護 <code>pmp<sub>i</sub>cfg</code>，連同對應的位址暫存器 <code>pmpaddr<sub>i-1</sub></code> 也會被一起凍結，注意前者是組態的設定，而非暫存器。 只要 `L` 位元被設成 1，就算是最高權限的 M-mode 也改不了。 而在 TOR 模式下還會把上一個位址暫存器（<code>pmpaddr<sub>i-1</sub></code>）一併鎖住，因為 TOR 需要成對的上下界來描述一個區段  
 :::
 
 ::: info  
@@ -2216,22 +2218,22 @@ PMP 比對是按編號由小到大來決定的，在多區段重疊時，系統�
 若系統實作了至少一個 PMP 項目，但所有項目的 `A` 欄位都被設為 OFF，就會使 S-mode 與 U-mode 的所有記憶體存取全部失敗
 
 ::: tip  
-這代表硬體偵測到 PMP 的存在，卻沒有任何啟用中的項目。 對 S/U 來說，相當於整機被鎖死了，需等 M-mode 韌體設定好項目後才能開放存取  
+這代表硬體偵測到 PMP 的存在，卻沒有任何啟用中的項目。 對 S/U 來說，相當於整個被鎖死了，需等 M-mode 韌體設定好項目後才能開放存取  
 :::  
 ::::
 
-存取失敗會觸發指令、讀取或寫入的 access-fault 例外。 一條指令可能會被拆成多次存取，彼此間不一定具備原子性； 只要其中一次存取失敗，就會產生 access-fault 例外，儘管同一條指令的其他存取可能已執行成功並留下了可見的副作用。 要注意，涉及虛擬記憶體的指令都會被分解為多次存取
+存取失敗會觸發指令、讀取或寫入的 access-fault 例外。 一條指令可能會被拆成多次存取，彼此間不一定具備原子性，而只要其中一次存取失敗，就會產生 access-fault 例外，儘管同一條指令的其他存取可能已執行成功並留下了可見的副作用。 要注意，涉及虛擬記憶體的指令都會被分解為多次存取
 
 在某些實作中，不對齊的讀取、寫入與指令擷取也可能會被拆分為多次存取，其中部分存取可能會在 access-fault 例外產生前就已成功。 舉例來說，一筆不對齊的寫入中，只要其中一段通過 PMP 檢查，即便另一段因檢查失敗而被阻擋，成功的那一段也可能會先被寫入記憶體並對外可見。 同樣的情況也可能出現在寬度超過 XLEN 的寫入中（例如 RV32D 的 FSD 指令），就算其寫入位址已自然對齊也一樣
 
 ### 3.7.2. Physical Memory Protection and Paging
 
-PMP 機制是設計來與第 12 章介紹的 page-based 虛擬記憶體系統協同運作的。當啟用 paging 時，任何存取虛擬記憶體的指令都可能觸發多筆實體記憶體存取，其中包含對 page table 的隱式參照，而 PMP 會對這些存取全部進行檢查。 這些隱式的 page table 存取的有效特權模式為 S-mode
+PMP 機制是設計來與第 12 章介紹的 page-based 虛擬記憶體系統協同運作的。當啟用 paging 時，任何存取虛擬記憶體的指令都可能觸發多筆物理記憶體存取，其中包含對 page table 的隱式參照，而 PMP 會對這些存取全部進行檢查。 這些隱式的 page table 存取的有效特權模式為 S-mode
 
-在支援虛擬記憶體的實作中，硬體可以提前且推測性地進行位址轉譯，並將結果快取於各種位址轉譯快取結構中，其中包含 Bare-mode 或 M-mode 下的 identity mapping 也可能會被快取。 對於這些轉譯結果所得到的實體位址，PMP 可以在「完成轉譯」與「真正執行存取」之間的任何時間點進行檢查（且可將檢查結果一併快取）
+在支援虛擬記憶體的實作中，硬體可以提前且推測性地進行位址轉譯，並將結果快取於各種位址轉譯快取結構中，其中包含 Bare-mode 或 M-mode 下的 identity mapping 也可能會被快取。 對於這些轉譯結果所得到的物理位址，PMP 可以在「完成轉譯」與「真正執行存取」之間的任何時間點進行檢查（且可將檢查結果一併快取）
 
 ::: tip  
-identity mapping，或說 identity paging，表示 VA = PA，即便開啟了 paging，M-mode 也可以把整個或者部分地址空間以「VA = PA」的方式做映射，這樣仍保有 page table 帶來的屬性標籤（cacheable、executable 等）與隔離彈性，但節省了轉譯開銷
+identity mapping，或說 identity paging，表示 VA = PA，即便開啟了 paging，M-mode 也可以把整個或者部分位址空間以「VA = PA」的方式做映射，這樣仍保有 page table 帶來的屬性標籤（cacheable、executable 等）與隔離彈性，但節省了轉譯開銷
 
 而這邊說的是就算是 identity paging，其也有可能被存入 TLB，也就是說會把「VA = PA」這組 mapping 存進 TLB  
 :::
