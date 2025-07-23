@@ -1,5 +1,5 @@
 ---
-title: （WIP）RISC-V Machine-Level ISA
+title: RISC-V Machine-Level ISA
 date: 2025-06-19
 tag: risc-v
 category: risc-v
@@ -9,7 +9,7 @@ category: risc-v
 
 本篇為 RISC-V Machine-Level ISA（Version 20241101）的中文翻譯與筆記，原文可於[官方 github](https://github.com/riscv/riscv-isa-manual/tree/main) 的第 3 章中看到。 大部分的情況下我會直接直譯，但有些地方我覺得文件實在寫得很繞，那種地方我就會直接用我自己的話寫了，或是多補一個 Tips Block 做解釋
 
-本篇內的 Info block 為原文中的補充段落，我全部都有翻，但會依照前後文的語境來決定要不要安插 Info block 進來，也就是說雖然本文中有些段落不在藍色的 Info 區塊內，但在原文中其屬於補充段落。 至於綠色的 Tips block 則是我個人的補充筆記
+本篇內的 Info block 為原文中的補充段落，我全部都有翻，但會依照前後文的語境來決定要不要安插 Info block 進來，也就是說雖然本文中有些段落不在藍色的 Info 區塊內，但在原文中其屬於補充段落。 至於綠色的 Tips block 則是我個人的補充筆記，其不一定百分百正確，如果發現有誤還請麻煩告知我一下~
 
 ## 3.1. Machine-Level CSRs
 
@@ -2033,8 +2033,20 @@ PMP 檢查適用於所有「有效特權模式」為 S 或 U 的存取，例如�
 任何違反 PMP 地操作都會在處理器端「精確地」觸發例外
 
 ::: tip  
-- PMA 面向「硬體性能與正確性」，像是快取、對齊、總線序等物理屬性。 可能在匯流排仲裁器 / MMC / AXI slave 等裡面硬編，對軟體完全透明
-- PMP 則面向「安全與隔離」，像是哪個 privilege、哪段程式能碰哪塊記憶體等。 做在每顆核內的 CSR + 比較器，與核心 pipeline 同步，比較容易標準化  
+- PMA
+  - 面向「硬體性能與正確性」，用於表明「做不做得到」
+    - 像是快取、對齊、總線序等物理屬性。 可能在匯流排仲裁器 / MMC / AXI slave 等裡面硬編，對軟體完全透明
+  - 通常難以被修改
+    - 它基本上是底層硬體的內建屬性，不會隨著執行環境的改變而改變，只有少數平台可以支援部分的動態配置（透過指定介面把請求傳給 M-mode 的驅動）
+    - 也因此基本上沒有提供相關的 CSR，由平台特定的 M-mode 程式負責解析 PMA，照 SBI 的 spec 所述應該是 Device Tree 或 ACPI 之類的（不確定）
+- PMP 
+  - 面向「安全與隔離」，用於表明「允不允許做」
+    - 像是哪個 privilege、哪段程式能碰哪塊記憶體等。 做在每顆核內的 CSR + 比較器，與核心 pipeline 同步，比較容易標準化
+  - 對於 `L=0` 的區域 M-mode 能隨時更新 `pmpcfg/pmpaddr`，S-mode 也可以透過 SBI 做修改
+    - 對於更多 PMP 的操作可能可以看看下面這幾篇?
+      - [RISC-V Memory Protection: Diving Deep into the Complexities](https://incoresemi.com/risc-v-memory-protection-diving-deep-into-the-complexities/)
+      - [[RISC-V] [tech-tee] [RISC-V] [tech-privileged] comments on PMP enhancements](https://lists.riscv.org/g/tech-privileged/topic/risc_v_tech_tee_risc_v/71271792?utm_source=chatgpt.com)
+      - [Verifying RISC-V Physical Memory Protection](https://arxiv.org/abs/2211.02179)
 :::
 
 ### 3.7.1. Physical Memory Protection CSRs
