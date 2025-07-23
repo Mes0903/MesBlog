@@ -1460,7 +1460,7 @@ sw a0, 0(t1)     # New value.
 `ECALL` 針對不同特權模式產生不同的例外，讓系統能夠選擇性地委派處理這些 environment call 例外。 以類 Unix 作業系統為例，常見的做法是將 `environment-call-from-U-mode` 例外委派給 S-mode 處理，而不委派其他類型  
 :::
 
-`EBREAK` 指令通常由除錯器使用，用來將控制權轉回除錯環境。 除非外部除錯環境另行接管，否則 `EBREAK` 會觸發一個 breakpoint 例外，並不執行其他任何操作
+`EBREAK` 指令通常由除錯器使用，用來將控制權轉回除錯環境。 除非外部的除錯環境攔截並接管了這條指令，否則 `EBREAK` 僅會觸發一個 breakpoint 例外，本身不會執行其他操作
 
 ::: info  
 如本手冊第 I 卷中 "C" 標準壓縮指令擴充所描述，`C.EBREAK` 指令的操作與 `EBREAK` 指令相同  
@@ -1480,12 +1480,16 @@ sw a0, 0(t1)     # New value.
 `TSR=1`（Trap SRET bit）表示不允許從 S-mode 使用 `SRET` 返回，因此也要觸發非法指令例外  
 :::
 
-`xRET` 指令可以在其對應的特權模式 `x` 或更高模式中執行。執行低特權模式的 `xRET` 指令時，會從暫存的中斷允許狀態與特權模式堆疊中回復（pop）相應的值。 若試圖在低於 `x` 的特權模式下執行 `xRET` 指令，則會觸發 illegal-instruction 例外。 除了如第 3.1.6.1 節所述操作特權堆疊之外，`xRET` 還會將 `pc` 設為對應 `xepc` 暫存器中儲存的位址
-
-若系統支援 A 擴充（Atomic extension），則 `xRET` 指令可以清除任何未完成的 `LR` 位址保留，但不強制必須清除。 若 trap handler 需要清除保留，應該在執行 `xRET` 前顯式地這麼做（例如透過執行一個假的 `SC` 指令）
+`xRET` 指令可以在其特權模式 `x` 或更高的特權模式中執行。 如果在較高特權層執行一條「較低特權層的 `xRET`」，處理器會從該較低特權層的「中斷啟用欄位」與「特權堆疊」中彈出（pop）狀態，並依此恢復中斷啟用位與特權級。 若試圖在低於 `x` 的特權模式下執行 `xRET` 指令，則會觸發 illegal-instruction 例外。 除了第 3.1.6.1 節所述的特權堆疊操作之外，`xRET` 還會將 `pc` 設為儲存在對應 `xepc` 暫存器中的位址
 
 ::: tip  
-在 RISC-V 的原子操作中，`LR`/`SC`（Load-Reserved / Store-Conditional）搭配使用，用來實作 atomic CAS 等功能。 `LR` 會建立一個地址保留區，之後的 `SC` 只有在這個區域沒有被其他 CPU 或 trap 影響過的情況下才會成功
+簡單來說執行一條「返回到較低特權層 (`x`) 的 `xRET`」時，硬體會從 `xPIE` / `xPP` 欄位（一格的硬體堆疊），把先前保存的 `IE` 位與特權級拿出來做 restore。 有關特權堆疊（privilege stack），詳細請回去看 3.1.6.1 節的描述  
+:::
+
+若系統支援 A 擴充（Atomic extension），則 `xRET` 指令可以清除任何未完成的 `LR` 位址保留，但不強制要清除。 若 trap handler 需要清除保留，應該在執行 `xRET` 前就顯式地清除它（例如透過執行一個假的 `SC` 指令）
+
+::: tip  
+在 RISC-V 的原子操作中，`LR`/`SC`（Load-Reserved / Store-Conditional）要搭配使用，以實作 atomic CAS 等功能。 `LR` 會建立一個地址保留區，之後的 `SC` 只有在這個區域沒有被其他 CPU 或 trap 影響過的情況下才會成功
 
 問題是，如果中間發生 trap 而跳出該流程，這個保留區仍可能繼續存在。 這裡說的是：`xRET` 可以幫忙清掉這個保留，但不一定會清，因此如果你要保證清除，要自己在 handler 中用 `SC` 把它清掉，否則可能會造成之後的 `SC` 意外成功或失敗  
 :::
@@ -1504,31 +1508,52 @@ sw a0, 0(t1)     # New value.
 
 `WFI`（Wait for Interrupt）指令會通知硬體實作，目前這個 hart 可以暫停執行，直到有中斷可能需要被處理再回來繼續。 執行 `WFI` 也可以讓硬體平台知道，應優先將合適的中斷導向這個 hart。 `WFI` 可以在所有的特權模式中使用，也可以選擇性地開放給 U-mode 使用。 當 `mstatus` 中的 `TW` 位元為 1 時，執行這條指令可能會觸發 illegal-instruction 例外，如第 3.1.6.6 節所述
 
-當 hart 處於暫停狀態時，只要有已啟用的中斷進入了 pending 狀態，或之後變為 pending 狀態，則由 interrupt trap 就會在 `WFI` 的下一條指令發生。 也就是說，執行會跳進中 interrupt handler，並將 `mepc` 設為 `pc + 4`
+當 hart 處於 stalled 狀態時，若某個已啟用的中斷在此期間被掛起，則該中斷陷入（interrupt trap）會於下一條指令處發生。 也就是說其會接著開始執行 trap handler，而 `mepc` 則會被設成 `pc + 4`（停住的指令位址加上 4 bytes）
 
 :::: info  
-interrupt trap 會發生在 `WFI` 指令的下一條指令上，因此從 trap handler 簡單返回後，會繼續執行 WFI 之後的程式碼
+之所以安排在「下一條指令」才取用中斷，是為了在 trap handler 結束後，只需從 trap handler 中返回即可繼續執行 `WFI` 之後的程式碼
 
 ::: tip  
-這邊的 interrupt trap 指的是由 interrupt 觸發的 trap，其實我覺得可以直接寫成 interrupt，但它應該是想強調不是 exception 才這樣寫？
+這邊的 interrupt trap 應該是指由 interrupt 觸發的 trap，其實我覺得可以直接寫成 interrupt，但它應該是想強調不是 exception 才這樣寫？ 我不確定，有人知道的話還請告訴我一下XD
 
 `WFI` 被視為「同步指令」，但不會馬上導致跳轉。 當中斷來了，硬體會讓 trap 發生在下一條指令，而不是打斷 `WFI` 這條指令本身，因此 `mepc` 指向的是 `WFI` 的下一條指令（`pc + 4`），這樣從 trap handler 返回後就可以直接繼續執行 `WFI` 之後的程式了  
 :::  
 ::::
 
-即使沒有任何啟用中的中斷變成 pending 狀態，實作上也允許在任何理由下離開 `WFI` 恢復執行。 因此，將 `WFI` 指令實作成一條 NOP（空指令）也是合法的
+即使沒有任何啟用中的中斷被掛起，實作上也允許在任何理由下離開 `WFI` 恢復執行。 因此，將 `WFI` 指令實作成一條 NOP（空指令）也是合法的
 
 :::: info  
-如果實作在執行 `WFI` 時沒有讓 hart 暫停，那麼中斷就會在 idle loop 中的某條指令上發生 trap，而從 handler 簡單返回後，idle loop 將會繼續執行
+如果實作在執行 `WFI` 時沒有讓 hart 暫停，那麼中斷就會在包含 `WFI` 的 idle loop 中的某條指令上發生，而從 trap handler 簡單返回後，idle loop 將會繼續執行
 
 ::: tip  
 `WFI` 通常要搭配一個 idle loop 使用，以達到節省電量之類的效果，所以這邊才會提到 idle loop  
 :::
 ::::
 
-`WFI` 指令也可以在中斷被停用的情況下執行。 它的運作不應受到 `mstatus` 中全域中斷位元（`MIE`、`SIE`）或 `mideleg` 委派暫存器的影響，也就是說，只要有本地啟用的中斷變成 pending，即使該中斷已被委派到較低的特權模式，hart 仍必須恢復執行； 但它應該要尊重個別中斷的啟用狀態（例如 `MTIE`），換句話說若中斷已 pending 但尚未被個別啟用，實作應避免讓 hart 恢復執行。 無論各特權模式中的全域中斷啟用狀態為何，只要有本地啟用的中斷進入 pending，`WFI` 就必須恢復執行
+`WFI` 指令也可以在中斷被停用的情況下執行。 它的運作不應受到 `mstatus` 中全域中斷位元（`MIE`、`SIE`）或 `mideleg` 委派暫存器的影響，也就是說，只要有本地啟用的中斷被掛起，即使該中斷已被委派到較低的特權模式，hart 仍必須恢復執行； 但它應該要尊重個別中斷的啟用狀態（例如 `MTIE`），換句話說若中斷已被掛起，但尚未被個別啟用，實作應避免讓 hart 恢復執行。 無論各特權模式中的全域中斷啟用狀態為何，只要有本地啟用的中斷被掛起，`WFI` 就必須恢復執行
 
-如果喚醒 hart 的事件沒有導致 interrupt trap，則執行將從 `pc + 4` 繼續，這時軟體必須自行判斷接下來要做什麼，包括在沒有可處理事件時回到 `WFI` 繼續重複等待
+::: tip  
+這段說的是在 `WFI` 指令造成停機的情況下，哪些中斷會讓處理器重新開始執行、哪些不會：
+
+- 即使全域中斷被關掉，也允許執行 `WFI`
+  - `WFI` 指令可以在 `mstatus` 的 `MIE`（Machine）或 `SIE`（Supervisor）等全域中斷啟用位為 0 時執行
+- WFI 對「全域中斷啟用位」必須視而不見
+  - 不論 `mstatus.MIE/SIE` 是 0 還是 1，也不論中斷是否已經透過 `mideleg` 委派到較低特權層，只要某個「本層已個別啟用」的中斷被掛起，就必須喚醒 hart
+- 但要尊重「個別中斷啟用位」
+  - 以 Machine‑timer 為例，必須同時滿足：
+    - `mie.MTIE = 1`（個別啟用）
+    - 該中斷被掛起
+  - 若該中斷被掛起，但 `MTIE = 0`，則實作應避免（should avoid）喚醒 hart
+- 無論各層全域位元怎麼設，只要本層個別啟用，就必須喚醒，例如：
+  - 處於 M‑mode，且 `mstatus.MIE = 0` 但 `mie.MEIE = 1`。 則，當外部中斷被掛起 → 要喚醒
+  - 處於 S‑mode，且 `sstatus.SIE = 0` 但 `sie.SEIE = 1`。 則，當該中斷被掛起 → 還是要喚醒
+
+簡單來說，`WFI` 只看「這個特權層裡的個別中斷（`xie` 內的對應 bit）是否被啟用」。 只要有啟用且中斷被掛起，就必須結束等待，喚醒 hart，不能因為全域開關是 0 或因為中斷已委派而選擇繼續睡。 但同樣地因為全域開關是 0，因此其仍不會進到 trap handler 處理該中斷，該中斷會維持掛起狀態
+
+而如果全域開關是 1 但該中斷對應的啟用位為 0，則實作「應避免」喚醒 hart，但如果還是喚醒了 hart 也合法  
+:::
+
+如果喚醒 hart 的事件沒有導致 interrupt trap，則 hart 將從 `pc + 4` 繼續執行，這時軟體必須自行判斷接下來要做什麼，包括在沒有可處理的事件時回到 `WFI` 繼續重複等待
 
 ::: tip  
 不是所有喚醒都會跳進 trap handler，有些只是「喚醒但沒有中斷可處理」，此時 `WFI` 後的程式必須自己判斷狀況，例如查看 `mip` 或 `sip` 是否有有效中斷。 如果什麼都沒有，就可以 `jump` 回 `WFI`，形成 idle loop  
@@ -1541,7 +1566,7 @@ interrupt trap 會發生在 `WFI` 指令的下一條指令上，因此從 trap h
 意思是你可以預先儲存（或捨棄）上下文，再進入 `WFI`，之後喚醒時直接執行處理程式，而不需要進入 trap handler 做標準的上下文切換，以省下上下文保存開銷  
 :::
 
-由於實作可以將 `WFI` 實作為 `NOP`，軟體在 `WFI` 之後必須主動檢查是否有 pending 但尚未啟用的中斷，若沒有適合的中斷，應回到 `WFI` 繼續等待。 這可以透過查詢 `mip` 或 `sip` 暫存器來確認在 M-mode 或 S-mode 下是否有中斷存在
+由於實作可以將 `WFI` 實作為 `NOP`，軟體在 `WFI` 之後必須主動檢查是否有被掛起但尚未啟用的中斷，若沒有適合的中斷，應回到 `WFI` 繼續等待。 這可以透過查詢 `mip` 或 `sip` 暫存器來確認在 M-mode 或 S-mode 下是否有中斷存在
 
 `WFI` 的運作不受中斷委派暫存器的設定影響。 `WFI` 的設計允許實作在執行該指令時，立即或延遲地進入較高特權模式，例如讓系統從目前狀態進入 M-mode，以進一步進入低功耗狀態
 
@@ -1556,11 +1581,10 @@ interrupt trap 會發生在 `WFI` 指令的下一條指令上，因此從 trap h
 
 ![（Figure 29. SYSTEM instruction encodings designated for custom use.）](image/3_3_4.png)
 
-如圖 29 所示，`SYSTEM` 的 major opcode 的某個子區段被保留作為自訂用途。 標準建議這些自訂指令也使用第 29、28 位元來指定所需的最低特權模式，就像其他 `SYSTEM` 指令一樣
+如圖 29 所示，`SYSTEM` 的 major opcode 的某個子區段被保留作為自訂用途。 標準建議這些自訂指令也使用第 28、29 位來指定所需的最低特權模式，就像其他 `SYSTEM` 指令一樣
 
 ::: tip  
-opcode 為 `1110011` 的指令屬於 `SYSTEM` 指令，你可以在 [RV32/64G Instruction Set Listings
-](https://github.com/riscv/riscv-isa-manual/blob/main/src/rv-32-64g.adoc) 中直接搜尋 `1110011` 看看具體有哪些指令，最常見的如 `ECALL` 和 `EBREAK` 都是 `SYSTEM` 指令，還有 Zicsr Standard Extension 內的指令也都是  
+opcode 為 `1110011` 的指令屬於 `SYSTEM` 指令，你可以在 [RV32/64G Instruction Set Listings](https://github.com/riscv/riscv-isa-manual/blob/main/src/rv-32-64g.adoc) 中直接搜尋 `1110011` 看看具體有哪些指令，最常見的如 `ECALL` 和 `EBREAK` 都是 `SYSTEM` 指令，還有 Zicsr Standard Extension 內的指令也都是  
 :::
 
 ## 3.4. Reset
