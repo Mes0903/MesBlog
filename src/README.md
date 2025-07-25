@@ -3,7 +3,7 @@ home: true
 title: Mes's Blog
 heroText: 𝓜𝓮𝓼'𝓼 𝓑𝓵𝓸𝓰
 tagline: 𝓑𝓮𝓲𝓷𝓰  𝓣𝓸𝔀𝓪𝓻𝓭𝓼  𝓓𝓮𝓪𝓽𝓱
-layout: BlogHome
+layout: Blog
 bgImage: /kikuri.jpg
 icon: house
 heroFullScreen: true
