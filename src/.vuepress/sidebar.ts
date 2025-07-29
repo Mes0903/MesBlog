@@ -263,7 +263,8 @@ export default sidebar([
       "AboutMovingForward/",
       "RasterI/",
       "ShionGraduate/",
-      "FeelWithTheHeart/"
+      "FeelWithTheHeart/",
+      "AboutTranslation/"
     ],
   },
 ]);
