@@ -9,7 +9,7 @@ category: essay
 
 ![（鹽寶的會員好像要關了，紀錄一下，可惜沒滿 4 年）](image/image.png)
 
-最近由於在看 jserv 老師那邊要我協助做 code review，因此開始閱讀 [linmo](https://github.com/sysprog21/linmo) 的 codebase，但 pull 下來後發現我對 RISC-V 的 ISA 還不夠熟，離上次刻 OS 也有點久遠了，所以在閱讀 codebase 前想先回去閱讀一下文件和教材
+前陣子由於 jserv 老師那邊要我協助做 code review（結果過了一個半月我還沒開始==），因此開始閱讀 [linmo](https://github.com/sysprog21/linmo) 的 codebase，但 pull 下來後發現我對 RISC-V 的 ISA 還不夠熟，離上次刻 OS 也有點久遠了，所以在閱讀 codebase 前想先回去閱讀一下文件和教材
 
 由於之前正在準備 [semu](https://github.com/sysprog21/semu) SMP 相關的議題，所以有先閱讀過 [S-mode 的 ISA](https://mes0903.github.io/risc-v/Supervisor-Level-ISA/)，但當時閱讀發現自己對於 M-mode ISA 的掌握也是東漏西漏的，所以這次就決定先把 M-mode ISA 讀一下。 而由於我的腦袋實在不太好使，只是讀過去的話往往當天就會忘掉了，加上 RISC-V 的 ISA 裡面大大小小的規則加起來其實也不少，所以就還是寫了[翻譯與筆記](https://mes0903.github.io/risc-v/Machine-Level-ISA/)
 
