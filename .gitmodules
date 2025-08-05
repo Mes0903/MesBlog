@@ -5,3 +5,6 @@
 [submodule "vuepress-theme-hope"]
 	path = vuepress-theme-hope
 	url = git@github.com:Mes0903/vuepress-theme-hope.git
+[submodule "src/OS/xv6-riscv-book-zh-TW"]
+	path = src/OS/xv6-riscv-book-zh-TW
+	url = git@github.com:Mes0903/xv6-riscv-book-zh-TW.git

@@ -236,6 +236,23 @@ export default sidebar([
           },
         ]
       },
+      {
+        text: "xv6 riscv book 繁體中文翻譯",
+        collapsible: true,
+        prefix: "/OS/xv6-riscv-book-zh-TW/",
+        children: [
+          "",
+          "chapter1/",
+          "chapter2/",
+          "chapter3/",
+          "chapter4/",
+          "chapter5/",
+          "chapter6/",
+          "chapter7/",
+          "chapter8/",
+          "chapter9/",
+        ]
+      },
     ],
   },
   {
