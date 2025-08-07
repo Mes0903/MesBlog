@@ -1,7 +1,7 @@
 [submodule "src/Cpp-Miner"]
 	path = src/Cpp-Miner
 	url = git@github.com:Mes0903/Cpp-Miner.git
-	branch = standard-markdown
+	branch = my-blog
 [submodule "vuepress-theme-hope"]
 	path = vuepress-theme-hope
 	url = git@github.com:Mes0903/vuepress-theme-hope.git
