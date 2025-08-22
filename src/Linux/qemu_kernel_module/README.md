@@ -9,9 +9,23 @@ category: Linux
 
 ## 前言
 
-起因是最近在閱讀 lkmpg，原本是使用 UML 來做練習，但由於 UML 缺了一些東西，例如它不會有 `read_cr0()` 這類依賴於硬體平台的函式，或是它也沒有 `dmesg` 可以用，所以就決定還是用 qemu 來做練習，也因此本文會以 lkmpg 當中的例子來示範
+起因是最近在閱讀 lkmpg，原本是使用 UML 來做練習，但由於 UML 缺了一些東西，例如它不會有 `read_cr0()` 這類依賴於硬體平台的函式，所以後來就決定還是用 qemu 來做練習，也因此本文會以 lkmpg 當中的例子來示範
 
 基本上建環境的流程與之前[〈實作一個回傳物理位址的系統呼叫〉](../physical_address_syscall/README.md)的那篇差不多，但這篇一樣會把全部的步驟記錄下來，方便之後閱讀
+
+整個練習的資料夾架構如下：
+
+```shell
+mes@mes:~/MesRepo/lkmpg-demo$ tree -L 1
+.
+├── busybox-1.36.1
+├── busybox-1.36.1.tar.bz2
+├── initramfs
+├── initramfs.cpio.gz
+├── linux-6.8
+├── linux-6.8.tar.xz
+└── lkmpg
+```
 
 ## Build Linux Kernel
 
