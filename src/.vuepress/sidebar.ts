@@ -111,6 +111,7 @@ export default sidebar([
     children: [
       "The_mind_behind_Linux/",
       "physical_address_syscall/",
+      "qemu_kernel_module/",
     ],
   },
   {

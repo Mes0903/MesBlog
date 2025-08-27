@@ -270,3 +270,6 @@ B-splines 類似於對貝塞爾曲線的擴展，他的能力比貝塞爾曲線�
 老師的上課錄影中有個 demo 影片，但我找不到下載的網址，[具體來說可以看這段影片](https://youtu.be/Zkx1aKv2z8o?t=1114)，看完影片應該會比較好理解。 另外由於有兩個方向，因此也需要有兩個 $t$ 參數，講義上將他們計作 $u$ 與 $v$，透過時間 $u$ 算出 $x$ 方向的曲線，並透過 $v$ 算出 $y$ 方向的曲線：
 
 ![](image/beizer_surface2.png)
+
+### Mesh Operations: Geometry Processing
+
