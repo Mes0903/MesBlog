@@ -320,3 +320,29 @@ DRM 的「原子化模式設定（atomic mode setting）」在某種程度上解
 因此，當合成器要設定某個顯示模式時，會一次性地設定整條管線中各階段的 atomic state，並一併套用。 若成功，顯示輸出就會相應更新。 對於連續的 page flipping 操作，合成器會先複製目前的狀態，把其中的 framebuffer 換成新的，然後套用這份新狀態。 再次進行 page flipping 時，核心的 DRM 程式碼仍會走一遍 atomic check／atomic commit 的流程，但其開銷會比完整的 mode-setting 小很多
 
 DRM 的狀態檢查階段獨立於硬體的當前狀態，且不會修改它。 若某個 atomic 狀態的檢查失敗，合成器會收到錯誤碼，但顯示輸出保持不變。 合成器也可以只做驗證而不提交，藉此事先彙整出一份受支援的組態清單。 想進一步閱讀的話，LWN 在 2015 年已對 atomic mode setting 的內部運作做過詳細介紹了，見 [part 1](https://lwn.net/Articles/653071/) 與 [part 2](https://lwn.net/Articles/653466/)
+
+::: tip  
+「檢查不改動」確保了可預先探測：合成器能離線地嘗試各種組合（解析度、plane 佈局、格式等），建立白名單，實際切換時只提交已知可行的原子狀態，降低黑屏或花屏風險  
+:::
+
+### Additional features
+
+在先前討論 plane 時，我們假設所有硬體上的 plane 都是相同的，但這其實不一定是對的。 通常會有一個稱為 primary plane 的平面用於類 RGB 的色彩格式，且覆蓋整個顯示畫面。 合成器會設定 primary plane 來顯示它的螢幕影像
+
+但多數硬體還會提供一個額外的鼠標用平面，稱為 cursor plane。 這個平面只會覆蓋一小塊區域，並位於 primary plane 之上。 顧名思義，合成器使用 cursor plane 來顯示滑鼠指標影像，因此能在不改變 primary plane 的情況下自由移動該指標
+
+位於 primary 與 cursor plane 之間的是 overlay planes，它們大小各異，且常支援類 YUV 的色彩格式。 這讓它很適合用較低的 CPU 開銷來顯示視訊資料串流。 因此，通常視訊播放器應用程式會提供含有 YUV 基礎像素資料的緩衝物件給合成器
+
+合成器會用該像素資料建立一個 framebuffer 並配置給 overlay plane。 此平面會在硬體中掃描 YUV 的像素資料，並將其轉換為 RGB 的色彩。 透過 dma-buf，視訊播放器可以把硬體視訊解碼器產生的各個 YUV 幀直接轉交給合成器，讓整個視訊處理都交由硬體完成
+
+若顯示更新的延遲為關鍵考量，將 mode-setting 能力直接交給單一應用程式會更有幫助。 為此，合成器會把該功能出租（lease）給應用程式。 當某個應用持有有效的 DRM lease 時，它便能完全控制整條 mode-setting 管線。 這對需要嚴格協調其內建顯示器的輸出頻率與延遲、以維持 3D 幻覺效果的 3D 頭戴式裝置特別有用。 DRM lease 的租約可能會到期或被撤銷，因此最終 mode-setting 的主控權仍在合成器手上
+
+雖然現代合成器使用 Wayland 作為協定，但 X Window System 的應用程式還是很常見。 Xwayland 是在 Wayland 工作階段中執行的 X 伺服器，它透過在 Wayland 與 X 協定之間做轉譯，讓 X 應用程式得以透明地參與 Wayland 工作階段。 大多數的使用情境而言，這種方式是可行的，但還是有些例外
+
+例如 Xwayland 無法模擬螢幕擷取與螢幕分享。 X 應用可以存取 X 工作階段的整棵視窗樹，因此很容易進行螢幕擷取。 基於安全考量，Wayland 協定不允許應用程式讀取整個螢幕或其他應用程式的視窗。 於是 Wayland 合成器會提供專門的實作來擷取或分享螢幕內容，常見實作包含 [PipeWire](https://www.pipewire.org/)、[VNC](https://en.wikipedia.org/wiki/Virtual_Network_Computing) 或 [RDP](https://en.wikipedia.org/wiki/Remote_Desktop_Protocol)
+
+若沒有在執行的合成器，Linux 會顯示文字主控台。 DRM 能支援核心的 framebuffer 主控台來輸出文字，這個 DRM 的 fbdev 模擬就像一個 user space 的 DRM 用戶端，但它完全在核心中執行。 它也提供舊式的 framebuffer 介面，例如 `/dev/fb0`。 不過，fbdev 與 DRM 的 fbdev 相容層正走向退場，目前已有把大量主控台功能搬到 user space 的[構想](https://airlied.blogspot.com/2022/09/lpc-2022-gpu-bof-user-console-and.html)
+
+在本文撰寫之時，Linux 圖形領域快速發展的一個主題是 [HDR（High Dynamic Range）](https://en.wikipedia.org/wiki/High-dynamic-range_rendering)算繪。 它能以更細膩的色彩與光照呈現輸出，因而顯示出以傳統算繪常被喪失的細節。 對 HDR 的支援將使 Linux 能滿足專業圖形藝術家的需求。 當前支援仍不一致，但[在遊戲中已可使用 HDR](https://twitter.com/Plagman2/status/1610200412854046720?t=5fb1Oi7zgMj8gOWGod8kWA)，而各種 Linux 桌面也[開始實作 HDR](https://zamundaaa.github.io/wayland/2023/12/18/update-on-hdr-and-colormanagement-in-plasma.html) 了
+
+至此，我們已沿著現代 Linux 圖形堆疊把應用程式內容送上螢幕 —— 從算繪與記憶體管理，到合成與模式設定。 不過這其實只是淺嘗輒止，這個堆疊仍在不斷演進，持續加入對新功能與新硬體的支援
