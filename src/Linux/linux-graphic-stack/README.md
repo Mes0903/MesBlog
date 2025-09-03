@@ -172,17 +172,17 @@ dumb buffer 通常是線性、可 `mmap` 的顏色緩衝，沒有平鋪/壓縮�
 
 Mesa 的軟體算繪器也類似：輸入的緩衝物件都位於系統記憶體，由系統 CPU 來處理著色器指令。 輸出緩衝則是用來存放算繪結果影像的 dumb-buffer 物件。 雖然這既不快也不花俏，但對於不支援加速算繪的簡單硬體，已足以跑起現代的桌面環境
 
-至此，我們已經走完應用程式在算繪方面的圖形堆疊了。 在完成場景圖的走訪之後，應用程式的輸出緩衝物件中就包含了它要顯示的視覺化場景或資料，但這個緩衝還沒有被送上螢幕。 不論是加速或 dumb 的路徑，要把緩衝送上螢幕都需要經過合成（compositing）與模式設定（mode setting），這構成了圖形堆疊的另一半。 在第二部分，我們會談 Wayland 的合成、用 DRM 設定顯示模式，以及圖形堆疊中的其他一些功能
+至此，我們已經走完應用程式在算繪方面的圖形堆疊了。 在完成場景圖的走訪之後，應用程式的輸出緩衝物件中就包含了它要顯示的視覺化場景或資料，但這個緩衝還沒有被送上螢幕。 不論是加速或 dumb 的路徑，要把緩衝送上螢幕都需要經過合成（compositing）與模式設定（mode-setting），這構成了圖形堆疊的另一半。 在第二部分，我們會談 Wayland 的合成、用 DRM 設定顯示模式，以及圖形堆疊中的其他一些功能
 
 ## The Linux graphics stack in a nutshell, part 2
 
-要把應用程式的圖形輸出顯示到螢幕上，必須進行合成（compositing）與模式設定（mode setting），而且要在各個元件之間正確同步，並維持較低的額外開銷。 接下來我們將檢視 Linux 圖形堆疊中的這些元件。 上一章我們沿著圖形流程從應用程式走到了 Mesa，還使用了核心 [Direct Rendering Manager（DRM）](https://en.wikipedia.org/wiki/Direct_Rendering_Manager)子系統的記憶體管理功能。 最終我們得到了存放在輸出緩衝（output buffer）中的應用程式圖形資料，現在是時候將這張影像顯示給使用者了
+要把應用程式的圖形輸出顯示到螢幕上，必須進行合成（compositing）與模式設定（mode-setting），而且要在各個元件之間正確同步，並維持較低的額外開銷。 接下來我們將檢視 Linux 圖形堆疊中的這些元件。 上一章我們沿著圖形流程從應用程式走到了 Mesa，還使用了核心 [Direct Rendering Manager（DRM）](https://en.wikipedia.org/wiki/Direct_Rendering_Manager)子系統的記憶體管理功能。 最終我們得到了存放在輸出緩衝（output buffer）中的應用程式圖形資料，現在是時候將這張影像顯示給使用者了
 
 ### Compositing
 
 user space 的應用程式幾乎不會自己把輸出顯示出來，而是交給螢幕合成器來完成。 合成器（compositor）是一個系統服務，它會接收每個應用程式的輸出緩衝，並把它們繪製成螢幕上的影像。 視窗的配置方式取決於合成器的實作，但最常見的是堆疊（[stacking](https://en.wikipedia.org/wiki/Stacking_window_manager)）與平鋪（[tiling](https://en.wikipedia.org/wiki/Tiling_window_manager)）。 合成器也負責收集使用者的輸入，並把輸入轉送給目標應用程式
 
-過去，合成以及圖形堆疊中的幾乎所有其他事情，都由 [X Window System](https://en.wikipedia.org/wiki/X_Window_System) 提供，X 實作了一種用於把圖形顯示到螢幕上的網路協定。 由於「其他事情」包含繪圖、模式設定、螢幕分享，甚至[列印](https://www.x.org/releases/X11R6.8.2/doc/Xprint.7.html)，X 因此承受了軟體臃腫的問題，也難以因應圖形硬體與 Linux 系統的變化，於是需要一個更輕量的替代方案
+過去，合成以及圖形堆疊中的幾乎所有其他事情，都由 [X Window System](https://en.wikipedia.org/wiki/X_Window_System) 提供，X 實作了一種用於把圖形顯示到螢幕上的網路協定。 由於「其他事情」包含繪圖、mode-setting、螢幕分享，甚至[列印](https://www.x.org/releases/X11R6.8.2/doc/Xprint.7.html)，X 因此承受了軟體臃腫的問題，也難以因應圖形硬體與 Linux 系統的變化，於是需要一個更輕量的替代方案
 
 它的現代接班人是 [Wayland](https://wayland.freedesktop.org/)，其同樣採用了 client‑server 的設計，應用程式會作為用戶端，向合成器所提供的顯示服務提出請求。 Wayland 的參考合成器是 Weston，但實務上更常見的是 GNOME 的 [Mutter](https://gitlab.gnome.org/GNOME/mutter) 或 KDE 的 [KWin](https://invent.kde.org/plasma/kwin)
 
@@ -244,7 +244,7 @@ Wayland 以 `wl_shm` 共享記憶體途徑分享像素：客戶端將一段可�
 
 ### Pixels to the monitor
 
-在把螢幕上的影像算繪出來之後，合成器必須把它顯示給使用者看。 DRM 的模式設定（mode setting）程式碼負責控制從圖形記憶體讀取像素資料並將其送往輸出裝置的所有面向。 為了達成這件事，每個驅動程式都會建立一條管線（pipeline），用來描述像素資料在圖形硬體中的流動。 管線中的每個階段都對應到一段硬體功能，負責在資料前往顯示器的途中處理像素資料
+在把螢幕上的影像算繪出來之後，合成器必須把它顯示給使用者看。 DRM 的 mode-setting 程式碼負責控制從圖形記憶體讀取像素資料並將其送往輸出裝置的所有面向。 為了達成這件事，每個驅動程式都會建立一條管線（pipeline），用來描述像素資料在圖形硬體中的流動。 管線中的每個階段都對應到一段硬體功能，負責在資料前往顯示器的途中處理像素資料
 
 必要的階段包括 framebuffer、plane、CRTC、encoder 與 connector，下面會分別加以說明。 要讓顯示輸出正常運作，這些階段之中每一個至少都要有一個啟用中的實例。 不過，大多數硬體提供的功能都能滿足最低需求，並允許視需要啟用或停用管線中的各階段。 DRM 架構為每一個階段都提供了軟體抽象，讓驅動程式可以在其上實作
 
@@ -269,7 +269,7 @@ framebuffer 是被 scanout 讀取的像素來源，它同時攜帶像素格式�
 
 因此，管線的下一階段會在整體畫面中定位這個 scanout buffer。 在 DRM 術語裡，這個階段稱為 plane，它負責設定該 scanout buffer 的位置、方向與縮放參數。 視硬體而定，系統可能會有多個使用不同framebuffer 的 plane。 所有啟用中的 plane 都會把它們的像素輸出送往管線的第三階段，因歷史因素該階段被稱為 CRTC（cathode-ray tube controller）
 
-CRTC 負責所有與顯示模式設定相關的事項。 DRM 驅動會以某個顯示模式來設定（program）CRTC 的硬體，並將它與所有啟用中的 plane 與輸出端相連。 系統也可以同時存在多個設定各異的 CRTC，具體配置僅受限於硬體特性
+CRTC 負責所有與顯示模式的設定相關的事項。 DRM 驅動會以某個顯示模式來設定（program）CRTC 的硬體，並將它與所有啟用中的 plane 與輸出端相連。 系統也可以同時存在多個設定各異的 CRTC，具體配置僅受限於硬體特性
 
 各個 plane 會以疊放的方式排列，因此它們可以彼此重疊，或覆蓋輸出畫面的不同區域。 依據已設定的顯示模式與各 plane 的位置，CRTC 硬體會從這些 plane 取出像素資料，在需要時對重疊的 plane 進行混合，然後把結果傳遞到其輸出端
 
@@ -281,10 +281,42 @@ plane 可視為可定位/縮放/（必要時）混合的圖層。 CRTC 依 plane
 
 輸出端由 encoder 與 connector 這兩種物件表示。 顧名思義，encoder 是把像素資料編碼成特定輸出訊號的硬體元件。 某個 encoder 會關聯到一個特定的 connector，後者代表與輸出裝置之間的實體連結，例如接了螢幕的 HDMI 或 VGA 連接埠。 connector 也會提供輸出裝置支援的顯示模式、實體解析度、色彩空間等資訊。 掛在同一個 CRTC 上的多個輸出端，會在不同的輸出裝置上鏡像顯示同一個 CRTC 的畫面
 
-下圖示範了一條簡單的模式設定（mode-setting）管線，除了主畫面之外，還有一個專用於鼠標的 plane，以及作為 scanout buffers 的緩衝物件。 圖中的箭頭顯示了像素資料從緩衝物件一路流向 VGA connector 的邏輯流程，這是針對較舊的獨立顯示卡的一種典型的模式設定管線
+下圖示範了一條簡單的 mode-setting 管線，除了主畫面之外，還有一個專用於鼠標的 plane，以及作為 scanout buffers 的緩衝物件。 圖中的箭頭顯示了像素資料從緩衝物件一路流向 VGA connector 的邏輯流程，這是針對較舊的獨立顯示卡的一種典型的 mode-setting 管線
 
 ::: tip  
 典型的配置包含：主 framebuffer/plane（桌面內容）、cursor plane（硬體指標，低延遲且不需重複重繪整個畫面）、CRTC（時序/掃描）、encoder（轉為 VGA/HDMI/DP 等訊號）與 connector（實體埠）。 scanout buffer 指的是被掃描輸出單元直接讀取的像素緩衝，圖示強調了資料沿著 KMS 管線的方向性與分工  
 :::
 
 ![](image/kms-pipeline.png)
+
+### Pipeline setup
+
+DRM 驅動並不負責決定連接與配置 mode-setting 管線中各個階段的策略，這件事會交由 user space 的程式處理，也就是回到合成器（compositor）的部分。 作為其初始設定的一部分，合成器會開啟 `/dev/dri` 底下的裝置檔（例如 `/dev/dri/card1`），並呼叫對應的 `ioctl()` 來設定顯示管線。 它也會自某個 connector 取得可用的顯示模式，並挑選一個合適的模式
+
+::: tip  
+KMS 採「使用者空間決策、核心驅動執行」的分工：合成器透過 libdrm/`ioctl()` 取得硬體能力、EDID 與模式列表，選定模式後再下發設定。 這讓不同桌面環境（Mutter/KWin/Weston 等）能以一致方式控制顯示輸出  
+:::
+
+當合成器算繪出第一張螢幕影像後，會首次對 mode-setting 管線進行設定。 為此它會為螢幕畫面的緩衝物件建立一個 framebuffer，並把該 framebuffer 附加到某個 plane，接著在 CRTC 上為其螢幕緩衝的顯示模式進行設定，再將從 framebuffer 到 connector 的所有管線階段串接起來，最後啟用顯示
+
+::: tip  
+這是「第一次亮屏」所需的最小步驟集合：把「像素來源（framebuffer/scanout buffer）」定位到畫面（plane），再由 CRTC 套用時序與模式，最後透過 encoder/connector 輸出到實體介面  
+:::
+
+要在下一幀更換顯示影像，無需進行完整的 mode-setting 流程，合成器只要把當前的 framebuffer 換成新的即可。 這稱為 page flipping。 mode-setting 管線中的各個階段可以用多種方式連接：一個 CRTC 可能會鏡像到多個 encoder，或是一個 framebuffer 可能會同時被多個 CRTC 掃描輸出。 雖然這提供了彈性，但也表示並非所有階段組合都受支援
+
+::: tip  
+硬體資源（CRTC/plane/encoder 的數量與配對關係）決定可行拓樸，某些連線僅支援特定 encoder，或 plane 僅能被特定 CRTC 使用。 合成器需依據驅動回報能力挑選可行的連線方案  
+:::
+
+一個較粗糙（naive）的實作會逐一套用每個階段的設定：先在 CRTC 設定顯示模式，接著把所有緩衝物件上傳到圖形記憶體，然後設定用於掃描輸出的 framebuffer 與 plane，最後啟用 encoder 與 connector。 若在這個過程中有任何一步失敗，螢幕就會保持黑屏，或（更糟）處於畫面失真狀態
+
+舉例來說，在裝置記憶體有限的情況下，可能無法同時容納多個 plane 所需的 framebuffer，因此模式的切換，甚至只做簡單的 page flip，都可能失敗。 自古以來，顯示更新失敗一直是圖形堆疊的常見問題
+
+DRM 的「原子化模式設定（atomic mode setting）」在某種程度上解決了這個問題。 模式設定的程式碼會把管線中所有元素的完整狀態，追蹤在一個名為 [`drm_atomic_state`](https://elixir.bootlin.com/linux/latest/source/include/drm/drm_atomic.h#L348) 的複合資料結構中，並為管線中的每個階段維護一個對應的子狀態。 所謂的「原子化」，指的是它要麼一次套用所有管線階段的完整複合狀態，要麼完全不套用。 為了達成這件事，mode-setting 分為兩個階段：首先檢查（check）整個新的原子狀態，若檢查成功，接著再提交（commit）相同的狀態上去
+
+在檢查階段，DRM core、其輔助程式，以及各 DRM 驅動會把所提議的狀態，拿去與可用圖形硬體的限制與約束進行比對。 舉例來說，某個 plane 必須驗證其所附加的 framebuffer 是否為相容的色彩格式，而 CRTC 則必須驗證所給定的顯示解析度是否受硬體支援。 若檢查成功，DRM 驅動會在 commit 階段把新狀態設定（program）到硬體上。 若其中任何一個階段的狀態檢查失敗，DRM 便會停止 mode-setting 作業，並把錯誤回傳給 user space 的程式
+
+因此，當合成器要設定某個顯示模式時，會一次性地設定整條管線中各階段的 atomic state，並一併套用。 若成功，顯示輸出就會相應更新。 對於連續的 page flipping 操作，合成器會先複製目前的狀態，把其中的 framebuffer 換成新的，然後套用這份新狀態。 再次進行 page flipping 時，核心的 DRM 程式碼仍會走一遍 atomic check／atomic commit 的流程，但其開銷會比完整的 mode-setting 小很多
+
+DRM 的狀態檢查階段獨立於硬體的當前狀態，且不會修改它。 若某個 atomic 狀態的檢查失敗，合成器會收到錯誤碼，但顯示輸出保持不變。 合成器也可以只做驗證而不提交，藉此事先彙整出一份受支援的組態清單。 想進一步閱讀的話，LWN 在 2015 年已對 atomic mode setting 的內部運作做過詳細介紹了，見 [part 1](https://lwn.net/Articles/653071/) 與 [part 2](https://lwn.net/Articles/653466/)
