@@ -152,7 +152,7 @@ BO 的「建立/配置」通常是驅動自訂的 `ioctl`（例如指定大小�
 實作面上會涉及：將 BO 置入適當的記憶體域（例如 VRAM/系統記憶體）、建立/更新硬體狀態（綁定著色器、紋理、頂點來源等）、提交「繪圖命令」。 Gallium3D 的 state tracker 會先彙整 API 狀態，再由硬體特定（HW-specific）的 Mesa 驅動把這些狀態轉成底層 `ioctl()` 呼叫與命令緩衝（command buffer），交給 DRM 驅動送往 GPU  
 :::
 
-理想情況下，圖形驅動程式只是在 user space 的應用與硬體之間充當代理。 硬體算繪器會與圖形堆疊的其餘部分非同步地運作，只有在發生錯誤或成功完成時才回報給驅動。 有點像系統 CPU 在遇到 page fault 或 illegal instructions 時才會通知作業系統，只要沒有需要回報的事情，驅動的額外負擔就很小
+理想情況下，圖形驅動程式只是在 user space 的應用程式與硬體之間充當代理。 硬體算繪器會與圖形堆疊的其餘部分非同步地運作，只有在發生錯誤或成功完成時才回報給驅動。 有點像系統 CPU 在遇到 page fault 或 illegal instructions 時才會通知作業系統，只要沒有需要回報的事情，驅動的額外負擔就很小
 
 不過也有例外，例如較舊型號的 Intel 圖形晶片不支援頂點變換，因此 Mesa 內的驅動必須以軟體來實作。 在 Raspberry Pi 上，由於 VideoCore 4 晶片沒有 I/O MMU 可將著色器與系統隔離，核心的 DRM 驅動必須驗證每個著色器的記憶體存取
 
@@ -162,9 +162,9 @@ GPU 一旦接手命令便獨立執行，通常以中斷/訊號回報完成或錯
 
 ### Software rendering
 
-到目前為止，我們都假設有硬體支援圖形算繪。 如果沒有這種支援，或 user space 的應用無法使用它，會發生什麼事呢？ 例如，對於某個 user space 的 GUI 工具組，由於像 OpenGL 這樣以硬體為中心的介面不符合它的需求，而可能會偏好使用軟體算繪。 還有在開機時顯示開機標誌並提示輸入磁碟加密密碼的程式 Plymouth，它通常無法使用完整的圖形堆疊。 針對這些情境，DRM 提供了 dumb-buffer 的 `ioctl()` 介面
+到目前為止，我們都假設有硬體支援圖形算繪。 如果沒有這種支援，或 user space 的應用程式無法使用它，會發生什麼事呢？ 例如，對於某個 user space 的 GUI 工具組，由於像 OpenGL 這樣以硬體為中心的介面不符合它的需求，而可能會偏好使用軟體算繪。 還有在開機時顯示開機標誌並提示輸入磁碟加密密碼的程式 Plymouth，它通常無法使用完整的圖形堆疊。 針對這些情境，DRM 提供了 dumb-buffer 的 `ioctl()` 介面
 
-透過使用 dumb buffer，應用程式會在圖形記憶體中配置緩衝物件，但不具備任何硬體加速支援，因此回傳的緩衝物件只能用於軟體算繪。 像 GUI 工具組或 Plymouth 這類 user space 的應用，會把該緩衝物件的 page 映射到自己的位址空間，然後把輸出影像複製進去
+透過使用 dumb buffer，應用程式會在圖形記憶體中配置緩衝物件，但不具備任何硬體加速支援，因此回傳的緩衝物件只能用於軟體算繪。 像 GUI 工具組或 Plymouth 這類 user space 的應用程式，會把該緩衝物件的 page 映射到自己的位址空間，然後把輸出影像複製進去
 
 ::: tip  
 dumb buffer 通常是線性、可 `mmap` 的顏色緩衝，沒有平鋪/壓縮與 GPU 特化格式。 CPU 把畫面資料（或由 Mesa 的 llvmpipe/softpipe 產生）寫入其中，再交由顯示路徑取用。 效能有限，但通用性高、依賴少  
@@ -173,3 +173,71 @@ dumb buffer 通常是線性、可 `mmap` 的顏色緩衝，沒有平鋪/壓縮�
 Mesa 的軟體算繪器也類似：輸入的緩衝物件都位於系統記憶體，由系統 CPU 來處理著色器指令。 輸出緩衝則是用來存放算繪結果影像的 dumb-buffer 物件。 雖然這既不快也不花俏，但對於不支援加速算繪的簡單硬體，已足以跑起現代的桌面環境
 
 至此，我們已經走完應用程式在算繪方面的圖形堆疊了。 在完成場景圖的走訪之後，應用程式的輸出緩衝物件中就包含了它要顯示的視覺化場景或資料，但這個緩衝還沒有被送上螢幕。 不論是加速或 dumb 的路徑，要把緩衝送上螢幕都需要經過合成（compositing）與模式設定（mode setting），這構成了圖形堆疊的另一半。 在第二部分，我們會談 Wayland 的合成、用 DRM 設定顯示模式，以及圖形堆疊中的其他一些功能
+
+## The Linux graphics stack in a nutshell, part 2
+
+要把應用程式的圖形輸出顯示到螢幕上，必須進行合成（compositing）與模式設定（mode setting），而且要在各個元件之間正確同步，並維持較低的額外開銷。 接下來我們將檢視 Linux 圖形堆疊中的這些元件。 上一章我們沿著圖形流程從應用程式走到了 Mesa，還使用了核心 [Direct Rendering Manager（DRM）](https://en.wikipedia.org/wiki/Direct_Rendering_Manager)子系統的記憶體管理功能。 最終我們得到了存放在輸出緩衝（output buffer）中的應用程式圖形資料，現在是時候將這張影像顯示給使用者了
+
+### Compositing
+
+user space 的應用程式幾乎不會自己把輸出顯示出來，而是交給螢幕合成器來完成。 合成器（compositor）是一個系統服務，它會接收每個應用程式的輸出緩衝，並把它們繪製成螢幕上的影像。 視窗的配置方式取決於合成器的實作，但最常見的是堆疊（[stacking](https://en.wikipedia.org/wiki/Stacking_window_manager)）與平鋪（[tiling](https://en.wikipedia.org/wiki/Tiling_window_manager)）。 合成器也負責收集使用者的輸入，並把輸入轉送給目標應用程式
+
+過去，合成以及圖形堆疊中的幾乎所有其他事情，都由 [X Window System](https://en.wikipedia.org/wiki/X_Window_System) 提供，X 實作了一種用於把圖形顯示到螢幕上的網路協定。 由於「其他事情」包含繪圖、模式設定、螢幕分享，甚至[列印](https://www.x.org/releases/X11R6.8.2/doc/Xprint.7.html)，X 因此承受了軟體臃腫的問題，也難以因應圖形硬體與 Linux 系統的變化，於是需要一個更輕量的替代方案
+
+它的現代接班人是 [Wayland](https://wayland.freedesktop.org/)，其同樣採用了 client‑server 的設計，應用程式會作為用戶端，向合成器所提供的顯示服務提出請求。 Wayland 的參考合成器是 Weston，但實務上更常見的是 GNOME 的 [Mutter](https://gitlab.gnome.org/GNOME/mutter) 或 KDE 的 [KWin](https://invent.kde.org/plasma/kwin)
+
+Wayland 並不提供繪圖或列印，這個[協定](https://wayland-book.com/)僅提供合成所需的功能。 Wayland 的 surface 代表一個應用程式視窗，它是應用程式用來顯示其輸出、並從合成器接收輸入事件的介面。 附掛在 surface 上的是一個 Wayland buffer，其中包含可顯示的像素資料，以及顏色格式與尺寸資訊
+
+這些像素資料位於用戶端應用程式先前算繪完成的輸出緩衝中。 當變更某個 surface 所附掛的緩衝物件或其內容時，應用程式會透過 Wayland 協定送出 surface-damage 訊息給合成器，後者據此更新螢幕上的內容，也可能會改用新緩衝物件的內容。 也就是說，應用程式的輸出緩衝會成為 Wayland 合成器的輸入緩衝
+
+::: tip  
+Wayland 把視窗抽象為 surface，把像素載體抽象為 buffer。 應用程式會把已算繪的像素附掛到 surface，並宣告「damage」區域告知哪裡需要重繪。 合成器接到通知後，取用該 buffer（通常為可 zero-copy 共享的 dma-buf），再把它放到合成場景中。 協定不會管要「如何繪圖」，只管「如何交付像素與事件」  
+:::
+
+合成器中的算繪流程，與第一章介紹的應用程式算繪完全相同。 合成器會維護一份代表應用程式視窗的 Wayland surface 清單。 這些視窗與合成器自身的介面元素，又會形成另一棵[場景圖](https://en.wikipedia.org/wiki/Scene_graph)。 背景可以是桌布影像、背景圖樣或顏色。 在背景之上，合成器繪製各個應用程式視窗。 實作上最簡單的方式是為每個視窗繪製一個矩形，並將應用程式提供的緩衝區物件當作紋理影像來使用
+
+在應用程式視窗之上，合成器還會繪製它自己的使用者介面，例如讓使用者能與合成器本身互動的工作列。 最後、最上層的是用來指示使用者目前正在互動對象的元素，在桌面系統上通常就是滑鼠指標。 與應用程式一樣，合成器同樣使用一般的 user space 介面進行算繪，例如透過 Mesa 的 OpenGL 或 Vulkan
+
+::: tip  
+合成器會把每個視窗視為一個「貼上紋理的矩形」，用 GPU 將它們依疊放/平鋪與 Z 順序、透明度等參數合成出最終畫面，同時也把自身 UI（面板、鼠標、提示等）納入同一場景圖中。 這讓合成器能沿用與應用程式相同的圖形管線與資源管理模式來完成顯示  
+:::
+
+讓這一切成真的最後一塊拼圖，是「緩衝物件」的傳輸機制。 與 X 不同，Wayland 應用程式一律會在與其合成器相同的主機上執行。 因此實作上可以針對這種情況做最佳化：不需要任何網路編碼、緩衝壓縮等額外處理
+
+若要傳輸一個位於系統記憶體中的緩衝物件，應用程式會建立一個指向該緩衝記憶體的檔案描述符，透過連線所使用的串流 socket 傳送出去（只需一則低成本的訊息），並讓合成器把這個檔案描述符所對應的記憶體 page 映射到它自己的位址空間
+
+這樣應用程式與合成器之間就建立了低開銷的像素資料交換通道：應用程式把影像畫進共享記憶區，合成器則從該處取用並進行算繪。 實務上也常同時使用多個緩衝物件做雙緩衝。 Wayland 的 surface-damage 訊息則以低開銷的方式扮演同步機制
+
+::: tip  
+Wayland 以 `wl_shm` 共享記憶體途徑分享像素：客戶端將一段可共享的記憶體（通常為 `memfd` 或 `shm`）作成 `wl_buffer`，並透過 UNIX domain socket 使用 `SCM_RIGHTS` 把對應的檔案描述元傳給合成器，合成器 `mmap` 該 FD 後即可讀取像素。 這種做法避免了複製與網路序列化，且可配合多重緩衝（雙/三緩衝）與 damage 區域更新以降低重繪成
+
+詳見：
+
+- [Shared memory buffers](https://wayland-book.com/surfaces/shared-memory.html)
+- [wl_display](https://wayland.app/protocols/wayland)
+- [sockets/scm_rights_send.c](https://man7.org/tlpi/code/online/dist/sockets/scm_rights_send.c.html)  
+:::
+
+對於軟體算繪，透過共享記憶體傳輸資料就足以滿足它了，但對高效能的硬體算繪而言還不夠。 因為那種情況下，應用程式必須先在圖形硬體上算繪，然後再透過相對較慢的硬體匯流排把結果回讀到共享記憶體區域
+
+為了避免上述代價，圖形緩衝必須維持在圖形記憶體中。 Wayland 提供了一個協定的擴充，透過 Linux 的 [dma-buf](https://www.kernel.org/doc/html/latest/driver-api/dma-buf.html) 來共享緩衝物件。 dma-buf 代表了一個可在硬體裝置、驅動與 user-space 程式之間共享的記憶體緩衝
+
+應用程式如同第一部分所述，會透過 Mesa 介面以硬體加速算繪其場景圖，但它不是傳遞指向共享記憶體的參照，而是傳送一個指向該緩衝物件（且仍位於圖形記憶體中的）dma-buf 物件。 Wayland 合成器可以直接使用其中的像素資料，而無需經由硬體匯流排把資料回讀出來
+
+::: tip  
+`linux-dmabuf` Wayland 擴充允許客戶端把 GPU 端緩衝以 dma-buf（可跨驅動/裝置的共享 FD）形式交給合成器，這樣像素自始至終都留在「GPU/顯示」可直接存取的記憶體範圍，達成 zero-copy 的傳遞。 dma-buf 是 Linux 核心提供的跨裝置緩衝共享/同步框架，被 DRM/顯示子系統廣泛地使用
+
+詳見：
+
+- [Linux DMA-BUF](https://wayland.app/protocols/linux-dmabuf-v1)
+- [Buffer Sharing and Synchronization (dma-buf)](https://docs.kernel.org/driver-api/dma-buf.html)
+- [Wayland Window System](https://docs.nvidia.com/drive/drive-os-5.2.3.0L/drive-os/index.html#page/DRIVE_OS_Linux_SDK_Development_Guide/Windows%20Systems/window_system_wayland.html)  
+:::
+
+硬體加速的算繪本質上是非同步的，因此需要同步機制。 當應用程式把本幀最後的算繪命令交送給 Mesa 之後，並不能保證硬體已經完成算繪了。 這是刻意設計、為了高效能所必需的。 但若合成器在硬體完成前就顯示了緩衝物件的內容，輸出就會出現扭曲
+
+為了避免這種狀況，硬體在完成算繪時會發出訊號，這稱為 fencing，對應的資料結構稱為 fence。 這個 fence 會附加在應用程式傳給合成器的 dma-buf 物件上。 合成器會等到該 fence 發出完成訊號後，才使用結果資料來產生自己的輸出
+
+::: tip  
+在 Linux 圖形堆疊裡，這類同步通常以 dma-fence（或透過 DRM syncobj 等機制）來實作：fence 物件附著在共享的 dma-buf 上，表示「當 GPU 完成對此緩衝的寫入時會發出訊號」。 Wayland 也有明確同步的協定擴充，讓客戶端把相關的 fence/同步點隨同緩衝一併傳遞給合成器，確保在正確時機取用像素，避免撕裂/閃爍/破圖  
+:::
