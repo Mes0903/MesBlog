@@ -26,9 +26,9 @@ category:
 
 模型節點包含要呈現的資料，例如遊戲的場景，或科學模擬的元素； 屬性節點則設定模型的朝向或位置，每個屬性節點都會影響其下方的節點。 為了把場景圖算繪成螢幕上的影像，應用程式會自上而下、由左到右走訪這棵樹，依序設定或清除屬性，並相應地算繪 3D 模型
 
-在下方的範例場景圖裡，算繪從根節點開始，根節點會準備算繪器（renderer）並設定輸出位置。 應用程式先走左側分支，在座標 (0, 0) 算繪「Rectangle 1」，並套用上存放於「Texture 1」裡面的表面圖樣。 接著應用程式回到根節點，改走右側分支，進入名為「Transform」的屬性節點
+在下方的範例場景圖裡，算繪從根節點開始，根節點會準備算繪器（renderer）並設定輸出位置。 應用程式先走左側分支，在座標 $(0, 0)$ 算繪「Rectangle 1」，並套用上存放於「Texture 1」裡面的表面圖樣。 接著應用程式回到根節點，改走右側分支，進入名為「Transform」的屬性節點
 
-應用程式以 4×4 矩陣描述各種變換（例如定位或縮放），演算法會在算繪過程中套用這些矩陣。 此例中，該變換節點將其所有子節點等比例縮放為 0.5 倍，因此算繪「Rectangle 2」與「Rectangle 3」時，大小會呈現為原來的一半，位置分別調整為 (10, 10) 與 (15, 15)。 這兩個矩形使用了不同的紋理：分別為 2 與 3
+應用程式以 4×4 矩陣描述各種變換（例如定位或縮放），演算法會在算繪過程中套用這些矩陣。 此例中，該變換節點將其所有子節點等比例縮放為 0.5 倍，因此算繪「Rectangle 2」與「Rectangle 3」時，大小會呈現為原來的一半，位置分別調整為 $(10, 10)$ 與 $(15, 15)$。 這兩個矩形使用了不同的紋理：分別為 2 與 3
 
 ![](image/scenegraph.png)
 
@@ -71,3 +71,31 @@ Color = texture(Tex, vsTexCoord);
 為了將像素資料填滿輸出緩衝，這段著色器程式碼會對每個片段各執行一次。 正被繪製的模型會指定要使用的紋理緩衝，而紋理座標則由 OpenGL 的內部計算提供。 以上述的場景圖為例，應用程式會對每個矩形各自呼叫這段程式碼，並使用該矩形所對應的紋理緩衝
 
 把這些著色器指令套用到整棵場景圖之後，就能生成應用程式的完整輸出影像了
+
+### Mesa
+
+到目前為止我們談到的內容都不是特定於 Linux 的，不過這些內容提供了我們檢視實作方式的框架。 在 Linux 上，[Mesa 3D](https://mesa3d.org/) 函式庫（簡稱 Mesa）實作了 3D 算繪的各種介面，並支援多種圖形硬體。 對應用程式來說，它提供了用於桌面圖形的 OpenGL 或 Vulkan、用於行動系統的 [OpenGL ES](https://www.khronos.org/opengles/)，以及用於計算的 [OpenCL](https://www.khronos.org/opencl/)。 至於硬體端，Mesa 替當今多數的圖形硬體實作了驅動程式
+
+Mesa 的驅動通常不會自己從零實作這些應用程式介面，因為 Mesa 內建了大量的協助元件與抽象。 對於像 OpenGL 這類有狀態的介面，Mesa 的 [Gallium3D](https://www.freedesktop.org/wiki/Software/gallium/) 架構會把介面與驅動彼此連接，這被稱為狀態追蹤器（state tracker）。 Mesa 內含了對多個版本的 OpenGL、OpenGL ES 與 OpenCL 的狀態追蹤器。 當應用程式使用某個 API 時，它其實是在修改該介面的狀態追蹤器
+
+Mesa 內的硬體驅動還會把狀態追蹤器的資訊進一步轉成硬體狀態與算繪指令。 舉例來說，OpenGL 的 [glBindTexture()](https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBindTexture.xhtml) 會在 OpenGL 的狀態追蹤器中選定當前的紋理緩衝。 接著硬體驅動會把該紋理緩衝物件載入到圖形記憶體，並把啟用中的著色器程式與之連結，讓紋理能參照該緩衝物件。 在我們前面的例子裡，這個紋理就是該著色器程式中的 `Tex`
+
+::: tip  
+這段在講 OpenGL「設定狀態 → 驅動落地」的流程：`glBindTexture()` 等呼叫只是在 API 狀態機裡變更「當前紋理」，真正的資源建立與綁定、以及著色器對取樣器/紋理的關聯，會在驅動端被轉譯為硬體可理解的狀態與命令，再送往 GPU。 這種「由 API 狀態映射到硬體狀態」正是 Gallium 與各廠驅動協作的核心  
+:::
+
+Vulkan 用的是一種「無狀態」的介面，因此 Gallium3D 這類驅動並不適用於它，取而代之地 Mesa 提供了 Vulkan 執行環境（[Vulkan runtime](https://docs.mesa3d.org/vulkan/index.html)）來協助其實作。 如果某硬體已有了 Vulkan 驅動，那它可能就完全不需要基於 Gallium3D 的 OpenGL 支援了
+
+[Zink](https://docs.mesa3d.org/drivers/zink.html) 是一個把 Gallium3D 映射到 Vulkan 的 Mesa 驅動。 有了 Zink，OpenGL 的狀態會轉成 Gallium3D 的狀態，然後再透過標準的 Vulkan 介面轉交給硬體。 原則上，這能與任何硬體的 Vulkan 驅動配合。 可以想見，未來 Mesa 內的驅動可能會只實作 Vulkan，並仰賴 Zink 來提供 OpenGL 相容性
+
+::: tip  
+官方文件把 Vulkan 驅動放在 Mesa 的 Vulkan runtime 之上，以共用的執行期與工具幫助各廠撰寫 Vulkan 驅動。 另一方面，Zink 這個 Gallium 驅動則把 OpenGL（具狀態）映射到 Vulkan（無狀態）呼叫，以便在「只有 Vulkan」的硬體上提供 OpenGL 相容層，詳見 [https://docs.mesa3d.org/vulkan/index.html](https://docs.mesa3d.org/vulkan/index.html)  
+:::
+
+除了 Gallium3D 之外，Mesa 還為硬體驅動提供了許多協助元件，例如 winsys 或 GBM。 winsys 用於把視窗系統的細節包裝起來，GBM（Generic Buffer Manager）則簡化了緩衝物件的配置。 應用程式也可以使用多種著色器語言，例如 GLSL 或 SPIR-V。 Mesa 會把應用程式提供的著色器程式碼編譯成「New Intermediate Representation（NIR）」，接著 Mesa 的驅動會再把它轉換為硬體指令。 為了讓 Mesa 的硬體加速處理這些著色器與其相關資料，這些緩衝物件必須存放在顯示卡能存取到的記憶體位置
+
+::: tip  
+winsys 是把裝置無關的 Gallium 驅動連到不同平台（例如 Linux 上的 DRM、Windows 上的 GDI、X11 的 xlib 等）的橋接層。 GBM 是 Mesa 的「通用緩衝管理器」，負責分配/管理可供掃描輸出與算繪使用的緩衝物件
+
+著色器方面，Mesa 會把 GLSL、SPIR-V 等前端經編譯/轉譯後統一變成 New Intermediate Representation（NIR），再由各硬體驅動把 NIR 轉為對應 GPU 的機器/微碼指令。 這些資源必須配置在 GPU 可直接存取的記憶體區域，才能由硬體單元加速處理  
+:::
