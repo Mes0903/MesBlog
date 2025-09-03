@@ -92,10 +92,54 @@ Vulkan 用的是一種「無狀態」的介面，因此 Gallium3D 這類驅動�
 官方文件把 Vulkan 驅動放在 Mesa 的 Vulkan runtime 之上，以共用的執行期與工具幫助各廠撰寫 Vulkan 驅動。 另一方面，Zink 這個 Gallium 驅動則把 OpenGL（具狀態）映射到 Vulkan（無狀態）呼叫，以便在「只有 Vulkan」的硬體上提供 OpenGL 相容層，詳見 [https://docs.mesa3d.org/vulkan/index.html](https://docs.mesa3d.org/vulkan/index.html)  
 :::
 
-除了 Gallium3D 之外，Mesa 還為硬體驅動提供了許多協助元件，例如 winsys 或 GBM。 winsys 用於把視窗系統的細節包裝起來，GBM（Generic Buffer Manager）則簡化了緩衝物件的配置。 應用程式也可以使用多種著色器語言，例如 GLSL 或 SPIR-V。 Mesa 會把應用程式提供的著色器程式碼編譯成「New Intermediate Representation（NIR）」，接著 Mesa 的驅動會再把它轉換為硬體指令。 為了讓 Mesa 的硬體加速處理這些著色器與其相關資料，這些緩衝物件必須存放在顯示卡能存取到的記憶體位置
+除了 Gallium3D 之外，Mesa 還為硬體驅動提供了許多協助元件，例如 winsys 或 GBM。 winsys 用於把視窗系統的細節包裝起來，GBM（Generic Buffer Manager）則簡化了緩衝物件的配置。 應用程式也可以使用多種著色器語言，例如 GLSL 或 [SPIR-V](https://www.khronos.org/spir/)。 Mesa 會把應用程式提供的著色器程式碼編譯成「New Intermediate Representation（NIR）」，接著 Mesa 的驅動會再把它轉換為硬體指令。 為了讓 Mesa 的硬體加速處理這些著色器與其相關資料，這些緩衝物件必須存放在顯示卡能存取到的記憶體位置
 
 ::: tip  
 winsys 是把裝置無關的 Gallium 驅動連到不同平台（例如 Linux 上的 DRM、Windows 上的 GDI、X11 的 xlib 等）的橋接層。 GBM 是 Mesa 的「通用緩衝管理器」，負責分配/管理可供掃描輸出與算繪使用的緩衝物件
 
 著色器方面，Mesa 會把 GLSL、SPIR-V 等前端經編譯/轉譯後統一變成 New Intermediate Representation（NIR），再由各硬體驅動把 NIR 轉為對應 GPU 的機器/微碼指令。 這些資源必須配置在 GPU 可直接存取的記憶體區域，才能由硬體單元加速處理  
+:::
+
+### Kernel memory management
+
+凡是顯示硬體可存取的記憶體，通常都被統稱為「圖形記憶體」，這是整個圖形軟體堆疊的核心資源，堆疊中的所有元件都會與它互動。 就硬體面而言，圖形記憶體的配置形式有很多種：從獨立顯示卡上的專用記憶體，到系統單晶片（SoC）板上的一般系統記憶體。 介於兩者之間的還包括具有可進行 DMA 的（DMA-able）或[共享的圖形記憶體](https://en.wikipedia.org/wiki/Shared_graphics_memory)的顯示晶片、獨顯裝置上的 [GART（graphics address remapping table）](https://en.wikipedia.org/wiki/Graphics_address_remapping_table)記憶體，以及所謂主機板整合顯示所使用的「stolen graphics memory」
+
+::: tip  
+獨顯常有獨立 VRAM； iGPU/SoC 通常直接使用系統的 RAM； 某些平台會以 GART 做位址重映射，讓裝置以連續位址看見分散的實體頁； 而「stolen memory」指韌體/BIOS 啟動時預留給內顯的一塊系統記憶體。 DMA-able 則強調該區域可被裝置以 DMA 直接讀寫  
+:::
+
+由於圖形記憶體是全系統範圍的資源，因此由核心的 [Direct Rendering Manager（DRM）](https://en.wikipedia.org/wiki/Direct_Rendering_Manager)子系統負責管理。 為了使用 DRM 的功能，Mesa 會開啟 `/dev/dri` 底下的顯示卡裝置檔，例如 `/dev/dri/renderD128`。 依據其在 user space 的對應需求，DRM 會以「緩衝物件（buffer object）」的形式對外提供圖形記憶體，每個緩衝物件代表可用記憶體中的一段切片
+
+::: tip  
+DRM 是 Linux 核心負責圖形/顯示與直接算繪的子系統。 `/dev/dri` 下包含「主要節點」與「render 節點」的裝置檔，Mesa 透過開啟這些節點與 DRM 交握。 對使用者空間而言，最重要的抽象就是「buffer object（BO）」，它是 GPU 可存取的一段記憶體，後續會被著色器、掃描輸出或合成器引用  
+:::
+
+DRM 框架針對常見情境提供了多種記憶體管理器。 AMD、NVIDIA、以及（即將）Intel 的獨顯 DRM 驅動會使用 [Translation Table Manager（TTM）](https://docs.kernel.org/gpu/drm-mm.html)。 TTM 支援獨立顯示記憶體、GART 記憶體與系統記憶體。 TTM 可以在這些區域之間搬移緩衝物件，因此當裝置的獨立記憶體滿載時，未使用的緩衝物件就能被換出到系統記憶體
+
+::: tip  
+TTM 是早期/泛用的顯示記憶體管理層，提供多「記憶體域」之間的置換/遷移能力（例如 VRAM ↔ GART ↔ 系統 RAM），並維護 page 映射與釘住（pin）的狀態。 這種「驅逐/回收」機制讓 VRAM 可聚焦於熱資料，把冷資料暫置於系統 RAM  
+:::
+
+簡單的 framebuffer 裝置的驅動通常會使用 SHMEM 的輔助元件（helpers），它會在共享記憶體裡配置緩衝物件。 在這裡，一般的系統記憶體會充當該裝置的有限資源的「影子緩衝（shadow buffer）」。 圖形驅動的內部會管理裝置的圖形記憶體，但對外則以位於系統記憶體中的緩衝物件來呈現。 這也讓位於 USB 或 I2C 匯流排上的裝置能被記憶體映射其緩衝物件，即便這些匯流排本身不支援裝置記憶體的 page 映射，也能改為映射影子緩衝來達成
+
+::: tip  
+SHMEM（shared memory）協助驅動用一般 RAM 做後備存儲，對外提供可 mmap 的區塊。 像 USB/I2C 這類週邊匯流排沒有 MMU 風格的裝置記憶體映射能力，因此會以「影子緩衝」的方式把資料放在可映射的系統 RAM，避免直接對裝置記憶體做 page-level 的映射  
+:::
+
+另一個常見的配置器是 DMA helper，它負責管理實體記憶體中位於可進行 DMA 的區域中的緩衝物件。 這種設計常見於 SoC 板上，圖形晶片會透過 DMA 操作來擷取與儲存資料。 當然，若 DRM 驅動有更多需求，也可以擴充現有的記憶體管理器，或自行實作專用的管理器
+
+::: tip  
+DMA helper 會挑選「DMA-able」的實體頁（例如經過對齊、可連續、具特定屬性的頁），滿足裝置的 DMA 限制。 SoC 常以「一致性/連續性記憶體（如 CMA）」或特定記憶體區段做影像/視訊/顯示的 DMA 來源/目的地。 若硬體對對齊、快取一致性或 IOMMU 有特殊需求，驅動可自訂配置流程  
+:::
+
+用於管理緩衝物件的 `ioctl()` 介面稱為 [Graphics Execution Manager（GEM）](https://docs.kernel.org/gpu/drm-mm.html#the-graphics-execution-manager-gem)。 每個 DRM 驅動都會依其硬體特性與需求來實作 GEM。 GEM 介面允許把緩衝物件的記憶體 page 映射到 user space 或核心位址空間，並允許把這些 page 釘住（pin）在特定位置，或把它們匯出給其他驅動使用
+
+舉例來說，user space 的應用程式可以對 DRM 裝置檔的 file descriptor 以正確的位移呼叫 `mmap()`，來取得某個緩衝物件的記憶體 page 存取權。 這個呼叫最終會落到 DRM 驅動的 GEM 程式碼中，由其建立映射。 我們稍後會看到，這對軟體算繪特別有用
+
+唯一一個 GEM 沒有提供的共通操作是「緩衝配置」。 每個緩衝物件都有特定的使用情境，會影響且受限於它的配置參數、記憶體所在位置或硬體限制。 因此，每個 DRM 驅動都會提供專用的 `ioctl()` 來配置緩衝物件，藉此記錄這些與硬體相關的設定。 Mesa 中對應於該 DRM 驅動的元件就會據此呼叫這個 `ioctl()`
+
+::: tip  
+GEM 是 DRM 的共通 `ioctl` 族，處理 BO 的生命週期與映射/釘住/同步等。 常見的還有 dma-buf 的匯出/匯入，讓不同驅動/子系統共享同一塊 BO。 `mmap` 到 user space 能讓 CPU 直接讀寫 BO（例如軟體光柵器 llvmpipe），而 pin 則確保在 DMA/掃描輸出期間實體頁不會被移動
+
+BO 的「建立/配置」通常是驅動自訂的 `ioctl`（例如指定大小、對齊、平鋪/壓縮模式、快取屬性、記憶體域、掃描輸出相容性等）。 Mesa 的驅動前端會依用途（像做 render target、texture、scanout）決定參數後，向核心驅動發出建立請求，建立完成再以通用 GEM/dma-buf 介面做映射與共享  
 :::
