@@ -28,23 +28,23 @@ category:
 
 在下方的範例場景圖裡，算繪從根節點開始，根節點會準備算繪器（renderer）並設定輸出位置。 應用程式先走左側分支，在座標 $(0, 0)$ 算繪「Rectangle 1」，並套用上存放於「Texture 1」裡面的表面圖樣。 接著應用程式回到根節點，改走右側分支，進入名為「Transform」的屬性節點
 
-應用程式以 4×4 矩陣描述各種變換（例如定位或縮放），演算法會在算繪過程中套用這些矩陣。 此例中，該變換節點將其所有子節點等比例縮放為 0.5 倍，因此算繪「Rectangle 2」與「Rectangle 3」時，大小會呈現為原來的一半，位置分別調整為 $(10, 10)$ 與 $(15, 15)$。 這兩個矩形使用了不同的紋理：分別為 2 與 3
+應用程式以 4×4 矩陣描述各種變換（例如定位或縮放），演算法會在算繪過程中套用這些矩陣。 此例中，該變換節點會將其所有子節點等比例縮放為 0.5 倍，因此算繪「Rectangle 2」與「Rectangle 3」時，大小會呈現為原來的一半，位置分別調整為 $(10, 10)$ 與 $(15, 15)$。 這兩個矩形使用了不同的紋理：分別為 2 與 3
 
 ![](image/scenegraph.png)
 
-為了簡化算繪並利用硬體加速，大多數應用程式會使用標準 API，例如 [OpenGL](https://opengl.org/) 或 [Vulkan](https://vulkan.org/)。 不同 API 的細節各有差異，但它們都提供介面來管理圖形記憶體、把資料寫入其中，並算繪已保存的資訊。 最終會得到一張影像，應用程式可以直接顯示，或再把它當成輸入做後續處理
+為了簡化算繪並利用硬體加速，大多數應用程式會使用標準 API，例如 [OpenGL](https://opengl.org/) 或 [Vulkan](https://vulkan.org/)。 不同 API 的細節各有差異，但它們都會提供介面來管理圖形記憶體、把資料寫入其中，並算繪已保存的資訊。 最終會得到一張影像，應用程式可以直接顯示，或再把它當成輸入做後續處理
 
-所有圖形資料都放在「緩衝物件」裡，每個緩衝物件都是一段圖形記憶體，並附有控制代碼或 ID。 例如，3D 模型會存放在對應的「[頂點緩衝物件（vertex-buffer object）](https://en.wikipedia.org/wiki/Vertex_buffer_object)」中，紋理會存放在「[紋理緩衝物件（texture-buffer object）](https://www.khronos.org/opengl/wiki/Texture)」中，物件的[表面法線](https://en.wikipedia.org/wiki/Normal_(geometry))也會放在緩衝物件裡，而輸出的影像本身也[存放在一個緩衝物件裡](https://www.khronos.org/opengl/wiki/Framebuffer_Object)。 因此，圖形算繪在很大程度上其實是記憶體管理的工作
+所有圖形資料都放在「緩衝物件」裡，每個緩衝物件都是一段附有控制代碼或 ID 的圖形記憶體。 例如，3D 模型會存放在對應的「[頂點緩衝物件（vertex-buffer object）](https://en.wikipedia.org/wiki/Vertex_buffer_object)」中，紋理會存放在「[紋理緩衝物件（texture-buffer object）](https://www.khronos.org/opengl/wiki/Texture)」中，物件的[表面法線](https://en.wikipedia.org/wiki/Normal_(geometry))也會放在緩衝物件裡，而輸出的影像本身也[存放在一個緩衝物件裡](https://www.khronos.org/opengl/wiki/Framebuffer_Object)。 因此，圖形算繪在很大程度上其實是在做記憶體管理的工作
 
 ::: tip  
-在 OpenGL 名稱裡，VBO（Vertex Buffer Object）是常見的頂點資料容器，它只是「緩衝物件」在作為頂點來源時的慣稱。 紋理一般對應到「紋理物件（texture object）」，另有一種稱為 Buffer Texture / Texture Buffer Object（TBO）的機制，讓紋理直接使用一個緩衝物件作為儲存體、供著色器索引大量資料，因此原文內提到的「紋理緩衝物件」可視為泛指「與紋理相關的（含 TBO 在內的）物件/緩衝」
+在 OpenGL 名稱裡，VBO（Vertex Buffer Object）是常見的頂點資料容器，它只是「緩衝物件」在作為頂點來源時的慣稱。 紋理一般對應到「紋理物件（texture object）」，另有一種稱為 Buffer Texture / Texture Buffer Object（TBO）的機制，讓紋理能直接使用一個緩衝物件作為儲存體、供著色器索引大量資料，因此原文內提到的「紋理緩衝物件」可視為泛指「與紋理相關的（含 TBO 在內的）物件/緩衝」
 
 至於「輸出影像」在實作上可能是附著於 framebuffer 的紋理或 renderbuffer，但要點是一切最終都落在由句柄/控制代碼管理的 GPU 記憶體區塊上，這也是為何圖形程式設計很大一部分在處理資源與記憶體生命週期  
 :::
 
 只要圖形[著色器（shader）](https://en.wikipedia.org/wiki/Shader)能處理，應用程式就可以用任何格式提供輸入資料。 著色器是一種程式，其中包含把輸入資料轉換成輸出影像的指令，它由應用程式提供，並由顯示卡來執行
 
-實際的的著色器程式可能會實作複雜的 multi-pass 演算法，但在此範例中只會介紹必要的部分。 著色器中最常見的兩種操作，大概是頂點變換與紋理查詢。 我們可以把頂點想成多邊形的角。 用 [OpenGL Shading Language（GLSL）](https://www.khronos.org/opengl/wiki/OpenGL_Shading_Language)撰寫時，頂點變換看起來像這樣：
+實際的的著色器程式可能會實作複雜的 multi-pass 演算法，但在此範例中只會介紹必要的部分。 著色器中最常見的兩種操作是頂點變換與紋理查詢。 我們可以把頂點想成多邊形的角。 用 [OpenGL Shading Language（GLSL）](https://www.khronos.org/opengl/wiki/OpenGL_Shading_Language)撰寫時，頂點變換看起來像這樣：
 
 ```c
 uniform mat4 Matrix; // same for all of a rectangles's vertices
@@ -55,9 +55,9 @@ gl_Position = Matrix * inVertexCoord;
 
 變數 `inVertexCoord` 是來自應用程式場景圖的輸入座標。 變數 `gl_Position` 則是在應用程式輸出緩衝中的座標。 簡單來說，前者屬於顯示中的場景座標系，後者屬於應用程式視窗內的座標系。 `Matrix` 是描述這兩個座標系之間的變換的 4×4 矩陣
 
-這段著色器操作會對場景圖中的每個頂點執行一次。 在前述的矩形場景圖例子裡，每個矩形的每一個頂點都至少會被 `inVertexCoord` 包含一次。 而矩陣 `Matrix` 會包含該頂點的變換，例如如何把它移到正確的位置，或依照變換節點指定的 0.5 比例進行縮放
+這段著色器操作會對場景圖中的每個頂點執行一次。 在前述的矩形場景圖例子裡，`inVertexCoord` 內會含有所有頂點，其中某些矩形的頂點可能會被多次包含在內。 而矩陣 `Matrix` 會包含這些頂點的變換，例如要如何把它移到正確的位置，或依照變換節點指定的 0.5 比例進行縮放
 
-當頂點被變換到輸出座標系之後，著色器程式會計算被覆蓋的「片段（fragment）」的各種數值，這是圖形領域的術語，指的是一個帶有 Z 軸深度值與其他資訊的輸出像素。 每個片段都需要顏色，在 GLSL 中，著色器的 `texture()` 函式會像這樣從紋理取回顏色：
+當頂點被變換到輸出座標系之後，著色器程式會計算被覆蓋的「片段（fragment）」的各種數值，這是圖形領域的術語，指的是一個帶有 Z 軸深度值與其他資訊的輸出像素。 每個片段都需要顏色，在 GLSL 中，可以利用 `texture()` 函式從紋理取回顏色：
 
 ```c
 uniform sampler2D Tex; // the texture object of the current rectangle
@@ -66,7 +66,7 @@ in vec2 vsTexCoord; // interpolated texture coordinate for the fragment
 Color = texture(Tex, vsTexCoord);
 ```
 
-這裡 `Tex` 代表一個紋理緩衝（texture buffer）。 `vsTexCoord` 的值是紋理座標，也就是在紋理中要讀取的位置。 透`texture()` 會回傳一個顏色值，把它指定給 `Color`，就能把一個帶顏色的像素寫入輸出緩衝
+這裡 `Tex` 代表一個紋理緩衝（texture buffer）。 `vsTexCoord` 的值是紋理座標，也就是在紋理中要讀取的位置。 `texture()` 會回傳一個顏色值，將該顏色值指定給 `Color`，就能把一個帶顏色的像素寫入輸出緩衝
 
 為了將像素資料填滿輸出緩衝，這段著色器程式碼會對每個片段各執行一次。 正被繪製的模型會指定要使用的紋理緩衝，而紋理座標則由 OpenGL 的內部計算提供。 以上述的場景圖為例，應用程式會對每個矩形各自呼叫這段程式碼，並使用該矩形所對應的紋理緩衝
 
@@ -76,7 +76,7 @@ Color = texture(Tex, vsTexCoord);
 
 到目前為止我們談到的內容都不是特定於 Linux 的，不過這些內容提供了我們檢視實作方式的框架。 在 Linux 上，[Mesa 3D](https://mesa3d.org/) 函式庫（簡稱 Mesa）實作了 3D 算繪的各種介面，並支援多種圖形硬體。 對應用程式來說，它提供了用於桌面圖形的 OpenGL 或 Vulkan、用於行動系統的 [OpenGL ES](https://www.khronos.org/opengles/)，以及用於計算的 [OpenCL](https://www.khronos.org/opencl/)。 至於硬體端，Mesa 替當今多數的圖形硬體實作了驅動程式
 
-Mesa 的驅動通常不會自己從零實作這些應用程式介面，因為 Mesa 內建了大量的協助元件與抽象。 對於像 OpenGL 這類有狀態的介面，Mesa 的 [Gallium3D](https://www.freedesktop.org/wiki/Software/gallium/) 架構會把介面與驅動彼此連接，這被稱為狀態追蹤器（state tracker）。 Mesa 內含了對多個版本的 OpenGL、OpenGL ES 與 OpenCL 的狀態追蹤器。 當應用程式使用某個 API 時，它其實是在修改該介面的狀態追蹤器
+Mesa 的驅動通常不會自己從零實作這些應用程式介面，因為 Mesa 內建了大量的輔助元件與抽象。 對於像 OpenGL 這類有狀態的介面，Mesa 的 [Gallium3D](https://www.freedesktop.org/wiki/Software/gallium/) 架構會把介面與驅動彼此連接，這被稱為狀態追蹤器（state tracker）。 Mesa 內含多個 OpenGL、OpenGL ES 與 OpenCL 版本的的狀態追蹤器。 當應用程式使用某個 API 時，它其實是在修改該介面的狀態追蹤器
 
 Mesa 內的硬體驅動還會把狀態追蹤器的資訊進一步轉成硬體狀態與算繪指令。 舉例來說，OpenGL 的 [glBindTexture()](https://registry.khronos.org/OpenGL-Refpages/gl4/html/glBindTexture.xhtml) 會在 OpenGL 的狀態追蹤器中選定當前的紋理緩衝。 接著硬體驅動會把該紋理緩衝物件載入到圖形記憶體，並把啟用中的著色器程式與之連結，讓紋理能參照該緩衝物件。 在我們前面的例子裡，這個紋理就是該著色器程式中的 `Tex`
 
@@ -92,7 +92,7 @@ Vulkan 用的是一種「無狀態」的介面，因此 Gallium3D 這類驅動�
 官方文件把 Vulkan 驅動放在 Mesa 的 Vulkan runtime 之上，以共用的執行期與工具幫助各廠撰寫 Vulkan 驅動。 另一方面，Zink 這個 Gallium 驅動則把 OpenGL（具狀態）映射到 Vulkan（無狀態）呼叫，以便在「只有 Vulkan」的硬體上提供 OpenGL 相容層，詳見 [https://docs.mesa3d.org/vulkan/index.html](https://docs.mesa3d.org/vulkan/index.html)  
 :::
 
-除了 Gallium3D 之外，Mesa 還為硬體驅動提供了許多協助元件，例如 winsys 或 GBM。 winsys 用於把視窗系統的細節包裝起來，GBM（Generic Buffer Manager）則簡化了緩衝物件的配置。 應用程式也可以使用多種著色器語言，例如 GLSL 或 [SPIR-V](https://www.khronos.org/spir/)。 Mesa 會把應用程式提供的著色器程式碼編譯成「New Intermediate Representation（NIR）」，接著 Mesa 的驅動會再把它轉換為硬體指令。 為了讓 Mesa 的硬體加速處理這些著色器與其相關資料，這些緩衝物件必須存放在顯示卡能存取到的記憶體位置
+除了 Gallium3D 之外，Mesa 還為硬體驅動提供了許多輔助元件，例如 winsys 或 GBM。 winsys 用於把視窗系統的細節包裝起來，GBM（Generic Buffer Manager）則簡化了緩衝物件的配置。 應用程式也可以使用多種著色器語言，例如 GLSL 或 [SPIR-V](https://www.khronos.org/spir/)。 Mesa 會把應用程式提供的著色器程式碼編譯成「New Intermediate Representation（NIR）」，接著 Mesa 的驅動會再把它轉換為硬體指令。 為了讓 Mesa 的硬體加速處理這些著色器與其相關資料，這些緩衝物件必須存放在顯示卡能存取到的記憶體位置
 
 ::: tip  
 winsys 是把裝置無關的 Gallium 驅動連到不同平台（例如 Linux 上的 DRM、Windows 上的 GDI、X11 的 xlib 等）的橋接層。 GBM 是 Mesa 的「通用緩衝管理器」，負責分配/管理可供掃描輸出與算繪使用的緩衝物件
@@ -120,10 +120,10 @@ DRM 框架針對常見情境提供了多種記憶體管理器。 AMD、NVIDIA、
 TTM 是早期/泛用的圖形記憶體管理層，提供多「記憶體域」之間的置換/遷移能力（例如 VRAM ↔ GART ↔ 系統 RAM），並維護 page 映射與釘住（pin）的狀態。 這種「驅逐/回收」機制讓 VRAM 可聚焦於熱資料，把冷資料暫置於系統 RAM  
 :::
 
-簡單的 framebuffer 裝置的驅動通常會使用 SHMEM 的輔助元件（helpers），它會在共享記憶體裡配置緩衝物件。 在這裡，一般的系統記憶體會充當該裝置的有限資源的「影子緩衝（shadow buffer）」。 圖形驅動的內部會管理裝置的圖形記憶體，但對外則以位於系統記憶體中的緩衝物件來呈現。 這也讓位於 USB 或 I2C 匯流排上的裝置能被記憶體映射其緩衝物件，即便這些匯流排本身不支援裝置記憶體的 page 映射，也能改為映射影子緩衝來達成
+簡單的 framebuffer 裝置的驅動通常會使用 SHMEM 的輔助元件（helpers），它會在共享記憶體裡配置緩衝物件。 在這裡，一般的系統記憶體會充當該裝置的有限資源的「影子緩衝（shadow buffer）」。 圖形驅動的內部會管理裝置的圖形記憶體，但對外則以位於系統記憶體中的緩衝物件來呈現。 這也讓對 USB 或 I2C 匯流排上的裝置的緩衝物件能被記憶體映射，即便這些匯流排本身不支援裝置記憶體的 page 映射，也能改為映射到影子緩衝來達成
 
 ::: tip  
-SHMEM（shared memory）協助驅動用一般 RAM 做後備存儲，對外提供可 mmap 的區塊。 像 USB/I2C 這類週邊匯流排沒有 MMU 風格的裝置記憶體映射能力，因此會以「影子緩衝」的方式把資料放在可映射的系統 RAM，避免直接對裝置記憶體做 page-level 的映射  
+SHMEM（shared memory）輔助驅動用一般的 RAM 做為後備存儲，對外提供可 mmap 的區塊。 像 USB/I2C 這類週邊匯流排沒有 MMU 風格的裝置記憶體映射能力，因此會以「影子緩衝」的方式把資料放在可映射的系統 RAM，避免直接對裝置記憶體做 page-level 的映射  
 :::
 
 另一個常見的配置器是 DMA helper，它負責管理實體記憶體中位於可進行 DMA 的區域中的緩衝物件。 這種設計常見於 SoC 板上，圖形晶片會透過 DMA 操作來擷取與儲存資料。 當然，若 DRM 驅動有更多需求，也可以擴充現有的記憶體管理器，或自行實作專用的管理器
@@ -146,13 +146,13 @@ BO 的「建立/配置」通常是驅動自訂的 `ioctl`（例如指定大小�
 
 ### Rendering operations
 
-光是擁有用來存放輸出影像、輸入資料與著色器程式的緩衝物件還不夠。 要開始算繪時，Mesa 會指示 DRM 把所有必要的緩衝物件放進圖形記憶體，並啟動目前啟用的著色器程式。 這些流程同樣完全取決於硬體，由各個 DRM 驅動程式分別透過 `ioctl()` 操作提供。 和緩衝配置一樣，Mesa 內的硬體驅動會呼叫 DRM 驅動的 `ioctl()` 操作。 對於基於 Gallium3D 的 Mesa 驅動，這一步發生在驅動把 state tracker 的資訊轉換成硬體狀態的時候
+光是擁有用來存放輸出影像、輸入資料與著色器程式的緩衝物件還不夠。 要開始算繪時，Mesa 會指示 DRM 把所有必要的緩衝物件放進圖形記憶體，並啟動目前啟用的著色器程式。 這些流程同樣完全取決於硬體，由各個 DRM 驅動程式分別透過 `ioctl()` 操作提供。 和緩衝配置一樣，Mesa 內的硬體驅動會呼叫 DRM 驅動的 `ioctl()` 操作。 對於基於 Gallium3D 的 Mesa 驅動，這一步發生在驅動把狀態追蹤器（state tracker）的資訊轉換成硬體狀態的時候
 
 ::: tip  
-實作面上會涉及：將 BO 置入適當的記憶體域（例如 VRAM/系統記憶體）、建立/更新硬體狀態（綁定著色器、紋理、頂點來源等）、提交「繪圖命令」。 Gallium3D 的 state tracker 會先彙整 API 狀態，再由硬體特定（HW-specific）的 Mesa 驅動把這些狀態轉成底層 `ioctl()` 呼叫與命令緩衝（command buffer），交給 DRM 驅動送往 GPU  
+實作面上會涉及：將 BO 置入適當的記憶體域（例如 VRAM/系統記憶體）、建立/更新硬體狀態（綁定著色器、紋理、頂點來源等）、提交「繪圖命令」。 Gallium3D 的狀態追蹤器會先彙整 API 狀態，再由硬體特定（HW-specific）的 Mesa 驅動把這些狀態轉成底層 `ioctl()` 呼叫與命令緩衝（command buffer），交給 DRM 驅動送往 GPU  
 :::
 
-理想情況下，圖形驅動程式只是在 user space 的應用程式與硬體之間充當代理。 硬體算繪器會與圖形堆疊的其餘部分非同步地運作，只有在發生錯誤或成功完成時才回報給驅動。 有點像系統 CPU 在遇到 page fault 或 illegal instructions 時才會通知作業系統，只要沒有需要回報的事情，驅動的額外負擔就很小
+理想情況下，圖形驅動程式只是充當 user space 的應用程式與硬體之間的代理。 硬體算繪器會與圖形堆疊的其餘部分非同步地運作，只有在發生錯誤或成功完成時才回報給驅動。 有點像系統 CPU 在遇到 page fault 或 illegal instructions 時才會通知作業系統，只要沒有需要回報的事情，驅動的額外負擔就很小
 
 不過也有例外，例如較舊型號的 Intel 圖形晶片不支援頂點變換，因此 Mesa 內的驅動必須以軟體來實作。 在 Raspberry Pi 上，由於 VideoCore 4 晶片沒有 I/O MMU 可將著色器與系統隔離，核心的 DRM 驅動必須驗證每個著色器的記憶體存取
 
@@ -162,9 +162,9 @@ GPU 一旦接手命令便獨立執行，通常以中斷/訊號回報完成或錯
 
 ### Software rendering
 
-到目前為止，我們都假設有硬體支援圖形算繪。 如果沒有這種支援，或 user space 的應用程式無法使用它，會發生什麼事呢？ 例如，對於某個 user space 的 GUI 工具組，由於像 OpenGL 這樣以硬體為中心的介面不符合它的需求，而可能會偏好使用軟體算繪。 還有在開機時顯示開機標誌並提示輸入磁碟加密密碼的程式 Plymouth，它通常無法使用完整的圖形堆疊。 針對這些情境，DRM 提供了 dumb-buffer 的 `ioctl()` 介面
+到目前為止，我們都假設有硬體支援圖形算繪。 如果沒有這種支援，或 user space 的應用程式無法使用它，會發生什麼事呢？ 例如，對於某個 user space 的 GUI 工具組，由於像 OpenGL 這樣以硬體為中心的介面不符合它的需求，其可能會偏好使用軟體算繪。 還有在開機時顯示開機標誌並提示輸入磁碟加密密碼的程式 Plymouth，它通常無法使用完整的圖形堆疊。 針對這些情境，DRM 提供了 dumb-buffer 的 `ioctl()` 介面
 
-透過使用 dumb buffer，應用程式會在圖形記憶體中配置緩衝物件，但不具備任何硬體加速支援，因此回傳的緩衝物件只能用於軟體算繪。 像 GUI 工具組或 Plymouth 這類 user space 的應用程式，會把該緩衝物件的 page 映射到自己的位址空間，然後把輸出影像複製進去
+透過使用 dumb buffer，應用程式會在圖形記憶體中配置緩衝物件，但不具備任何硬體加速的支援，因此回傳的緩衝物件只能用於軟體算繪。 像 GUI 工具組或 Plymouth 這類 user space 的應用程式，會把該緩衝物件的 page 映射到自己的位址空間，然後把輸出影像複製進去
 
 ::: tip  
 dumb buffer 通常是線性、可 `mmap` 的顏色緩衝，沒有平鋪/壓縮與 GPU 特化格式。 CPU 把畫面資料（或由 Mesa 的 llvmpipe/softpipe 產生）寫入其中，再交由顯示路徑取用。 效能有限，但通用性高、依賴少  
@@ -182,11 +182,11 @@ Mesa 的軟體算繪器也類似：輸入的緩衝物件都位於系統記憶體
 
 user space 的應用程式幾乎不會自己把輸出顯示出來，而是交給螢幕合成器來完成。 合成器（compositor）是一個系統服務，它會接收每個應用程式的輸出緩衝，並把它們繪製成螢幕上的影像。 視窗的配置方式取決於合成器的實作，但最常見的是堆疊（[stacking](https://en.wikipedia.org/wiki/Stacking_window_manager)）與平鋪（[tiling](https://en.wikipedia.org/wiki/Tiling_window_manager)）。 合成器也負責收集使用者的輸入，並把輸入轉送給目標應用程式
 
-過去，合成以及圖形堆疊中的幾乎所有其他事情，都由 [X Window System](https://en.wikipedia.org/wiki/X_Window_System) 提供，X 實作了一種用於把圖形顯示到螢幕上的網路協定。 由於「其他事情」包含繪圖、mode-setting、螢幕分享，甚至[列印](https://www.x.org/releases/X11R6.8.2/doc/Xprint.7.html)，X 因此承受了軟體臃腫的問題，也難以因應圖形硬體與 Linux 系統的變化，於是需要一個更輕量的替代方案
+過去，合成以及圖形堆疊中的幾乎所有其他事情，都由 [X Window System](https://en.wikipedia.org/wiki/X_Window_System) 提供，X 實作了一種用於把圖形顯示到螢幕上的網路協定。 由於「其他事情」包含繪圖、mode-setting、螢幕分享，甚至[列印](https://www.x.org/releases/X11R6.8.2/doc/Xprint.7.html)，X 因此承受了軟體臃腫的問題，也難以因應圖形硬體與 Linux 系統的變化，於是人們便開始尋找一個更輕量的替代方案
 
 它的現代接班人是 [Wayland](https://wayland.freedesktop.org/)，其同樣採用了 client‑server 的設計，應用程式會作為用戶端，向合成器所提供的顯示服務提出請求。 Wayland 的參考合成器是 Weston，但實務上更常見的是 GNOME 的 [Mutter](https://gitlab.gnome.org/GNOME/mutter) 或 KDE 的 [KWin](https://invent.kde.org/plasma/kwin)
 
-Wayland 並不提供繪圖或列印，這個[協定](https://wayland-book.com/)僅提供合成所需的功能。 Wayland 的 surface 代表一個應用程式視窗，它是應用程式用來顯示其輸出、並從合成器接收輸入事件的介面。 附掛在 surface 上的是一個 Wayland buffer，其中包含可顯示的像素資料，以及顏色格式與尺寸資訊
+Wayland 並不提供繪圖或列印，這個[協定](https://wayland-book.com/)僅提供合成所需的功能。 Wayland 的 surface 代表一個應用程式視窗，它是應用程式用來顯示其輸出、並從合成器接收輸入事件的介面。 surface 上會附掛一個 Wayland buffer，其中包含可顯示的像素資料，以及顏色格式與尺寸資訊
 
 這些像素資料位於用戶端應用程式先前算繪完成的輸出緩衝中。 當變更某個 surface 所附掛的緩衝物件或其內容時，應用程式會透過 Wayland 協定送出 surface-damage 訊息給合成器，後者據此更新螢幕上的內容，也可能會改用新緩衝物件的內容。 也就是說，應用程式的輸出緩衝會成為 Wayland 合成器的輸入緩衝
 
@@ -194,15 +194,15 @@ Wayland 並不提供繪圖或列印，這個[協定](https://wayland-book.com/)�
 Wayland 把視窗抽象為 surface，把像素載體抽象為 buffer。 應用程式會把已算繪的像素附掛到 surface，並宣告「damage」區域告知哪裡需要重繪。 合成器接到通知後，取用該 buffer（通常為可 zero-copy 共享的 dma-buf），再把它放到合成場景中。 協定不會管要「如何繪圖」，只管「如何交付像素與事件」  
 :::
 
-合成器中的算繪流程，與第一章介紹的應用程式算繪完全相同。 合成器會維護一份代表應用程式視窗的 Wayland surface 清單。 這些視窗與合成器自身的介面元素，又會形成另一棵[場景圖](https://en.wikipedia.org/wiki/Scene_graph)。 背景可以是桌布影像、背景圖樣或顏色。 在背景之上，合成器繪製各個應用程式視窗。 實作上最簡單的方式是為每個視窗繪製一個矩形，並將應用程式提供的緩衝區物件當作紋理影像來使用
+合成器中的算繪流程，與第一章介紹的應用程式算繪完全相同。 合成器會維護一份代表應用程式視窗的 Wayland surface 清單。 這些視窗與合成器自身的介面元素，又會形成另一棵[場景圖](https://en.wikipedia.org/wiki/Scene_graph)。 背景可以是桌布影像、背景圖樣或顏色，合成器會在背景之上繪製各個應用程式視窗。 實作上最簡單的方式是為每個視窗繪製一個矩形，並將應用程式提供的緩衝區物件當作紋理影像來使用
 
-在應用程式視窗之上，合成器還會繪製它自己的使用者介面，例如讓使用者能與合成器本身互動的工作列。 最後、最上層的是用來指示使用者目前正在互動對象的元素，在桌面系統上通常就是鼠標。 與應用程式一樣，合成器同樣使用一般的 user space 介面進行算繪，例如透過 Mesa 的 OpenGL 或 Vulkan
+在應用程式視窗之上，合成器還會繪製它自己的使用者介面，例如讓使用者能與合成器本身互動的工作列。 最後、最上層的是用來目前正在與使用者互動的元素，在桌面系統上通常就是鼠標。 與應用程式一樣，合成器同樣使用一般的 user space 介面進行算繪，例如透過 Mesa 的 OpenGL 或 Vulkan
 
 ::: tip  
 合成器會把每個視窗視為一個「貼上紋理的矩形」，用 GPU 將它們依疊放/平鋪與 Z 順序、透明度等參數合成出最終畫面，同時也把自身 UI（面板、鼠標、提示等）納入同一場景圖中。 這讓合成器能沿用與應用程式相同的圖形管線與資源管理模式來完成顯示  
 :::
 
-讓這一切成真的最後一塊拼圖，是「緩衝物件」的傳輸機制。 與 X 不同，Wayland 應用程式一律會在與其合成器相同的主機上執行。 因此實作上可以針對這種情況做最佳化：不需要任何網路編碼、緩衝壓縮等額外處理
+讓這一切成真的最後一塊拼圖，是「緩衝物件」的傳輸機制。 與 X 不同，Wayland 應用程式和其合成器會在相同的主機上執行。 因此實作上可以針對這種情況做最佳化：不需要任何網路編碼、緩衝壓縮等額外處理
 
 若要傳輸一個位於系統記憶體中的緩衝物件，應用程式會建立一個指向該緩衝記憶體的檔案描述符，透過連線所使用的串流 socket 傳送出去（只需一則低成本的訊息），並讓合成器把這個檔案描述符所對應的記憶體 page 映射到它自己的位址空間
 
@@ -218,11 +218,11 @@ Wayland 以 `wl_shm` 共享記憶體途徑分享像素：客戶端將一段可�
 - [sockets/scm_rights_send.c](https://man7.org/tlpi/code/online/dist/sockets/scm_rights_send.c.html)  
 :::
 
-對於軟體算繪，透過共享記憶體傳輸資料就足以滿足它了，但對高效能的硬體算繪而言還不夠。 因為那種情況下，應用程式必須先在圖形硬體上算繪，然後再透過相對較慢的硬體匯流排把結果回讀到共享記憶體區域
+對於軟體算繪，透過共享記憶體傳輸資料就足以滿足它了，但因為應用程式必須先在圖形硬體上算繪，然後再透過相對較慢的硬體匯流排把結果回讀到共享記憶體區域，因此這還不能滿足高效能的硬體算繪需求
 
 為了避免上述代價，圖形緩衝必須維持在圖形記憶體中。 Wayland 提供了一個協定的擴充，透過 Linux 的 [dma-buf](https://www.kernel.org/doc/html/latest/driver-api/dma-buf.html) 來共享緩衝物件。 dma-buf 代表了一個可在硬體裝置、驅動與 user-space 程式之間共享的記憶體緩衝
 
-應用程式如同第一部分所述，會透過 Mesa 介面以硬體加速算繪其場景圖，但它不是傳遞指向共享記憶體的參照，而是傳送一個指向該緩衝物件（且仍位於圖形記憶體中的）dma-buf 物件。 Wayland 合成器可以直接使用其中的像素資料，而無需經由硬體匯流排把資料回讀出來
+應用程式如同第一部分所述，會透過 Mesa 介面以硬體加速算繪其場景圖，但它不是傳遞指向共享記憶體的參照，而是傳送一個指向該緩衝物件（且仍位於圖形記憶體中）的 dma-buf 物件。 Wayland 合成器可以直接使用其中的像素資料，而無需經由硬體匯流排把資料回讀出來
 
 ::: tip  
 `linux-dmabuf` Wayland 擴充允許客戶端把 GPU 端緩衝以 dma-buf（可跨驅動/裝置的共享 FD）形式交給合成器，這樣像素自始至終都留在「GPU/顯示」可直接存取的記憶體範圍，達成 zero-copy 的傳遞。 dma-buf 是 Linux 核心提供的跨裝置緩衝共享/同步框架，被 DRM/顯示子系統廣泛地使用
@@ -265,11 +265,11 @@ KMS 對使用者空間呈現的核心物件就是這五種：framebuffer → pla
 framebuffer 是被 scanout 讀取的像素來源，它同時攜帶像素格式、寬高等屬性。 驅動會將這些屬性寫入對應暫存器，並提供記憶體起始位址，硬體據此讀取像素  
 :::
 
-依硬體能力而定，framebuffer 可以比輸出的顯示模式更大或更小。 舉例來說，假設顯示器設定為 1920×1080 像素，如果 framebuffer 大於顯示模式，則它可能只會該 framebuffer 中的某個區域； 反之，若 framebuffer 小於顯示模式，它可能只會覆蓋螢幕上的一小塊，其他區域則留白
+依硬體能力而定，framebuffer 可以比輸出的顯示模式更大或更小。 舉例來說，假設顯示器設定為 1920×1080 像素，如果 framebuffer 大於顯示模式，則顯示器上可能只會顯示該 framebuffer 內的某個區域； 反之，若 framebuffer 小於顯示模式，則它可能只會覆蓋顯示器上的一小塊，其他區域則留白
 
-因此，管線的下一階段會在整體畫面中定位這個 scanout buffer。 在 DRM 術語裡，這個階段稱為 plane，它負責設定該 scanout buffer 的位置、方向與縮放參數。 視硬體而定，系統可能會有多個使用不同framebuffer 的 plane。 所有啟用中的 plane 都會把它們的像素輸出送往管線的第三階段，因歷史因素該階段被稱為 CRTC（cathode-ray tube controller）
+因此，管線的下一階段會在整體畫面中定位這個 scanout buffer。 在 DRM 術語裡，這個階段稱為 plane，它負責設定該 scanout buffer 的位置、方向與縮放參數。 視硬體而定，系統可能會有多個使用不同 framebuffer 的 plane。 所有啟用中的 plane 都會把它們的像素輸出送往管線的第三階段，因歷史因素該階段被稱為 CRTC（cathode-ray tube controller）
 
-CRTC 負責所有與顯示模式的設定相關的事項。 DRM 驅動會以某個顯示模式來設定（program）CRTC 的硬體，並將它與所有啟用中的 plane 與輸出端相連。 系統也可以同時存在多個設定各異的 CRTC，具體配置僅受限於硬體特性
+CRTC 負責所有與顯示模式的設定相關的事項。 DRM 驅動會以某個顯示模式來設定（program）CRTC 的硬體，並將它與所有啟用中的 plane 及輸出端相連。 系統也可以同時存在多個設定各異的 CRTC，具體配置僅受限於硬體特性
 
 各個 plane 會以疊放的方式排列，因此它們可以彼此重疊，或覆蓋輸出畫面的不同區域。 依據已設定的顯示模式與各 plane 的位置，CRTC 硬體會從這些 plane 取出像素資料，在需要時對重疊的 plane 進行混合，然後把結果傳遞到其輸出端
 
@@ -331,9 +331,9 @@ DRM 的狀態檢查階段獨立於硬體的當前狀態，且不會修改它。 
 
 但多數硬體還會提供一個額外的鼠標用平面，稱為 cursor plane。 這個平面只會覆蓋一小塊區域，並位於 primary plane 之上。 顧名思義，合成器使用 cursor plane 來顯示滑鼠指標影像，因此能在不改變 primary plane 的情況下自由移動該指標
 
-位於 primary 與 cursor plane 之間的是 overlay planes，它們大小各異，且常支援類 YUV 的色彩格式。 這讓它很適合用較低的 CPU 開銷來顯示視訊資料串流。 因此，通常視訊播放器應用程式會提供含有 YUV 基礎像素資料的緩衝物件給合成器
+位於 primary 與 cursor plane 之間的是 overlay planes，它們大小各異，且常支援類 YUV 的色彩格式。 這讓它很適合用較低的 CPU 開銷來顯示影像資料串流。 因此，通常影像播放器應用程式會提供含有 YUV 基礎像素資料的緩衝物件給合成器
 
-合成器會用該像素資料建立一個 framebuffer 並配置給 overlay plane。 此平面會在硬體中掃描 YUV 的像素資料，並將其轉換為 RGB 的色彩。 透過 dma-buf，視訊播放器可以把硬體視訊解碼器產生的各個 YUV 幀直接轉交給合成器，讓整個視訊處理都交由硬體完成
+合成器會用該像素資料建立一個 framebuffer 並配置給 overlay plane。 此平面會在硬體中掃描 YUV 的像素資料，並將其轉換為 RGB 的色彩。 透過 dma-buf，影像播放器可以把硬體影像解碼器產生的各個 YUV 幀直接轉交給合成器，讓整個影像處理都交由硬體完成
 
 若顯示更新的延遲為關鍵考量，將 mode-setting 能力直接交給單一應用程式會更有幫助。 為此，合成器會把該功能出租（lease）給應用程式。 當某個應用持有有效的 DRM lease 時，它便能完全控制整條 mode-setting 管線。 這對需要嚴格協調其內建顯示器的輸出頻率與延遲、以維持 3D 幻覺效果的 3D 頭戴式裝置特別有用。 DRM lease 的租約可能會到期或被撤銷，因此最終 mode-setting 的主控權仍在合成器手上
 
