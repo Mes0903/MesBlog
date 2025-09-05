@@ -81,7 +81,6 @@ export default sidebar([
         collapsible: true,
         prefix: "/Cpp-Miner/Miner_BlackMagic/",
         children: [
-          "",
           "NoConst/",
           "Explicit_Detect_Copy/",
           "SSO/",
@@ -112,6 +111,7 @@ export default sidebar([
       "The_mind_behind_Linux/",
       "physical_address_syscall/",
       "qemu_kernel_module/",
+      "linux-graphic-stack/",
     ],
   },
   {

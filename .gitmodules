@@ -8,9 +8,3 @@
 [submodule "src/OS/xv6-riscv-book-zh-TW"]
 	path = src/OS/xv6-riscv-book-zh-TW
 	url = git@github.com:Mes0903/xv6-riscv-book-zh-TW.git
-[submodule "src/Linux/LDD3-zh-TW"]
-	path = src/Linux/LDD3-zh-TW
-	url = git@github.com:Mes0903/LDD3-zh-TW.git
-[submodule "src/Linux/lkmpg-zh-TW"]
-	path = src/Linux/lkmpg-zh-TW
-	url = git@github.com:Mes0903/lkmpg-zh-TW.git

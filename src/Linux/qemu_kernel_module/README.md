@@ -37,7 +37,7 @@ sudo apt install -y build-essential git bc bison flex libelf-dev libssl-dev \
                     qemu qemu-system-x86 linux-libc-dev
 ```
 
-因為我不是直接從一個乾淨的環境開始建置的，所以不確定上面的指令會不會少裝什麼東西，但這類 minimal kernel + BusyBox + initramfs 的做法應該很多教學都有示例與命令可以參考，有缺的話應該 google 一下就能找到很多文章了<sup>[例1](https://ops.tips/notes/booting-linux-on-qemu/), [例2](https://cylab.be/blog/320/build-a-kernel-initramfs-and-busybox-to-create-your-own-micro-linux?utm_source=chatgpt.com)</sup>
+因為我不是直接從一個乾淨的環境開始建置的，所以不確定上面的指令會不會少裝什麼東西，但這類 minimal kernel + BusyBox + initramfs 的做法應該很多教學都有示例與命令可以參考，有缺的話應該 google 一下就能找到很多文章了<sup>[例1](https://ops.tips/notes/booting-linux-on-qemu/), [例2](https://cylab.be/blog/320/build-a-kernel-initramfs-and-busybox-to-create-your-own-micro-linux)</sup>
 
 接著下載 linux kernel 並編譯：
 

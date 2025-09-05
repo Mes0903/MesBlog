@@ -2045,7 +2045,7 @@ PMP 檢查適用於所有「有效特權模式」為 S 或 U 的存取，例如�
   - 對於 `L=0` 的區域 M-mode 能隨時更新 `pmpcfg/pmpaddr`，S-mode 也可以透過 SBI 做修改
     - 對於更多 PMP 的操作可能可以看看下面這幾篇?
       - [RISC-V Memory Protection: Diving Deep into the Complexities](https://incoresemi.com/risc-v-memory-protection-diving-deep-into-the-complexities/)
-      - [[RISC-V] [tech-tee] [RISC-V] [tech-privileged] comments on PMP enhancements](https://lists.riscv.org/g/tech-privileged/topic/risc_v_tech_tee_risc_v/71271792?utm_source=chatgpt.com)
+      - [[RISC-V] [tech-tee] [RISC-V] [tech-privileged] comments on PMP enhancements](https://lists.riscv.org/g/tech-privileged/topic/risc_v_tech_tee_risc_v/71271792)
       - [Verifying RISC-V Physical Memory Protection](https://arxiv.org/abs/2211.02179)
 :::
 
