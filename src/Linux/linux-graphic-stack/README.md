@@ -16,6 +16,63 @@ category:
 - [The Linux graphics stack in a nutshell, part 1](https://lwn.net/Articles/955376)
 - [The Linux graphics stack in a nutshell, part 2](https://lwn.net/Articles/955708)
 
+我的理解上，整個 big picture 分為兩部分：
+
+- rendering pipeline
+  - 與一般 graphics API 教學裡面說的 rendering pipeline 不同
+    - 一般 graphics API 教學裡的 rendering pipeline 是指 GPU 內部（由 OpenGL/Vulkan 規格定義）的圖形管線
+      - 如：頂點著色器 →（可選 TCS/TES/幾何）→ 光柵化 → 片段著色器 → 測試/混合 → 寫進 framebuffer
+    - 而這邊指的是應用程式透過 graphics API 一路到生成一塊 framebuffer 的流程
+      - 流程大概是：App → OpenGL/Vulkan → Mesa（user-space 驅動做著色器編譯/建命令）→ DRM（kernel 驅動提交/排程）→ GPU 執行「上面那條管線/或其他工作」→ 得到一塊 framebuffer
+  - 流程主要如下：
+    ```
+    ──────────────────────────── Rendering pipeline ───────────────────────────
+    【User space】
+    App
+    └─ OpenGL / Vulkan calls
+        └─ User-mode GPU driver (Mesa or vendor ICD)
+            ├─ Shader compile/optimize  (GLSL/HLSL → SPIR-V → NIR*)   *if Mesa
+            ├─ Build device-specific commands   ← black box (backend codegen)
+            └─ Submit via libdrm / DRM ioctls  (BO handles, command buffers, sync)
+               ※ 由 user-mode driver 經 libdrm 發起提交/同步，App 不直接送 3D ioctls
+
+    【Kernel space】
+    DRM kernel driver (GEM/TTM, drm_sched, dma-fence/syncobj, dma-buf)
+    └─ Schedules work on the GPU
+        └─ GPU executes (the “graphic API” internal rendering pipeline)
+            → writes into a render target / image / BO (pixel buffer)
+    ```
+- display pipeline
+  - 內含 KMS pipeline（又稱 mode-setting pipeline）
+    - 流程為：framebuffer → plane → CRTC → encoder →（可能有 bridge）→ connector
+  - 負責將 framebuffer 的內容輸出到螢幕上
+  - 流程主要如下：
+    ```
+    ───────────────────── Display pipeline (presentation + KMS) ────────────────────
+    Presentation boundary（Vulkan：swapchain，OpenGL：前/後臺緩衝 + SwapBuffers/eglSwapBuffers）
+    App acquires a presentable image（Vulkan：swapchain image，OpenGL：back buffer）
+      → renders into it → presents (with sync/fence)
+        └─ Compositor (Wayland) receives the image (often via dma-buf), composites
+            └─ KMS (used by the compositor)：atomic page flip / mode setting
+                └─ Display engine：framebuffer → plane → CRTC → encoder → connector → monitor
+    ```
+    Compositor 那部分也有不經由 Wayland/X11 的作法，改由 graphics API 直接接到 KMS，例如 Vulkan 的 `VK_KHR_display`/direct-to-display
+
+將兩者串起來的是「Presentation」這一層：Vulkan 以 swapchain 管理可呈現影像，OpenGL 則是以前/後臺緩衝配合 `SwapBuffers`/`eglSwapBuffers`。 一幀的實際時間順序是交錯的（主迴圈裡的多數操作都是非同步），多數應用的程式碼會同時包含「算繪（rendering）」跟「呈現（display/presentation）」兩塊：
+
+1. Acquire：App 取得一張「可呈現」的 image（Vulkan 會回傳 swapchain image 索引，通常以 semaphore/fence 同步其可用時機）
+2. Render into it：App 以「剛拿到的那張 image」做為最終寫入目標去算繪：
+   - 直接把它當 render pass 的 color attachment 來畫，或先 offscreen 畫到自己的中介貼圖，再 blit/resolve/fullscreen pass 到這張 image
+   - 這一步由 GPU 寫像素到該 presentable image（Vulkan 的 swapchain image / OpenGL 的 back buffer）
+3. Submit：App 提交命令到 GPU，等待（例如）`imageAvailable`，完成後 signal（例如）`renderFinished` 等同步物件
+4. Present：
+   - Wayland/X11 surface：交回 compositor，合成，多數情況對齊 vblank 顯示
+   - Direct-to-display（如 `VK_KHR_display`）：WSI 走 DRM/KMS 呈現，實作上傾向 atomic commit，legacy 路徑仍可見於部分環境
+
+整個東西還蠻複雜的，這篇文只是給個 big picture，其中的每個部分，像是 DRM、Wayland 等都還能再展開很多篇幅出來，單靠這篇文是無法了解太多細節的，但我認為這篇文還是一篇很優秀的介紹文
+
+> 註：ICD（Installable Client Driver）為 Vulkan 術語，OpenGL 一般稱 Mesa GL 驅動或專有 GL 驅動
+
 ## The Linux graphics stack in a nutshell, part 1
 
 當 Linux 圖形開發者談到「現代的 Linux 圖形系統」時，通常指的是多個獨立軟體元件的組合。 它包含了由核心管理的顯示資源、用於合成的 Wayland、加速的 3D 算繪（而非 X11）。 這個系列的兩篇文章會快速地帶你走訪圖形程式碼，看看它是如何把應用程式的資料轉成像素資料並顯示到螢幕上的。 本文這一篇將聚焦於應用程式算繪、Mesa 的內部運作，以及所需的核心功能
