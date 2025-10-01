@@ -327,6 +327,15 @@ struct virtq_avail {              struct virtq_used {
 
 Packed virtqueue 透過把三個 ring 合併到虛擬環境的 guest 記憶體中的同一處來進行了修正。 乍看之下好像更複雜，但你如果有意識到 driver 的資料在被裝置讀過後，其實是可以被丟棄並覆寫的（反之亦然），那就能明白這其實是很自然的修正
 
+::: tip  
+在同一台機器、同一個 VM、甚至同一個 virtio 裝置裡，可以有多個 virtqueue，它們彼此獨立，各自有自己的 ring/表格與中斷。 對於每一個 virtqueue，它們各自擁有獨立的一組結構：
+
+- split：descriptor ring + avail ring + used ring（各一個）
+- packed：一張 descriptor table，外加兩個事件抑制的小結構（driver area / device area，用來設定通知門檻/關閉）
+
+一個請求由一組 buffers（descriptors）組成，一個 descriptor ring 裡面可以包含多個請求的 descriptor，其以 `id` 來區分不同請求  
+:::
+
 #### 把描述符交給裝置：如何填裝置的待辦清單
 
 在完成第一節〈feature bits〉內所述的初始化流程，並就 `RING_PACKED` 特徵旗標達成共識之後，driver 與 device 會在 guest 記憶體中的一個約定位置，共同擁有一張空白的描述符表，其長度也需要雙方協議（最多到 2<sup>15</sup> 個項目）。 packed virtqueue 描述符的記憶體佈局如下：
@@ -340,7 +349,7 @@ struct virtq_desc {
 };
 ```
 
-這邊 `id` 欄位不再是裝置用來尋找 buffer 的索引了，對裝置而言它是不透明的值，只對 driver 有意義。 driver 還會維護一個內部的 1-bit 的 wrap 計數器，初始值為 1（set）。 每當 driver 將 ring 中的最後一個描述符標示為 available 時，就會翻轉這個計數器的值
+這邊 `id` 欄位不再是裝置用來尋找 buffer 的索引了，大部分情況下裝置會忽略 `id` 欄位，僅在寫回 used descriptor 時會用到它，以供 driver 知道完成的是哪筆請求，因此基本上只有 driver 會使用到 `id` 欄位。 driver 還會維護一個內部的 1-bit 的 wrap 計數器，初始值為 1（set）。 每當 driver 將 ring 中的最後一個描述符標示為 available 時，就會翻轉這個計數器的值
 
 ::: tip  
 wrap 計數器用來解決「同一槽位被循環重用」時，如何區分「這是這一輪的 available」與「上一輪的殘留」的問題。 每繞一圈就翻轉，搭配 `AVAIL`/`USED` 位元即可辨識新舊世代。 device 也需追蹤對方的 wrap，才能正確判讀 available 屬性  

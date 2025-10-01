@@ -2,8 +2,12 @@
 title: rv32emu Introduction
 date: 2024-12-15
 mathjax: true
-tag: risc-v
-category: risc-v
+tag: 
+- VM
+- risc-v
+category:
+- VM
+- risc-v
 ---
 
 # rv32emu Introduction

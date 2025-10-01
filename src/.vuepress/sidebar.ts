@@ -90,29 +90,125 @@ export default sidebar([
     ],
   },
   {
-    text: "risc-v",
+    text: "系統軟體",
     collapsible: true,
-    prefix: "/risc-v/",
     children: [
-      "OSDI/",
-      "risc-v-note/",
-      "Machine-Level-ISA/",
-      "Supervisor-Level-ISA/",
-      "ACLINT/",
-      "PLIC/",
-      "rv32emu-Introduction/",
-    ],
-  },
-  {
-    text: "Linux",
-    collapsible: true,
-    prefix: "/Linux/",
-    children: [
-      "The_mind_behind_Linux/",
-      "physical_address_syscall/",
-      "qemu_kernel_module/",
-      "linux-graphic-stack/",
-    ],
+      {
+        text: "Linux",
+        collapsible: true,
+        prefix: "/Linux/",
+        children: [
+          "The_mind_behind_Linux/",
+          "physical_address_syscall/",
+          "qemu_kernel_module/",
+          "linux-graphic-stack/",
+        ],
+      },
+      {
+        text: "虛擬機器",
+        collapsible: true,
+        prefix: "/VM/",
+        children: [
+          "rv32emu-Introduction/",
+          "redhat_virtio/",
+          "virtio_spec/",
+        ]
+      },
+      {
+        text: "OS",
+        collapsible: true,
+        children: [
+          {
+            text: "清大周志遠 OS",
+            collapsible: true,
+            prefix: "/OS/NTHU/",
+            children: [
+              "",
+              "Introduction/",
+              "OS-Structured/",
+              "Process-Concept/",
+            ]
+          },
+          {
+            text: "OSTEP",
+            collapsible: true,
+            children: [
+              {
+                text: "Virtualization",
+                collapsible: true,
+                prefix: "/OS/OSTEP/Virtualization/",
+                children: [
+                  "18/",
+                  "19/",
+                  "20/",
+                  "21/",
+                  "22/",
+                  "23/",
+                ]
+              },
+              {
+                text: "Concurrency",
+                collapsible: true,
+                prefix: "/OS/OSTEP/Concurrency/",
+                children: [
+                  "26/",
+                  "27/",
+                  "28/",
+                  "29/",
+                  "30/",
+                  "31/",
+                  "32/",
+                  "33/",
+                ]
+              },
+              {
+                text: "Persistence",
+                collapsible: true,
+                prefix: "/OS/OSTEP/Persistence/",
+                children: [
+                  "36/",
+                  "37/",
+                  "38/",
+                  "39/",
+                  "40/",
+                  "41/",
+                ]
+              },
+            ]
+          },
+          {
+            text: "xv6 riscv book 繁體中文翻譯",
+            collapsible: true,
+            prefix: "/OS/xv6-riscv-book-zh-TW/",
+            children: [
+              "",
+              "chapter1/",
+              "chapter2/",
+              "chapter3/",
+              "chapter4/",
+              "chapter5/",
+              "chapter6/",
+              "chapter7/",
+              "chapter8/",
+              "chapter9/",
+            ]
+          },
+        ],
+      },
+      {
+        text: "risc-v",
+        collapsible: true,
+        prefix: "/risc-v/",
+        children: [
+          "OSDI/",
+          "risc-v-note/",
+          "Machine-Level-ISA/",
+          "Supervisor-Level-ISA/",
+          "ACLINT/",
+          "PLIC/",
+        ],
+      },
+    ]
   },
   {
     text: "Computer Graphic",
@@ -171,87 +267,6 @@ export default sidebar([
         collapsible: true,
         children: [
           "glfwInputGuide/",
-        ]
-      },
-    ],
-  },
-  {
-    text: "OS",
-    collapsible: true,
-    children: [
-      {
-        text: "清大周志遠 OS",
-        collapsible: true,
-        prefix: "/OS/NTHU/",
-        children: [
-          "",
-          "Introduction/",
-          "OS-Structured/",
-          "Process-Concept/",
-        ]
-      },
-      {
-        text: "OSTEP",
-        collapsible: true,
-        children: [
-          {
-            text: "Virtualization",
-            collapsible: true,
-            prefix: "/OS/OSTEP/Virtualization/",
-            children: [
-              "18/",
-              "19/",
-              "20/",
-              "21/",
-              "22/",
-              "23/",
-            ]
-          },
-          {
-            text: "Concurrency",
-            collapsible: true,
-            prefix: "/OS/OSTEP/Concurrency/",
-            children: [
-              "26/",
-              "27/",
-              "28/",
-              "29/",
-              "30/",
-              "31/",
-              "32/",
-              "33/",
-            ]
-          },
-          {
-            text: "Persistence",
-            collapsible: true,
-            prefix: "/OS/OSTEP/Persistence/",
-            children: [
-              "36/",
-              "37/",
-              "38/",
-              "39/",
-              "40/",
-              "41/",
-            ]
-          },
-        ]
-      },
-      {
-        text: "xv6 riscv book 繁體中文翻譯",
-        collapsible: true,
-        prefix: "/OS/xv6-riscv-book-zh-TW/",
-        children: [
-          "",
-          "chapter1/",
-          "chapter2/",
-          "chapter3/",
-          "chapter4/",
-          "chapter5/",
-          "chapter6/",
-          "chapter7/",
-          "chapter8/",
-          "chapter9/",
         ]
       },
     ],
