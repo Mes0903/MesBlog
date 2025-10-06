@@ -448,7 +448,7 @@ cannot seek
   - `EOVERFLOW`：結果 offset 超過 `off_t` 可表示範圍
   - `ESPIPE`：`fd` 是 pipe、socket 或 FIFO
 - Q：如果 `lseek()` 使用的負 offset 超過了檔案開頭，會發生什麼？
-  - A：回傳 -1，並設置 `errno`（通常為 `EINVAL`）。
+  - A：回傳 -1，並設置 `errno`（通常為 `EINVAL`）
 
 #### 範例 2（來自 APUE Figure 3.2）
 
@@ -483,10 +483,10 @@ int main(void) {
 
 ##### 執行流程
 
-1. 使用 `creat()` 建立新檔案 `file.hole`。
-2. `write(fd, buf1, 10)` → 在檔案開頭寫入 "abcdefghij"，此時 offset = 10。
-3. `lseek(fd, 16384, SEEK_SET)` → 將 offset 移到 16384（中間的區域尚未寫入）。
-4. `write(fd, buf2, 10)` → 在 offset=16384 的位置寫入 "ABCDEFGHIJ"，最後 offset=16394。
+1. 使用 `creat()` 建立新檔案 `file.hole`
+2. `write(fd, buf1, 10)` → 在檔案開頭寫入 "abcdefghij"，此時 offset = 10
+3. `lseek(fd, 16384, SEEK_SET)` → 將 offset 移到 16384（中間的區域尚未寫入）
+4. `write(fd, buf2, 10)` → 在 offset=16384 的位置寫入 "ABCDEFGHIJ"，最後 offset=16394
 
 ##### 檔案內容觀察
 
@@ -539,11 +539,11 @@ $ ls -ls file.hole file.nohole
 當我們在 Linux 使用 `time` 命令來測量程式執行時間時，會看到三個主要的時間統計值：
 
 - real  
-  又稱「wall clock time」或「elapsed time」，表示從程式開始執行到結束所經過的實際時間，就像用手錶量到的時間。 這個時間包含了 CPU 執行時間、I/O 等待時間、context switch、以及其他程式執行所造成的延遲。
+  又稱「wall clock time」或「elapsed time」，表示從程式開始執行到結束所經過的實際時間，就像用手錶量到的時間。 這個時間包含了 CPU 執行時間、I/O 等待時間、context switch、以及其他程式執行所造成的延遲
 - user  
-  程式在「user space」中執行所消耗的 CPU 時間。 這部分主要包含應用程式本身的計算工作，例如數學運算、字串處理、記憶體操作等。
+  程式在「user space」中執行所消耗的 CPU 時間。 這部分主要包含應用程式本身的計算工作，例如數學運算、字串處理、記憶體操作等
 - sys  
-  程式在「kernel space」中執行所消耗的 CPU 時間。 這通常來自系統呼叫，例如 `read()`、`write()`、`open()`、`close()` 等需要進入 kernel 的操作。
+  程式在「kernel space」中執行所消耗的 CPU 時間。 這通常來自系統呼叫，例如 `read()`、`write()`、`open()`、`close()` 等需要進入 kernel 的操作
 
 例如下面是我環境上 `time ls` 命令的輸出：
 
@@ -558,8 +558,8 @@ sys     0m0.001s
 
 這三個值的關係為：
 
-- 一般情況下 `real >= user + sys`，因為除了 CPU 真正執行的時間外，還有等待 I/O、被排程器暫停、或其他延遲。
-- 在平行運算（多核心）下，可能出現 `real < user + sys`，因為多個核心同時貢獻了 CPU 時間。
+- 一般情況下 `real >= user + sys`，因為除了 CPU 真正執行的時間外，還有等待 I/O、被排程器暫停、或其他延遲
+- 在平行運算（多核心）下，可能出現 `real < user + sys`，因為多個核心同時貢獻了 CPU 時間
 
 導致 `real` 大於 `user + sys` 差異的原因很多，常見的包括：
 
@@ -596,32 +596,32 @@ if (n < 0)
 
 ![（From APUE 3rd Edition：Figure 3.6）](image/APUE3.6.png)
 
-針對一個約 516 MB 的檔案，其使用 20 種不同的 buffer size 測試，觀察 user CPU time、system CPU time、以及 wall clock time。
+針對一個約 516 MB 的檔案，其使用 20 種不同的 buffer size 測試，觀察 user CPU time、system CPU time、以及 wall clock time
 
-- 當 buffer size 很小（例如 1 byte, 2 bytes），`read()` 與 `write()` 呼叫次數非常多（數億次），system CPU time 非常高（>100 秒），wall clock time 也非常長（>130 秒）。
-- 當 buffer size 增大（例如 4096, 8192, 32768 bytes），系統呼叫次數急劇下降，system CPU time 減少到 <1 秒，wall clock time 也穩定在 ~8.5 秒左右。
-- 這顯示「I/O 系統呼叫的開銷」遠大於「單純搬移資料的時間」，因此較大的 buffer 能大幅減少系統呼叫數量，提升效能。
-- 特殊現象：當 buffer size 到達 32 bytes 或更大時，wall clock time 幾乎沒有差異，因為系統呼叫次數已經下降到一個相對合理的數量，再增大 buffer 並不會帶來太大改進。
+- 當 buffer size 很小（例如 1 byte, 2 bytes），`read()` 與 `write()` 呼叫次數非常多（數億次），system CPU time 非常高（>100 秒），wall clock time 也非常長（>130 秒）
+- 當 buffer size 增大（例如 4096, 8192, 32768 bytes），系統呼叫次數急劇下降，system CPU time 減少到 <1 秒，wall clock time 也穩定在 ~8.5 秒左右
+- 這顯示「I/O 系統呼叫的開銷」遠大於「單純搬移資料的時間」，因此較大的 buffer 能大幅減少系統呼叫數量，提升效能
+- 特殊現象：當 buffer size 到達 32 bytes 或更大時，wall clock time 幾乎沒有差異，因為系統呼叫次數已經下降到一個相對合理的數量，再增大 buffer 並不會帶來太大改進
 - 小整理：
   - `time` 呈現的三種時間（real, user, sys）能幫助我們理解程式效能瓶頸：
      - user 高 → 演算法運算量大
      - sys 高 → 系統呼叫過於頻繁（典型的 I/O 瓶頸）
      - real 高但 user+sys 小 → 程式在等待 I/O 或被 scheduler 暫停
-  - 在 I/O 效率實驗中，最關鍵的瓶頸是 buffer size 選擇。
+  - 在 I/O 效率實驗中，最關鍵的瓶頸是 buffer size 選擇
      - 小 buffer → 太多 `read/write` 系統呼叫 → sys time 過高
      - 適當的 buffer（4KB 到數十 KB）→ 效能最佳化，因為呼叫次數與 CPU 負載達到平衡
      - 再增大 buffer → 改善有限，因為瓶頸不在系統呼叫，而在 I/O 裝置吞吐量
-  - 實際應用中，作業系統和標準 I/O 函式庫（例如 `fread/fwrite`）通常已經提供緩衝機制，避免了使用極小 buffer 的低效率情況。
-  - `real >= user + sys` 的原因主要在於等待與調度，而不是 CPU time 的計算錯誤。
-  - 適當的 buffer size 對 I/O 效率影響極大。 小 buffer 造成 system CPU time 激增，導致整體效能低下。
-  - 在實務上，理解 `time` 三種時間的關係，可以幫助定位效能問題是出在「演算法計算」還是「I/O 系統呼叫」。
+  - 實際應用中，作業系統和標準 I/O 函式庫（例如 `fread/fwrite`）通常已經提供緩衝機制，避免了使用極小 buffer 的低效率情況
+  - `real >= user + sys` 的原因主要在於等待與調度，而不是 CPU time 的計算錯誤
+  - 適當的 buffer size 對 I/O 效率影響極大。 小 buffer 造成 system CPU time 激增，導致整體效能低下
+  - 在實務上，理解 `time` 三種時間的關係，可以幫助定位效能問題是出在「演算法計算」還是「I/O 系統呼叫」
 
 #### Unix Buffer（Page）Cache
 
-- Unix kernel 會維護一個 Buffer Cache（或稱 Page Cache），目的是避免每次存取都直接觸發昂貴的磁碟 I/O。
+- Unix kernel 會維護一個 Buffer Cache（或稱 Page Cache），目的是避免每次存取都直接觸發昂貴的磁碟 I/O
 - 核心的兩個優化策略是：
-  - Read-ahead（預讀）：當系統偵測到應用程式在順序讀檔案，會自動一次讀取超過應用程式要求的區塊，把未來可能會需要的資料先放進快取，這樣之後的 `read()` 就能直接從快取中取資料，而不用再向磁碟請求。
-  - Delayed-write（延遲寫入）：當應用程式呼叫 `write()`，資料會先寫入 kernel 的 buffer cache，而不是馬上寫到磁碟。 之後系統會根據策略（例如快取區塊滿了、或定期同步）再把資料真正寫回磁碟。 這樣可以合併多次小的寫入，降低磁碟 I/O 次數。
+  - Read-ahead（預讀）：當系統偵測到應用程式在順序讀檔案，會自動一次讀取超過應用程式要求的區塊，把未來可能會需要的資料先放進快取，這樣之後的 `read()` 就能直接從快取中取資料，而不用再向磁碟請求
+  - Delayed-write（延遲寫入）：當應用程式呼叫 `write()`，資料會先寫入 kernel 的 buffer cache，而不是馬上寫到磁碟。 之後系統會根據策略（例如快取區塊滿了、或定期同步）再把資料真正寫回磁碟。 這樣可以合併多次小的寫入，降低磁碟 I/O 次數
 
 ### Duplicating file descriptors（檔案描述符複製）
 
@@ -764,11 +764,11 @@ int fcntl(int fd, int cmd, ... /* int arg */ );
 
 `fcntl` 函式有以下 5 種功能：
 
-1. 複製一個已有的描述符（`cmd = F_DUPFD` 或 `F_DUPFD_CLOEXEC`）。
-2. 獲取／設置file descriptor flags（`cmd = F_GETFD` 或 `F_SETFD`）。
-3. 獲取／設置file status flags（`cmd = F_GETFL` 或 `F_SETFL`）。
-4. 獲取／設置異步 I/O 所有者（`cmd = F_GETOWN` 或 `F_SETOWN`）。
-5. 獲取／設置記錄鎖（`cmd = F_GETLK`, `F_SETLK`, `F_SETLKW`）。
+1. 複製一個已有的描述符（`cmd = F_DUPFD` 或 `F_DUPFD_CLOEXEC`）
+2. 獲取／設置file descriptor flags（`cmd = F_GETFD` 或 `F_SETFD`）
+3. 獲取／設置file status flags（`cmd = F_GETFL` 或 `F_SETFL`）
+4. 獲取／設置異步 I/O 所有者（`cmd = F_GETOWN` 或 `F_SETOWN`）
+5. 獲取／設置記錄鎖（`cmd = F_GETLK`, `F_SETLK`, `F_SETLKW`）
 
 #### file descriptor flags 與 file status flags
 
@@ -781,7 +781,7 @@ descriptor flag 與 status flag 是兩種不同層級：前者綁在「fd 本身
   
   新的 descriptor 與原本的 fd 共享同一個「open file table entry」（見圖 3.9）。 但新 descriptor 擁有自己的「descriptor flag」，而且其 `FD_CLOEXEC`（close-on-exec）旗標會被清除，這表示在執行 `exec` 之後，該 descriptor 仍會保持開啟
 - `F_DUPFD_CLOEXEC`  
-  複製 file descriptor，並為新的 descriptor 設定 `FD_CLOEXEC` 旗標。 回傳新的 file descriptor。
+  複製 file descriptor，並為新的 descriptor 設定 `FD_CLOEXEC` 旗標。 回傳新的 file descriptor
 - `F_GETFD`  
   以函式回傳值的方式，取得 fd 的「descriptor flag」。 目前定義的 descriptor flag 只有一個：`FD_CLOEXEC`
 - `F_SETFD`  
@@ -861,9 +861,9 @@ read write
 ```
 
 - `5<>temp.foo`  會把 `temp.foo` 以讀寫模式開啟到 file descriptor 5
-- 在 bash 中，`n<>file` 代表以「讀寫」模式把檔案繫結到 `fd n`。
-- 這不是 C 程式直接呼叫 `open()`，而是由 shell 在執行你的程式前就替你打開 `fd 5`。
-- 因為是「讀寫」模式，所以用上例程式去檢查 `fd 5`，會看到 `O_RDWR`。
+- 在 bash 中，`n<>file` 代表以「讀寫」模式把檔案繫結到 `fd n`
+- 這不是 C 程式直接呼叫 `open()`，而是由 shell 在執行你的程式前就替你打開 `fd 5`
+- 因為是「讀寫」模式，所以用上例程式去檢查 `fd 5`，會看到 `O_RDWR`
 - 這也說明：程式端不一定知道檔名，但能藉由 `fd` 觀察到開啟模式與旗標
 
 #### 範例 2：修改 file status flags
@@ -911,8 +911,8 @@ fd3 = open(pathname, oflags);
 
 ### /dev/fd
 
-- 新版 Unix 系統提供 `/dev/fd` 目錄，內有 `0`、`1`、`2`… 等項目（以檔案形式對應 fd）。
-- 開啟 `/dev/fd/n` 等同於複製 descriptor `n`。
+- 新版 Unix 系統提供 `/dev/fd` 目錄，內有 `0`、`1`、`2`… 等項目（以檔案形式對應 fd）
+- 開啟 `/dev/fd/n` 等同於複製 descriptor `n`
 
 ```c
 int fd = open("/dev/fd/0", mode);   // 等同於
@@ -928,16 +928,16 @@ int fd2 = dup(0);
 int ioctl(int fd, int request, ...);
 ```
 
-- `ioctl` 是 I/O 操作的萬用介面：凡無法用標準檔案 I/O 函式表達的操作，通常以 `ioctl` 提供。
-- 每個裝置驅動可以自訂自己的 `ioctl` 命令集合。
+- `ioctl` 是 I/O 操作的萬用介面：凡無法用標準檔案 I/O 函式表達的操作，通常以 `ioctl` 提供
+- 每個裝置驅動可以自訂自己的 `ioctl` 命令集合
 - 系統也為不同裝置類別提供通用的 `ioctl` 命令
 
 ### Error Handling（錯誤處理）
 
-- `<errno.h>` 定義整數變數 `errno`，在系統呼叫或部分程式庫函式失敗時設定，以指出錯因。
-- 規範於 POSIX.1 與 C99。
-- 只有當呼叫的回傳值表示錯誤時（多數系統呼叫回傳 `-1`，多數函式回傳 `-1` 或 `NULL`），`errno` 的值才有意義。
-- 若沒有錯誤，`errno` 不會被改變。
+- `<errno.h>` 定義整數變數 `errno`，在系統呼叫或部分程式庫函式失敗時設定，以指出錯因
+- 規範於 POSIX.1 與 C99
+- 只有當呼叫的回傳值表示錯誤時（多數系統呼叫回傳 `-1`，多數函式回傳 `-1` 或 `NULL`），`errno` 的值才有意義
+- 若沒有錯誤，`errno` 不會被改變
 - 可參考 Linux 的 `errno(3)` man page
 
 ### Error Recovery（錯誤復原）
@@ -982,14 +982,14 @@ if ((fd = open(path, O_WRONLY)) < 0) {
 
 這邊的目標是：
 
-- 若檔案已存在：用唯寫開啟。
-- 若不存在：建立後開啟。
+- 若檔案已存在：用唯寫開啟
+- 若不存在：建立後開啟
 
 乍看合理，但中間有競態窗與語意不一致兩個大問題
 
 ##### 問題：TOCTTOU 競態（Time Of Check To Time Of Use）
 
-`open(path, O_WRONLY)` 失敗（ENOENT）與後續 `creat(path, mode)` 之間不是原子動作。 只要在這個空窗期有別的行程動到同一路徑，就可能出事。
+`open(path, O_WRONLY)` 失敗（ENOENT）與後續 `creat(path, mode)` 之間不是原子動作。 只要在這個空窗期有別的行程動到同一路徑，就可能出事
 
 典型時序（A、B 兩個行程同時執行）：
 
@@ -1004,7 +1004,7 @@ if ((fd = open(path, O_WRONLY)) < 0) {
 </span>
 
 - 為什麼可被截斷？
-  - `creat` 等價於 `open(path, O_WRONLY | O_CREAT | O_TRUNC, mode)`，如果目標在呼叫時檔案已存在，`O_TRUNC` 會把它清空。
+  - `creat` 等價於 `open(path, O_WRONLY | O_CREAT | O_TRUNC, mode)`，如果目標在呼叫時檔案已存在，`O_TRUNC` 會把它清空
 
 ### `pread` / `pwrite`
 
@@ -1016,6 +1016,7 @@ ssize_t pread (int fd, void *buf,  size_t nbytes, off_t offset);
 ssize_t pwrite(int fd, const void *buf, size_t nbytes, off_t offset);
 ```
 
-- 等價於「`lseek()` + `read()`/`write()`」但以單一步驟原子地完成。
-- 在指定 `offset` 處進行讀/寫，不會改變目前檔案偏移。
-- 回傳值語意與 `read`/`write` 相同。
+- 等價於「`lseek()` + `read()`/`write()`」但以單一步驟原子地完成
+- 在指定 `offset` 處進行讀/寫，不會改變目前檔案偏移
+- 回傳值語意與 `read`/`write` 相同
+
