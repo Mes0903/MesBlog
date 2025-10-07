@@ -1020,3 +1020,214 @@ ssize_t pwrite(int fd, const void *buf, size_t nbytes, off_t offset);
 - 在指定 `offset` 處進行讀/寫，不會改變目前檔案偏移
 - 回傳值語意與 `read`/`write` 相同
 
+### File/Record Locking
+
+- Unix 提供鎖定機制以避免檔案不一致：
+  - File locking：針對整個檔案的獨占存取
+  - Record locking（byte-range locking）：只對檔案中指定區段（位元組範圍）做獨占存取
+- Unix 系統允許行程對檔案加上獨占鎖，以防止其他行程同時讀／寫同一檔案
+  - 當索取鎖的時候，如果該行程：
+    - 成功取得了鎖，則它可讀寫該檔案
+    - 被拒絕了，則直到鎖被釋放前無法取得鎖
+
+#### 在 Unix 中使用建議式鎖定（advisory locking）的三種方式
+
+- 檔案鎖：`flock()`（鎖整個檔案）
+- 區段鎖：
+  - `fcntl()`（對檔案中的任意位元組範圍加鎖）
+  - `lockf()`（基於 `fcntl()` 之上的簡化介面）
+
+#### 建議式鎖定（Advisory Locking） vs 強制式鎖定（Mandatory Locking）
+
+##### 建議式（Advisory）
+
+- 介面：`fcntl()`、`flock()`、`lockf()`
+- 屬於合作式鎖定：所有參與的行程必須自律地遵守鎖定協定，在存取共享檔案時主動呼叫鎖定函式
+- 問題：就算行程沒有取得鎖，它仍可以無視協定以存取共享檔案，這是設計上的行為，並非錯誤
+
+##### 強制式（Mandatory）
+
+- 作業系統核心會檢查並強制每一個對共享檔案的操作，避免違反鎖定
+- 參考：[man7：`fcntl` locking](https://man7.org/linux/man-pages/man2/fcntl_locking.2.html)
+
+##### 範例
+
+假設 `lock()` 為建議式鎖
+
+###### 情境 A（只有 Process 1 用鎖，Process 2 不用鎖）
+
+下例中 Process 2 仍可寫入指定檔案，忽略 Process 1 的建議式鎖
+
+Process 1：
+
+```c
+int fd = open(PATH, ..);
+// use lock() to acquire a lock
+int ret = lock(fd, ...);
+if (!ret) { 
+  // Lock acquired. Read the file now
+  while (count)
+    int bytes = read(fd, buf, sizeof(buf));
+}
+ret = unlock(fd, ...);
+close(fd);
+```
+
+Process 2：
+
+```c
+int fd = open(PATH, ..);
+// didn't use the lock()
+int bytes = write(fd, buf, sizeof(buf));
+close(fd);
+```
+
+###### 情境 B（兩邊都使用鎖）：
+
+下例中 Process 2 只有在成功取得寫入的獨占鎖時，才能寫入該檔案
+
+Process 1：
+
+```c
+int fd = open(PATH, ..);
+// use lock() to acquire a lock
+int ret = lock(fd, ...);
+if (!ret) { 
+  // Lock acquired. Read the file now
+  while (count)
+    int bytes = read(fd, buf, sizeof(buf));
+}
+ret = unlock(fd, ...);
+close(fd);
+```
+
+Process 2：
+
+```c
+int fd = open(PATH, ..);
+// use lock() to acquire a lock
+int ret = lock(fd, ...);
+if (!ret) {
+	int bytes = write(fd, buf, sizeof(buf));
+}
+ret = unlock(fd, ...);
+close(fd);
+```
+
+### `flock`
+
+```c
+#include <sys/file.h>
+// returns: 0 on success, −1 on error
+int flock(int fd, int operation);
+```
+
+- `flock()` 對已開啟的檔案套用或移除鎖
+- `operation` 可為：
+  - `LOCK_SH`：加共享鎖，同一時間可有多個行程持有同一檔案的共享鎖
+  - `LOCK_EX`：加獨占鎖，同一時間只有一個行程可持有該檔案的獨占鎖
+  - `LOCK_UN`：移除本行程持有的既有鎖
+
+#### Review：File I/O：`fcntl`
+
+```c
+#include <fcntl.h>
+// The value returned on a success call depends on cmd; -1 is returned on error
+int fcntl(int fd, int cmd, ... /* int arg */ );
+/* ... is the ISO C way to specifythat the number and types of the remaining arguments may vary */
+```
+
+- `fcntl()` 會對「已開啟的 fd」執行由 `cmd` 指定的操作
+- `fcntl` 支援 11 個 `cmd` 值、對應五類用途（詳見第 3.14 章）：
+  - 複製既有 descriptor（就像 `dup`）
+  - 取得／設定 file descriptor flags（存在每行程的「fd 表項目」）
+  - 取得／設定 file status flags（存在開啟檔案表項目）
+  - 取得／設定非同步 I/O 擁有者
+  - 取得／設定檔案紀錄鎖
+- 是否需要第三個引數 `arg` 視 `cmd` 而定（可選）
+
+```c
+#include <fcntl.h>
+// depends on cmd if OK, −1 on error
+int fcntl(int fd, int cmd, ..., /* struct flock *flockptr */ );
+
+struct flock {
+    short l_type;   /* F_RDLCK, F_WRLCK, F_UNLCK */
+    short l_whence; /* SEEK_SET, SEEK_CUR, or SEEK_END, same asthe whence in lseek */
+                    /* （問題：`asthe` 應為 `as the`） */
+    off_t l_start;  /* offset in bytes relative to whence */
+    off_t l_len;    /* length, in bytes, 0 means lock to EOF */
+    pid_t l_pid;    /* filled in by F_GETLK, ignore otherwise */
+};
+```
+
+- `fcntl` 以 `flockptr` 指向 `struct flock`，描述鎖的資訊
+- `fcntl` 有三種記錄鎖相關的 `cmd`：
+  - `F_SETLK`、`F_SETLKW`、`F_GETLK`
+- 其中 `l_type` 可為：
+  - `F_RDLCK`：共享讀鎖
+  - `F_WRLCK`：獨占寫鎖
+  - `F_UNLCK`：解除鎖
+
+##### 讀鎖／寫鎖語意
+
+- 共享讀鎖：任意多個行程可在同一位元組（或區段）上同時持有讀鎖。 但只要有讀鎖存在，該區段就不能有寫鎖
+- 獨占寫鎖：同一位元組（或區段）同時只能被一個行程持有寫鎖。 有寫鎖時，該區段不能有任何讀／寫鎖（單一寫者、無讀者）
+
+![（From APUE 3rd Edition：Figure 14.3）](image/APUE14.3.png)
+
+##### `fcntl` 支援的鎖定命令
+
+- `F_GETLK`：測試 `flockptr` 所描述的鎖是否可加：
+  - 若可，回傳時把 `l_type` 設為 `F_UNLCK`（其他欄位不變）
+  - 若不可（檔案某處已被鎖上），回傳時用阻擋你的其中一把鎖來更新 `flockptr` 的 `l_type/l_whence/l_start/l_len/l_pid`
+- `F_SETLK`：嘗試依 `flockptr` 設鎖。 若失敗（例如被別的行程持鎖），立即回傳 `-1` 並設 `errno`（`EACCES` 或 `EAGAIN`）
+  - 加鎖：`l_type` 設 `F_RDLCK` 或 `F_WRLCK`，範圍由 `l_whence/l_start/l_len` 指定
+  - 解鎖：`l_type` 設 `F_UNLCK`
+- `F_SETLKW`：同 `F_SETLK`，但若衝突，呼叫端會等待（阻塞）直到鎖釋放
+
+##### `fcntl` 記錄鎖：補充
+
+- 設定或解除鎖時，系統會合併／分割相鄰的區段（必要時）
+  - 例如若已鎖定 100–149、151–199，當再鎖定位元組 150 時，核心會把它們合併成 100–199
+- 非原子：先 `F_GETLK` 再 `F_SETLK/​F_SETLKW` 會做兩次 `fcntl()`，中間可能有其他行程搶先加鎖
+- 開啟模式要求：
+  - 要取得讀鎖，`fd` 必須以可讀方式開啟
+  - 要取得寫鎖，`fd` 必須以可寫方式開啟
+
+![（From APUE 3rd Edition：Figure 14.4）](image/APUE14.4.png)
+
+##### Unix 對記錄鎖的實作
+
+核心不會追蹤「哪個 descriptor 擁有哪把記錄鎖」，而是以 `<process:file>` 的對映（存在 vnode/inode 結構中）追蹤
+
+![（From APUE 3rd Edition：Figure 14.8）](image/APUE14.8.png)
+
+##### 鎖的釋放
+
+- 行程結束時，該行程的所有鎖會被自動釋放
+- 鎖是以 `<process:file>` 的對映來記錄的：當關閉某個指向該檔案的任何 `fd` 時，該行程在那個檔案上的所有鎖都會被釋放
+
+##### 範例
+
+問題：`fd1` 上的鎖會怎樣？
+
+Process 1：
+
+```c
+fd1 = open(pathname, ...);
+read_lock(fd1, ...);
+fd2 = dup(fd1);
+close(fd2);
+```
+
+Process 2：
+
+```c
+fd1 = open(pathname, ...);
+read_lock(fd1, ...);
+fd2 = open(pathname, ...);
+close(fd2);
+```
+
+若某個行程關閉任何一個指向某檔案的 file descriptor，該行程在那個檔案上的所有鎖都會被釋放，無論這些鎖最初是透過哪個 descriptor 取得的。 這表示只要有某個函式因某些原因決定去開啟、讀取並關閉同一個檔案，行程就可能失去自己在該檔案（例如 `/etc/passwd` 或 `/etc/mtab`）上的鎖
