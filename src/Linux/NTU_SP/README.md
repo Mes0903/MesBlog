@@ -726,7 +726,7 @@ int main()
 執行命令：`./a.out file1 file2`
 
 ```c
-int main(int argc, char argv, char envp)
+int main(int argc, char **argv, char envp)
 {
   int fd1, fd2;
   int dummy;
@@ -1231,3 +1231,263 @@ close(fd2);
 ```
 
 若某個行程關閉任何一個指向某檔案的 file descriptor，該行程在那個檔案上的所有鎖都會被釋放，無論這些鎖最初是透過哪個 descriptor 取得的。 這表示只要有某個函式因某些原因決定去開啟、讀取並關閉同一個檔案，行程就可能失去自己在該檔案（例如 `/etc/passwd` 或 `/etc/mtab`）上的鎖
+
+##### 範例 2
+
+下例是犯了 `fcntl` 的「建議式（advisory）紀錄鎖」語意，特別是鎖與「行程 × 檔案」綁定，而不是與某個特定的 `fd` 綁定。 同一行程只要關閉任何一個指向該檔案的 file descriptor，不管鎖是用哪個 `fd` 加上的，該行程在此檔案上的所有 `fcntl` 鎖都會被釋放
+
+###### `locker.c`（上鎖的一方）
+
+做的事（依序）：
+
+1. 先確保 `path` 存在，並以 `O_CREAT|O_RDWR` 建立/開啟（寫鎖需要可寫開啟，否則會 `EBADF`）。
+2. 開兩個 `fd` 指向同一檔案：
+   - `fd1 = open(path, O_RDWR)`
+   - `fd2 = dup(fd1)`
+3. 透過 `fd1` 對整個檔案加 寫鎖：
+   ```c
+   struct flock lk = {.l_type=F_WRLCK,.l_whence=SEEK_SET,.l_start=0,.l_len=0};
+   fcntl(fd1, F_SETLK, &lk);     // 非阻塞，加不到會立刻失敗
+   ```
+   - `l_start=0, l_len=0` 代表「從檔頭到 EOF」整檔加鎖。
+4. 睡 2 秒後 關閉 `fd2`（注意：鎖是用 `fd1` 加的）。
+5. 印出「我關了 `fd2`，我在這個檔案上的鎖已被釋放」，再睡 3 秒，最後才關 `fd1`。
+
+要點：
+
+- 這支程式故意不關 `fd1`，而是關另一個 `fd2`，用來證明「關閉任何指向同一檔案的 `fd` 都會把本行程在該檔的鎖全部釋放」。
+
+```c
+// locker.c
+#define _XOPEN_SOURCE 700
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+static int lock_wholefile(int fd, short type)
+{
+	struct flock lk = {.l_type = type, .l_whence = SEEK_SET, .l_start = 0, .l_len = 0};
+	return fcntl(fd, F_SETLK, &lk);
+}
+
+int main(int argc, char **argv)
+{
+	const char *path = (argc > 1) ? argv[1] : "lockdemo.tmp";
+
+	// Ensure file exists; use O_RDWR so both sides can lock consistently.
+	int createfd = open(path, O_CREAT | O_RDWR, 0644);
+	if (createfd < 0) {
+		perror("open(create)");
+		return 1;
+	}
+	close(createfd);
+
+	int fd1 = open(path, O_RDWR);
+	if (fd1 < 0) {
+		perror("open fd1");
+		return 1;
+	}
+	// int fd2 = open(path, O_RDWR);
+	int fd2 = dup(fd1);
+	if (fd2 < 0) {
+		perror("open fd2");
+		return 1;
+	}
+
+	if (lock_wholefile(fd1, F_WRLCK) == -1) {
+		perror("locker: F_WRLCK via fd1");
+		return 1;
+	}
+	printf("locker: acquired F_WRLCK via fd1=%d on %s\n", fd1, path);
+	printf("locker: sleeping 2s, then close(fd2) (NOT the locking fd)\n");
+	sleep(2);
+
+	// POSIX: closing any fd for this file releases all locks held by this process.
+	close(fd2);
+	printf("locker: closed fd2; my locks on %s are now released.\n", path);
+
+	// Keep fd1 open briefly so you can see waiter proceed while fd1 is still open.
+	sleep(3);
+	close(fd1);
+	puts("locker: done.");
+	return 0;
+}
+```
+
+###### `waiter.c`（等待鎖的一方）
+
+做的事（依序）：
+
+1. 以 `O_RDWR` 開啟同一個檔案。
+2. 對整個檔案加寫鎖，但使用 `F_SETLKW`（阻塞版）：
+
+   ```c
+   fcntl(fd, F_SETLKW, &lk);   // 若被鎖住，會在這裡等
+   ```
+3. 一旦上一行解除阻塞（鎖可取得），就印出「拿到鎖！」，並 `F_UNLCK` 解除，再 `close(fd)`。
+
+要點：
+
+- 因為 `locker` 先用 `fd1` 取得了寫鎖，所以 `waiter` 會在 `F_SETLKW` 卡住。
+- 等到 `locker` 關掉 `fd2` 的瞬間（雖然鎖並不是經由 `fd2` 取得），`locker` 對此檔的所有鎖都被釋放，`waiter` 就能立刻拿到鎖。
+
+```c
+// waiter.c
+#define _XOPEN_SOURCE 700
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+int main(int argc, char **argv)
+{
+	const char *path = (argc > 1) ? argv[1] : "lockdemo.tmp";
+	int fd = open(path, O_RDWR);
+	if (fd < 0) {
+		perror("waiter: open");
+		return 1;
+	}
+
+	struct flock lk = {.l_type = F_WRLCK, .l_whence = SEEK_SET, .l_start = 0, .l_len = 0};
+	puts("waiter: trying to acquire F_WRLCK (will block until available)...");
+	if (fcntl(fd, F_SETLKW, &lk) == -1) {
+		perror("waiter: fcntl(F_SETLKW)");
+		return 1;
+	}
+	puts("waiter: acquired lock!");
+	// Clean up
+	lk.l_type = F_UNLCK;
+	if (fcntl(fd, F_SETLK, &lk) == -1)
+		perror("waiter: unlock");
+	close(fd);
+	return 0;
+}
+```
+
+### Fast & Slow System Calls
+
+- 快速系統呼叫（Fast system calls）
+  - 在可預期時間內完成、不受外部資源阻塞的呼叫。
+  - 例：從本機磁碟讀取檔案。
+  - （問題：是否「一定不阻塞」取決於實作與狀況；本機 I/O 仍可能因頁快取未命中或裝置壅塞而延遲，這裡屬概念化分類。）
+- 慢速系統呼叫（Slow system calls）
+  - 可能無限期等待才完成（甚至永遠阻塞）。
+  - 例：從終端裝置或網路裝置讀取、對 pipe（第 15 章）讀寫、等待網路連線等。
+
+### Blocking v.s. Nonblocking I/O
+
+- 阻塞式 I/O（Blocking I/O）
+  - I/O 函式要等到操作完成才返回（典型的慢速系統呼叫）。
+- 非阻塞式 I/O（Nonblocking I/O）
+  - 讓我們發出 I/O 操作（如 open/read/write），並在不等待的情況下盡快返回。
+    - 注意：若操作此刻無法完成，呼叫會立刻以錯誤返回。
+    - 例：非阻塞讀取會在不掛起行程的前提下，盡可能讀到可得的位元組數。
+  - 可把某個 file descriptor 設為非阻塞：
+    - 兩種方式：`open()`（帶 `O_NONBLOCK`）或 `fcntl(F_SETFL)` 設定 `O_NONBLOCK`。（小心使用）
+
+#### Nonblocking I/O Code Example
+
+下例程式會從 stdin 讀取最多 500,000 位元組，並嘗試把它寫到 stdout（我們會先把 stdout 設為非阻塞的）。 寫出的動作在一個迴圈裡執行，而每次 `write` 的結果都會印到 stderr 中：
+
+```c
+#include <errno.h>
+#include <fcntl.h>
+char buf[500000];
+int main(void)
+{
+    int ntowrite, nwrite;
+    char *ptr;
+    ntowrite = read(STDIN_FILENO, buf, sizeof(buf));
+    fprintf(stderr, "read %d bytes\n", ntowrite);
+    set_fl(STDOUT_FILENO, O_NONBLOCK); /* set nonblocking */
+    ptr = buf;
+    while (ntowrite > 0) {
+        errno = 0;
+        nwrite = write(STDOUT_FILENO, ptr, ntowrite);
+        fprintf(stderr, "nwrite = %d, errno = %d\n", nwrite, errno);
+        if (nwrite > 0) {
+            ptr += nwrite;
+            ntowrite -= nwrite;
+        }
+    }
+    clr_fl(STDOUT_FILENO, O_NONBLOCK); /* clear nonblocking */
+    exit(0);
+}
+```
+
+如果 stdout 是一般檔案（regular file），我們預期只會呼叫一次 `write`：
+
+```console
+$ ls -l /etc/services                      <-- print file size
+-rw-r--r-- 1 root 677959 Jun 23 2009 /etc/services
+$ ./a.out < /etc/services > temp.file      <-- try a regular file first
+read 500000 bytes
+nwrite = 500000, errno = 0                 <-- a single write
+$ ls -l temp.file                          <-- verify size of output file
+-rw-rw-r-- 1 sar 500000 Apr 1 13:03 temp.file
+```
+
+但如果 stdout 是終端機（terminal），我們預期 `write` 有時會回傳「只寫入部分位元組數」，有時則回傳錯誤。 結果如下所示：
+
+```console
+$ ./a.out < /etc/services 2>stderr.out      <-- output to terminal
+...                                         <-- lots of output to terminal ...
+$ cat stderr.out
+read 500000 bytes
+nwrite = 999, errno = 0
+nwrite = -1, errno = 35
+nwrite = -1, errno = 35
+nwrite = -1, errno = 35
+nwrite = -1, errno = 35
+nwrite = 1001, errno = 0
+nwrite = -1, errno = 35
+nwrite = 1002, errno = 0
+nwrite = 1004, errno = 0
+nwrite = 1003, errno = 0
+nwrite = 1003, errno = 0
+nwrite = 1005, errno = 0
+nwrite = -1, errno = 35   <-- 61 of these errors
+...
+nwrite = 1006, errno = 0
+nwrite = 1004, errno = 0
+nwrite = 1005, errno = 0
+nwrite = 1006, errno = 0
+nwrite = -1, errno = 35   <-- 108 of these errors
+...
+nwrite = 1006, errno = 0
+nwrite = 1005, errno = 0
+nwrite = 1005, errno = 0
+nwrite = -1, errno = 35   <-- 681 of these errors
+...                       <-- and so on...
+nwrite = 347, errno = 0
+```
+
+在這套系統上，`errno` 的 35 代表 `EAGAIN`。 終端機驅動程式能接受的資料量會因系統而異，結果也會因你登入系統的方式而不同：如使用系統主控台、實體（硬接線）終端機，或是透過偽終端（pseudo terminal）的網路連線。 如果你的終端機上跑著視窗系統，你同樣是經過一個偽終端裝置。
+
+由於 stdout 被設為非阻塞的，且終端的輸出佇列容量有限，`write` 常常只寫出部分資料（回傳小於要求的位數），或直接以 -1 返回並設 `errno=EAGAIN`
+
+在這個例子裡，程式發出了超過 9,000 次的 `write` 呼叫，儘管實際上只需要 500 次就能把資料輸出完畢。 其餘的呼叫都只回傳錯誤。 這種迴圈稱為輪詢（polling），在多使用者系統上是浪費 CPU 時間的
+
+因為是非阻塞的，程式會反覆迴圈嘗試：每次把成功寫出的那一段前移指標、減少剩餘位數，遇到 EAGAIN 則立即返回、下一輪再嘗試。
+
+圖下方小表對照了阻塞與非阻塞：
+
+- 阻塞：一次呼叫等到完成。
+- 非阻塞：多次「檢查／嘗試」，直到完成
+
+![（img src：https://rickhw.github.io/2019/02/27/ComputerScience/IO-Models/）](image/6-6_Comparsion-of-the-five-models.png)
+
+### Terminal Device
+
+- 每個終端裝置都有一個輸入佇列與一個輸出佇列。
+- shell 會把標準輸入重新導向到終端。
+- 輸入佇列大小受 `MAX_INPUT` 限制。
+- 當輸出佇列已滿時：
+  - 阻塞模式：行程會被進入睡眠，直到佇列有空間（行程什麼也不做）。
+  - 非阻塞模式：輪詢（polling），程式在迴圈中反覆檢查是否可以輸出。
+    - 在多使用者系統上常浪費 CPU，因為大多時候佇列仍是滿的、沒有事可做。
+
+![（From APUE 3rd Edition：Figure 18.1）](image/APUE18.1.png)
