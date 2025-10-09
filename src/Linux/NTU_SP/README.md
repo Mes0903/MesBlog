@@ -1770,11 +1770,140 @@ struct pollfd {
 
 ##### I/O Multiplexing：`select` v.s. `poll`
 
+<span class = "center-column">
+
 |                        | select                  | poll                                   |
 | ---------------------- | ----------------------- | -------------------------------------- |
 | 核心對輸入引數的更新方式 | 更新 `fd_set` 集合  | 更新 `revents` 欄位（不是 `events`） |
 | 支援的條件種類          | 讀、寫、錯誤三種類型      | 超過三種類型的事件                       |
 
+</span>
+
 - 其他替代方案
   - `pselect`：提供奈秒等級的逾時設定與同時套用訊號遮罩
   - `epoll`：在速度與可擴展性上表現良好
+
+## Intro to Networking
+
+### IP、TCP/UDP 與 port number
+
+- IP：用來指定機器，本身以 IP 位址作為定址方式
+- TCP / UDP：建構在 IP 之上，以連接埠（port）進行定址
+  - TCP：
+    - 常見於 FTP、Telnet、SMTP
+    - 特性：
+      - 以連線為基礎（connection-based）
+        - 在傳資料前，雙方先用「三向握手」建立一條連線（TCP 連線有狀態：序號、視窗大小等）。 之後資料都走在這條連線上，直到其中一方關閉。
+      - 可靠（reliable）
+        - 協定內建確認與重傳機制，保證「不重複、不遺失、按順序」把位元組送到對方，出問題就回報錯誤（例如連線中斷）。 應用程式不必自己做 ACK/重傳。
+      - 位元組串流（byte stream）
+        - TCP 看起來像一條連續的位元組管道，沒有「訊息邊界」這個概念。 你 `write()` 了 100 與 50 與 50，不保證對方會用三次 `read()` 分別讀到 100/50/50，可能一次讀到 200，也可能多次分段。 所以若你需要訊息邊界，必須自己在資料裡加長度欄位或分隔符號
+  - UDP：
+    - 常見於 NFS、TFTP
+    - 特性：
+      - 無連線（connectionless）
+        - 不需要握手，每次送資料都獨立成一個封包，帶著目的位址與連接埠送出去。 核心幾乎不維持狀態，延遲與開銷都更小。
+      - 不可靠（unreliable）
+        - 協定本身不保證送達、不保證順序、也不會自動重傳，封包可能遺失、重複、或顛倒順序。 要可靠就得由應用層自己做（加序號、ACK/重傳等）。
+      - 資料報（datagram）
+        - 有「訊息邊界」：你 `sendto()` 一個封包，對方 `recvfrom()` 就會拿到「正好那一個封包」（要嘛整個收到、要嘛整個掉了，若接收緩衝太小，會被截斷且殘餘部分丟失）。 不會像 TCP 那樣把多次寫入自動黏在一起。
+- 連接埠號（port number）：16 位元整數，在同一台機器上具唯一性
+  - Unix 中的連接埠號：小於 1024 的連接埠會保留給 root 使用（用來承載系統服務）
+- 在網路上為機器定址時使用的是 IP 位址
+- 為行程定址時使用的是連接埠號
+- 將「IP 位址」加上「連接埠號」就可以組成所謂的「socket 位址」
+
+底下是 TCP Client/Server Programming Model 的示意圖：
+
+![（重新繪製自 UNIX Network Programming Figure 4.1. Socket functions for elementary TCP client/server.）](image/TCP-model.png)
+
+### Sockets
+
+- Socket 讓位在不同電腦（連到同一個網路）的行程端點可以彼此通訊
+  - POSIX.1 規範了 socket API
+- 對作業系統核心來說，socket 就是通訊的端點（endpoint）
+- 應用程式透過 socket descriptor 來存取 socket
+  - Unix 系統把 socket descriptor 實作成 file descriptor
+  - 讓用戶端與伺服器可以用這些 socket 的 file descriptor 來對網路進行讀寫
+- 一般檔案 I/O 與 socket I/O 之間的主要差別，在於應用程式如何「開啟」這些 descriptor 或檔案
+
+#### Socket Primitives
+
+```c
+// 成功時回傳一個 socket descriptor（socketfd），錯誤回傳 -1
+int socket(int domain, int type, int protocol);
+```
+
+- `socket()`：建立一個通訊端點
+  - `domain` 設為 `AF_INET`（IPv4 協定）
+  - `type` 設為 `SOCK_DGRAM`（UDP） 或 `SOCK_STREAM`（TCP）
+  - `protocol` 設為 0（讓核心依型態挑對應的協定號 `IPPROTO_UDP` 或 `IPPROTO_TCP`）
+
+```c
+// 成功回傳 0，錯誤回傳 -1
+int bind(int socketfd, struct sockaddr *addr, int addrlen);
+```
+
+- `bind()`：把名稱或位址綁定到一個 socket
+  - `socketfd`：由 `socket()` 回傳的 socket descriptor
+  - `addr`：socket 位址
+  - `addrlen`：`sizeof(struct sockaddr)`
+
+```c
+struct sockaddr_in {
+    unsigned short sin_family;   /* address family (always AF_INET) */
+    unsigned short sin_port;     /* port num in network byte order */
+    struct in_addr sin_addr;     /* IP addr in network byte order */
+    unsigned char  sin_zero[8];  /* pad to sizeof(struct sockaddr) */
+};
+```
+
+- `struct sockaddr_in` 是 IPv4 專用的 socket 位址結構
+  - `sin_family` 必須設為 `AF_INET`
+  - `sin_port` 與 `sin_addr` 需要用「網路位元組序」（大端序），因此常搭配 `htons()`、`htonl()` 等轉換。
+  - `sin_zero` 只是填充欄位，讓大小與通用的 `struct sockaddr` 對齊
+
+```c
+// returns 0 if OK, −1 on error
+int listen(int sockfd, int backlog);
+```
+- `listen()`：在一個 socket 上開始監聽連線
+  - `backlog`：我們要允許排隊的待處理連線數量
+
+```c
+// returns a new file (socket) descriptor if OK, −1 on error
+int accept(int socketfd, struct sockaddr *addr, socklen_t *len);
+```
+
+- `accept()`：在監聽的 socket 上接受一條連線，從等待佇列取出第一個請求，建立一個新的已連線 socket，並回傳指向它的新 file descriptor。 原本的監聽 socket 不受影響
+  - `accept()` 會阻塞呼叫端直到有連線到來
+  - `addr`：系統會在這裡寫入對端的 socket 位址
+
+```c
+// returns 0 if OK, −1 on error
+int connect(int socketfd, struct sockaddr *addr, int addrlen);
+```
+
+- `connect()`：把 `sockfd` 對應的 socket 連到 `serv_addr` 指定的位址（參數形式與 `bind()` 類似），用戶端會呼叫它
+- 可以使用 `close()` 來關閉一個已開啟的 `socketfd`
+
+#### Reads and Writes on Sockets
+
+- 位元組串流（byte stream）是雙向的
+  - 用戶端與伺服器都能在同一個 file descriptor 上讀與寫
+  - 可以只關閉單一方向
+- 讀取可能會阻塞
+  - 從檔案讀取時可能：
+      - 成功
+      - 遇到 EOF（檔案結尾，回傳 0）
+  - 從 socket 讀取會等待直到：
+    - 收到網路資料（回傳值大於 0）
+    - 連線被關閉（回傳值等於 0）
+    - 發生網路錯誤（回傳值小於 0）
+- 對 socket 寫入可能：
+  - 把資料送到網路（回傳值大於 0）
+  - 發現連線已關閉（回傳值等於 0）
+  - 造成網路錯誤（回傳值小於 0）
+- 當緩衝區已滿時，寫入可能會立即返回或被阻塞
+
+![（重新繪製自 UNIX Network Programming Figure 2.15. Steps and buffers involved when an application writes to a TCP socket.）](image/TCP-socket-buffer.png)
