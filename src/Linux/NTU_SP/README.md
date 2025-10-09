@@ -1710,3 +1710,71 @@ if (FD_ISSET(0, &working_set))
 - `timeout` 區間會被向上取整到系統時鐘的粒度，排程延遲也可能使實際阻塞時間略為超過
 - 若 `timeval` 的兩個欄位皆為 0，`select()` 會立刻返回（可用於 polling）
 - 若 `timeout` 為 `NULL`，`select()` 會無限期阻塞，直到有 file descriptor 就緒
+
+##### I/O Multiplexing：`poll`
+
+```c
+#include <poll.h>
+// 回傳值：就緒的 descriptor 數量；逾時回傳 0；發生錯誤回傳 -1
+int poll(struct pollfd fdarray[], nfds_t nfds, int timeout);
+```
+
+```c
+struct pollfd {
+  int fd;          // 要檢查的 file descriptor；若 < 0 則忽略此項
+  short events;    // 呼叫端關心的事件（events）
+  short revents;   // 實際發生在該 fd 的事件（由核心填入）
+};
+```
+
+- `poll` 與 `select` 類似，但在傳遞引數的程式介面上不同：
+  - `nfds`：指定 `fdarray` 陣列中的項目數量
+  - 以 `pollfd` 結構組成的陣列來描述要監看的 descriptor 與關心的條件
+    - 呼叫端在 `events` 欄位設定關心的事件，這是位元遮罩，更多細節可參考下圖（14.17）
+    - 核心在返回時會填寫 `revents`，指出每個 descriptor 實際發生了哪些事件，這同樣是位元遮罩
+  - `timeout`：在解除行程等待前要等多久（毫秒）
+    - -1 表示無限期等待，0 表示不等待，大於 0 表示等待對應的毫秒數
+    - 時間到了之後，無論 I/O 是否準備好，`poll` 都會回傳
+
+<span class = "center-column">
+
+| Name           | Input to `events`? | Result from `revents`? | Description                                                   |
+| -------------- | ---------------- | -------------------- | ------------------------------------------------------------- |
+| **POLLIN**     | ●                | ●                    | 除了高優先權資料以外的資料可在不阻塞的情況下讀取（等同於 `POLLRDNORM \| POLLRDBAND`）。 |
+| **POLLRDNORM** | ●                | ●                    | 一般資料可在不阻塞的情況下讀取。                                              |
+| **POLLRDBAND** | ●                | ●                    | 優先權資料可在不阻塞的情況下讀取。                                             |
+| **POLLPRI**    | ●                | ●                    | 高優先權資料可在不阻塞的情況下讀取。                                            |
+| **POLLOUT**    | ●                | ●                    | 一般資料可在不阻塞的情況下寫入。                                              |
+| **POLLWRNORM** | ●                | ●                    | 同 `POLLOUT`。                                                  |
+| **POLLWRBAND** | ●                | ●                    | 優先權資料可在不阻塞的情況下寫入。                                             |
+| **POLLERR**    |                  | ●                    | 發生錯誤。                                                         |
+| **POLLHUP**    |                  | ●                    | 發生掛斷。                                                         |
+| **POLLNVAL**   |                  | ●                    | 該 descriptor 沒有參照到任何已開啟的檔案。                                   |
+
+（From APUE 3rd Edition：Figure 14.17）
+
+</span>
+
+以下節錄自 [IO 多路復用之 poll 總結](https://www.cnblogs.com/Anker/p/3261006.html)：
+
+> 使用 `poll()` 和 `select()` 不一樣，你不需要明確地請求異常狀況報告
+> 
+> - `POLLIN | POLLPRI` 等價於 `select()`的讀取事件
+> - `POLLOUT | POLLWRBAND` 等價於 `select()` 的寫事件
+> - `POLLIN` 等價於 `POLLRDNORM | POLLRDBAND`
+> - `POLLOUT` 則等價於 `POLLWRNORM`
+> 
+> 例如，要同時監視一個檔案描述子是否可讀和可寫，我們可以設定 `events` 為 `POLLIN | POLLOUT`。 當 `poll` 返回時，我們可以檢查 `revents` 中的標誌，對應於文件描述符請求的 `events` 結構體。 如果 `POLLIN` 事件被設置，則檔案描述子可以被讀取而不阻塞。 如果 `POLLOUT` 被設置，則檔案描述符可以寫入而不導致阻塞
+> 
+> 這些標誌並不是互斥的，它們可能被同時設置，表示這個檔案描述符的讀取和寫入操作都會正常返回而不阻塞。
+
+##### I/O Multiplexing：`select` v.s. `poll`
+
+|                        | select                  | poll                                   |
+| ---------------------- | ----------------------- | -------------------------------------- |
+| 核心對輸入引數的更新方式 | 更新 `fd_set` 集合  | 更新 `revents` 欄位（不是 `events`） |
+| 支援的條件種類          | 讀、寫、錯誤三種類型      | 超過三種類型的事件                       |
+
+- 其他替代方案
+  - `pselect`：提供奈秒等級的逾時設定與同時套用訊號遮罩
+  - `epoll`：在速度與可擴展性上表現良好
