@@ -801,7 +801,7 @@ descriptor flag 與 status flag 是兩種不同層級：前者綁在「fd 本身
 - `F_GETOWN`  
   取得目前接收 `SIGIO` 與 `SIGURG` 訊號的行程 ID 或行程群組 ID
 - `F_SETOWN`  
-  設定將接收 `SIGIO` 與 `SIGURG` 訊號的行程 ID 或行程群組 ID。 第三個引數若為正值，表示指定的是行程 ID； 若為負值，則表示行程群組 ID，且其值為該引數的絕對值
+  設定將接收 `SIGIO` 與 `SIGURG` 訊號的行程 ID 或行程群組 ID。 第三個引數若為正值，表示指定的是行程 ID，若為負值，則表示行程群組 ID，且其值為該引數的絕對值
 
 #### 返回值說明
 
@@ -1240,7 +1240,7 @@ close(fd2);
 
 做的事（依序）：
 
-1. 先確保 `path` 存在，並以 `O_CREAT|O_RDWR` 建立/開啟（寫鎖需要可寫開啟，否則會 `EBADF`）。
+1. 先確保 `path` 存在，並以 `O_CREAT|O_RDWR` 建立/開啟（寫鎖需要可寫開啟，否則會 `EBADF`）
 2. 開兩個 `fd` 指向同一檔案：
    - `fd1 = open(path, O_RDWR)`
    - `fd2 = dup(fd1)`
@@ -1249,13 +1249,13 @@ close(fd2);
    struct flock lk = {.l_type=F_WRLCK,.l_whence=SEEK_SET,.l_start=0,.l_len=0};
    fcntl(fd1, F_SETLK, &lk);     // 非阻塞，加不到會立刻失敗
    ```
-   - `l_start=0, l_len=0` 代表「從檔頭到 EOF」整檔加鎖。
-4. 睡 2 秒後 關閉 `fd2`（注意：鎖是用 `fd1` 加的）。
-5. 印出「我關了 `fd2`，我在這個檔案上的鎖已被釋放」，再睡 3 秒，最後才關 `fd1`。
+   - `l_start=0, l_len=0` 代表「從檔頭到 EOF」整檔加鎖
+4. 睡 2 秒後 關閉 `fd2`（注意：鎖是用 `fd1` 加的）
+5. 印出「我關了 `fd2`，我在這個檔案上的鎖已被釋放」，再睡 3 秒，最後才關 `fd1`
 
 要點：
 
-- 這支程式故意不關 `fd1`，而是關另一個 `fd2`，用來證明「關閉任何指向同一檔案的 `fd` 都會把本行程在該檔的鎖全部釋放」。
+- 這支程式故意不關 `fd1`，而是關另一個 `fd2`，用來證明「關閉任何指向同一檔案的 `fd` 都會把本行程在該檔的鎖全部釋放」
 
 ```c
 // locker.c
@@ -1320,18 +1320,18 @@ int main(int argc, char **argv)
 
 做的事（依序）：
 
-1. 以 `O_RDWR` 開啟同一個檔案。
+1. 以 `O_RDWR` 開啟同一個檔案
 2. 對整個檔案加寫鎖，但使用 `F_SETLKW`（阻塞版）：
 
    ```c
    fcntl(fd, F_SETLKW, &lk);   // 若被鎖住，會在這裡等
    ```
-3. 一旦上一行解除阻塞（鎖可取得），就印出「拿到鎖！」，並 `F_UNLCK` 解除，再 `close(fd)`。
+3. 一旦上一行解除阻塞（鎖可取得），就印出「拿到鎖！」，並 `F_UNLCK` 解除，再 `close(fd)`
 
 要點：
 
-- 因為 `locker` 先用 `fd1` 取得了寫鎖，所以 `waiter` 會在 `F_SETLKW` 卡住。
-- 等到 `locker` 關掉 `fd2` 的瞬間（雖然鎖並不是經由 `fd2` 取得），`locker` 對此檔的所有鎖都被釋放，`waiter` 就能立刻拿到鎖。
+- 因為 `locker` 先用 `fd1` 取得了寫鎖，所以 `waiter` 會在 `F_SETLKW` 卡住
+- 等到 `locker` 關掉 `fd2` 的瞬間（雖然鎖並不是經由 `fd2` 取得），`locker` 對此檔的所有鎖都被釋放，`waiter` 就能立刻拿到鎖
 
 ```c
 // waiter.c
@@ -1370,23 +1370,23 @@ int main(int argc, char **argv)
 ### Fast & Slow System Calls
 
 - 快速系統呼叫（Fast system calls）
-  - 在可預期時間內完成、不受外部資源阻塞的呼叫。
-  - 例：從本機磁碟讀取檔案。
-  - （問題：是否「一定不阻塞」取決於實作與狀況；本機 I/O 仍可能因頁快取未命中或裝置壅塞而延遲，這裡屬概念化分類。）
+  - 在可預期時間內完成、不受外部資源阻塞的呼叫
+  - 例：從本機磁碟讀取檔案
+  - （問題：是否「一定不阻塞」取決於實作與狀況，本機 I/O 仍可能因頁快取未命中或裝置壅塞而延遲，這裡屬概念化分類）
 - 慢速系統呼叫（Slow system calls）
-  - 可能無限期等待才完成（甚至永遠阻塞）。
-  - 例：從終端裝置或網路裝置讀取、對 pipe（第 15 章）讀寫、等待網路連線等。
+  - 可能無限期等待才完成（甚至永遠阻塞）
+  - 例：從終端裝置或網路裝置讀取、對 pipe（第 15 章）讀寫、等待網路連線等
 
 ### Blocking v.s. Nonblocking I/O
 
 - 阻塞式 I/O（Blocking I/O）
-  - I/O 函式要等到操作完成才返回（典型的慢速系統呼叫）。
+  - I/O 函式要等到操作完成才返回（典型的慢速系統呼叫）
 - 非阻塞式 I/O（Nonblocking I/O）
-  - 讓我們發出 I/O 操作（如 open/read/write），並在不等待的情況下盡快返回。
-    - 注意：若操作此刻無法完成，呼叫會立刻以錯誤返回。
-    - 例：非阻塞讀取會在不掛起行程的前提下，盡可能讀到可得的位元組數。
+  - 讓我們發出 I/O 操作（如 open/read/write），並在不等待的情況下盡快返回
+    - 注意：若操作此刻無法完成，呼叫會立刻以錯誤返回
+    - 例：非阻塞讀取會在不掛起行程的前提下，盡可能讀到可得的位元組數
   - 可把某個 file descriptor 設為非阻塞：
-    - 兩種方式：`open()`（帶 `O_NONBLOCK`）或 `fcntl(F_SETFL)` 設定 `O_NONBLOCK`。（小心使用）
+    - 兩種方式：`open()`（帶 `O_NONBLOCK`）或 `fcntl(F_SETFL)` 設定 `O_NONBLOCK`
 
 #### Nonblocking I/O Code Example
 
@@ -1465,29 +1465,248 @@ nwrite = -1, errno = 35   <-- 681 of these errors
 nwrite = 347, errno = 0
 ```
 
-在這套系統上，`errno` 的 35 代表 `EAGAIN`。 終端機驅動程式能接受的資料量會因系統而異，結果也會因你登入系統的方式而不同：如使用系統主控台、實體（硬接線）終端機，或是透過偽終端（pseudo terminal）的網路連線。 如果你的終端機上跑著視窗系統，你同樣是經過一個偽終端裝置。
+在這套系統上，`errno` 的 35 代表 `EAGAIN`。 終端機驅動程式能接受的資料量會因系統而異，結果也會因你登入系統的方式而不同：如使用系統主控台、實體（硬接線）終端機，或是透過偽終端（pseudo terminal）的網路連線。 如果你的終端機上跑著視窗系統，你同樣是經過一個偽終端裝置
 
 由於 stdout 被設為非阻塞的，且終端的輸出佇列容量有限，`write` 常常只寫出部分資料（回傳小於要求的位數），或直接以 -1 返回並設 `errno=EAGAIN`
 
 在這個例子裡，程式發出了超過 9,000 次的 `write` 呼叫，儘管實際上只需要 500 次就能把資料輸出完畢。 其餘的呼叫都只回傳錯誤。 這種迴圈稱為輪詢（polling），在多使用者系統上是浪費 CPU 時間的
 
-因為是非阻塞的，程式會反覆迴圈嘗試：每次把成功寫出的那一段前移指標、減少剩餘位數，遇到 EAGAIN 則立即返回、下一輪再嘗試。
+因為是非阻塞的，程式會反覆迴圈嘗試：每次把成功寫出的那一段前移指標、減少剩餘位數，遇到 EAGAIN 則立即返回、下一輪再嘗試
 
 圖下方小表對照了阻塞與非阻塞：
 
-- 阻塞：一次呼叫等到完成。
+- 阻塞：一次呼叫等到完成
 - 非阻塞：多次「檢查／嘗試」，直到完成
 
 ![（img src：https://rickhw.github.io/2019/02/27/ComputerScience/IO-Models/）](image/6-6_Comparsion-of-the-five-models.png)
 
 ### Terminal Device
 
-- 每個終端裝置都有一個輸入佇列與一個輸出佇列。
-- shell 會把標準輸入重新導向到終端。
-- 輸入佇列大小受 `MAX_INPUT` 限制。
+- 每個終端裝置都有一個輸入佇列與一個輸出佇列
+- shell 會把標準輸入重新導向到終端
+- 輸入佇列大小受 `MAX_INPUT` 限制
 - 當輸出佇列已滿時：
-  - 阻塞模式：行程會被進入睡眠，直到佇列有空間（行程什麼也不做）。
-  - 非阻塞模式：輪詢（polling），程式在迴圈中反覆檢查是否可以輸出。
-    - 在多使用者系統上常浪費 CPU，因為大多時候佇列仍是滿的、沒有事可做。
+  - 阻塞模式：行程會被進入睡眠，直到佇列有空間（行程什麼也不做）
+  - 非阻塞模式：輪詢（polling），程式在迴圈中反覆檢查是否可以輸出
+    - 在多使用者系統上常浪費 CPU，因為大多時候佇列仍是滿的、沒有事可做
 
 ![（From APUE 3rd Edition：Figure 18.1）](image/APUE18.1.png)
+
+### 處理並行 I/O（Handle Concurrent I/Os）
+
+#### Telnet Process
+
+```c
+n = read(STDIN_FILENO, buf, BUFSIZ);
+...
+n = read(network_fd, netbuf, BUFSIZ);
+...
+```
+
+Telnet 行程會從 `stdin` 讀取並寫到網路（到 telnet 伺服器 PTT），Telnet 行程也會從網路讀取並寫到 `stdout`
+
+##### 問題：使用 blocking I/O 的優缺點是什麼？
+
+假設讀取兩個 file descriptor：`stdin` 與網路輸入
+
+```c
+n = read(STDIN_FILENO, buf, BUFSIZ); /* block */
+...
+n = read(network_fd, netbuf, BUFSIZ); /* block */
+...
+```
+
+此處的問題是 blocking I/O 無法同時處理多個 I/O 來源（檔案/Socket 等 descriptor）。 必須等其中一個完成才能處理下一個，對任何一個 descriptor 的 I/O 都可能造成阻塞，效能不佳
+
+##### 想法 1：multi-process
+
+```
+Telnet Process1
+n = read(STDIN_FILENO, buf, BUFSIZ); /* block */
+...
+
+Telnet Process2
+n = read(network_fd, netbuf, BUFSIZ); /* block */
+...
+```
+
+- 執行兩個行程，讓每個行程各自做一個 blocking 讀取
+- 問題：分配行程浪費資源，行程間通訊與狀態同步需要額外負擔
+
+##### 想法 2：nonblocking I/O（輪詢）
+
+- 將兩個要讀取的 I/O descriptor 都設為非阻塞：對某個 file descriptor，如果有資料，就讀取並處理，如果沒有資料，`read` 會立即返回，對 I/O 做輪詢（polling）
+- 問題：如果大多數時間都無法進行該操作，會浪費 CPU 資源
+
+```c
+/* Telnet Process */
+while (1) { /* STDIN 與 network_fd 已設為 NONBLOCK */
+  n = read(STDIN_FILENO, buf, BUFSIZ);
+  /* 如果沒有讀到資料，先做別的事，然後再檢查 STDIN */
+  ...
+  n = read(network_fd, netbuf, BUFSIZ);
+  /* 如果沒有讀到資料，先做別的事，然後再檢查 network_fd */
+  ...
+}
+```
+
+##### 想法 3：I/O Multiplexing（多工）
+
+- 使用 `select()` 或 `poll()`
+- 目標：避免為輪詢而忙迴圈，同時處理多個 I/O 來源
+- I/O 多工通常用在：
+  - 應用程式需要同時處理多個 file descriptor，例如檔案與網路 I/O（socket）descriptor
+  - 對任何一個 descriptor 的 I/O（例如 read/write）都可能導致阻塞
+
+#### I/O Multiplexing
+
+以下節錄自 [select、poll、epoll 之間的區別總結[整理]](https://www.cnblogs.com/Anker/p/3265058.html)：
+
+> `select`、`poll`、`epoll` 都是 IO 多工的機制。 I/O 工通過一種機制，可以監視多個描述符，一旦某個描述符就緒（一般是讀取就緒或寫入就緒），能夠通知程式進行對應的讀寫操作。 但 `select`、`poll`、`epoll` 本質上都是同步 I/O，因為他們都需要在讀寫事件就緒後自己負責進行讀寫，也就是說這個讀寫過程是阻塞的，而異步 I/O 則無需自己負責進行讀寫，異步 I/O 的實現會負責把資料從 kernel 複製到 user space
+
+對於同步、非同步，以下節錄自 [Study Notes - I/O Models](https://rickhw.github.io/2019/02/27/ComputerScience/IO-Models/)：
+
+>  阻塞 (Blocking) 與非阻塞 (Non-Blocking) 描述的是「請求」在等待結果時的「狀態」
+>  
+>  - 阻塞 (Blocking)：調用的程序或者應用程式發起請求，在獲得結果之前，調用方的程序會懸 (Hang) 住不動>  無法回應，直到獲得結果
+>  - 非阻塞 (Non-Blocking)：概念與阻塞相同，但是調用方不會因為等待結果，而懸著不動。 後續通常透過輪>  機制 (Polling) 機制取得結果
+>  
+>  同步 (Synchronous) 與非同步 (Asynchronous) 描述的是：使用者執行緒與 Kernel 的通訊模式：
+>  
+>  - 同步 (Synchronous)：使用者執行緒發出 I/O 請求後，要等待、或者輪詢 Kernel I/O 的操作完成後，才>  繼續執行
+>    - 等待 Kernel 回覆：Blocking IO，縮寫成 BIO
+>    - 輪詢類似於 Non-Blocking IO，縮寫成 NIO
+>  - 非同步 (Asynchronous)：或稱異步，使用者執行緒發出 I/O 請求後仍然繼續執行下一個操作，當 Kernel>  I/O 操作結束後，會通知執行緒，或者呼叫 callback 函數
+>  
+>  同步中文的意思很容易誤解為，很多事同時做，實際上是事情有先後關係的概念，也就是「有序性>  (oredered)」； 而非同步才是類似於很多事情在同一個時間一起發動，他是「無序性 (non-ordered)」
+
+##### I/O Multiplexing：`select`
+
+`select` 讓程序能夠指示 kernel 等待多個事件中的任何一個發送，並且只在有一個或多個事件發生，或經歷一段指定的時間後才會喚醒該程序。 函數原型如下：
+
+```c
+#include <sys/select.h>
+// 回傳：就緒的 descriptor 數量，在任何 descriptor 就緒前超時則回傳 0，錯誤回傳 −1
+int select(int nfds, fd_set *readfds, fd_set *writefds,
+           fd_set *exceptfds, struct timeval *timeout);
+```
+
+- `select()` 的參數意義：
+  - 我們關心哪些 descriptor
+  - 對每個 descriptor 關心哪些條件：從某個 descriptor 讀、往某個 descriptor 寫、或該 descriptor 的異常狀態
+  - 要等多久：永久等待、等待固定時間，或完全不等待
+- `select()` 的參數細節：
+  - 我們關心哪些 descriptor：`nfds`，設為三個集合中編號最高的 file descriptor + 1。 核心會檢查每個集合中到這個上限為止的 descriptor
+  - 對每個 descriptor 關心哪些條件：`readfds`、`writefds`、`exceptfds`，指向各條件的 descriptor 集合（bitmap）的指標。 用來指定我們要讓 kernel 測試讀取、寫入和異常條件的描述符，如果對某一個的條件不感興趣，可以把它設為空指標
+  - 要等多久：`timeout`，等待時間
+
+`fd_set` 型別代表的是 descriptor 的集合，三個 descriptor 的集合（`readfds`、`writefds`、`exceptfds`）以該型別儲存，一個 descriptor 對應到當中的一個位元
+
+![（From APUE 3rd Edition：Figure 14.15）](image/APUE14.15.png)
+
+`fd_set` 內的 descriptor 可以利用以下四個輔助巨集／函式來進行設定：
+
+```c
+#include <sys/select.h>
+int  FD_ISSET(int fd, fd_set *fdset); // 檢查集合中指定的檔案描述符是否可以讀寫 
+void FD_CLR  (int fd, fd_set *fdset); // 將一個給定的檔案描述符從集合中刪除
+void FD_SET  (int fd, fd_set *fdset); // 將一個給定的檔案描述符加入集合中
+void FD_ZERO (fd_set *fdset); // 清空集合
+// 回傳值：若 fd 在集合中則非零，否則為 0
+```
+
+- 從 `select()` 返回時，作業系統核心會告訴我們：
+  1. 就緒的 descriptor 總數（三個集合的總和，亦即 `select()` 的回傳值）
+  2. 哪些 descriptor 在對應條件下已就緒（核心會更新 `readfds`、`writefds`、`exceptfds` 這三個集合）
+- 根據 (2) 我們知道：
+  - 若某個 descriptor 出現在 read 集合或 write 集合，對它做讀／寫將不會阻塞
+  - 若某個 descriptor 出現在 exception 集合，代表該 descriptor 有待處理的異常狀態
+
+`select` 的正回傳值是三個集合中就緒的 descriptor 數量之總和，若同一個 descriptor 同時可讀又可寫，會被計到兩次
+
+###### 範例
+
+如果我們寫：
+
+```c
+fd_set readset, writeset;
+
+FD_ZERO(&readset);
+FD_ZERO(&writeset);
+FD_SET(0, &readset);
+FD_SET(3, &readset);
+FD_SET(1, &writeset);
+FD_SET(2, &writeset);
+select(4, &readset, &writeset, NULL, NULL);
+```
+
+則這兩個 descriptor set 看起來會如下圖：
+
+![（From APUE 3rd Edition：Figure 14.16）](image/APUE14.16.png)
+
+###### 範例 2
+
+看以下程式，考慮為什麼要 `memcpy()`：
+
+```c
+int main()
+{
+    int i;
+    struct timeval timeout;
+    struct fd_set master_set, working_set;
+    char buf[1024];
+
+    FD_ZERO(&master_set);
+    FD_SET(0, &master_set);
+    timeout.tv_sec  = 5;
+    timeout.tv_usec = 0;
+    i = 0;
+
+    while (1)
+    {
+        memcpy(&working_set, &master_set, sizeof(master_set));
+        select(1, &working_set, NULL, NULL, &timeout);
+        if (FD_ISSET(0, &working_set))
+        {
+            fgets(buf, sizeof(buf), stdin);
+            fputs(buf, stdout);
+        }
+        printf("iteration: %d\n", i++);
+    }
+    return 0;
+}
+```
+
+這是因為作業系統會在這兩個地方更新 `working_set`：
+
+```c
+FD_ZERO(&master_set);
+FD_SET(0, &master_set);
+```
+
+與
+
+```c
+if (FD_ISSET(0, &working_set))
+```
+
+所以你需要每次都先備份再還原！
+
+###### 其他
+
+- 我們可以把 `nfds` 設為 `FD_SETSIZE`（定義於 `<sys/select.h>`，在 Linux 設為 1024）
+- 若不關心某一類條件，對應的 descriptor 集合指標可以是 `NULL`，若三個指標都為 `NULL`，`select` 就會變成一個比 `sleep` 更高精度（微秒）的計時器
+  ```c
+  // 下面這個 select 會依照給定的 timeval 休眠
+  int totalfds = select(0, NULL, NULL, NULL, &timeval);
+  ```
+
+關於 `select` 的參數 `timeout` 的特殊情況：
+
+- `timeout` 的參數是 timeval 結構，指定 `select()` 應阻塞的時間區間。 `select()` 會阻塞直到下列其中之一發生：
+  - 有某個 file descriptor 就緒
+  - 呼叫被訊號處理器中斷
+  - `timeout` 到期
+- `timeout` 區間會被向上取整到系統時鐘的粒度，排程延遲也可能使實際阻塞時間略為超過
+- 若 `timeval` 的兩個欄位皆為 0，`select()` 會立刻返回（可用於 polling）
+- 若 `timeout` 為 `NULL`，`select()` 會無限期阻塞，直到有 file descriptor 就緒
