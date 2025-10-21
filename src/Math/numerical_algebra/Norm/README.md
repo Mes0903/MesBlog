@@ -2,7 +2,7 @@
 title: Norm
 date: 2021-09-01
 tag: numerical-algebra
-category: numerical-algebra
+category: math
 order: 1
 ---
 

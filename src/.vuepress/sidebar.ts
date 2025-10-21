@@ -272,21 +272,33 @@ export default sidebar([
     ],
   },
   {
-    text: "數值線代",
+    text: "數學",
     collapsible: true,
-    prefix: "/numerical_algebra/",
     children: [
-      "Norm/",
-      "Gauss-Seidel/",
-      "Relaxation/",
-      "Error-Bound/",
-      "Gradient-method/",
-      "Conjugate-Gradient/",
-      "Least-Squares/",
-      "Polynomials-of-Least-square/",
-      "Linear-Algebra-and-Eigenvalues/",
-      "Power-Method/",
-    ],
+      {
+        text: "數值線代",
+        collapsible: true,
+        prefix: "Math/numerical_algebra/",
+        children: [
+          "Norm/",
+          "Gauss-Seidel/",
+          "Relaxation/",
+          "Error-Bound/",
+          "Gradient-method/",
+          "Conjugate-Gradient/",
+          "Least-Squares/",
+          "Polynomials-of-Least-square/",
+          "Linear-Algebra-and-Eigenvalues/",
+          "Power-Method/",
+        ],
+      },
+      {
+        text: "機率論",
+        collapsible: true,
+        prefix: "Math/Probability/",
+        children: [],
+      }
+    ]
   },
   {
     text: "雜記",

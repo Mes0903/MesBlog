@@ -2,7 +2,7 @@
 title: Gauss-Seidel Metheod
 date: 2021-10-13
 tag: numerical-algebra
-category: numerical-algebra
+category: math
 order: 2
 ---
 

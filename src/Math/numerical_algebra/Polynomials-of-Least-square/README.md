@@ -2,7 +2,7 @@
 title: 最小平方逼近多項式(Polynomials of Least square)
 date: 2021-11-07
 tag: numerical-algebra
-category: numerical-algebra
+category: math
 order: 8
 ---
 

@@ -2,7 +2,7 @@
 title: Conjugate Gradient Method
 date: 2021-10-31
 tag: numerical-algebra
-category: numerical-algebra
+category: math
 order: 6
 ---
 

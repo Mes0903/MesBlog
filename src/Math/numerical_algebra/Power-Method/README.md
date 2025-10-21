@@ -2,7 +2,7 @@
 title: Power Method
 date: 2021-11-15
 tag: numerical-algebra
-category: numerical-algebra
+category: math
 order: 10
 ---
 

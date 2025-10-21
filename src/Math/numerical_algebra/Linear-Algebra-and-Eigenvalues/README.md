@@ -2,7 +2,7 @@
 title: Linear Algebra and Eigenvalues
 date: 2021-11-07
 tag: numerical-algebra
-category: numerical-algebra
+category: math
 order: 9
 ---
 

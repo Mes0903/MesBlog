@@ -2,7 +2,7 @@
 title: Error Bounds
 date: 2021-10-16
 tag: numerical-algebra
-category: numerical-algebra
+category: math
 order: 4
 ---
 

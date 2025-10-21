@@ -2,7 +2,7 @@
 title: Least Squares
 date: 2021-11-06
 tag: numerical-algebra
-category: numerical-algebra
+category: math
 order: 7
 ---
 
