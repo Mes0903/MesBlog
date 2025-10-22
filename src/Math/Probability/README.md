@@ -316,7 +316,7 @@ $$\bigcup_n S_n^c = (\bigcap_n S_n)^c$$
 上圖使用 Venn diagrams 對四個 Probability laws 的性質進行視覺化與驗證。 若 $A \subset B$，則 $B$ 可表示為兩個互斥事件 $A$ 與 $A^{c} \cap B$ 的聯集，見圖 (a)。 因此，由 additivity axiom 可得
 
 $$
-P(B)=P(A)+P(A^{c}\cap B)\ge P(A) +0 = P(A),
+P(B)=P(A)+P(A^{c}\cap B)\ge P(A) +0 = P(A)
 $$
 
 其中不等式來自 nonnegativity axiom，用以驗證性質 (a)
@@ -324,26 +324,26 @@ $$
 由圖 (b)，我們可以把事件 $A\cup B$ 與 $B$ 表示為互斥事件的聯集：
 $$
 A\cup B = A\cup (A^{c}\cap B),\qquad
-B = (A\cap B)\cup (A^{c}\cap B).
+B = (A\cap B)\cup (A^{c}\cap B)
 $$
 
 additivity axiom 給出
 
 $$
 P(A\cup B)=P(A)+P(A^{c}\cap B),\qquad
-P(B)=P(A\cap B)+P(A^{c}\cap B).
+P(B)=P(A\cap B)+P(A^{c}\cap B)
 $$
 
 把第一個等式減掉第二個等式並重整後，得到
 
 $$
-P(A\cup B)=P(A)+P(B)-P(A\cap B),
+P(A\cup B)=P(A)+P(B)-P(A\cap B)
 $$
 
 這驗證了性質 (b)。 再利用 nonnegativity axiom 的事實 $P(A\cap B)\ge 0$，可得
 
 $$
-P(A\cup B)\le P(A)+P(B),
+P(A\cup B)\le P(A)+P(B)
 $$
 
 驗證性質 (c)
@@ -352,7 +352,7 @@ $$
 
 $$
 A\cup B\cup C
-= A\cup (A^{c}\cap B)\cup (A^{c}\cap B^{c}\cap C),
+= A\cup (A^{c}\cap B)\cup (A^{c}\cap B^{c}\cap C)
 $$
 
 至此由 additivity axiom 的推得性質 (d) 
@@ -364,14 +364,14 @@ $$
 
 - 在一個新的 probability law 之下，定義「給定 $B$ 的 $A$ 的 conditional probability」，記作 $P(A\mid B)$，其定義為
   $$
-  P(A\mid B)=\frac{P(A\cap B)}{P(B)}.
+  P(A\mid B)=\frac{P(A\cap B)}{P(B)}
   $$
   - 若 $P(B)=0$，則 $P(A\mid B)$ 未被定義
   - 可以把 $P(A\mid B)$ 理解為：在事件 $B$ 的總機率之中，分配給同時也屬於 $A$ 的可能結果所佔的比例
 
 - 當實驗的所有結果等可能時，conditional probability 亦可定義為
   $$
-  P(A\mid B)=\frac{\text{number of elements of }A\cap B}{\text{number of elements of }B}.
+  P(A\mid B)=\frac{\text{number of elements of }A\cap B}{\text{number of elements of }B}
   $$
 
 - 先驗機率指 $P(A)$ 這種，後驗機率指 $P(A | B)$ 這種在知道某個前提下得出的機率
@@ -386,12 +386,12 @@ $$
 
 - Nonnegative：
   $$
-  P(A\mid B)=\frac{P(A\cap B)}{P(B)}\ge 0.
+  P(A\mid B)=\frac{P(A\cap B)}{P(B)}\ge 0
   $$
 
 - Normalization：
   $$
-  P(\Omega\mid B)=\frac{P(\Omega\cap B)}{P(B)}=\frac{P(B)}{P(B)}=1.
+  P(\Omega\mid B)=\frac{P(\Omega\cap B)}{P(B)}=\frac{P(B)}{P(B)}=1
   $$
 
 - Additivity：若 $A_1$ 與 $A_2$ 為兩個互斥事件，
@@ -401,7 +401,7 @@ $$
   &=\frac{P\big((A_1\cup A_2)\cap B\big)}{P(B)} \quad \text{(distributive)}\\
   &=\frac{P\big((A_1\cap B)\cup(A_2\cap B)\big)}{P(B)} \quad \text{(disjoint sets)}\\
   &=\frac{P(A_1\cap B)+P(A_2\cap B)}{P(B)}\\
-  &=P(A_1\mid B)+P(A_2\mid B).
+  &=P(A_1\mid B)+P(A_2\mid B)
   \end{aligned}
   $$
 
@@ -422,31 +422,31 @@ $$
 
 $$
 A=\{\text{more heads than tails come up}\},\qquad
-B=\{\text{1st toss is a head}\}.
+B=\{\text{1st toss is a head}\}
 $$
 
 樣本空間共有八個序列
 
 $$
-\Omega=\{\mathrm{HHH},\,\mathrm{HHT},\,\mathrm{HTH},\,\mathrm{HTT},\,\mathrm{THH},\,\mathrm{THT},\,\mathrm{TTH},\,\mathrm{TTT}\},
+\Omega=\{\mathrm{HHH},\,\mathrm{HHT},\,\mathrm{HTH},\,\mathrm{HTT},\,\mathrm{THH},\,\mathrm{THT},\,\mathrm{TTH},\,\mathrm{TTT}\}
 $$
 
 假設皆等可能。 事件 $B$ 含有四個元素 $\mathrm{HHH},\mathrm{HHT},\mathrm{HTH},\mathrm{HTT}$，因此
 
 $$
-P(B)=\frac{4}{8}.
+P(B)=\frac{4}{8}
 $$
 
 事件 $A\cap B$ 含有三個元素 $\mathrm{HHH},\mathrm{HHT},\mathrm{HTH}$，因此
 
 $$
-P(A\cap B)=\frac{3}{8}.
+P(A\cap B)=\frac{3}{8}
 $$
 
 由此
 
 $$
-P(A\mid B)=\frac{P(A\cap B)}{P(B)}=\frac{\frac{3}{8}}{\frac{4}{8}}=\frac{3}{4}.
+P(A\mid B)=\frac{P(A\cap B)}{P(B)}=\frac{\frac{3}{8}}{\frac{4}{8}}=\frac{3}{4}
 $$
 
 因所有結果等可能，也可用捷徑計算：以 $A$ 與 $B$ 的共同元素個數 $3$ 除以 $B$ 的元素個數 $4$，同樣得到 $3/4$
@@ -457,7 +457,7 @@ $$
 
 $$
 A=\{\max(X,Y)=m\},\qquad
-B=\{\min(X,Y)=2\},
+B=\{\min(X,Y)=2\}
 $$
 
 且 $m$ 取 $1,2,3,4$
@@ -467,9 +467,9 @@ $$
 $$
 P(\{\max(X,Y)=m\}\mid B)=
 \begin{cases}
-\dfrac{2}{5}, & m=3\ \text{or}\ 4,\\[6pt]
-\dfrac{1}{5}, & m=2,\\[6pt]
-0, & m=1.
+\dfrac{2}{5}, & m=3\ \text{or}\ 4\\[6pt]
+\dfrac{1}{5}, & m=2\\[6pt]
+0, & m=1
 \end{cases}
 $$
 
@@ -497,13 +497,13 @@ $$
 $$
 P(SS)+P(SF)=\frac{2}{3},\qquad
 P(SS)+P(FS)=\frac{1}{2},\qquad
-P(SF)+P(FS)=\frac{3}{4}.
+P(SF)+P(FS)=\frac{3}{4}
 $$
 
 再配合 normalization
 
 $$
-P(SS)+P(SF)+P(FS)+P(FF)=1,
+P(SS)+P(SF)+P(FS)+P(FF)=1
 $$
 
 可解得各結果之機率
@@ -512,7 +512,7 @@ $$
 P(SS)=\frac{5}{12},\quad
 P(SF)=\frac{1}{4},\quad
 P(FS)=\frac{1}{12},\quad
-P(FF)=\frac{1}{4}.
+P(FF)=\frac{1}{4}
 $$
 
 所求的 conditional probability 為
@@ -520,7 +520,7 @@ $$
 $$
 P\big(\{FS\}\,\big|\,\{SF,FS\}\big)
 =\frac{\tfrac{1}{12}}{\tfrac{1}{4}+\tfrac{1}{12}}
-=\frac{1}{4}.
+=\frac{1}{4}
 $$
 
 ## Using Conditional Probability for Modeling
@@ -528,10 +528,10 @@ $$
 - 在建模時，先指定 conditional probabilities，然後再用它們來決定 unconditional probabilities，這通常既自然又方便
 - 一種等價的 conditional probability 定義表法為
   $$
-  P(A\cap B)=P(B)\,P(A\mid B).
+  P(A\cap B)=P(B)\,P(A\mid B)
   $$
 
-### Example 1.9. Radar detection.
+### Example 1.9. Radar detection
 
 如果某區域內確有飛機存在，雷達能以機率 $0.99$ 正確偵測到其存在； 若並不存在，雷達卻會以機率 $0.10$ 誤報有飛機存在。 我們假設飛機存在的先驗機率為 $0.05$。 問：false alarm（錯誤指示飛機存在）的機率，以及 missed detection（實際有飛機但雷達沒有任何顯示）的機率各為何？
 
@@ -541,20 +541,20 @@ $$
 
 $$
 A=\{\text{an aircraft is present}\},\qquad
-B=\{\text{the radar registers an aircraft presence}\},
+B=\{\text{the radar registers an aircraft presence}\}
 $$
 並考慮其補事件
 $$
 A^{c}=\{\text{an aircraft is not present}\},\qquad
-B^{c}=\{\text{the radar does not register an aircraft presence}\}.
+B^{c}=\{\text{the radar does not register an aircraft presence}\}
 $$
 
 則
 $$
-P(\text{false alarm})=P(A^{c}\cap B)=P(A^{c})P(B\mid A^{c})=0.95\cdot 0.10=0.095,
+P(\text{false alarm})=P(A^{c}\cap B)=P(A^{c})P(B\mid A^{c})=0.95\cdot 0.10=0.095
 $$
 $$
-P(\text{missed detection})=P(A\cap B^{c})=P(A)P(B^{c}\mid A)=0.05\cdot 0.01=0.0005.
+P(\text{missed detection})=P(A\cap B^{c})=P(A)P(B^{c}\mid A)=0.05\cdot 0.01=0.0005
 $$
 
 ## Multiplication (Chain) Rule
@@ -563,7 +563,7 @@ $$
   $$
   P\!\left(\bigcap_{i=1}^{n}A_{i}\right)
   =P(A_{1})\,P(A_{2}\mid A_{1})\,P(A_{3}\mid A_{1}\cap A_{2})\cdots
-  P\!\left(A_{n}\ \middle|\ \bigcap_{i=1}^{n-1}A_{i}\right).
+  P\!\left(A_{n}\ \middle|\ \bigcap_{i=1}^{n-1}A_{i}\right)
   $$
 
 - 驗證方式可寫成
@@ -574,12 +574,12 @@ $$
   \frac{P(A_{1}\cap A_{2}\cap A_{3})}{\cancel{P(A_{1}\cap A_{2})}}
   \cdots
   \frac{P\!\left(\bigcap_{i=1}^{n}A_{i}\right)}
-       {P\!\left(\bigcap_{i=1}^{n-1}A_{i}\right)}.
+       {P\!\left(\bigcap_{i=1}^{n-1}A_{i}\right)}
   $$
 
 - 當 $n=2$ 時，上述乘法法則正是 conditional probability 的定義：
   $$
-  P(A_{1}\cap A_{2})=P(A_{1})\,P(A_{2}\mid A_{1}).
+  P(A_{1}\cap A_{2})=P(A_{1})\,P(A_{2}\mid A_{1})
   $$
 
 ### Example 1.10
@@ -590,7 +590,7 @@ $$
 $$
 P(A_{1}\cap A_{2}\cap A_{3})
 = P(A_{1})\,P(A_{2}\mid A_{1})\,P(A_{3}\mid A_{1}\cap A_{2})
-= \frac{39}{52}\cdot\frac{38}{51}\cdot\frac{37}{50}.
+= \frac{39}{52}\cdot\frac{38}{51}\cdot\frac{37}{50}
 $$
 
 ### Example 1.11
@@ -600,20 +600,20 @@ $$
 定義事件
 
 $$
-A_{1}=\{\text{graduate students 1 與 2 在不同小組}\},
+A_{1}=\{\text{graduate students 1 與 2 在不同小組}\}
 $$
 $$
-A_{2}=\{\text{graduate students 1、2、3 在不同小組}\},
+A_{2}=\{\text{graduate students 1、2、3 在不同小組}\}
 $$
 $$
-A_{3}=\{\text{graduate students 1、2、3、4 在不同小組}\}.
+A_{3}=\{\text{graduate students 1、2、3、4 在不同小組}\}
 $$
 
 則
 
 $$
 P(A_{3})=P(A_{1}\cap A_{2}\cap A_{3})
-= P(A_{1})\,P(A_{2}\mid A_{1})\,P(A_{3}\mid A_{1}\cap A_{2}),
+= P(A_{1})\,P(A_{2}\mid A_{1})\,P(A_{3}\mid A_{1}\cap A_{2})
 $$
 
 其中
@@ -621,13 +621,13 @@ $$
 $$
 P(A_{1})=\frac{12}{15},\qquad
 P(A_{2}\mid A_{1})=\frac{8}{14},\qquad
-P(A_{3}\mid A_{1}\cap A_{2})=\frac{4}{13}.
+P(A_{3}\mid A_{1}\cap A_{2})=\frac{4}{13}
 $$
 
 因此
 
 $$
-P(A_{3})=\frac{12}{15}\cdot\frac{8}{14}\cdot\frac{4}{13}.
+P(A_{3})=\frac{12}{15}\cdot\frac{8}{14}\cdot\frac{4}{13}
 $$
 
 ## Total Probability Theorem
@@ -636,7 +636,7 @@ $$
 
 $$
 P(B)=P(A_{1}\cap B)+\cdots+P(A_{n}\cap B)
-=P(A_{1})P(B\mid A_{1})+\cdots+P(A_{n})P(B\mid A_{n}).
+=P(A_{1})P(B\mid A_{1})+\cdots+P(A_{n})P(B\mid A_{n})
 $$
 
 注意：實驗（樣本空間）的每一個可能結果，恰好屬於事件 $A_{1},\dots,A_{n}$ 的其中之一
@@ -646,25 +646,25 @@ $$
 上圖以視覺化方式驗證 Total Probability Theorem。 事件 $A_{1},\dots,A_{n}$ 形成一個樣本空間的分割，因此事件 $B$ 可以分解為它與各 $A_{i}$ 的交集的不相交聯集，即
 
 $$
-B=(A_{1}\cap B)\ \cup\ \cdots\ \cup\ (A_{n}\cap B).
+B=(A_{1}\cap B)\ \cup\ \cdots\ \cup\ (A_{n}\cap B)
 $$
 
 由 additivity axiom 可得
 
 $$
-P(B)=P(A_{1}\cap B)+\cdots+P(A_{n}\cap B).
+P(B)=P(A_{1}\cap B)+\cdots+P(A_{n}\cap B)
 $$
 
 又由 conditional probability 的定義
 
 $$
-P(A_{i}\cap B)=P(A_{i})\,P(B\mid A_{i}),
+P(A_{i}\cap B)=P(A_{i})\,P(B\mid A_{i})
 $$
 
 代入上式得到
 
 $$
-P(B)=P(A_{1})P(B\mid A_{1})+\cdots+P(A_{n})P(B\mid A_{n}).
+P(B)=P(A_{1})P(B\mid A_{1})+\cdots+P(A_{n})P(B\mid A_{n})
 $$
 
 ### Example 1.13
@@ -674,13 +674,13 @@ $$
 令 $A_i$ 表示「對手是 type $i$」的事件，則
 
 $$
-P(A_1)=0.5,\qquad P(A_2)=0.25,\qquad P(A_3)=0.25.
+P(A_1)=0.5,\qquad P(A_2)=0.25,\qquad P(A_3)=0.25
 $$
 
 再令 $B$ 為「我贏棋」的事件，則
 
 $$
-P(B\mid A_1)=0.3,\qquad P(B\mid A_2)=0.4,\qquad P(B\mid A_3)=0.5.
+P(B\mid A_1)=0.3,\qquad P(B\mid A_2)=0.4,\qquad P(B\mid A_3)=0.5
 $$
 
 因此由 Total Probability Theorem，
@@ -690,7 +690,7 @@ $$
 P(B)
 &=P(A_1)P(B\mid A_1)+P(A_2)P(B\mid A_2)+P(A_3)P(B\mid A_3)\\
 &=0.5\cdot 0.3+0.25\cdot 0.4+0.25\cdot 0.5\\
-&=0.375.
+&=0.375
 \end{aligned}
 $$
 
@@ -706,7 +706,7 @@ $$
 P(B\mid A_1)=\tfrac{1}{2},\qquad
 P(B\mid A_2)=\tfrac{3}{4},\qquad
 P(B\mid A_3)=0,\qquad
-P(B\mid A_4)=1.
+P(B\mid A_4)=1
 $$
 
 由 Total Probability Theorem，
@@ -715,7 +715,7 @@ $$
 \begin{aligned}
 P(B)
 &=\frac14\cdot\frac12+\frac14\cdot\frac34+\frac14\cdot 0+\frac14\cdot 1\\
-&=\frac{9}{16}.
+&=\frac{9}{16}
 \end{aligned}
 $$
 
@@ -740,7 +740,7 @@ $$
 \begin{aligned}
 P(U_3)&=P(U_2)P(U_3\mid U_2)+P(B_2)P(U_3\mid B_2)=P(U_2)\cdot 0.8+P(B_2)\cdot 0.4,\\
 P(U_2)&=P(U_1)P(U_2\mid U_1)+P(B_1)P(U_2\mid B_1)=P(U_1)\cdot 0.8+P(B_1)\cdot 0.4,\\
-P(B_2)&=P(U_1)P(B_2\mid U_1)+P(B_1)P(B_2\mid B_1)=P(U_1)\cdot 0.2+P(B_1)\cdot 0.6.
+P(B_2)&=P(U_1)P(B_2\mid U_1)+P(B_1)P(B_2\mid B_1)=P(U_1)\cdot 0.2+P(B_1)\cdot 0.6
 \end{aligned}
 $$
 
@@ -748,13 +748,13 @@ $$
 
 $$
 P(U_2)=0.8\cdot 0.8+0.2\cdot 0.4=0.72,\qquad
-P(B_2)=0.8\cdot 0.2+0.2\cdot 0.6=0.28,
+P(B_2)=0.8\cdot 0.2+0.2\cdot 0.6=0.28
 $$
 
 故
 
 $$
-P(U_3)=0.72\cdot 0.8+0.28\cdot 0.4=0.688.
+P(U_3)=0.72\cdot 0.8+0.28\cdot 0.4=0.688
 $$
 
 ## Bayes’ Rule
@@ -796,8 +796,8 @@ $$
 $$
 P(A_i\mid B)
 =\frac{P(A_i)\,P(B\mid A_i)}
-       {P(A_1)P(B\mid A_1)+P(A_2)P(B\mid A_2)+P(A_3)P(B\mid A_3)},
-\quad i=1,2,3.
+       {P(A_1)P(B\mid A_1)+P(A_2)P(B\mid A_2)+P(A_3)P(B\mid A_3)}
+\quad i=1,2,3
 $$
 
 另一種等價觀點是右圖的序列模型：$P(A_1\mid B)$ 等於高亮葉節點中 $P(A_1\cap B)$ 與其總機率 $P(B)$ 的比值
@@ -819,6 +819,438 @@ P(A\mid B)
 &=\frac{P(A)P(B\mid A)}{P(B)}\\
 &=\frac{P(A)P(B\mid A)}{P(A)P(B\mid A)+P(A^{c})P(B\mid A^{c})}\\
 &=\frac{0.001\cdot 0.95}{0.001\cdot 0.95+0.999\cdot 0.05}\\
-&=0.0187.
+&=0.0187
 \end{aligned}
 $$
+
+## Independence（獨立）
+
+- 回顧：條件機率 $P(A\mid B)$ 捕捉了事件 $B$ 對事件 $A$ 所提供的部分資訊
+- 有一個特殊情形：當 $B$ 的發生不提供任何資訊，且不改變 $A$ 發生的機率時：
+  
+  $$
+  P(A\mid B)=P(A)
+  $$
+  
+  此時稱 $A$ 與 $B$ 為 independent（$B$ 也與 $A$ independent），由定義可得
+
+  $$
+  P(A\mid B)=\frac{P(A\cap B)}{P(B)}=P(A)
+  \;\;\Rightarrow\;\;
+  P(A\cap B)=P(A)P(B)
+  $$
+
+- $A$ 與 $B$ 為 independent 無法推出 $A$ 與 $B$ 為 disjoint（互斥）
+  - 若 $A$ 與 $B$ 互斥，則 $P(A\cap B)=0$
+  - 然而，若 $P(A)>0$ 且 $P(B)>0$，則
+    $$
+    P(A\cap B)\neq P(A)P(B)
+    $$
+  - 因此，independence 並不等於 disjoint（也難以單靠樣本空間圖像來視覺化）
+
+- 兩個互斥且 $P(A)>0$、$P(B)>0$ 的事件永遠不會 independent
+- 任一事件與 no outcome 的事件（即 empty event）彼此 independent
+- 任一事件與其補事件不為 independent。 實際上，若 $0<P(A)<1$，則
+  $$
+  P\bigl(A\cap A^{c}\bigr)\neq P(A)P(A^{c})
+  $$
+
+### Example 1.19
+
+考慮：擲一個四面骰兩次，共 $16$ 個等可能結果，每一對結果的機率均為 $1/16$
+
+#### (a) 事件
+
+$A_i=\{\text{第 1 次擲得 } i\}$，$B_j=\{\text{第 2 次擲得 } j\}$，是否 independent？
+
+因為各結果等可能：
+
+$$
+P(A_i\cap B_j)=\frac{1}{16},\qquad
+P(A_i)=\frac{4}{16},\quad
+P(B_j)=\frac{4}{16}
+$$
+
+故
+
+$$
+P(A_i\cap B_j)=P(A_i)P(B_j)
+$$
+
+所以 $A_i$ 與 $B_j$ independent
+
+> 若兩事件由兩個獨立且互不作用的物理過程主導，其結果往往會是 independent
+
+#### (b) 事件
+
+$A=\{\text{第 1 次擲出 }1\}$，$B=\{\text{兩次點數和為 }5\}$，是否 independent？
+
+$$
+P(A)=\frac{4}{16}\quad(\text{兩次結果為 }(1,1),(1,2),(1,3),(1,4))
+$$
+
+$$
+P(B)=\frac{4}{16}\quad(\text{兩次結果為 }(1,4),(2,3),(3,2),(4,1))
+$$
+
+$$
+P(A\cap B)=\frac{1}{16}\quad(\text{唯一同時滿足的是 }(1,4))
+$$
+
+因此
+
+$$
+P(A\cap B)=P(A)P(B)
+$$
+
+故 $A$ 與 $B$ independent
+
+#### (c) 事件
+
+$A=\{\text{兩次點數的最大值為 }2\}$，$B=\{\text{兩次點數的最小值為 }2\}$，是否 independent？
+
+$$
+P(A)=\frac{3}{16}\quad(\text{兩次結果為 }(1,2),(2,1),(2,2))
+$$
+
+$$
+P(B)=\frac{5}{16}\quad(\text{兩次結果為 }(2,2),(2,3),(2,4),(3,2),(4,2))
+$$
+
+$$
+P(A\cap B)=\frac{1}{16}\quad(\text{唯一同時滿足的是 }(2,2))
+$$
+
+因此
+
+$$
+P(A\cap B)\neq P(A)P(B)
+$$
+
+故 $A$ 與 $B$ dependent
+
+## Independence of Event Complements
+
+若 $A$ 與 $B$ independent，則以下也成立：
+
+- (i) $A$ 與 $B^{c}$ independent
+- (ii) $A^{c}$ 與 $B^{c}$ independent
+- 我們要如何驗證？（參見 Problem 43）
+
+證明 (i)：若 $A$ 與 $B$ independent，則 $A$ 與 $B^{c}$ 亦 independent
+
+Proof：
+
+$$
+A=(A\cap B)\cup(A\cap B^{c})
+\;\;\Rightarrow\;\;
+P(A)=P(A\cap B)+P(A\cap B^{c})
+$$
+
+又因 $A$ 與 $B$ independent，$P(A\cap B)=P(A)P(B)$，故
+
+$$
+\begin{aligned}
+P(A\cap B^{c})
+&=P(A)-P(A\cap B)\\
+&=P(A)-P(A)P(B)\\
+&=P(A)\bigl(1-P(B)\bigr)\\
+&=P(A)P(B^{c})
+\end{aligned}
+$$
+
+因此，$A$ 與 $B^{c}$ independent
+
+## conditional independence
+
+- 給定事件 $C$，若
+  $$
+  \mathbf{P}(A\cap B\mid C)=\mathbf{P}(A\mid C)\mathbf{P}(B\mid C)
+  $$
+  則稱事件 $A$ 和 $B$ 在條件 $C$ 下為 **conditionally independent**
+
+- 我們也知道（乘法律）：
+  $$
+  \mathbf{P}(A\cap B\mid C)
+  =\frac{\mathbf{P}(A\cap B\cap C)}{\mathbf{P}(C)}
+  =\frac{\mathbf{P}(C)\mathbf{P}(B\mid C)\mathbf{P}(A\mid B\cap C)}{\mathbf{P}(C)}
+  $$
+
+- 若 $\mathbf{P}(B\mid C)>0$，則可用另一種方式表達 **conditional independence**：
+  $$
+  \mathbf{P}(A\mid B\cap C)=\mathbf{P}(A\mid C)
+  $$
+
+- 請注意：就**無條件**機率律而言，$A$ 與 $B$ 的獨立不代表條件獨立，反之亦然
+  $$
+  \mathbf{P}(A\cap B)=\mathbf{P}(A)\mathbf{P}(B)\not\Leftrightarrow
+  \mathbf{P}(A\cap B\mid C)=\mathbf{P}(A\mid C)\mathbf{P}(B\mid C)
+  $$
+
+- 思考：若 $A$ 與 $B$ 獨立，當 $C$ 已發生時，$A$ 與 $B$ 是否仍獨立？（未必）
+
+### **Example 1.20.** 
+
+兩次獨立且公平的擲幣，四種結果等可能。 令
+
+- $H_1={\text{第一次為正面}}$，對應 $(H,T),(H,H)$；
+- $H_2={\text{第二次為正面}}$，對應 $(T,H),(H,H)$；
+- $D={\text{兩次結果不同}}$，對應 $(T,H),(H,T)$
+
+則
+$$
+\mathbf{P}(H_1\mid D)=\tfrac12,\qquad
+\mathbf{P}(H_2\mid D)=\tfrac12
+$$
+但
+$$
+\mathbf{P}(H_1\cap H_2\mid D)
+=\frac{\mathbf{P}(H_1\cap H_2\cap D)}{\mathbf{P}(D)}
+=0\neq \mathbf{P}(H_1\mid D)\mathbf{P}(H_2\mid D)
+$$
+
+- 結論：$H_1$ 與 $H_2$ 在條件 $D$ 下是**相依**的（非條件獨立）
+
+### **Example 1.21.**
+
+有兩枚硬幣：一枚 **blue**、一枚 **red**
+
+- 隨機選一枚，機率各為 $1/2$，接著用所選硬幣擲兩次（對所選硬幣而言兩次互相獨立）
+- 硬幣有偏：**blue** 的正面機率 $0.99$；**red** 的正面機率 $0.01$
+- 令 $B$ 表示「選到 **blue**」，令 $H_i$ 表示「第 $i$ 次為正面」
+
+條件情形（給定選擇的硬幣）：
+
+$$
+\mathbf{P}(H_1\cap H_2\mid B)=\mathbf{P}(H_1\mid B)\mathbf{P}(H_2\mid B)
+$$
+
+因為給定硬幣後，$H_1, H_2$ 相互獨立
+
+無條件情形：
+
+$$
+\mathbf{P}(H_1)=\mathbf{P}(B)\mathbf{P}(H_1\mid B)+\mathbf{P}(B^c)\mathbf{P}\left(H_1\mid B^c\right)=\tfrac12\cdot0.99+\tfrac12\cdot0.01=\tfrac12
+$$
+$$
+\mathbf{P}(H_2)=\mathbf{P}(B)\mathbf{P}(H_2\mid B)+\mathbf{P}(B^c)\mathbf{P}\left(H_2\mid B^c\right)=\tfrac12\cdot0.99+\tfrac12\cdot0.01=\tfrac12
+$$
+$$
+\mathbf{P}(H_1\cap H_2)
+=\mathbf{P}(B)\mathbf{P}(H_1\cap H_2\mid B)+\mathbf{P}(B^c)\mathbf{P}\left(H_1\cap H_2\mid B^c\right)
+=\tfrac12\cdot0.99\cdot0.99+\tfrac12\cdot0.01\cdot0.01\neq\tfrac14
+$$
+
+![](image/Figure1.15.png)
+
+## Independence of a collection of events
+
+- 我們稱事件 $A_1,A_2,\ldots,A_n$ **獨立**，若對於 $\{1,2,\ldots,n\}$ 的任意子集 $S$ 均有
+  $$
+  \mathbf{P}\left(\bigcap_{i\in S}A_i\right)=\prod_{i\in S}\mathbf{P}(A_i)
+  $$
+
+- 例如，三個事件 $A_1,A_2,A_3$ 的獨立需滿足以下四個條件（總數 $2^n-n-1$）：
+  $$
+  \mathbf{P}(A_1\cap A_2)=\mathbf{P}(A_1)\mathbf{P}(A_2)
+  $$
+  $$
+  \mathbf{P}(A_1\cap A_3)=\mathbf{P}(A_1)\mathbf{P}(A_3)
+  $$
+  $$
+  \mathbf{P}(A_2\cap A_3)=\mathbf{P}(A_2)\mathbf{P}(A_3)
+  $$
+  $$
+  \mathbf{P}(A_1\cap A_2\cap A_3)=\mathbf{P}(A_1)\mathbf{P}(A_2)\mathbf{P}(A_3)
+  $$
+- 獨立意味著：該集合中**任意數量**事件的發生或不發生，都不會提供關於其餘事件或其補事件的任何資訊
+- 若各事件獨立，可得到例如：
+  $$
+  \mathbf{P}(A_1\cup A_2\mid A_3\cap A_4)=\mathbf{P}(A_1\cup A_2)
+  $$
+  或
+  $$
+  \mathbf{P}\left(A_1\cup A_2^{c}\mid A_3^{c}\cap A_4\right)
+  =\mathbf{P}(A_1\cup A_2^{c})
+  $$
+
+### Example 1.22. Pairwise independence does not imply independence
+
+思考兩次相互獨立且公平的擲幣，以及以下事件：
+
+- $H_1=\{\text{1st toss is a head}\}$，對應樣本點 $(H,T),(H,H)$
+- $H_2=\{\text{2nd toss is a head}\}$，對應樣本點 $(T,H),(H,H)$
+- $D=\{\text{the two tosses have different results}\}$，對應樣本點 $(T,H),(H,T)$
+
+根據定義，有
+$$
+P(H_1\cap H_2)=P(H_1)P(H_2)
+$$
+$$
+P(H_1\cap D)=P(H_1)P(D)
+$$
+$$
+P(H_2\cap D)=P(H_2)P(D)
+$$
+然而，
+$$
+P(H_1\cap H_2\cap D)=0\neq P(H_1)P(H_2)P(D)
+$$
+
+### Example 1.23. The following equality is not enough for independence
+
+$$
+P(A_1\cap A_2\cap A_3)=P(A_1)P(A_2)P(A_3)
+$$
+
+思考兩次相互獨立的擲六面公平骰，並定義事件：
+
+- $A=\{\text{1st roll is 1, 2, or 3}\}$
+- $B=\{\text{1st roll is 3, 4, or 5}\}$
+- $C=\{\text{the sum of the two rolls is 9}\}$
+
+計算得到
+$$
+P(A\cap B\cap C)=\frac{1}{36}=\frac{1}{2}\cdot\frac{1}{2}\cdot\frac{4}{36}=P(A)P(B)P(C)
+$$
+但是，
+$$
+P(A\cap B)=\frac{1}{6}\neq \frac{1}{2}\cdot\frac{1}{2}=P(A)P(B)
+$$
+$$
+P(A\cap C)=\frac{1}{36}\neq \frac{1}{2}\cdot\frac{4}{36}=P(A)P(C)
+$$
+$$
+P(B\cap C)=\frac{1}{12}\neq \frac{1}{2}\cdot\frac{4}{36}=P(B)P(C)
+$$
+
+### Example 1.24. Network connectivity.
+
+一個電腦網路透過中繼節點 $C,D,E,F$ 連接兩個節點 $A$ 與 $B$
+
+![](image/Figure1.14.png)
+
+- 對於每一對直接相連的節點（記作 $i$ 與 $j$），連線 $i\to j$ 為「up」的機率為 $p_{ij}$。 假設各連線的失效彼此獨立
+- 問：在所有連線皆為 up 的情況下，存在一條連通 $A$ 與 $B$ 的路徑的機率是多少？
+
+對於基本模組：
+$$
+P(\text{series subsystem succeeds})=p_1p_2\cdots p_n
+$$
+$$
+\begin{aligned}
+P(\text{parallel subsystem succeeds})
+&=1-P(\text{parallel subsystem fails})\\
+&=1-(1-p_1)(1-p_2)\cdots(1-p_n)
+\end{aligned}
+$$
+
+> 某個子系統的失效不依賴其他子系統
+
+先求從 $C$ 到 $B$ 的成功機率（兩條併聯路徑 $C\to E\to B$ 與 $C\to F\to B$）：
+
+$$
+\begin{aligned}
+P(C\to B)
+&=1-(1-P(C\to E\to B))(1-P(C\to F\to B))\\
+&=1-(1-0.8\cdot 0.9)(1-0.95\cdot 0.85)\\
+&=0.946
+\end{aligned}
+$$
+
+再計算兩條從 $A$ 到 $B$ 的路徑（彼此併聯）：
+$$
+P(A\to C\to B)=P(A\to C)\,P(C\to B)=0.9\cdot 0.946=0.851
+$$
+$$
+P(A\to D\to B)=P(A\to D)\,P(D\to B)=0.75\cdot 0.95=0.712
+$$
+
+因此整體 $A\to B$ 連通的機率為
+
+$$
+\begin{aligned}
+P(A\to B)
+&=1-(1-P(A\to C\to B))(1-P(A\to D\to B))\\
+&=1-(1-0.851)\,(1-0.712)\\
+&=0.957
+\end{aligned}
+$$
+
+## Recall: Counting in Probability Calculation
+
+- 離散均勻機率律（discrete uniform probability law）的兩個應用
+  - 當樣本空間 $\Omega$ 具有有限個且等可能的結果時，任一事件 $A$ 的機率為
+    $$
+    P(A)=\dfrac{\text{number of elements of }A}{\text{number of elements of }\Omega} 
+    $$
+  - 當我們要計算事件 $A$ 的機率，且其具有有限個等可能的結果，而每個結果已知機率為 $p$，則 $A$ 的機率為
+    $$
+    P(A)=p\cdot (\text{number of elements of }A) 
+    $$
+
+    例子如擲公平硬幣 $n$ 次，要得到剛好 $k$ 個正面
+
+    - 每一條長度為 $n$ 的正反面序列機率都是 ($p=(1/2)^n$)
+    - 符合「有 $k$ 個正面」的序列共有 ($\binom{n}{k}$) 條
+      所以
+      $$
+      P(\text{k 個正面})=\binom{n}{k}(1/2)^n
+      $$
+
+    若硬幣正面機率是 $q$，則每條“恰有 $k$ 個正面”的序列機率相同為 $q^k(1-q)^{n-k}$，因此
+    $P=\binom{n}{k}q^k(1-q)^{n-k}$
+
+
+### The Counting Principle
+
+- 考慮一個由 $r$ 個階段組成的過程。 設：
+  - (a) 第一個階段有 $n_{1}$ 種可能結果
+  - (b) 對於第一個階段的每一種可能結果，第二個階段有 $n_{2}$ 種可能結果
+  - (c) 更一般地，對於前 $i-1$ 個階段所有可能結果，第 $i$ 個階段有 $n_{i}$ 種可能結果
+- 則此 $r$ 階段過程的所有可能結果總數為 $n_{1}n_{2}\cdots n_{r}$
+
+### Common Types of Counting
+
+- $n$ 個物件的排列（permutations）
+  $$
+  n!=n\cdot (n-1)\cdot (n-2)\cdots 2\cdot 1 
+  $$
+- $n$ 個物件中取 $k$ 的排列（$k$-permutations）
+  $$
+  \dfrac{n!}{(n-k)!} 
+  $$
+- 從 $n$ 個物件中取 $k$ 的組合（combinations）
+  $$
+  \binom{n}{k}=\dfrac{n!}{k!(n-k)!} 
+  $$
+- 將 $n$ 個物件分成 $r$ 組，其中第 $i$ 組有 $n_{i}$ 個物件（multinomial/partitions）
+  $$
+  \binom{n}{n_{1},n_{2},\ldots ,n_{r}}=\dfrac{n!}{n_{1}!\,n_{2}!\cdots n_{r}!} 
+  $$
+
+
+### Summary of Chapter 1
+
+- 一個機率問題通常可拆成幾個基本步驟：
+   1. 描述樣本空間，即某個實驗的所有可能結果集合
+   2. （可能是間接地）給出機率律的規定（每個事件的機率）
+   3. 計算各種感興趣事件的機率與條件機率
+
+- 三種常見的機率計算方法
+  - counting method：若結果數有限且彼此等可能
+    $$
+    P(A)=\dfrac{\text{number of elements of }A}{\text{number of elements of }\Omega} 
+    $$
+  - sequential method：使用乘法（chain）法則
+    $$
+    P\!\left(\bigcap_{i=1}^{n}A_{i}\right)=P(A_{1})P(A_{2}\mid A_{1})P(A_{3}\mid A_{1}\cap A_{2})\cdots P\!\left(A_{n}\mid \bigcap_{i=1}^{n-1}A_{i}\right) 
+    $$
+  - divide-and-conquer method：根據一組條件機率求得事件的機率
+    $$
+    P(B)=P(A_{1}\cap B)+\cdots +P(A_{n}\cap B) 
+    $$
+    $$
+    =P(A_{1})P(B\mid A_{1})+\cdots +P(A_{n})P(B\mid A_{n}) 
+    $$
+    $A_{1},\cdots ,A_{n}$ 是構成樣本空間分割的互斥事件
