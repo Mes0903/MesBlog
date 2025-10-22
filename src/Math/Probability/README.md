@@ -774,7 +774,7 @@ $$
 
 ### Bayes’ Rule and Inference
 
-- 由 Thomas Bayes（約 1701–1761，Presbyterian minister）提出； “Bayes’ theorem” 在其身後發表
+- 由 Thomas Bayes（約 1701-1761，Presbyterian minister）提出； “Bayes’ theorem” 在其身後發表
 - 提供一套從經驗學習並納入新證據的系統化方法
 - Bayesian Inference
   - $P(A_i)$：對觀察事件 $B$ 的可能成因 $A_i$ 的先驗機率
@@ -1254,3 +1254,382 @@ $$
     =P(A_{1})P(B\mid A_{1})+\cdots +P(A_{n})P(B\mid A_{n}) 
     $$
     $A_{1},\cdots ,A_{n}$ 是構成樣本空間分割的互斥事件
+
+## 隨機變數（Random Variables）
+
+- 給定一個實驗以及其對應的所有可能結果（樣本空間），**隨機變數**會把**每個**結果對應到一個特定的數字  
+  - 這個數字稱為隨機變數的（數值）**取值**  
+  - 以數學語言來說，可以說**隨機變數是實驗結果上的一個實值函數**，亦即「以實驗結果為自變數的函數」  
+
+  $$
+  X: w \to x 
+  $$
+
+  ![](image/Figure2.1-1.png)
+
+  上圖示意：Domain（結果）在樣本空間 $\Omega$ 中，經由隨機變數 $X$ 對應到實數軸上的 Range（$X$ 的取值）
+- 另一個例子
+  - 一個實驗由擲兩次四面骰組成，令隨機變數為**兩次擲得點數的最大值**  
+    - 若實驗結果是 $(4,2)$，則隨機變數的值為 $4$  
+    - 若實驗結果是 $(3,3)$，則隨機變數的值為 $3$  
+  - 這種對應可以是「一對一」或「多對一」
+    ![](image/Figure2.1-2.png)
+
+### 與隨機變數相關的主要概念
+
+在一個機率模型中：  
+
+- 隨機變數是實驗結果上的**實值函數**  
+  $$
+  X: w \to x 
+  $$
+- **隨機變數的函數**定義出另一個隨機變數  
+  $$
+  Y=g(X) 
+  $$
+- 每個隨機變數都可對應一些我們關心的「平均量」，例如 **mean** 與 **variance**  
+- 隨機變數可以在某個事件上，或在另一個隨機變數上，進行**條件化**（conditioned）  
+- 也有「來自某事件或另一個隨機變數的**獨立性**」這樣的概念
+
+### 離散／連續隨機變數
+
+- 若隨機變數的 **range**（可取的值的集合）是有限或至多可數無限，稱為**離散（discrete）**  
+  例如有限：$\{1,2,3,4\}$；可數無限：$\{1,2,\dots\}$  
+- 若其 **range** 是不可數無限，則稱為**連續（continuous, 非離散）**  
+  - 例：從區間 $[-1,1]$ 中選一點 $a$ 的實驗  
+    - 若某隨機變數把結果 $a$ 對應成數值 $a^2$，那它就不是離散的  
+
+### 與離散隨機變數相關的概念
+
+- 在機率模型中：  
+  - **離散隨機變數**是實驗結果上的實值函數，能取有限或可數無限多個數值  
+  - 離散隨機變數對應一個 **probability mass function（PMF）**，給出該隨機變數每個數值所對應的機率  
+    - PMF 可視為某個隨機變數的「**probability law**」或「**probability distribution**」  
+  - **隨機變數的函數**會定義另一個隨機變數，而其 PMF 可由原始隨機變數的 PMF 推得  
+    - 若 $X$ 是隨機變數且 $g(X)$ 是 $X$ 的函數，則 $g(X)$ 也是隨機變數
+
+## 機率質量函數（PMF）
+
+- 一個（離散）隨機變數 $X$ 可由其可取值的機率來刻畫，這由其 **PMF** 給出，記為  
+  $$
+  p_X(x) 
+  $$
+  也可寫作  
+  $$
+  p_X(x)=\mathsf{P}(\{X=x\})=\mathsf{P}(X=x) 
+  $$
+- 會導致 $X$ 取成 $x$ 的所有結果之機率總和，等於 $p_X(x)$  
+- 慣例：大寫字母（如 $X$）代表隨機變數，小寫字母（如 $x$）代表其數值  
+- PMF 在所有可能數值上的總和為 $1$  
+  $$
+  \sum_x p_X(x)=1 
+  $$
+  其中各事件 $\{X=x\}$ **兩兩互斥**，且在樣本空間上形成一個**劃分**（partition）
+
+### 如何計算 PMF
+
+- 對於隨機變數 $X$ 的每個可能數值 $x$：  
+  1. **蒐集**所有會讓事件 $\{X=x\}$ 發生的可能結果  
+  2. **加總**這些結果的機率，得到 $p_X(x)$  
+- 例：公平四面骰獨立擲兩次，令 $X$ 為「兩次擲得點數的最大值」的 PMF  
+  共有 $16$ 個等可能結果。 當 $X=m$ 時，符合的結果數是 $m^2-(m-1)^2=2m-1$，故  
+    $$
+    p_X(1)=\frac{1}{16},\quad p_X(2)=\frac{3}{16},\quad p_X(3)=\frac{5}{16},\quad p_X(4)=\frac{7}{16} 
+    $$
+  ![](image/Figure2.2.png)
+
+## Bernoulli Random Variable
+
+- 一個 Bernoulli random variable $X$ 只取兩個值 $1$ 與 $0$，其機率分別為 $p$ 與 $1-p$ 
+  
+  **PMF**：
+  
+  $$
+  p_X(x)=
+  \begin{cases}
+  p, & \text{if } x=1 \\
+  1-p, & \text{if } x=0
+  \end{cases}
+  $$
+
+- Bernoulli random variable 經常用來刻畫僅有兩種結局的通用機率情境，如：  
+  1. 擲硬幣一次（結果：head 與 tail）  
+  2. 一次試驗（結果：success 與 failure）  
+  3. 電話線路狀態（結果：free 與 busy）  
+
+- **Normalization Property（歸一化性質）**：$p_X(0)+p_X(1)=1$
+
+- Bernoulli 是 Binomial 在 $n=1$ 的特例
+
+- 一個 binomial random variable $X$ 的參數為 $n$ 與 $p$
+  
+  **PMF**：
+  
+  $$
+  p_X(k)=\mathbf P(X=k)=\binom{n}{k}p^k(1-p)^{\,n-k},\quad k=0,1,\dots,n
+  $$
+
+- Bernoulli random variable 可用於建模的例子  
+  1. $n$ 次互相獨立擲硬幣中 head 的個數（可能結果：$1,2,\dots,n$），每次擲出 head 的機率為 $p$  
+  2. $n$ 次互相獨立試驗中的 success 個數（可能結果：$1,2,\dots,n$），每次成功的機率為 $p$
+
+> 註：此處以及其他地方，我們簡化記號，使用 $k$（而非 $x$）來表示整數值 random variable 的取值
+
+### Normalization Property（Binomial）
+
+$$
+\sum_{k=0}^{n}p_X(k)=\sum_{k=0}^{n}\binom{n}{k}p^{\,k}(1-p)^{\,n-k}=1
+$$
+
+> 注意：$(a+b)^n=\sum_{k=0}^{n}\binom{n}{k}a^k b^{\,n-k}$
+
+![](image/Figure2.3.png)
+
+Example：三次互相獨立擲硬幣時 head 的數目
+
+$$
+p_X(1)=\mathbf P(X=1)=\mathbf P(HTT)+\mathbf P(THT)+\mathbf P(TTH)=3p(1-p)^2=\binom{3}{1}p(1-p)^2
+$$
+
+## Geometric Random Variable
+
+- 一個 geometric random variable $X$ 的參數為 $p$（$0<p<1$）
+  
+  **PMF**：
+  
+  $$
+  p_X(k)=(1-p)^{k-1}p,\quad k=1,2,\dots
+  $$
+
+- 幾個可用 geometric random variable 建模的例子  
+  - 第一次出現 head 所需的獨立擲硬幣次數，每次擲出 head 的機率為 $p$  
+  - 直到（且包含）第一次 success 所需的獨立試驗次數，每次成功機率為 $p$
+
+- **Normalization Property**
+  
+  $$
+  \sum_{k=1}^{\infty}p_X(k)=\sum_{k=1}^{\infty}(1-p)^{k-1}p
+  =p\sum_{k=0}^{\infty}(1-p)^{k}
+  =p\cdot\frac{1}{1-(1-p)}=1
+  $$
+
+  可以從**無限等比和**簡單推得： $\sum r^{k}=1/(1-r)$（取 $r=1-p$）
+
+![](image/Figure2.4.png)
+
+### 等差級數（Arithmetic series）
+
+**定義**：首項 $a_1$，公差 $d$。
+第 $n$ 項：
+
+$$
+a_n=a_1+(n-1)d
+$$
+
+**前 $n$ 項和**：
+
+$$
+S_n=\frac{n}{2},(a_1+a_n)=\frac{n}{2}\bigl(2a_1+(n-1)d\bigr)
+$$
+
+**簡單推導** 
+
+把和式正向、反向相加：
+
+$$
+\begin{aligned}
+S_n&=(a_1)+(a_1+d)+\cdots+(a_1+(n-1)d)\\
+S_n&=(a_1+(n-1)d)+\cdots+(a_1+d)+(a_1)
+\end{aligned}
+$$
+
+逐項相加得 $2S_n=n(a_1+a_n)$ ⇒ 上式成立
+
+### 等比級數（Geometric series）
+
+**定義**：首項 $a$，公比 $r$
+
+第 $n$ 項：$a r^{n-1}$
+
+**有限和（前 $n$ 項）**：
+
+$$
+S_n=a\frac{1-r^n}{1-r}\quad (r\neq 1).
+$$
+
+**簡單推導（乘上 $r$ 後相減）**
+
+令 $S_n=a(1+r+\cdots+r^{n-1})$。 則
+
+$$
+rS_n=a(r+r^2+\cdots+r^n).
+$$
+
+兩式相減得
+
+$$
+(1-r)S_n=a(1-r^n)\ \Rightarrow\ S_n=a\frac{1-r^n}{1-r}.
+$$
+
+**無限等比和（$|r|<1$）**：
+
+$$
+\sum_{k=0}^{\infty} ar^k=\frac{a}{1-r}.
+$$
+
+這是取 $n\to\infty$ 且 $r^n\to 0$ 的結果
+
+## Poisson Random Variable 
+
+- 一個 Poisson random variable $X$ 的參數為 $\lambda$
+  
+  **PMF**：
+  
+  $$
+  p_X(k)=e^{-\lambda}\frac{\lambda^k}{k!},\quad k=0,1,2,\dots
+  $$
+
+- Poisson random variable 的應用例子  
+  - 一本書中的錯字數量  
+  - 某城市在某一天內涉及車禍的汽車數量
+
+- **Normalization Property**
+  
+  $$
+  \sum_{k=0}^{\infty}p_X(k)=\sum_{k=0}^{\infty}e^{-\lambda}\frac{\lambda^k}{k!}
+  =e^{-\lambda}\left(1+\lambda+\frac{\lambda^2}{2!}+\frac{\lambda^3}{3!}+\cdots\right)=1
+  $$
+
+  其中 
+
+  $$
+  e^{\lambda}=\left(1+\lambda+\frac{\lambda^2}{2!}+\frac{\lambda^3}{3!}+\cdots\right) \text{ (馬克勞林級數)}
+  $$
+  
+![](image/Figure2.5.png)
+
+### Relationship between Binomial and Poisson
+
+具有參數 $\lambda$ 的 Poisson PMF 是具有參數 $n$ 與 $p$ 的 binomial PMF 的良好近似，只要 $\lambda=np$、$n$ 非常大且 $p$ 非常小，對於 binomial PMF：
+
+$$
+\begin{aligned}
+&\lim_{n\to\infty}\binom{n}{k}p^k(1-p)^{\,n-k}\\
+&=\lim_{n\to\infty}\frac{n!}{(n-k)!\,k!}\,p^k(1-p)^{\,n-k} \qquad (\because \lambda=np\Rightarrow p=\frac{\lambda}{n})\\
+&=\lim_{n\to\infty}\frac{n(n-1)\cdots(n-k+1)}{k!}\left(\frac{\lambda}{n}\right)^k\left(1-\frac{\lambda}{n}\right)^{\,n-k}\\
+&=\lim_{n\to\infty}\frac{\lambda^k}{k!}\cdot\frac{n(n-1)\cdots(n-k+1)}{n^k}\cdot\left(1-\frac{\lambda}{n}\right)^{\,n-k}\\
+&=\lim_{n\to\infty}\frac{\lambda^k}{k!}\left(\left(\frac{n}{n}\right)\left(\frac{n-1}{n}\right)\cdots\left(\frac{n-k+1}{n}\right)\right)\left(1-\frac{\lambda}{n}\right)^{\,n-k}
+\end{aligned}
+$$
+
+前面那部分，因為每個因子 $1-\frac{j}{n}\to 1$，且只有有限個（$k$ 個）因子，所以趨近於 1：
+
+$$
+\prod_{j=0}^{k-1}\left(1-\frac{j}{n}\right)\xrightarrow[n\to\infty]{} \prod_{j=0}^{k-1} 1 = 1
+$$
+
+對於後面那部分：
+
+$$
+\left(1-\frac{\lambda}{n}\right)^{n-k}
+=\left(1-\frac{\lambda}{n}\right)^{n}\cdot\left(1-\frac{\lambda}{n}\right)^{-k}
+\xrightarrow[n\to\infty]{} e^{-\lambda}\cdot 1 = e^{-\lambda}
+$$
+
+這裡用到標準極限
+
+$$
+\left(1+\frac{t}{n}\right)^{n}\xrightarrow[n\to\infty]{} e^{t}
+\quad(\text{取 }t=-\lambda).
+$$
+
+把前後的極限相乘： $1\times e^{-\lambda}=e^{-\lambda}$，推得
+
+$$
+\lim_{n\to\infty}\frac{\lambda^k}{k!}\left(\cdots\right)
+=\frac{\lambda^k}{k!}e^{-\lambda}.
+$$
+
+因此極限為 $e^{-\lambda}\dfrac{\lambda^k}{k!}$，即 Poisson PMF
+
+## Functions of Random Variables
+
+- 給定一個隨機變數 $X$，透過對 $X$ 施加各種變換，可以產生其他隨機變數  
+  
+  ![](image/PPT5-20.png)
+  - 線性  
+    $$
+    Y=g(X)=aX+b 
+    $$
+    例：每日溫度以華氏度表示 → 每日溫度以攝氏度表示 
+  - 非線性  
+    $$
+    Y=g(X)=\log X 
+    $$
+
+- 映射可以是「一對一」或「多對一」的
+- 換言之，若 $Y$ 是 $X$ 的函數（$Y=g(X)$），則 $Y$ 也是隨機變數
+- 若 $X$ 是離散的，且其 PMF 為 $p_X(x)$，則 $Y$ 亦為離散的，且其 PMF 可由下式計算  
+  $$
+  p_Y(y)=\sum_{\{x\,|\,g(x)=y\}} p_X(x) 
+  $$
+
+### Example 2.1
+
+令 $Y=|X|$，並將前述 $p_Y$ 的公式應用於下列情形  
+
+$$
+p_X(x)=
+\begin{cases}
+\frac{1}{9}, & \text{若 } x \text{ 為區間 }[-4,4] \text{ 內的整數} \\
+0, & \text{otherwise}
+\end{cases}
+$$
+
+$Y$ 的可能取值為 $y=0,1,2,3,4$。 要計算某個 $y$ 的 $p_Y(y)$，需將所有滿足 $|x|=y$ 的 $x$ 之 $p_X(x)$ 相加。 注意對 $y=0$ 僅有 $x=0$，因此  
+
+$$
+p_Y(0)=p_X(0)=\frac{1}{9} 
+$$
+
+對 $y=1,2,3,4$，各有兩個對應的 $x$ 值，例： 
+
+$$
+p_Y(1)=p_X(-1)+p_X(1)=\frac{2}{9} 
+$$
+
+因此 $Y$ 的 PMF 為  
+
+$$
+p_Y(y)=
+\begin{cases}
+\frac{2}{9}, & y=1,2,3,4 \\
+\frac{1}{9}, & y=0 \\
+0, & \text{otherwise}
+\end{cases}
+$$
+
+![](image.png)
+
+再舉一個相關例子，令 $Z=X^2$。 可將其視為 $X$ 的平方，或視為 $Y$ 的平方。 由公式 
+
+$$
+p_Z(z)=\sum_{\{x\,|\,x^2=z\}}p_X(x)
+$$ 
+
+或 
+
+$$
+p_Z(z)=\sum_{\{y\,|\,y^2=z\}}p_Y(y)
+$$
+
+得  
+
+$$
+p_Z(z)=
+\begin{cases}
+\frac{2}{9}, & z=1,4,9,16 \\
+\frac{1}{9}, & z=0 \\
+0, & \text{otherwise}
+\end{cases}
+$$
