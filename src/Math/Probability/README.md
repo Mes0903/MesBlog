@@ -2091,7 +2091,7 @@ $$
 =\frac{(1-p)}{p^{2}} 
 $$
 
-## **Example 2.3: The Quiz Problem.** 
+### **Example 2.3: The Quiz Problem.** 
 
 考慮一個遊戲：某人拿到兩道題目，必須決定先回答哪一題  
 
@@ -2124,3 +2124,75 @@ P_Y(y)=
 \qquad
 \mathbb{E}[Y]=0.5\times 0+0.1\times 200+0.4\times 300=140 
 $$
+
+## PMF、期望值、變異數小節
+
+考試應該沒空推，背一下
+
+### Bernoulli 
+
+PMF：
+
+$$
+p_X(x)=
+\begin{cases}
+p, & \text{if } x=1\\
+1-p, & \text{if } x=0
+\end{cases}
+$$
+
+期望值 $\mathbb{E}[X]$：$p$
+
+變異數 $\operatorname{var}(X)$：$p(1-p)$
+
+### Discrete Uniform 
+
+考慮一個離散均勻隨機變數，在區間 $[a,b]$ 內的 PMF 為常數、其他為 $0$
+
+$$
+p_X(x)=
+\begin{cases}
+\dfrac{1}{\,b-a+1\,}, & \text{if } x=a,a+1,\ldots,b\\
+0, & \text{otherwise}
+\end{cases}
+$$
+
+期望值 $\mathbb{E}[X]$：$\frac{a+b}{2}$
+
+變異數 $\operatorname{var}(X)$：$\frac{(b-a)(b-a+2)}{12}$
+
+### Poisson
+
+考慮一個 Poisson 隨機變數，其 PMF 為
+
+$$
+p_X(x)=e^{-\lambda}\frac{\lambda^{x}}{x!},\quad x=0,1,2,\ldots 
+$$
+
+期望值 $\mathbb{E}[X]$：$\lambda$
+
+變異數 $\operatorname{var}(X)$：$\lambda$
+
+### Binomial
+
+考慮一個 **binomial** 隨機變數，其 PMF 為
+
+$$
+p_X(x)=\binom{n}{x}p^x(1-p)^{\,n-x},\quad x=0,1,\ldots,n 
+$$
+
+期望值 $\mathbb{E}[X]$：$np$
+
+變異數 $\operatorname{var}(X)$：$np(1-p)$
+
+### Geometric
+
+考慮一個 geometric 隨機變數，且其 PMF 如下
+
+$$
+p_X(x)=(1-p)^{x-1}\,p,\quad x=1,2,\ldots 
+$$
+
+期望值 $\mathbb{E}[X]$：$\frac{1}{p}$
+
+變異數 $\operatorname{var}(X)$：$\frac{(1-p)}{p^{2}}$
