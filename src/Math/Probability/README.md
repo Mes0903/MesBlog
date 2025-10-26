@@ -1633,3 +1633,494 @@ p_Z(z)=
 0, & \text{otherwise}
 \end{cases}
 $$
+
+## Expectation, Mean and Variance
+
+- 示意範例：假設你旋轉轉盤 $k$ 次，第 $i$ 種結果出現的次數為 $k_i$，其對應的金額為 $m_i$（共有 $n$ 種不同的結果，$m_1,m_2,\ldots,m_n$）
+- 問：「平均每次旋轉」可期望得到多少金額  
+  - 收到的總金額為  
+    $$
+    m_1k_1+m_2k_2+\cdots+m_nk_n 
+    $$
+  - 每次旋轉平均收到的金額為  
+    $$
+    M=\frac{m_1k_1+m_2k_2+\cdots+m_nk_n}{k} 
+    $$
+
+- 若旋轉次數 $k$ 很大，且我們以相對頻率詮釋機率，則可合理預期第 $i$ 種結果出現的比例約為 $p_i$，且  
+  $$
+  p_i\approx \frac{k_i}{k} 
+  $$
+- 因此，每次旋轉的平均金額亦可寫為  
+  $$
+  M=\frac{m_1k_1+m_2k_2+\cdots+m_nk_n}{k} 
+  $$
+  $$
+  =m_1p_1+m_2p_2+\cdots+m_np_n 
+  $$
+
+### Expectation
+
+- 隨機變數 $X$ 的期望值（亦稱 expectation 或 mean），在 PMF 為 $p_X(x)$ 時定義為  
+  $$
+  \mathbb{E}[X]=\sum_x x\,p_X(x) 
+  $$
+  可將其解讀為 PMF 的「重心」（或按機率加權的平均），亦即 $X$ 可能取值的加權中心
+- 當下列條件成立時，期望值是 well-defined 的  
+  $$
+  \sum_x |x|\,p_X(x)<\infty 
+  $$
+  亦即  
+  $$
+  \sum_x x\,p_X(x) 
+  $$  
+  收斂到有限值
+
+![](image/Figure2.8.png)
+
+#### Expectation 的一些基本性質
+
+- 若 $X\ge 0$，則 $\,\mathrm{E}[X]\ge 0$
+
+  $$
+  \mathrm{E}[X]=\sum_{x} x\cdot p_X(x) 
+  $$
+
+- 若 $a\le X\le b$，則 $\,a\le \mathrm{E}[X]\le b$
+
+  $$
+  \mathrm{E}[X]=\sum_{x} x\cdot p_X(x)\le \sum_{x} b\cdot p_X(x)=b\cdot \sum_{x} p_X(x)=b 
+  $$
+
+  $$
+  \mathrm{E}[X]=\sum_{x} x\cdot p_X(x)\ge \sum_{x} a\cdot p_X(x)=a\cdot \sum_{x} p_X(x)=a 
+  $$
+
+- 若 $c$ 為常數，則 $\mathrm{E}[c]=c$  
+
+### Moments（動差）
+
+- 隨機變數 $X$ 的第 $n$ 階 moment 是隨機變數 $X^n$（或令 $Y=g(X)=X^n$）的期望值
+
+  $$
+  \mathrm{E}\!\left[X^{\,n}\right]=\sum_{x} x^{n}\, p_X(x) 
+  $$
+
+- 隨機變數 $X$ 的第一階 moment 就是它的 mean（或 expectation）
+
+- 說明：$X^{n}$ 表示 $X$ 的 $n$ 次方（the $n$-th power）
+
+### 隨機變數函數的期望
+
+- 設 $X$ 為具有 PMF $p_X$ 的隨機變數，且 $g(X)$ 為 $X$ 的一個函數。則隨機變數 $g(X)$ 的期望值為
+
+  $$
+  \mathrm{E}[g(X)]=\sum_{x} g(x)\,p_X(x) 
+  $$
+
+- 驗證上述公式：令 $Y=g(X)$，則
+
+  $$
+  p_Y(y)=\sum_{ \{x\,|\,g(x)=y\} } p_X(x) 
+  $$
+
+  因此
+  
+  $$
+  \begin{aligned}
+  &\mathrm{E}[g(X)]=\mathrm{E}[Y]=\sum_{y} y\,p_Y(y)\\
+  &=\sum_{y} y \sum_{ \{x\,|\,g(x)=y\} } p_X(x)\\
+  &= \sum_y \sum_{ \{x\,|\,g(x)=y\} } g(x)\,p_X(x)\\
+  &= \sum_{x} g(x)\,p_X(x) 
+  \end{aligned}
+  $$
+
+### Variance（變異數）
+
+- 隨機變數 $X$ 的 variance 定義為隨機變數 $(X-\mathrm{E}[X])^{2}$ 的期望值
+
+  $$
+  \mathrm{var}(X)=\mathrm{E}\!\left[(X-\mathrm{E}[X])^{2}\right] 
+  =\sum_{x} \bigl(x-\mathrm{E}[X]\bigr)^{2}\, p_X(x) 
+  $$
+
+- variance 總是非負
+
+- variance 提供 $X$ 圍繞其 mean 的離散程度量測
+
+- 標準差（standard deviation）是另一種離散程度的量測，定義為 variance 的平方根
+
+  $$
+  \sigma_X=\sqrt{\mathrm{var}(X)} 
+  $$
+
+- 標準差較易解讀，因為它和 $X$ 具有相同單位，能刻畫 $X$ 分佈的大致寬度
+
+### **Example 2.3**  
+
+給定隨機變數 $X$ 的 PMF
+
+$$
+p_X(x)=
+\begin{cases}
+\frac{1}{9}, & \text{若 } x \text{ 為區間 }[-4,4] \text{ 內的整數} \\
+0, & \text{其他情形}
+\end{cases}
+$$
+
+> 這是離散均勻隨機變數
+
+期望值：
+
+$$
+\mathrm{E}[X]=\sum_{x} x\,p_X(x)=\frac{1}{9}\sum_{x=-4}^{4} x=0 
+$$
+
+變異數：
+
+$$
+\mathrm{var}(X)=\mathrm{E}\!\left[(X-\mathrm{E}[X])^{2}\right]=\sum_{x}\bigl(x-\mathrm{E}[X]\bigr)^{2}p_X(x)=\frac{1}{9}\sum_{x=-4}^{4} x^{2}=\frac{60}{9} 
+$$
+
+或，令 $Z=(X-\mathrm{E}[X])^{2}=X^{2}$，則
+
+$$
+p_Z(z)=
+\begin{cases}
+\frac{2}{9}, & z\in\{1,4,9,16\} \\
+\frac{1}{9}, & z=0 \\
+0, & \text{其他情形}
+\end{cases}
+$$
+
+因此
+
+$$
+\mathrm{var}(X)=\mathrm{E}[Z]=\sum_{z} z\,p_Z(z)=\frac{60}{9} 
+$$
+
+## Properties of Mean and Variance
+
+- 設 $X$ 為一個隨機變數，並令
+  $$
+  Y=aX+b
+  $$
+  為 $X$ 的一個線性函數，其中 $a$ 與 $b$ 是已知常數
+
+  則有
+  $$
+  \mathbb{E}[Y]=a\,\mathbb{E}[X]+b 
+  $$
+  $$
+  \mathrm{var}(Y)=a^{2}\,\mathrm{var}(X) 
+  $$
+
+- 若 $g(X)$ 是 $X$ 的線性函數，則
+  $$
+  \mathbb{E}[g(X)]=g\!\big(\mathbb{E}[X]\big) 
+  $$
+
+  注意：一般情況下，$\mathbb{E}[g(X)]\neq g(\mathbb{E}[X])$  
+
+
+$$
+\mathbb{E}[Y]=\sum_{x}(ax+b)\,p_X(x)=\Big[a\sum_{x}x\,p_X(x)\Big]+\Big[b\sum_{x}p_X(x)\Big] =a\,\mathbb{E}[X]+b
+$$
+$$
+\begin{aligned}
+\mathrm{var}(Y)&=\sum_{x}\big(ax+b-\mathbb{E}[aX+b]\big)^{2}p_X(x) \\
+&=\sum_{x}\big(ax+b-a\mathbb{E}[X]-b\big)^{2}p_X(x) \\
+&=a^{2}\sum_{x}\big(x-\mathbb{E}[X]\big)^{2}p_X(x) \\
+&=a^{2}\,\mathrm{var}(X) 
+\end{aligned}
+$$
+
+## Variance in Terms of Moments Expression
+
+我們也可以將隨機變數 $X$ 的變異數表示為
+
+$$
+\mathrm{var}(X)=\mathbb{E}\big[X^{2}\big]-\big(\mathbb{E}[X]\big)^{2} 
+$$
+
+推導：
+
+$$
+\begin{aligned}
+\mathrm{var}(X)&=\sum_{x}\big(x-\mathbb{E}[X]\big)^{2}p_X(x) \\
+&=\sum_{x}\big(x^{2}-2x\,\mathbb{E}[X]+\big(\mathbb{E}[X]\big)^{2}\big)p_X(x) \\
+&=\Big[\sum_{x}x^{2}p_X(x)\Big]-2\mathbb{E}[X]\Big[\sum_{x}x\,p_X(x)\Big]+\big(\mathbb{E}[X]\big)^{2}\Big[\sum_{x}p_X(x)\Big] \\
+&=\mathbb{E}\big[X^{2}\big]-2\big(\mathbb{E}[X]\big)^{2}+\big(\mathbb{E}[X]\big)^{2} \\
+&=\mathbb{E}\big[X^{2}\big]-\big(\mathbb{E}[X]\big)^{2} \\
+\end{aligned}
+$$
+
+### **Example 2.4: Average Speed Versus Average Time.**  
+
+若天氣好（機率 $0.6$），Alice 以 $V=5$ 英里/小時步行 2 英里去上課； 否則她以 $V=30$ 英里/小時騎機車前往。 問抵達教室的期望時間 $\mathbb{E}[T]$ 為何？
+
+$$
+p_V(v)=
+\begin{cases}
+0.6, & \text{if } v=5\\
+0.4, & \text{if } v=30
+\end{cases}
+$$
+
+$$
+\mathbb{E}[V]=0.6\times 5+0.4\times 30=15 
+$$
+
+令
+
+$$
+T=g(V)=\frac{2}{V} 
+$$
+
+則
+
+$$
+\Rightarrow\quad
+p_T(t)=
+\begin{cases}
+0.6, & \text{if } t=\frac{2}{5}\\
+0.4, & \text{if } t=\frac{2}{30}
+\end{cases}
+$$
+
+$$
+\mathbb{E}[T]=0.6\times\frac{2}{5}+0.4\times\frac{2}{30}=\frac{4}{15} 
+$$
+
+然而
+
+$$
+\mathbb{E}[T]=\mathbb{E}[g(V)]\neq g\big(\mathbb{E}[V]\big)=\frac{2}{15} 
+$$
+
+## Bernoulli 的期望值與變異數
+
+**Example 2.5.** 考慮擲一枚有偏硬幣的實驗，正面出現的機率為 $p$、反面為 $1-p$。 令 $X$ 為 Bernoulli 隨機變數，其 PMF 為
+
+$$
+p_X(x)=
+\begin{cases}
+p, & \text{if } x=1\\
+1-p, & \text{if } x=0
+\end{cases}
+$$
+
+$$
+\mathbb{E}[X]=\sum_{x}x\,p_X(x)=1\cdot p+0\cdot(1-p)=p 
+$$
+$$
+\mathbb{E}[X^{2}]=\sum_{x}x^{2}p_X(x)=1^{2}\cdot p+0^{2}\cdot(1-p)=p 
+$$
+$$
+\mathrm{var}(X)=\mathbb{E}[X^{2}]-\big(\mathbb{E}[X]\big)^{2}=p-p^{2}=p(1-p) 
+$$
+
+（若 $X$ 為 Bernoulli 隨機變數，則 $Y=X^{n}$ 亦為 Bernoulli 隨機變數，且與 $X$ 具有相同的 PMF，亦即 $Y=X$）
+
+## Discrete Uniform 的期望值與變異數
+
+考慮一個離散均勻隨機變數，在區間 $[a,b]$ 內的 PMF 為常數、其他為 $0$
+
+$$
+p_X(x)=
+\begin{cases}
+\dfrac{1}{\,b-a+1\,}, & \text{if } x=a,a+1,\ldots,b\\
+0, & \text{otherwise}
+\end{cases}
+$$
+
+因此
+
+$$
+\mathbb{E}[X]=\sum_{x}x\,p_X(x)=\frac{1}{b-a+1}\sum_{x=a}^{b}x=\frac{a+b}{2} 
+$$
+
+利用 $\;1^{2}+2^{2}+\cdots+n^{2}=\dfrac{n(n+1)(2n+1)}{6}\;$ 可得
+
+$$
+\mathbb{E}[X^{2}]=\frac{1}{b-a+1}\left(\frac{b(b+1)(2b+1)}{6}-\frac{(a-1)a(2a-1)}{6}\right) 
+$$
+
+因此
+
+$$
+\mathrm{var}(X)=\mathbb{E}[X^{2}]-\big(\mathbb{E}[X]\big)^{2}
+=\frac{1}{b-a+1}\cdot\frac{(b-a)(b-a+1)(b-a+2)}{12}
+=\frac{(b-a)(b-a+2)}{12} 
+$$
+
+## Poisson 的期望值與變異數
+
+考慮一個 Poisson 隨機變數，其 PMF 為
+
+$$
+p_X(x)=e^{-\lambda}\frac{\lambda^{x}}{x!},\quad x=0,1,2,\ldots 
+$$
+
+期望值：
+
+$$
+\mathbb{E}[X]=\sum_{x}x\,p_X(x)=\sum_{x=0}^{\infty}x\,e^{-\lambda}\frac{\lambda^{x}}{x!}
+=\lambda\sum_{x=1}^{\infty}e^{-\lambda}\frac{\lambda^{x-1}}{(x-1)!}
+=\lambda\underbrace{\sum_{x'=0}^{\infty}e^{-\lambda}\frac{\lambda^{x'}}{x'!}}_1=\lambda 
+$$
+
+二階動差：
+
+$$
+\begin{aligned}
+\mathbb{E}[X^{2}]
+&=\sum_{x}x^{2}p_X(x)=\sum_{x=0}^{\infty}x^{2}e^{-\lambda}\frac{\lambda^{x}}{x!}=\lambda\sum_{x=1}^{\infty}xe^{-\lambda}\frac{\lambda^{x-1}}{(x-1)!}\\
+&=\lambda\sum_{x'=0}^{\infty}(x'+1)e^{-\lambda}\frac{\lambda^{x'}}{x'!}
+=\lambda\Big(\underbrace{\sum_{x'=0}^{\infty}x' e^{-\lambda}\frac{\lambda^{x'}}{x'!}}_{\lambda}
++\underbrace{\sum_{x'=0}^{\infty}e^{-\lambda}\frac{\lambda^{x'}}{x'!}}_{1}\Big)\\
+&=\lambda(\mathbb{E}[X]+1)=\lambda^{2}+\lambda 
+\end{aligned}
+$$
+
+變異數：
+
+$$
+\mathrm{var}(X)=\mathbb{E}[X^{2}]-\big(\mathbb{E}[X]\big)^{2}=\lambda^{2}+\lambda-\lambda^{2}=\lambda 
+$$
+
+## Binomial 的期望值與變異數
+
+考慮一個 **binomial** 隨機變數，其 PMF 為
+
+$$
+p_X(x)=\binom{n}{x}p^x(1-p)^{\,n-x},\quad x=0,1,\ldots,n 
+$$
+
+期望值
+
+$$
+\begin{aligned}
+\mathbb{E}[X]
+&=\sum_x x\,p_X(x)
+=\sum_{x=0}^{n} x\binom{n}{x}p^x(1-p)^{\,n-x}
+=\sum_{x=1}^{n} x\binom{n}{x}p^x(1-p)^{\,n-x}
+=\sum_{x=1}^{n} x\frac{n!}{x!(n-x)!}p^x(1-p)^{\,n-x}\\
+&=np\sum_{x=1}^{n}\frac{(n-1)!}{(x-1)!(n-x)!}p^{\,x-1}(1-p)^{n-x}
+=np\underbrace{\sum_{x'=0}^{n-1}\frac{(n-1)!}{x'!(n-1-x')!}p^{x'}(1-p)^{n-1-x'}}_1=np 
+\end{aligned}
+$$
+
+為了計算變異數，先利用
+
+$$
+\mathbb{E}[X^2]=\mathbb{E}[X^2-X]+\mathbb{E}[X] 
+$$
+
+其中
+
+$$
+\begin{aligned}
+\mathbb{E}[X^2-X] = \mathbb{E}[X(X-1)]
+&=\sum_{x=0}^{n}x(x-1)\binom{n}{x}p^x(1-p)^{\,n-x}
+=\sum_{x=2}^{n}x(x-1)\binom{n}{x}p^x(1-p)^{\,n-x}\\
+&=n(n-1)p^2\underbrace{\sum_{x=2}^n\frac{(n-2)!}{(x-2)!(n-x)!}p^{x-2}(1-p)^{n-x}}_1
+=n(n-1)p^2 
+\end{aligned}
+$$
+
+因此
+
+$$
+\begin{aligned}
+\operatorname{var}(X)
+&=\mathbb{E}[X^2]-\big(\mathbb{E}[X]\big)^2=\mathbb{E}[X^2-X] + \mathbb{E}[X] - (\mathbb{E}[X])^2\\
+&=n(n-1)p^2+np-n^2p^2
+=np(1-p) 
+\end{aligned}
+$$
+
+## Geometric 的平均值與變異數
+
+考慮一個 geometric 隨機變數，且其 PMF 如下
+
+$$
+p_X(x)=(1-p)^{x-1}\,p,\quad x=1,2,\ldots 
+$$
+
+期望值
+
+$$
+\begin{aligned}
+\mathbb{E}[X]
+&=\sum_x x\,p_X(x)=\sum_{x=0}^{\infty}x(1-p)^{x-1}\,p=p\sum_{x=1}^{\infty}xq^{\,x-1}\quad(\text{令 }q=1-p<1)\\
+&=p\,\frac{d\Big(\sum_{x=1}^{\infty}q^{\,x}\Big)}{dq}
+=p\,\frac{d\Big(\frac{1}{1-q}\Big)}{dq}
+=p\,\frac{1}{(1-q)^2}
+=\frac{1}{p} 
+\end{aligned}
+$$
+
+由於
+
+$$
+\mathbb{E}[X^2]=\mathbb{E}[X^2-X]+\mathbb{E}[X]
+$$
+
+因此
+
+$$
+\begin{aligned}
+\mathbb{E}[X^2-X]
+&=\mathbb{E}[X(X-1)]=\sum_{x=0}^{\infty}x(x-1)(1-p)^{x-1}\,p=pq\sum_{x=2}^{\infty}x(x-1)q^{\,x-2}\quad(\text{令 }q=1-p<1)\\
+&=pq\sum_{x=2}^{\infty}x(x-1)q^{\,x-2}
+=pq\,\frac{d^2\Big(\frac{1}{1-q}\Big)}{dq^{2}}
+=pq\,\frac{2}{(1-q)^3}
+=\frac{2(1-p)}{p^{2}} 
+\end{aligned}
+$$
+
+因此可得
+
+$$
+\operatorname{var}(X)=\mathbb{E}[X^{2}]-(\mathbb{E}[X])^{2}
+=\mathbb{E}[X^{2}-X]+\mathbb{E}[X]-(\mathbb{E}[X])^{2}
+$$
+$$
+=\frac{2(1-p)}{p^{2}}+\frac{1}{p}-\frac{1}{p^{2}}
+=\frac{(1-p)}{p^{2}} 
+$$
+
+## **Example 2.3: The Quiz Problem.** 
+
+考慮一個遊戲：某人拿到兩道題目，必須決定先回答哪一題  
+
+- 題目 1 以機率 $0.8$ 作答正確，之後可獲得獎金 $\$100$  
+- 題目 2 以機率 $0.5$ 作答正確，之後可獲得獎金 $\$200$  
+- 如果先作答的那題答錯，小考立即結束  
+- 應該先回答哪一題，才能使總獎金的期望值最大  
+
+> 補充：若把決策的期望報酬視為「在大量試次下的平均收益」，那麼選擇**期望報酬最大的決策**是合理的  
+
+以 $X$ 表示先答題 1 的總獎金，$Y$ 表示先答題 2 的總獎金，有  
+
+$$
+P_X(x)=
+\begin{cases}
+0.2,& x=0\\
+0.8\times 0.5,& x=100\\
+0.8\times 0.5,& x=300
+\end{cases}
+\qquad
+\mathbb{E}[X]=0.2\times 0+0.4\times 100+0.4\times 300=160 
+$$
+$$
+P_Y(y)=
+\begin{cases}
+0.5,& y=0\\
+0.2\times 0.5,& y=200\\
+0.8\times 0.5,& y=300
+\end{cases}
+\qquad
+\mathbb{E}[Y]=0.5\times 0+0.1\times 200+0.4\times 300=140 
+$$
