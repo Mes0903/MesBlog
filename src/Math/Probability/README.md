@@ -1124,7 +1124,7 @@ $$
 P(B\cap C)=\frac{1}{12}\neq \frac{1}{2}\cdot\frac{4}{36}=P(B)P(C)
 $$
 
-### Example 1.24. Network connectivity.
+### Example 1.24. Network connectivity
 
 一個電腦網路透過中繼節點 $C,D,E,F$ 連接兩個節點 $A$ 與 $B$
 
@@ -1261,9 +1261,9 @@ $$
   - 這個數字稱為隨機變數的（數值）**取值**  
   - 以數學語言來說，可以說**隨機變數是實驗結果上的一個實值函數**，亦即「以實驗結果為自變數的函數」  
 
-  $$
-  X: w \to x 
-  $$
+    $$
+    X: w \to x 
+    $$
 
   ![](image/Figure2.1-1.png)
 
@@ -1336,6 +1336,7 @@ $$
     $$
     p_X(1)=\frac{1}{16},\quad p_X(2)=\frac{3}{16},\quad p_X(3)=\frac{5}{16},\quad p_X(4)=\frac{7}{16} 
     $$
+
   ![](image/Figure2.2.png)
 
 ## Bernoulli Random Variable
@@ -1419,7 +1420,7 @@ $$
 
 ### 等差級數（Arithmetic series）
 
-**定義**：首項 $a_1$，公差 $d$。
+**定義**：首項 $a_1$，公差 $d$
 第 $n$ 項：
 
 $$
@@ -1454,7 +1455,7 @@ $$
 **有限和（前 $n$ 項）**：
 
 $$
-S_n=a\frac{1-r^n}{1-r}\quad (r\neq 1).
+S_n=a\frac{1-r^n}{1-r}\quad (r\neq 1)
 $$
 
 **簡單推導（乘上 $r$ 後相減）**
@@ -1462,19 +1463,19 @@ $$
 令 $S_n=a(1+r+\cdots+r^{n-1})$。 則
 
 $$
-rS_n=a(r+r^2+\cdots+r^n).
+rS_n=a(r+r^2+\cdots+r^n)
 $$
 
 兩式相減得
 
 $$
-(1-r)S_n=a(1-r^n)\ \Rightarrow\ S_n=a\frac{1-r^n}{1-r}.
+(1-r)S_n=a(1-r^n)\ \Rightarrow\ S_n=a\frac{1-r^n}{1-r}
 $$
 
 **無限等比和（$|r|<1$）**：
 
 $$
-\sum_{k=0}^{\infty} ar^k=\frac{a}{1-r}.
+\sum_{k=0}^{\infty} ar^k=\frac{a}{1-r}
 $$
 
 這是取 $n\to\infty$ 且 $r^n\to 0$ 的結果
@@ -1540,14 +1541,14 @@ $$
 
 $$
 \left(1+\frac{t}{n}\right)^{n}\xrightarrow[n\to\infty]{} e^{t}
-\quad(\text{取 }t=-\lambda).
+\quad(\text{取 }t=-\lambda)
 $$
 
 把前後的極限相乘： $1\times e^{-\lambda}=e^{-\lambda}$，推得
 
 $$
 \lim_{n\to\infty}\frac{\lambda^k}{k!}\left(\cdots\right)
-=\frac{\lambda^k}{k!}e^{-\lambda}.
+=\frac{\lambda^k}{k!}e^{-\lambda}
 $$
 
 因此極限為 $e^{-\lambda}\dfrac{\lambda^k}{k!}$，即 Poisson PMF
@@ -1609,7 +1610,7 @@ p_Y(y)=
 \end{cases}
 $$
 
-![](image.png)
+![](image/Figure2.7.png)
 
 再舉一個相關例子，令 $Z=X^2$。 可將其視為 $X$ 的平方，或視為 $Y$ 的平方。 由公式 
 
@@ -1712,7 +1713,7 @@ $$
 
 ### 隨機變數函數的期望
 
-- 設 $X$ 為具有 PMF $p_X$ 的隨機變數，且 $g(X)$ 為 $X$ 的一個函數。則隨機變數 $g(X)$ 的期望值為
+- 設 $X$ 為具有 PMF $p_X$ 的隨機變數，且 $g(X)$ 為 $X$ 的一個函數。 則隨機變數 $g(X)$ 的期望值為
 
   $$
   \mathrm{E}[g(X)]=\sum_{x} g(x)\,p_X(x) 
@@ -2196,3 +2197,855 @@ $$
 期望值 $\mathbb{E}[X]$：$\frac{1}{p}$
 
 變異數 $\operatorname{var}(X)$：$\frac{(1-p)}{p^{2}}$
+
+## 隨機變數的 Joint PMF
+
+- Motivation（動機）
+  - 給定一個實驗，例如：醫學診斷
+    - 血液檢查的結果，可以用隨機變數 (X) 的數值來表示
+    - 核磁共振成像（MRI，核磁共振攝影）的結果，也可以用另一個隨機變數 (Y) 的數值來表示
+  - 我們希望能同時考慮這兩個變數所取到的數值所對應的事件的機率，並研究它們之間是如何互相關聯的
+  - 也就是說，我們想研究：
+    $$
+    \mathbf{P}\big(\{X = x\} \cap \{Y = y\}\big) \ ?
+    $$
+
+- 設 $X$ 與 $Y$ 為同一個實驗所對應的隨機變數（亦即相同的樣本空間與機率律），則 $X$ 與 $Y$ 的 joint PMF 定義為  
+  $$
+  p_{X,Y}(x,y)=\mathbf{P}\big(\{X=x\}\cap\{Y=y\}\big)=\mathbf{P}(X=x,Y=y) 
+  $$
+
+- 若事件 $A$ 是所有滿足某一性質的有序對 $(x,y)$ 的集合，則事件 $A$ 的機率可由下式計算  
+  $$
+  \mathbf{P}\big((X,Y)\in A\big)=\sum_{(x,y)\in A} p_{X,Y}(x,y) 
+  $$
+  也就是說，$A$ 可以用 $X$ 與 $Y$ 來表述
+
+## 隨機變數的 Marginal PMFs
+
+- 隨機變數 $X$ 與 $Y$ 的 PMFs 可以由其 joint PMF 計算得到  
+  $$
+  p_X(x)=\sum_{y} p_{X,Y}(x,y),\qquad p_Y(y)=\sum_{x} p_{X,Y}(x,y) 
+  $$
+
+- 上述兩式可由下列步驟驗證（marginalization）  
+  $$
+  p_X(x)=\mathbf{P}(X=x)=\sum_{y}\mathbf{P}(X=x,Y=y)=\sum_{y} p_{X,Y}(x,y) 
+  $$
+
+- Tabular Method：已知 $X$ 與 $Y$ 的 joint PMF 以二維表格給出時，某一給定值處 $X$ 或 $Y$ 的 marginal PMF，分別可由加總該值對應之欄或列的所有表格條目得到  
+
+  ![](image/Figure2.11.png)
+
+## 多個隨機變數的函數
+
+- 令 $Z=g(X,Y)$ 為隨機變數 $X$ 與 $Y$ 的一個函數，則 $Z$ 也為隨機變數。 其 PMF 可由 joint PMF $p_{X,Y}$ 計算  
+  $$
+  p_Z(z)=\sum_{\{(x,y)\mid g(x,y)=z\}} p_{X,Y}(x,y) 
+  $$
+
+- 對於多個隨機變數之函數的期望值  
+  $$
+  \mathbf{E}[Z]=\mathbf{E}[g(X,Y)]=\sum_{x}\sum_{y} g(x,y)\,p_{X,Y}(x,y) 
+  $$
+
+- 若多個隨機變數的函數為線性，且形式為 $Z=g(X,Y)=aX+bY+c$，則  
+  $$
+  \mathbf{E}[Z]=a\,\mathbf{E}[X]+b\,\mathbf{E}[Y]+c 
+  $$
+
+### 一個示例
+
+回到圖 2.11：
+
+![](image/Figure2.11.png)
+
+已知上圖給出的 $X$ 與 $Y$ 的 joint（表格形式），並定義新隨機變數 $Z=X+2Y$，計算 $\mathbf{E}[Z]$
+
+**Method 1：**
+
+$$
+\mathbf{E}[X]=1\cdot\frac{3}{20}+2\cdot\frac{6}{20}+3\cdot\frac{8}{20}+4\cdot\frac{3}{20}=\frac{51}{20} 
+$$
+$$
+\mathbf{E}[Y]=1\cdot\frac{3}{20}+2\cdot\frac{7}{20}+3\cdot\frac{7}{20}+4\cdot\frac{3}{20}=\frac{50}{20} 
+$$
+$$
+\mathbf{E}[Z]=\mathbf{E}[X]+2\mathbf{E}[Y]=\frac{51}{20}+2\cdot\frac{50}{20}=\frac{151}{20}=7.55 
+$$
+
+**Method 2：**
+
+$$
+p_Z(z)=\sum_{\{(x,y)\mid x+2y=z\}} p_{X,Y}(x,y) 
+$$
+$$
+p_Z(3)=\frac{1}{20},\quad p_Z(4)=\frac{1}{20},\quad p_Z(5)=\frac{2}{20},\quad p_Z(6)=\frac{2}{20} 
+$$
+$$
+p_Z(7)=\frac{4}{20},\quad p_Z(8)=\frac{3}{20},\quad p_Z(9)=\frac{3}{20},\quad p_Z(10)=\frac{2}{20} 
+$$
+$$
+p_Z(11)=\frac{1}{20},\quad p_Z(12)=\frac{1}{20} 
+$$
+$$
+\therefore\ \mathbf{E}[Z]=3\cdot\frac{1}{20}+4\cdot\frac{1}{20}+5\cdot\frac{2}{20}+6\cdot\frac{2}{20}+7\cdot\frac{4}{20}+8\cdot\frac{3}{20}+9\cdot\frac{3}{20}+10\cdot\frac{2}{20}+11\cdot\frac{1}{20}+12\cdot\frac{1}{20}=7.55 
+$$
+
+## 兩個隨機變數以上的 Joint PMF
+
+- 三個隨機變數 $X,\ Y,\ Z$ 的 joint PMF 與上述類似，定義為  
+  $$
+  p_{X,Y,Z}(x,y,z)=\mathbf{P}(X=x,Y=y,Z=z) 
+  $$
+
+- 對應的 marginal PMFs 為  
+  $$
+  p_{X,Y}(x,y)=\sum_{z} p_{X,Y,Z}(x,y,z) 
+  $$
+  $$
+  p_X(x)=\sum_{y}\sum_{z} p_{X,Y,Z}(x,y,z) 
+  $$
+
+- 對於 $X,\ Y,\ Z$ 的函數 $g$，其期望值  
+  $$
+  \mathbf{E}[g(X,Y,Z)]=\sum_{x}\sum_{y}\sum_{z} g(x,y,z)\,p_{X,Y,Z}(x,y,z) 
+  $$
+
+- 若函數為線性且具有形式 $aX+bY+cZ+d$，則  
+  $$
+  \mathbf{E}[aX+bY+cZ+d]=a\,\mathbf{E}[X]+b\,\mathbf{E}[Y]+c\,\mathbf{E}[Z]+d 
+  $$
+
+- 推廣到超過三個隨機變數的情形  
+  $$
+  \mathbf{E}\big[a_1X_1+a_2X_2+\cdots+a_nX_n\big]=a_1\mathbf{E}[X_1]+a_2\mathbf{E}[X_2]+\cdots+a_n\mathbf{E}[X_n] 
+  $$
+
+### **Example 2.10. Mean of the Binomial.** 
+
+你的機率課有 300 位學生，而且每位學生獲得 A 的機率為 $1/3$，且彼此獨立  
+
+問：隨機變數 $X$（得到 A 的學生人數）的 mean 是多少  
+
+令  
+
+$$
+\begin{aligned}
+&X_i=\begin{cases}
+1, & \text{若第 } i \text{ 位學生得到 A} \\
+0, & \text{otherwise}
+\end{cases}\\
+&\Rightarrow\ X_1,X_2,\ldots,X_{300} \text{ 都是 mean 為 p=1/3 的 Bernoulli 隨機變數}
+\end{aligned}
+$$
+
+它們的和 $X=X_1+X_2+\cdots+X_{300}$ 可以被解讀為一個參數為 $n\,(n=300)$ 與 $p\,(p=1/3)$ 的 binomial 隨機變數。 也就是說，$X$ 是在 $n\,(n=300)$ 次獨立試驗中的成功次數  
+
+因此
+
+$$
+\mathrm{E}[X]=\mathrm{E}[X_1+X_2+\cdots+X_{300}]
+= \sum_{i=1}^{300}\mathrm{E}[X_i]
+=300\cdot \tfrac{1}{3}=100 
+$$
+
+## Conditioning
+
+- 回想一下，conditional probability 讓我們能在僅有部分資訊的情況下，對一次實驗的結果進行推理
+  - 類似我們在 Chapter 1 的討論，conditional probabilities 可以用來捕捉各種 events（或另一個 random variable 的值）所傳遞的資訊，這些資訊與一個 random variable 可能的不同取值有關
+- 以相同的精神，我們可以定義 conditional PMFs，條件是某個 event 發生，或條件是另一個 random variable 的取值
+  - 不過實際上，這裡並沒有太多全新的內容，主要是把 Chapter 1 已熟悉的概念加以鋪陳，並配合一些新的記號
+
+### Conditioning a Random Variable on an Event
+
+- random variable $X$ 在特定 event $A$（且 $P(A)>0$）上的 conditional PMF 定義如下（其中 $X$ 與 $A$ 來自同一個 experiment）
+  $$
+  p_{X\mid A}(x)=P(X=x\mid A)=\frac{P(\{X=x\}\cap A)}{P(A)}
+  $$
+- Normalization Property
+  - 注意，對於不同的 $X$ 取值，$\{X=x\}\cap A$ 這些 events 彼此為 disjoint 的，它們的 union 等於 $A$
+    $$
+    P(A)=\sum_{x}P(\{X=x\}\cap A) \text{ (Total probability theorem)}
+    $$
+
+    $$
+    \therefore\ \sum_{x}p_{X\mid A}(x)=\sum_{x}\frac{P(\{X=x\}\cap A)}{P(A)}=\frac{\sum_{x}P(\{X=x\}\cap A)}{P(A)}=\frac{P(A)}{P(A)}=1
+    $$
+
+  ![](image/PPT7-14.png)
+
+$p_{X\mid A}(x)$ 的取得方式是：對每個 $x$，把落在 $\{X=x\}\cap A$ 的 outcomes 的機率加總，再除以 $P(A)$ 做 normalize
+
+![](image/Figure2.12.png)
+
+### Illustrative Examples
+
+設 $X$ 是一個 discrete uniform random variable
+
+![](image/PPT7-16.png)
+
+對於 $p_X(x)$：
+
+$$
+E[X]=\frac{1+4}{2}=\frac{5}{2}
+$$
+$$
+\operatorname{var}(X)=\frac{(4-1)(4-1+2)}{12}=\frac{5}{4}
+$$
+
+對於 $p_{X\mid A}(x)$，$A=\{X\ge 2\}$：
+
+$$
+E[X\mid A]=\frac{2+4}{2}=3
+$$
+$$
+\operatorname{var}(X\mid A)=\frac{(4-2)(4-2+2)}{12}=\frac{2}{3}
+$$
+$$
+\bigl(\operatorname{var}(X\mid A)=\tfrac{1}{3}(2-3)^2+\tfrac{1}{3}(3-3)^2+\tfrac{1}{3}(4-3)^2\bigr)
+$$
+
+### Example 2.12. 
+
+設 $X$ 為一次公平六面骰的點數，$A$ 為「點數為偶數」這個 event
+
+$$
+p_{X\mid A}(x)=P(X=x\mid \text{roll is even})=\frac{P(X=x\ \text{and}\ X\ \text{is even})}{P(X\ \text{is even})}
+$$
+$$
+=\begin{cases}
+1/3,& \text{if }x=2,4,6\\
+0,& \text{otherwise}
+\end{cases}
+$$
+
+### Example 2.13. 
+
+一位學生最多會考某測驗 $n$ 次，每次通過的機率為 $p$，且各次嘗試彼此獨立  
+
+問：在「學生最終通過考試」這個條件下，嘗試次數的 PMF 是什麼？
+
+設 $X$ 是參數為 $p$ 的 geometric random variable，表示直到第一次成功出現所需的嘗試次數
+$$
+p_X(x)=(1-p)^{x-1}p
+$$
+設 $A$ 為「學生在 $n$ 次以內通過考試」這個 event（$A=\{X\le n\}$）
+$$
+\therefore\ p_{X\mid A}(x)=
+\begin{cases}
+\displaystyle\frac{(1-p)^{x-1}p}{\sum_{m=1}^{n}(1-p)^{m-1}p},& \text{if }x=1,2,\ldots,n\\[10pt]
+0,& \text{otherwise}
+\end{cases}
+$$
+
+### More on Geometric Random Variable
+
+Memorylessness Property
+
+- 在前 $n$ 次擲幣皆為 “Tails” 的條件下，直到第一次出現 “Head” 尚需的擲幣次數，服從參數為 $p$ 的 geometric random variable
+- 也就是說，若 $X$ 是參數為 $p$ 的 geometric random variable，則在條件 $B=\{X>n\}$ 下，$Y=X-n$ 也同樣是參數為 $p$ 的 geometric random variable
+
+$$
+\begin{aligned}
+p_{X-n\mid X>n}(k)
+&=P(T_{n+1},T_{n+2},\ldots,H_{n+k}\mid B=\{X>n\})\\
+&=P(T_{n+1},T_{n+2},\ldots,H_{n+k}) \quad\text{ (X > n 已自動隱含在內)}\\
+&=P(T_1,T_2,\ldots,H_k) \quad\text{ (獨立且分布相同)}\\
+&=p_X(k)
+\end{aligned}
+$$
+
+等價的分式推導：
+
+$$
+\begin{aligned}
+p_{X-n\mid X>n}(k)
+&=\frac{P(X-n=k,\ X>n)}{P(X>n)}
+=\frac{P(X=n+k,\ X>n)}{P(X>n)}
+=\frac{P(X=n+k)}{P(X>n)}\\
+&=\frac{(1-p)^{n+k-1}p}{\sum_{x=n+1}^{\infty}(1-p)^{x-1}p}
+=\frac{(1-p)^{n+k-1}p}{(1-p)^n\cdot\underbrace{\sum_{x'=1}^{\infty}(1-p)^{x'-1}p}_1} \quad(\text{let }x'=x-n)\\
+&=(1-p)^{k-1}p\\
+&=p_X(k)
+\end{aligned}
+$$
+
+## Total Probability Theorem
+
+- 設 $A_1,A_2,\ldots,A_n$ 互斥，並且構成 sample space 的一個 partition
+- 於是，我們有
+  $$
+  p_X(x)=P(A_1)p_{X\mid A_1}(x)+P(A_2)p_{X\mid A_2}(x)+\cdots+P(A_n)p_{X\mid A_n}(x)
+  $$
+  $$
+  E[X]=P(A_1)E[X\mid A_1]+P(A_2)E[X\mid A_2]+\cdots+P(A_n)E[X\mid A_n]
+  $$
+
+注意
+
+$$
+\operatorname{var}(X)\ne P(A_1)\operatorname{var}(X\mid A_1)+P(A_2)\operatorname{var}(X\mid A_2)+\cdots+P(A_n)\operatorname{var}(X\mid A_n)
+$$
+
+## Conditioning a Random Variable on Another
+
+- 設 $X$ 與 $Y$ 是同一個 experiment 下的兩個 random variables。 $X$ 在 $Y$ 給定情況下的 conditional PMF $p_{X\mid Y}$ 定義為
+  $$
+  p_{X\mid Y}(x\mid y)=P(X=x\mid Y=y)=\frac{P(X=x,Y=y)}{P(Y=y)}
+  =\frac{p_{X,Y}(x,y)}{p_Y(y)} \text{ (} Y \text { is fixed on some value } y \text{)}
+  $$
+- Normalization Property
+  $$
+  \sum_x p_{X\mid Y}(x\mid y)=1
+  $$
+- conditional PMF 經常可用於 joint PMF 的計算（multiplication (chain) rule）
+  $$
+  p_{X,Y}(x,y)=p_Y(y)\,p_{X\mid Y}(x\mid y)\ \ \bigl(=\,p_X(x)\,p_{Y\mid X}(y\mid x)\bigr)
+  $$
+
+- conditional PMF 也可以用來計算 marginal PMFs
+  $$
+  p_X(x)=\sum_y p_{X,Y}(x,y)=\sum_y p_Y(y)\,p_{X\mid Y}(x\mid y)
+  $$
+- 關於 conditional PMF $p_{X\mid Y}$ 的視覺化，可由下式對應得到
+  $$
+  p_{X\mid Y}(x\mid y)=\frac{p_{X,Y}(x,y)}{p_Y(y)}=\frac{p_{X,Y}(x,y)}{\sum_x p_{X,Y}(x,y)}
+  $$
+
+  ![](image/Figure2.13.png)
+
+### Example 2.14. 
+
+Professor May B. Right 經常把事實記錯，並且以機率 $1/4$ 錯答每一位學生的問題，且不同問題之間獨立。 每堂課 May 被問到 $0,1,2$ 題的機率皆為 $1/3$
+
+問：她至少答錯一題的機率是多少？
+
+令 $X$ 為被問到的題數，$Y$ 為答錯的題數
+
+$$
+\begin{aligned}
+P(Y\ge 1)
+&=P(Y=1)+P(Y=2)\\
+&=P(X=1,Y=1)+P(X=2,Y=1)+P(X=2,Y=2)\\
+\therefore\ P(Y\ge 1)
+&=P(X=1)P(Y=1\mid X=1)+P(X=2)P(Y=1\mid X=2)+P(X=2)P(Y=2\mid X=2)\\
+&=\frac{1}{3}\cdot\frac{1}{4}+\frac{1}{3}\left[\binom{2}{1}\cdot\frac{1}{4}\cdot\frac{3}{4}\right]+\frac{1}{3}\left[\binom{2}{2}\cdot\frac{1}{4}\cdot\frac{1}{4}\right]\\
+&=\frac{11}{48}
+\end{aligned}
+$$
+
+![](image/Figure2.14.png)
+
+## Two Special Formulas
+
+若 $A_1,\ldots,A_n$ 為互斥且形成 sample space 之 partition 的 events，且對所有 $i$ 都有 $P(A_i)>0$，則對任一 event $B$，且對所有 $i$ 都有 $P(A_i\cap B)>0$，可得
+
+$$
+p_{X\mid B}(x)=\sum_{i=1}^{n}P(A_i\mid B)\,p_{X\mid A_i\cap B}(x)
+$$
+
+1. 先問：「在 $B$ 發生的情況下，我到底是落在哪一塊 $A_i$ 裡？」  
+    這塊的機率就是 $P(A_i \mid B)$
+2. 接著問：「一旦我知道我同時滿足 $A_i$ 跟 $B$，那 $X=x$ 的機率是多少？」  
+    這就是 $p_{X \mid A_i \cap B}(x)$
+3. 把所有可能的 $i$ 都加總，就得到整體在 $B$ 下的 $X$ 的 PMF
+
+這在機率裡就是「條件版混合分佈」
+
+---
+
+推導：
+
+$$
+p_{X \mid B}(x) = P(X = x \mid B)
+= \frac{P(\{X = x\} \cap B)}{P(B)}
+$$
+
+現在，因為 $\{A_i\}$ 是一個 partition，我們可以把 $B$ 裡的東西「細分」到各個 $A_i$ 裡。 具體來說：
+
+$$
+\{X = x\} \cap B
+= \bigcup_{i=1}^{n} \Big( \{X = x\} \cap A_i \cap B \Big)
+$$
+
+而且這些 $\{X=x\} \cap A_i \cap B$ 是互斥的（不同 $i$ 不會重疊，因為 $A_i$ 不重疊）
+
+所以用加法公理（disjoint union 的機率要加）：
+
+$$
+P(\{X = x\} \cap B)
+= \sum_{i=1}^{n} P(\{X = x\} \cap A_i \cap B)
+$$
+
+現在代回條件機率的分子：
+
+$$
+P(X = x \mid B)
+= \frac{ \sum_{i=1}^{n} P(\{X = x\} \cap A_i \cap B) }{ P(B) }
+= \sum_{i=1}^{n} \frac{ P(\{X = x\} \cap A_i \cap B) }{P(B)}
+$$
+
+對於每一項，我們把它寫成「乘法」形式（這是關鍵）：
+
+$$
+\frac{ P(\{X = x\} \cap A_i \cap B) }{ P(B) }
+= \frac{ P(A_i \cap B) }{P(B)} \cdot \frac{ P(\{X = x\} \cap A_i \cap B) }{ P(A_i \cap B) }
+$$
+
+這兩個分數其實就是條件機率：
+
+- 第一個 $\frac{P(A_i \cap B)}{P(B)} = P(A_i \mid B)$
+
+- 第二個 $\frac{P(\{X = x\} \cap A_i \cap B)}{P(A_i \cap B)} = P(X = x \mid A_i \cap B) = p_{X \mid A_i \cap B}(x)$
+
+所以整個式子變成：
+
+$$
+\begin{aligned}
+P(X = x \mid B)
+&= \frac{ P(\{X = x\} \cap A_i \cap B) }{ P(B) }
+= \frac{ P(A_i \cap B) }{P(B)} \cdot \frac{ P(\{X = x\} \cap A_i \cap B) }{ P(A_i \cap B) }\\
+&= \sum_{i=1}^{n} P(A_i \mid B)\, P(X = x \mid A_i \cap B)
+= \sum_{i=1}^{n} P(A_i \mid B)\, p_{X \mid A_i \cap B}(x)
+\end{aligned}
+$$
+
+同理，進一步可得
+
+$$
+E[X\mid B]= \sum_x x \cdot p_{X \mid B}(x)=\sum_{i=1}^{n}P(A_i\mid B)\,E[X\mid A_i\cap B]
+$$
+
+## Summary of Facts About Conditional Expectations
+
+- 回想一下，可以把 conditional PMF 視為在 conditioning event 所決定的一個新「宇宙」之上的 ordinary PMF
+- 以相同的精神，conditional expectation 與 ordinary expectation 相同，只是它參照的是這個新「宇宙」，而所有機率與 PMFs 都以其對應的 conditional 版本取代
+
+- 假設 $X$ 與 $Y$ 是同一個 experiment 下的兩個 random variables
+  - 給定 event $A$ 且 $P(A)>0$，$X$ 的 conditional expectation 定義為
+    $$
+    E[X\mid A]=\sum_x x\,p_{X\mid A}(x)
+    $$
+  - 對於一個函數 $g(X)$，其對應形式為
+    $$
+    E[g(X)\mid A]=\sum_x g(x)\,p_{X\mid A}(x)
+    $$
+
+## Total Expectation Theorem
+
+- 對於 $Y$ 的某個取值 $y$，$X$ 的 conditional expectation 定義為
+  $$
+  E[X\mid Y=y]=\sum_{x}x\,p_{X\mid Y}(x\mid y)
+  $$
+  可得
+  $$
+  E[X]=\sum_{y}p_Y(y)\,\underbrace{\sum_{x}x\,p_{X\mid Y}(x\mid y)}_{E[X\mid Y=y]}
+  $$
+- 設 $A_1,\cdots,A_n$ 互斥且形成 sample space 的一個 partition，並假設對所有 $i$ 都有 $P(A_i)>0$。 則
+  $$
+  E[X]=\sum_{i=1}^{n}P(A_i)\,E[X\mid A_i]
+  $$
+- 設 $A_1,\cdots,A_n$ 互斥且形成某個 event $B$ 的一個 partition，並假設對所有 $i$ 都有 $P(A_i\cap B)>0$。 則
+  $$
+  E[X\mid B]=\sum_{i=1}^{n}P(A_i\mid B)\,E[X\mid A_i\cap B]
+  $$
+- total expectation theorem 的驗證
+  $$
+  \begin{aligned}
+  E[X]
+  &=\sum_{x}x\,p_X(x)=\sum_{x}x\sum_{y}p_{X,Y}(x,y)\\
+  &=\sum_{x}x\sum_{y}p_Y(y)\,p_{X\mid Y}(x\mid y)\\
+  &=\sum_{y}p_Y(y)\sum_{x}x\,p_{X\mid Y}(x\mid y)\\
+  &=\sum_{y}p_Y(y)\,E[X\mid Y=y]
+  \end{aligned}
+  $$
+
+### Example 2.17. Mean and Variance of the Geometric Random Variable
+
+設 $X$ 為 geometric random variable，其 PMF 為 $p_X(x)=(1-p)^{x-1}p,\ x=1,2,\ldots$
+
+設 $A_1$ 為 event $\{X=1\}$，$A_2$ 為 event $\{X>1\}$
+
+我們有
+
+$$
+E[X]=P(A_1)E[X\mid A_1]+P(A_2)E[X\mid A_2]
+$$
+
+其中 $P(A_1)=p,\ P(A_2)=1-p$ （因為 $\{A_1, A_2\}$ 形成了一個 partition）
+
+先給出條件 PMF
+
+$$
+p_{X\mid A_1}(x)=\frac{P(\{X=x\}\cap A_1)}{P(A_1)}=
+\begin{cases}
+1,& x=1\\
+0,& \text{otherwise}
+\end{cases}
+$$
+
+$$
+p_{X\mid A_2}(x)=\frac{P(\{X=x\}\cap A_2)}{P(A_2)}=
+\begin{cases}
+(1-p)^{x-2}p,& x>1\\
+0,& \text{otherwise}
+\end{cases}
+$$
+
+計算條件期望
+
+$$
+E[X\mid A_1]=1\cdot 1+\sum_{x=2}^{\infty}x\cdot 0=1
+$$
+$$
+E[X\mid A_2]=1\cdot 0+\sum_{x=2}^{\infty}x\,(1-p)^{x-2}p
+$$
+
+改以 $x'=x-1$ 表示
+
+$$
+\begin{aligned}
+\sum_{x=2}^{\infty}x\cdot \left[(1-p)^{x-2}p\right]
+&=\sum_{x'=1}^{\infty}(x'+1)(1-p)^{x'-1}p\\
+&=\left[\sum_{x'=1}^{\infty}x'(1-p)^{x'-1}p\right]+\left[\sum_{x'=1}^{\infty}(1-p)^{x'-1}p\right]\\
+&=E[X]+1
+\end{aligned}
+$$
+
+代回 $E[X]=P(A_1)E[X\mid A_1]+P(A_2)E[X\mid A_2]$
+
+$$
+E[X]=p\cdot 1+(1-p)\bigl(E[X]+1\bigr)
+$$
+$$
+\therefore\ E[X]=\frac{1}{p}
+$$
+
+以相同方式計算 $E[X^2]$
+
+$$
+E[X^2]=P(A_1)E[X^2\mid A_1]+P(A_2)E[X^2\mid A_2]
+$$
+$$
+E[X^2\mid A_1]=1^2\cdot 1+\sum_{x=2}^{\infty}x^2\cdot 0=1
+$$
+$$
+E[X^2\mid A_2]=1^2\cdot 0+\sum_{x=2}^{\infty}x^2(1-p)^{x-2}p
+$$
+
+使用恆等式 $x^2=(x-1)^2+2x-1$，將上式拆開
+
+$$
+\sum_{x=2}^{\infty}x^2(1-p)^{x-2}p=\left[\sum_{x=2}^{\infty}(x-1)^2(1-p)^{x-2}p\right]+2\left[\sum_{x=2}^{\infty}x(1-p)^{x-2}p\right]-\left[\sum_{x=2}^{\infty}(1-p)^{x-2}p\right]
+$$
+
+代入 $x'=x-1$：
+
+$$
+\begin{aligned}
+&=\left[\sum_{x'=1}^{\infty}x'^2(1-p)^{x'-1}p\right]+2\left[\sum_{x=2}^{\infty}(x-1)(1-p)^{x-2}p\right]+2\left[\sum_{x=2}^{\infty}(1-p)^{x-2}p\right]-\left[\sum_{x=2}^{\infty}(1-p)^{x-2}p\right]\\
+&=\left[\sum_{x'=1}^{\infty}x'^2(1-p)^{x'-1}p\right]+2\left[\sum_{x'=1}^{\infty}x'(1-p)^{x'-1}p\right]+\left[\sum_{x'=1}^{\infty}(1-p)^{x'-1}p\right]\\
+&
+\end{aligned}
+$$
+
+再以先前 $\sum_{x=2}^{\infty}x(1-p)^{x-2}p=E[X]+1$ 的結果代入
+
+$$
+\begin{aligned}
+&=\left[\sum_{x'=1}^{\infty}x'^2(1-p)^{x'-1}p\right]+2\bigl(E[X]+1\bigr)-1\\
+&=E[X^2] + 2E[X] + 1
+\end{aligned}
+$$
+
+因此
+
+$$
+E[X^2 \mid A_2]=E[X^2]+2E[X]+1\
+$$
+
+將上式代回 $E[X^2]=P(A_1)E[X^2\mid A_1]+P(A_2)E[X^2\mid A_2]$：
+
+$$
+E[X^2]=p\cdot 1+(1-p)\left(E[X^2]+2E[X]+1\right)
+$$
+
+由前一小節已得 $E[X]=\frac{1}{p}$，整理可得
+
+$$
+E[X^2]=\frac{1+2(1-p)E[X]}{p}=\frac{1+2(1-p)\cdot \frac{1}{p}}{p}=\frac{2}{p^2}-\frac{1}{p}
+$$
+
+因此
+
+$$
+\operatorname{var}(X)=E[X^2]-(E[X])^2=\frac{1}{p^2}-\frac{1}{p}=\frac{1-p}{p^2}
+$$
+
+## Independence of a Random Variable from an Event
+
+- 如果對所有 $x$ 都有 $P(X=x\ \text{and}\ A)=P(X=x)P(A)$，則 random variable $X$ 與 event $A$ 為 independent
+  - 兩個 events $\{X=x\}$ 與 $A$ 必須對所有 $x$ 皆 independent
+- 若 random variable $X$ 與 event $A$ independent 且 $P(A)>0$，則
+  $$
+  \begin{aligned}
+  p_{X\mid A}(x)
+  &=\frac{P(X=x\ \text{and}\ A)}{P(A)}\\
+  &=\frac{P(X=x)P(A)}{P(A)}\\
+  &=P(X=x)\\
+  &=p_X(x),\ \ \text{for all }x\\
+  \end{aligned}
+  $$
+
+### Example 2.19. 
+
+考慮兩次相互獨立的公平擲幣
+
+- 設 random variable $X$ 為正面出現次數
+- 設 random variable $Y$：若第一次為 head 則 $Y=0$，若第一次為 tail 則 $Y=1$
+- 設 $A$ 為「正面出現次數為偶數」這個 event
+- 可能 outcomes 為 $(T,T),(T,H),(H,T),(H,H)$
+
+單變數與條件分佈
+
+$$
+p_X(x)=
+\begin{cases}
+1/4,& \text{if }x=0\\
+1/2,& \text{if }x=1\\
+1/4,& \text{if }x=2
+\end{cases}
+\qquad
+p_{X\mid A}(x)=\frac{P(X=x\ \text{and}\ A)}{P(A)}=
+\begin{cases}
+1/2,& \text{if }x=0\\
+0,& \text{if }x=1\\
+1/2,& \text{if }x=2
+\end{cases}
+$$
+
+$$
+p_{X\mid A}(x)\ne p_X(x)\ \Rightarrow\ X\ \text{and}\ A\ \text{are not independent}
+$$
+$$
+p_Y(y)=
+\begin{cases}
+1/2,& \text{if }y=0\\
+1/2,& \text{if }y=1
+\end{cases}
+\qquad
+p_{Y\mid A}(y)=\frac{P(Y=y\ \text{and}\ A)}{P(A)}=
+\begin{cases}
+1/2,& \text{if }y=0\\
+1/2,& \text{if }y=1
+\end{cases}
+$$
+$$
+p_{Y\mid A}(y)=p_Y(y)\ \Rightarrow\ Y\ \text{and}\ A\ \text{are independent}
+$$
+
+其中
+
+$$
+P(A)=\frac{1}{2}
+$$
+
+## Independence of a Random Variables
+
+- 兩個 random variables $X$ 與 $Y$ 若滿足下式，則為 independent
+  $$
+  p_{X,Y}(x,y)=p_X(x)p_Y(y),\ \ \text{for all }x,y
+  $$
+  或等價地
+  $$
+  P(X=x,Y=y)=P(X=x)P(Y=y),\ \ \text{for all }x,y
+  $$
+- 若 random variable $X$ 與 random variable $Y$ independent，則
+  $$
+  p_{X\mid Y}(x\mid y)=p_X(x),\ \ \text{for all }y\ \text{with }p_Y(y)>0\ \text{and all }x
+  $$
+  由定義可得
+  $$
+  \begin{aligned}
+  p_{X\mid Y}(x\mid y)&=\frac{p_{X,Y}(x,y)}{p_Y(y)}\\
+  &=\frac{p_X(x)p_Y(y)}{p_Y(y)}\\
+  &=p_X(x),\ \ \text{for all }y\ \text{with }p(y)>0\ \text{and all }x
+  \end{aligned}
+  $$
+
+- 在一個機率為正的 event $A$ 條件下，若
+  $$
+  p_{X,Y\mid A}(x,y)=p_{X\mid A}(x)\,p_{Y\mid A}(y),\ \ \text{for all }x,y
+  $$
+  則稱 random variables $X$ 與 $Y$ 為 conditionally independent
+
+  或等價地
+    $$
+    p_{X\mid Y,A}(x\mid y)=p_{X\mid A}(x),\ \ \text{for all }y\ \text{with }p_{Y\mid A}(y)>0\ \text{and all }x
+    $$
+- 注意，如同 events 的情況，conditional independence 不必然蘊含 unconditional independence，反之亦然
+
+### Example
+
+![](image/Figure2.15.png)
+
+此例說明 conditional independence 不必然蘊含 unconditional independence
+
+- 對圖中所示 PMF，random variables $X$ 與 $Y$ 並不 independent
+- 若要證明 $X$ 與 $Y$ 不 independent，我們只需找到一組 $(x,y)$ 使得
+  $$
+  p_{X\mid Y}(x\mid y)\ne p_X(x)
+  $$
+- 例如，$X$ 與 $Y$ 並不 independent，因為
+  $$
+  p_{X\mid Y}(1\mid 1)=0\ne p_X(1)=\frac{3}{20}
+  $$
+- 若要證明 $X$ 與 $Y$ dependent，必須檢查所有 $(x,y)$ 是否滿足 $p_{X\mid Y}(x\mid y)=p_X(x)$
+  
+  例如，在 event $A=\{X\le 2,\ Y\ge 3\}$ 的條件下，$X$ 與 $Y$ 為 independent
+
+  $$
+  P(A)=\frac{9}{20},\ \ \ 
+  p_{X\mid Y,A}(x\mid y)=\frac{P(X=x\cap Y=y\cap A)}{P(Y=y\cap A)}
+  $$
+  $$
+  \begin{aligned}
+  &p_{X\mid Y,A}(1\mid 3)=\frac{2/20}{6/20}=\frac{1}{3}&,\ \ \ 
+  &p_{X\mid A}(1)=\frac{3/20}{9/20}=\frac{1}{3}\\
+  &p_{X\mid Y,A}(1\mid 4)=\frac{1/20}{3/20}=\frac{1}{3}&\\
+  &p_{X\mid Y,A}(2\mid 3)=\frac{4/20}{6/20}=\frac{2}{3}&,\ \ \ 
+  &p_{X\mid A}(2)=\frac{6/20}{9/20}=\frac{2}{3}\\ 
+  &p_{X\mid Y,A}(2\mid 4)=\frac{2/20}{3/20}=\frac{2}{3}
+  \end{aligned}
+  $$
+
+## Functions of Two Independent Random Variables
+
+已知 $X$ 與 $Y$ 為兩個 independent random variables，令 $g(X)$ 與 $h(Y)$ 分別為 $X$ 與 $Y$ 的兩個函數。 證明 $g(X)$ 與 $h(Y)$ 亦為 independent
+
+令 $U=g(X)$、$V=h(Y)$，則
+
+$$
+\begin{aligned}
+p_{U,V}(u,v)
+&=\sum_{\{(x,y)\mid g(x)=u,\ h(y)=v\}}p_{X,Y}(x,y)\\
+&=\sum_{\{(x,y)\mid g(x)=u,\ h(y)=v\}}p_X(x)\,p_Y(y)\\
+&=\sum_{\{x\mid g(x)=u\}}p_X(x)\ \sum_{\{y\mid h(y)=v\}}p_Y(y)\\
+&=p_U(u)\,p_V(v)
+\end{aligned}
+$$
+
+## More Factors about Independent Random Variables
+
+- 若 $X$ 與 $Y$ 為 independent random variables，則
+  $$
+  E[XY]=E[X]E[Y]
+  $$
+  
+  由下列計算可見
+
+  $$
+  \begin{aligned}
+  E[XY]&=\sum_x\sum_y xy\,p_{X,Y}(x,y)\\
+  &=\sum_x\sum_y xy\,p_X(x)p_Y(y)\ \ \text{ (by independence)}\\
+  &=\sum_x x\,p_X(x)\left[\sum_y y\,p_Y(y)\right]\\
+  &=E[X]E[Y]
+  \end{aligned}
+  $$
+- 同理，若 $X$ 與 $Y$ 為 independent random variables，則
+  $$
+  E[g(X)h(Y)]=E[g(X)]E[h(Y)]
+  $$
+- 若 $X$ 與 $Y$ 為 independent random variables，則
+  $$
+  \operatorname{var}(X+Y)=\operatorname{var}(X)+\operatorname{var}(Y)
+  $$
+
+  由下列計算可見
+
+  $$
+  \begin{aligned}
+  &\operatorname{var}(X+Y)=E\bigl(((X+Y)-E[X+Y])^2\bigr)\\
+  &=E\bigl((X+Y)^2-2(X+Y)(E[X]+E[Y])+(E[X]+E[Y])^2\bigr)\\
+  &=\left[\sum_{x,y}(x+y)^2\,p_{X,Y}(x,y)\right]-2(E[X]+E[Y])E[X]-2(E[X]+E[Y])E[Y]+(E[X])^2+2E[X]E[Y]+(E[Y])^2\\
+  &=\left[\sum_{x,y}x^2\,p_{X,Y}(x,y)\right]+\left[\sum_{x,y}y^2\,p_{X,Y}(x,y)\right]+2\left[\sum_{x,y}xy\,p_{X,Y}(x,y)\right]-(E[X])^2-(E[Y])^2-2E[X]E[Y]\\
+  &=\left(E[X^2]-(E[X])^2\right)+\left(E[Y^2]-(E[Y])^2\right)+2\left[\sum_{x,y}xy\,p_{X,Y}(x,y)-E[X]E[Y]\right]\\
+  &\text{(若 }X\text{ 與 }Y\text{ independent}\ \Rightarrow\ p_{X,Y}(x,y)=p_X(x)p_Y(y)\ \Rightarrow\ \sum_{x,y}xy\,p_{X,Y}(x,y)=E[X]E[Y]\text{)}\\
+  &\therefore\ \operatorname{var}(X+Y)=\left(E[X^2]-(E[X])^2\right)+\left(E[Y^2]-(E[Y])^2\right)=\operatorname{var}(X)+\operatorname{var}(Y)
+  \end{aligned}
+  $$
+
+## More than Two Random Variables
+
+- Independence of several random variables
+  - 三個 random variable $X$、$Y$ 與 $Z$ 若滿足下式則為 independent
+    $$
+    p_{X,Y,Z}(x,y,z)=p_X(x)p_Y(y)p_Z(z)\ \ \text{for all }x,y,z
+    $$
+  - Any three random variables of the form $f(X)$、$g(Y)$ 與 $h(Z)$ are also independent
+
+- Variance of the sum of independent random variables
+  - 若 $X_1,X_2,\ldots,X_n$ 為 independent random variables，則
+    $$
+    \operatorname{var}(X_1+X_2+\cdots+X_n)=\operatorname{var}(X_1)+\operatorname{var}(X_2)+\cdots+\operatorname{var}(X_n)
+    $$
+
+### Example 2.20. Variance of the Binomial. 
+
+我們考慮 $n$ 次相互獨立的擲幣，每次擲出 head 的機率為 $p$。 對每一個 $i$，令 $X_i$ 為 Bernoulli random variable：若第 $i$ 次為 head 則取 $1$，否則取 $0$
+
+於是，$X=X_1+X_2+\cdots+X_n$ 是一個 binomial random variable
+
+因此
+
+$$
+\operatorname{var}(X_i)=p(1-p),\ \ \text{for all }i
+$$
+$$
+\therefore\ \operatorname{var}(X)=\sum_{i=1}^{n}\operatorname{var}(X_i)=np(1-p)\ \ \text{(Note that $X_i$'s are independent)}
+$$
+
+### Example 2.21. Mean and Variance of the Sample Mean. 
+
+我們想估計某位總統（記為 B）的支持率。 為此，從選民母體隨機抽樣 $n$ 人，令 $X_i$ 為編碼第 $i$ 位受訪者回應的 random variable：
+
+$$
+X_i=\begin{cases}
+1,& \text{if the $i$-th person approves B's performance}\\
+0,& \text{if the $i$-th person disapproves B's performance}
+\end{cases}
+$$
+
+假設 $X_i$ 相互 independent，並且為相同的 random variable（Bernoulli），具有共同參數（對 Bernoulli 而言為 $p$），此參數對我們未知
+
+$X_i$ are independent, and identically distributed (i.i.d.)
+
+若 sample mean $S_n$（為一個 random variable）定義為
+
+$$
+S_n=\frac{X_1+X_2+\cdots+X_n}{n}
+$$
+
+$S_n$ 的 expectation 會等於 $X_i$ 的真實平均
+
+$$
+\begin{aligned}
+E[S_n]&=E\left[\frac{X_1+X_2+\cdots+X_n}{n}\right]\\
+&=\frac{1}{n}\sum_{i=1}^{n}E[X_i]\\
+&=E[X_i]\ (=p\ \text{for the Bernoulli we assumed here})
+\end{aligned}
+$$
+
+當 $n$ 足夠大時，$S_n$ 的 variance 會趨近 $0$
+
+$$
+\begin{aligned}
+\lim_{n\to\infty}\operatorname{var}(S_n)&=\operatorname{var}\left(\frac{X_1+X_2+\cdots+X_n}{n}\right)\\
+&=\lim_{n\to\infty}\frac{\sum_{i=1}^{n}\operatorname{var}(X_i)}{n^2}\\
+&=\lim_{n\to\infty}\frac{np(1-p)}{n^2}\\
+&=\lim_{n\to\infty}\frac{p(1-p)}{n}=0
+\end{aligned}
+$$
+
+這表示當 $n$ 足夠大時，$S_n$ 會是 $E[X_i]$ 的良好估計

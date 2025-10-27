@@ -295,8 +295,7 @@ export default sidebar([
       {
         text: "機率論",
         collapsible: true,
-        prefix: "Math/Probability/",
-        children: [],
+        children: ["Math/Probability/"],
       }
     ]
   },
