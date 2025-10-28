@@ -1562,23 +1562,27 @@ while (1) { /* STDIN 與 network_fd 已設為 NONBLOCK */
 
 以下節錄自 [select、poll、epoll 之間的區別總結[整理]](https://www.cnblogs.com/Anker/p/3265058.html)：
 
-> `select`、`poll`、`epoll` 都是 IO 多工的機制。 I/O 工通過一種機制，可以監視多個描述符，一旦某個描述符就緒（一般是讀取就緒或寫入就緒），能夠通知程式進行對應的讀寫操作。 但 `select`、`poll`、`epoll` 本質上都是同步 I/O，因為他們都需要在讀寫事件就緒後自己負責進行讀寫，也就是說這個讀寫過程是阻塞的，而異步 I/O 則無需自己負責進行讀寫，異步 I/O 的實現會負責把資料從 kernel 複製到 user space
+::: info  
+`select`、`poll`、`epoll` 都是 IO 多工的機制。 I/O 工通過一種機制，可以監視多個描述符，一旦某個描述符就緒（一般是讀取就緒或寫入就緒），能夠通知程式進行對應的讀寫操作。 但 `select`、`poll`、`epoll` 本質上都是同步 I/O，因為他們都需要在讀寫事件就緒後自己負責進行讀寫，也就是說這個讀寫過程是阻塞的，而異步 I/O 則無需自己負責進行讀寫，異步 I/O 的實現會負責把資料從 kernel 複製到 user space
+:::
 
 對於同步、非同步，以下節錄自 [Study Notes - I/O Models](https://rickhw.github.io/2019/02/27/ComputerScience/IO-Models/)：
 
->  阻塞 (Blocking) 與非阻塞 (Non-Blocking) 描述的是「請求」在等待結果時的「狀態」
->  
->  - 阻塞 (Blocking)：調用的程序或者應用程式發起請求，在獲得結果之前，調用方的程序會懸 (Hang) 住不動>  無法回應，直到獲得結果
->  - 非阻塞 (Non-Blocking)：概念與阻塞相同，但是調用方不會因為等待結果，而懸著不動。 後續通常透過輪>  機制 (Polling) 機制取得結果
->  
->  同步 (Synchronous) 與非同步 (Asynchronous) 描述的是：使用者執行緒與 Kernel 的通訊模式：
->  
->  - 同步 (Synchronous)：使用者執行緒發出 I/O 請求後，要等待、或者輪詢 Kernel I/O 的操作完成後，才>  繼續執行
->    - 等待 Kernel 回覆：Blocking IO，縮寫成 BIO
->    - 輪詢類似於 Non-Blocking IO，縮寫成 NIO
->  - 非同步 (Asynchronous)：或稱異步，使用者執行緒發出 I/O 請求後仍然繼續執行下一個操作，當 Kernel>  I/O 操作結束後，會通知執行緒，或者呼叫 callback 函數
->  
->  同步中文的意思很容易誤解為，很多事同時做，實際上是事情有先後關係的概念，也就是「有序性>  (oredered)」； 而非同步才是類似於很多事情在同一個時間一起發動，他是「無序性 (non-ordered)」
+::: info  
+阻塞 (Blocking) 與非阻塞 (Non-Blocking) 描述的是「請求」在等待結果時的「狀態」
+
+- 阻塞 (Blocking)：調用的程序或者應用程式發起請求，在獲得結果之前，調用方的程序會懸 (Hang) 住不動>  無法回應，直到獲得結果
+- 非阻塞 (Non-Blocking)：概念與阻塞相同，但是調用方不會因為等待結果，而懸著不動。 後續通常透過輪>  機制 (Polling) 機制取得結果
+
+同步 (Synchronous) 與非同步 (Asynchronous) 描述的是：使用者執行緒與 Kernel 的通訊模式：
+
+- 同步 (Synchronous)：使用者執行緒發出 I/O 請求後，要等待、或者輪詢 Kernel I/O 的操作完成後，才繼續執行
+  - 等待 Kernel 回覆：Blocking IO，縮寫成 BIO
+  - 輪詢類似於 Non-Blocking IO，縮寫成 NIO
+- 非同步 (Asynchronous)：或稱異步，使用者執行緒發出 I/O 請求後仍然繼續執行下一個操作，當 Kernel>  I/O 操作結束後，會通知執行緒，或者呼叫 callback 函數
+
+同步中文的意思很容易誤解為，很多事同時做，實際上是事情有先後關係的概念，也就是「有序性>  (oredered)」； 而非同步才是類似於很多事情在同一個時間一起發動，他是「無序性 (non-ordered)」  
+:::
 
 ##### I/O Multiplexing：`select`
 
@@ -1757,16 +1761,18 @@ struct pollfd {
 
 以下節錄自 [IO 多路復用之 poll 總結](https://www.cnblogs.com/Anker/p/3261006.html)：
 
-> 使用 `poll()` 和 `select()` 不一樣，你不需要明確地請求異常狀況報告
-> 
-> - `POLLIN | POLLPRI` 等價於 `select()`的讀取事件
-> - `POLLOUT | POLLWRBAND` 等價於 `select()` 的寫事件
-> - `POLLIN` 等價於 `POLLRDNORM | POLLRDBAND`
-> - `POLLOUT` 則等價於 `POLLWRNORM`
-> 
-> 例如，要同時監視一個檔案描述子是否可讀和可寫，我們可以設定 `events` 為 `POLLIN | POLLOUT`。 當 `poll` 返回時，我們可以檢查 `revents` 中的標誌，對應於文件描述符請求的 `events` 結構體。 如果 `POLLIN` 事件被設置，則檔案描述子可以被讀取而不阻塞。 如果 `POLLOUT` 被設置，則檔案描述符可以寫入而不導致阻塞
-> 
-> 這些標誌並不是互斥的，它們可能被同時設置，表示這個檔案描述符的讀取和寫入操作都會正常返回而不阻塞。
+::: info  
+使用 `poll()` 和 `select()` 不一樣，你不需要明確地請求異常狀況報告
+
+- `POLLIN | POLLPRI` 等價於 `select()`的讀取事件
+- `POLLOUT | POLLWRBAND` 等價於 `select()` 的寫事件
+- `POLLIN` 等價於 `POLLRDNORM | POLLRDBAND`
+- `POLLOUT` 則等價於 `POLLWRNORM`
+
+例如，要同時監視一個檔案描述子是否可讀和可寫，我們可以設定 `events` 為 `POLLIN | POLLOUT`。 當 `poll` 返回時，我們可以檢查 `revents` 中的標誌，對應於文件描述符請求的 `events` 結構體。 如果 `POLLIN` 事件被設置，則檔案描述子可以被讀取而不阻塞。 如果 `POLLOUT` 被設置，則檔案描述符可以寫入而不導致阻塞
+
+這些標誌並不是互斥的，它們可能被同時設置，表示這個檔案描述符的讀取和寫入操作都會正常返回而不阻塞  
+:::
 
 ##### I/O Multiplexing：`select` v.s. `poll`
 
@@ -1793,20 +1799,20 @@ struct pollfd {
     - 常見於 FTP、Telnet、SMTP
     - 特性：
       - 以連線為基礎（connection-based）
-        - 在傳資料前，雙方先用「三向握手」建立一條連線（TCP 連線有狀態：序號、視窗大小等）。 之後資料都走在這條連線上，直到其中一方關閉。
+        - 在傳資料前，雙方先用「三向握手」建立一條連線（TCP 連線有狀態：序號、視窗大小等）。 之後資料都走在這條連線上，直到其中一方關閉
       - 可靠（reliable）
-        - 協定內建確認與重傳機制，保證「不重複、不遺失、按順序」把位元組送到對方，出問題就回報錯誤（例如連線中斷）。 應用程式不必自己做 ACK/重傳。
+        - 協定內建確認與重傳機制，保證「不重複、不遺失、按順序」把位元組送到對方，出問題就回報錯誤（例如連線中斷）。 應用程式不必自己做 ACK/重傳
       - 位元組串流（byte stream）
         - TCP 看起來像一條連續的位元組管道，沒有「訊息邊界」這個概念。 你 `write()` 了 100 與 50 與 50，不保證對方會用三次 `read()` 分別讀到 100/50/50，可能一次讀到 200，也可能多次分段。 所以若你需要訊息邊界，必須自己在資料裡加長度欄位或分隔符號
   - UDP：
     - 常見於 NFS、TFTP
     - 特性：
       - 無連線（connectionless）
-        - 不需要握手，每次送資料都獨立成一個封包，帶著目的位址與連接埠送出去。 核心幾乎不維持狀態，延遲與開銷都更小。
+        - 不需要握手，每次送資料都獨立成一個封包，帶著目的位址與連接埠送出去。 核心幾乎不維持狀態，延遲與開銷都更小
       - 不可靠（unreliable）
-        - 協定本身不保證送達、不保證順序、也不會自動重傳，封包可能遺失、重複、或顛倒順序。 要可靠就得由應用層自己做（加序號、ACK/重傳等）。
+        - 協定本身不保證送達、不保證順序、也不會自動重傳，封包可能遺失、重複、或顛倒順序。 要可靠就得由應用層自己做（加序號、ACK/重傳等）
       - 資料報（datagram）
-        - 有「訊息邊界」：你 `sendto()` 一個封包，對方 `recvfrom()` 就會拿到「正好那一個封包」（要嘛整個收到、要嘛整個掉了，若接收緩衝太小，會被截斷且殘餘部分丟失）。 不會像 TCP 那樣把多次寫入自動黏在一起。
+        - 有「訊息邊界」：你 `sendto()` 一個封包，對方 `recvfrom()` 就會拿到「正好那一個封包」（要嘛整個收到、要嘛整個掉了，若接收緩衝太小，會被截斷且殘餘部分丟失）。 不會像 TCP 那樣把多次寫入自動黏在一起
 - 連接埠號（port number）：16 位元整數，在同一台機器上具唯一性
   - Unix 中的連接埠號：小於 1024 的連接埠會保留給 root 使用（用來承載系統服務）
 - 在網路上為機器定址時使用的是 IP 位址
@@ -1860,7 +1866,7 @@ struct sockaddr_in {
 
 - `struct sockaddr_in` 是 IPv4 專用的 socket 位址結構
   - `sin_family` 必須設為 `AF_INET`
-  - `sin_port` 與 `sin_addr` 需要用「網路位元組序」（大端序），因此常搭配 `htons()`、`htonl()` 等轉換。
+  - `sin_port` 與 `sin_addr` 需要用「網路位元組序」（大端序），因此常搭配 `htons()`、`htonl()` 等轉換
   - `sin_zero` 只是填充欄位，讓大小與通用的 `struct sockaddr` 對齊
 
 ```c
@@ -1907,3 +1913,703 @@ int connect(int socketfd, struct sockaddr *addr, int addrlen);
 - 當緩衝區已滿時，寫入可能會立即返回或被阻塞
 
 ![（重新繪製自 UNIX Network Programming Figure 2.15. Steps and buffers involved when an application writes to a TCP socket.）](image/TCP-socket-buffer.png)
+
+## File & Directory
+
+### Function：`stat`、`fstat` and `lstat`
+
+```c
+#include <unistd.h>
+// 三者成功皆回傳 0，發生錯誤回傳 -1
+int stat(const char *pathname, struct stat *buf);
+int fstat(int fd, struct stat *buf);
+int lstat(const char *pathname, struct stat *buf)
+```
+
+- 這三個函式用來取得檔案的相關資訊，核心會填入 `struct stat buf` 引數 
+  - `ls` 這個命令是這些「stat」函式的一個應用範例
+- `stat` 與 `lstat` 的差異：如果 `pathname` 是一個符號連結，`lstat` 會回傳「符號連結本身」的資訊，而不是該符號連結所參照的檔案
+
+符號連結（Symbolic links）簡介
+  
+- 符號連結檔案的內容會存放它所指向檔案的名稱
+- 檔案型態：`S_IFLNK`
+- 符號連結的大小等於其內容字串的長度
+- 例子：
+  ```sh
+  lrwxrwxrwx  1 root root    7  2月  1  2023 bin -> usr/bin/
+  drwxr-xr-x  4 root root 4096  9月  9 05:06 boot/
+  drwxr-xr-x 21 root root 3880  9月 14 16:59 dev/
+  drwxr-xr-x 156 root root 12288  9月 25 08:36 etc/
+  drwxr-xr-x  8 root root 4096  8月 31 15:33 home/
+  lrwxrwxrwx  1 root root    7  2月  1  2023 lib -> usr/lib/
+  lrwxrwxrwx  1 root root    7  2月  1  2023 lib64 -> usr/lib/
+  drwx------  2 root root 16384  8月 31 15:25 lost+found/
+  ```
+  其中的 `bin`、`lib` 與 `lib64` 就為符號連結
+
+`struct stat` 中的資訊來自該檔案的 i-node。 `struct stat` 的定義一般如下（不同實作之間可能略有差異）：
+
+```c
+struct stat {
+    mode_t          st_mode;    /* 檔案型態與模式（權限） */
+    ino_t           st_ino;     /* i-node 編號（序號） */
+    dev_t           st_dev;     /* 裝置編號（檔案系統） */
+    dev_t           st_rdev;    /* 特殊檔案對應的裝置編號 */
+    nlink_t         st_nlink;   /* 連結數 */
+    uid_t           st_uid;     /* 擁有者的使用者 ID */
+    gid_t           st_gid;     /* 擁有者的群組 ID */
+    off_t           st_size;    /* 對一般檔案而言的位元組大小 */
+    struct timespec st_atim;    /* 上次存取時間 */
+    struct timespec st_mtim;    /* 上次修改時間 */
+    struct timespec st_ctim;    /* 上次檔案狀態變更時間 */
+    blksize_t       st_blksize; /* 最佳 I/O 區塊大小 */
+    blkcnt_t        st_blocks;  /* 已配置的磁碟區塊數 */
+};
+```
+
+POSIX.1 不一定會提供 `st_rdev`、`st_blksize` 與 `st_blocks` 欄位，它們屬於 Single UNIX Specification 的 XSI 選用部分
+
+#### File Types
+
+- Unix 系統上的檔案型態：
+  - 一般檔案：文字、二進位等。 Unix 核心不會區分檔案是文字還是二進位的，如何解讀由應用程式決定
+  - 目錄檔：其內容包含其他檔案的名稱與指向這些檔案資訊的指標
+  - 區塊裝置檔：例如磁碟
+  - 字元裝置檔：例如 tty、音訊
+  - FIFO：具名的 pipe
+  - Sockets：用於行程間網路通訊的一種檔案型態
+  - 符號連結：指向另一個檔案的一種檔案型態
+- 檔案型態被編碼在 `stat` 結構的 `st_mode` 欄位中
+- 可以把 `st_mode` 傳入檔案型態判斷巨集，如下所示：
+  ```c
+  #define S_IFMT   0xF000  /* 檔案型態的遮罩 */
+  #define S_IFDIR  0x4000  /* 目錄 */
+  #define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
+  ```
+
+這些巨集定義在 `<sys/stat.h>` 內：
+
+![（From APUE 3rd Edition：Figure 4.1）](image/APUE4.1.png)
+
+下例來自 APUE 3rd Edition 的 Figure 4.3，用來印出每個命令列引數的檔案型態：
+
+```c
+#include "apue.h"
+int main(int argc, char *argv[])
+{
+	int i;
+	struct stat buf;
+	char *ptr;
+	for (i = 1; i < argc; i++) {
+		printf("%s: ", argv[i]);
+		if (lstat(argv[i], &buf) < 0) {
+			err_ret("lstat error");
+			continue;
+		}
+		if (S_ISREG(buf.st_mode))
+			ptr = "regular";
+		else if (S_ISDIR(buf.st_mode))
+			ptr = "directory";
+		else if (S_ISCHR(buf.st_mode))
+			ptr = "character special";
+		else if (S_ISBLK(buf.st_mode))
+			ptr = "block special";
+		else if (S_ISFIFO(buf.st_mode))
+			ptr = "fifo";
+		else if (S_ISLNK(buf.st_mode))
+			ptr = "symbolic link";
+		else if (S_ISSOCK(buf.st_mode))
+			ptr = "socket";
+		else
+			ptr = "** unknown mode **";
+		printf("%s\n", ptr);
+	}
+	exit(0);
+}
+```
+
+執行結果：
+
+```sh
+$ ./a.out /etc/passwd /etc /dev/log /dev/tty \
+> /var/lib/oprofile/opd_pipe /dev/sr0 /dev/cdrom
+/etc/passwd: regular
+/etc: directory
+/dev/log: socket
+/dev/tty: character special
+/var/lib/oprofile/opd_pipe: fifo
+/dev/sr0: block special
+/dev/cdrom: symbolic link
+```
+
+通常一般檔案的數量最多，下面這張圖表來自 APUE 3rd edition 的 Figure 4.4，顯示了一個單一使用者的 Linux 工作站內，不同檔案型態的計數與百分比：
+
+![（From APUE 3rd Edition：Figure 4.4）](image/APUE4.4.png)
+
+### Access Permissions & UID/GID
+
+- `stat` 結構中的 `st_mode` 欄位同時也編碼了檔案的存取權限位元
+- 每個檔案共有 9 個權限位元，分成三個類別來控制讀取（R）、寫入（W）、與執行（X）的權限
+  - 檔案擁有者，或稱使用者：`u`
+  - 群組：`g`
+  - 其他人：`o`
+  - 所有使用者：`a`（也就是 `ugo`）
+- 權限範例
+  - `chmod a+r`：讓所有人都可以讀取
+  - `chmod a-r`：取消所有人的讀取能力
+  - `chmod a-rwx`：取消所有人的所有存取權限
+  - `chmod g+rw`：讓群組具有讀與寫的權限
+  - `chmod u+rwx`：讓擁有者具有所有權限
+  - `chmod og+rw`：讓其他人與群組具有讀與寫的權限
+- `st_mode` 是由多個旗標以位元或運算組成的位元遮罩
+  - 可以使用 Unix 的 `chmod` 命令來修改檔案的權限位元
+  - | 常數        |    八進位值 | 說明                            |
+    | --------- | ------: | ----------------------------- |
+    | `S_ISUID` | `04000` | set-user-ID 位元（見 `execve(2)`） |
+    | `S_ISGID` | `02000` | set-group-ID 位元               |
+    | `S_ISVTX` | `01000` | sticky 位元                     |
+    | `S_IRWXU` | `00700` | 擁有者具備讀、寫、執行權限                 |
+    | `S_IRUSR` | `00400` | 擁有者具備讀取權限                     |
+    | `S_IWUSR` | `00200` | 擁有者具備寫入權限                     |
+    | `S_IXUSR` | `00100` | 擁有者具備執行權限                     |
+    | `S_IRWXG` | `00070` | 群組具備讀、寫、執行權限                  |
+    | `S_IRGRP` | `00040` | 群組具備讀取權限                      |
+    | `S_IWGRP` | `00020` | 群組具備寫入權限                      |
+    | `S_IXGRP` | `00010` | 群組具備執行權限                      |
+    | `S_IRWXO` | `00007` | 其他人具備讀、寫、執行權限                 |
+    | `S_IROTH` | `00004` | 其他人具備讀取權限                     |
+    | `S_IWOTH` | `00002` | 其他人具備寫入權限                     |
+    | `S_IXOTH` | `00001` | 其他人具備執行權限                     |
+
+---
+
+- 每個行程都有三組用來表明其使用者與群組身分的識別碼
+  - Real、Effective+supplementary，以及 Saved Set
+  - 這個跟檔案的權限是分開的，是給行程用的
+    ![（From APUE 3rd Edition：Figure 4.5）](image/APUE4.5.png)
+- Real User/Group ID（也就是 UID 與 GID）
+  - 複習：密碼檔 `/etc/passwd` 會把使用者名稱對映到這些 ID
+    - 下例取自 [Understanding /etc/passwd File Format](https://www.cyberciti.biz/faq/understanding-etcpasswd-file-format/)的「`/etc/passwd file` format」：
+      ```
+      oracle:x:1021:1020:Oracle user:/data/network/oracle:/bin/bash
+                 ^    ^
+                 |    |
+                UID  GID
+      ```
+  - 使用者登入時，系統會從密碼檔取出對應的 ID
+- Effective User/Group ID
+  - 用於在存取行程的時檢查存取權限
+- Supplementary Group IDs
+  - Unix 會為每個行程維護一份 Supplementary Group ID 的清單，表示該行程所屬的群組除了 Effective Group 之外還有哪些，權限檢查時也會納入計算
+- Saved Set-User 與 Set-Group ID
+  - 分別保存 Effective User ID 與 Effective Group ID 的副本
+
+---
+
+- 每個檔案都具有「使用者」與「群組」的擁有者
+  - 檔案的擁有資訊由 `struct stat` 中的 `st_uid` 與 `st_gid` 指定
+- 當一個行程執行某個程式時，如果該程式沒有設置 set-user-ID 或 set-group-ID，則該行程的
+  - `Effective user ID == Real user ID`
+  - `Effective group ID == Real group ID`
+  - 註：程式（執行檔）也是檔案，記得 set-user-ID 是存在檔案的權限位元裡面的
+- 每當行程執行、建立、開啟或刪除檔案時，Unix 核心都必須進行檔案存取測試
+  - 它會依序檢查下列規則，只要其中一條符合，核心就會進入對應對象的權限位元檢查：
+    1. 如果 effective user ID 為 0，也就是超級使用者，則允許對所有檔案存取
+    2. 如果 effective user ID 等於檔案的 `st_uid`，則進行使用者層級的權限檢查
+    3. 如果 effective group ID 或任一 supplementary group ID 等於檔案的 `st_gid`，則進行群組層級的權限檢查
+    4. 若前述皆不符合，則進行「其他人」的權限檢查
+- 存取權限會檢查該「權限」是否允許進行要求的「操作」，X 代表可執行，R 代表可讀，W 代表可寫
+  - 對一般檔案：
+    - X 決定行程是否可以透過某個 `exec` 函式來執行該檔案
+    - R 決定行程是否可以以 `O_RDONLY` 或 `O_RDWR` 旗標開啟現有檔案進行讀取
+    - W 決定行程是否可以以 `O_WRONLY`、`O_RDWR` 或 `O_TRUNC` 旗標開啟現有檔案進行寫入
+  - 對目錄來說（目錄在 Unix 也是檔案）
+    - X 允許行程進入該目錄並存取其中的檔案
+    - R 允許行程讀取該目錄並取得該目錄下所有檔名的清單
+    - W 允許行程更新該目錄
+- 補充
+  - 要刪除或建立檔案，我們需要該檔案所在目錄的寫入與執行權限，但不需要擁有欲刪除檔案本身的讀或寫權限
+  - 以名稱開啟任何檔案時，我們需要檔案路徑中每一層目錄的執行權限
+    - 例如從程式開啟「`/usr/include/stdio.h`」時，需要「`/`」、「`/usr`」、「`/usr/include`」這三個部分的 X（執行）權限
+
+#### SUID 與 SGID
+
+- 檔案的 `stat` 結構裡的 `st_mode` 欄位包含了 set-user-ID 與 set-group-ID 這兩個位元
+- 當你執行一個設有 SUID 或 SGID 的檔案時，行程的 effective UID 或 effective GID 會被改成該檔案的 UID 或 GID
+  - set-user-ID 位元（`st_mode` 中的 `S_ISUID`）
+    - 若此位元為開啟狀態，當執行這個檔案時，將行程的 effective UID 設為檔案擁有者（`st_uid`）
+  - set-group-ID 位元（`st_mode` 中的 `S_ISGID`）
+    - 若此位元為開啟狀態，當執行這個檔案時，將行程的 effective GID 設為檔案的群組擁有者（`st_gid`）
+- SUID 與 SGID 很有用，因為它們允許一般使用者執行會存取特權檔案的程式
+- 術語：啟用 set-user-ID 或 set-group-ID 位元的程式，稱為 set-user-ID 或 set-group-ID 程式，也常簡稱 setuid 或 setgid 程式
+- 例子：Unix 的 `passwd(1)` 是一個 setuid 程式
+  - 它允許一般使用者透過更新密碼檔來變更自己的密碼，密碼檔可能是 `/etc/passwd` 或 `/etc/shadow`，而這些檔案理論上只有超級使用者 root 能寫入
+  - `passwd` 可執行檔的擁有者通常是 root 且設了 set-user-ID，因此使用者在執行 `passwd` 時，其 effective UID 會成為 root。 程式內部在完成修改後會恢復原本的權限，這樣既能達成目的也能降低權限外洩風險
+- 想一想，使用者要怎麼讓朋友可以複製自己的檔案
+  1. 為檔案設定合適的權限，也就是調整群組或其他人的權限
+  2. 撰寫一個 setuid 或 setgid 程式
+
+### 新建立檔案的擁有權
+
+- 當行程透過 `open` 或 `creat` 建立新檔案時，其擁有權如下
+  - UID 會設為該行程的 effective ID
+  - GID 有兩種選項，POSIX.1 允許實作自行擇一
+    1. 檔案的 GID 取自行程的 effective ID
+    2. 檔案的 GID 取自建立位置的父目錄之 GID
+  - Linux 同時支援兩種做法。 核心會檢查父目錄是否設了 SGID 位元，若有則採用選項 2，若無則採用選項 1。 FreeBSD 與 macOS 採用選項 2
+
+### Function：`access`
+
+```c
+#include <unistd.h>
+// returns 0 if OK, -1 on error
+int access(const char *pathname, int mode);
+```
+
+- 行程可以用 `access()` 來檢查「實際使用者／群組」是否對某個檔案具有存取權限
+  - 為什麼這有用？ 當行程以其他使用者／群組的 SUID/SGID 身分執行（也就是執行 `setuid`/`setgid` 程式）時，可能想要驗證「實際使用者（real UID/GID）」是否能存取某個檔案，而不是看一般開檔的「有效身分（effective UID/GID）」
+- `mode` 引數要嘛是 `F_OK`（測試檔案是否存在），要嘛是下表內的旗標的位元或組合
+  ![（From APUE 3rd Edition：Figure 4.7）](image/APUE4.7.png)
+- 若「檔案不存在」，或「查詢的該項權限不被允許」，`access()` 就會回傳錯誤
+
+在這個例子中，雖然 `open` 函式會成功，但這個 set-user-ID 程式仍能判斷「實際使用者」平常無法讀取該檔案：
+
+```c
+#include "apue.h"
+#include <fcntl.h>
+int main(int argc, char *argv[])
+{
+    if (argc != 2)
+        err_quit("usage: a.out <pathname>");
+
+    if (access(argv[1], R_OK) < 0)
+        err_ret("access error for %s", argv[1]);
+    else
+        printf("read access OK\n");
+
+    if (open(argv[1], O_RDONLY) < 0)
+        err_ret("open error for %s", argv[1]);
+    else
+        printf("open for reading OK\n");
+    exit(0);
+}
+```
+
+輸出：
+
+```bash
+$ ls -l a.out
+-rwxrwxr-x 1 sar 15945 Nov 30 12:10 a.out
+$ ./a.out a.out
+read access OK
+open for reading OK
+$ ls -l /etc/shadow
+-r-------- 1 root 1315 Jul 17 2002 /etc/shadow
+$ ./a.out /etc/shadow
+access error for /etc/shadow: Permission denied
+open error for /etc/shadow: Permission denied
+$ su                   # become superuser
+Password:              # enter superuser password
+# chown root a.out     # change file’s user ID to root
+# chmod u+s a.out      # and turn on set-user-ID bit
+# ls -l a.out          # check owner and SUID bit
+-rwsrwxr-x 1 root 15945 Nov 30 12:10 a.out
+# exit                 # go back to normal user
+$ ./a.out /etc/shadow
+access error for /etc/shadow: Permission denied
+open for reading OK
+```
+
+### Function：`umask`
+
+- 行程每次建立新檔案或目錄時，會套用「檔案模式建立遮罩」來剝除部分權限（可用 `umask` 命令查看）
+- 這個遮罩的值是九個權限常數的位元或組合，見下圖
+  ![（From APUE 3rd Edition：Figure 4.10）](image/APUE4.10.png)
+- 在遮罩中為 1 的位元，會在新檔案／目錄的 `st_mode` 中「被關閉」
+  - 例如 `int fd = open("foo.txt", O_CREAT | O_WRONLY, 0666);`，此時系統不會直接用你給的 `0666`，而是會套 `umask` 上去：
+    ```
+    final_mode = requested_mode & ~umask
+    ```
+    取完 `&` 之後的結果，會成為新檔案/目錄的 `st_mode` 裡的權限部分
+
+```c
+#include <sys/stat.h>
+// returns previous file mode creation mask
+mode_t umask(mode_t cmask);
+```
+
+- 行程可以呼叫 `umask()` 來更新檔案模式建立遮罩
+- `umask()` 會回傳「更新前」的數值
+- `umask()` 的輸入引數是上圖（Figure 4.10）所列九個權限常數的位元或組合
+
+下例（From APUE 3rd Edition Figure 4.9）的程式建立兩個檔案：第一個在 `umask(0)` 下建立，第二個在把群組與其他人的所有權限位元關閉的 `umask` 下建立：
+
+```c
+#include "apue.h"
+#include <fcntl.h>
+#define RWRWRW (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
+int main(void)
+{
+    umask(0);
+    if (creat("foo", RWRWRW) < 0)
+        err_sys("creat error for foo");
+    umask(S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    if (creat("bar", RWRWRW) < 0)
+        err_sys("creat error for bar");
+    exit(0);
+}
+```
+
+輸出：
+
+```bash
+$ umask      first print the current file mode creation mask
+002
+$ ./a.out
+$ ls -l foo bar
+-rw------- 1 sar 0 Dec 7 21:20 bar
+-rw-rw-rw- 1 sar 0 Dec 7 21:20 foo
+$ umask      see if the file mode creation mask changed
+002
+```
+
+每個 process 都有自己的 `umask`，存在 PCB 裡面（`task_struct->fs->umask`），當一個行程被建立時，它會繼承父行程的 `umask` 值，例如
+
+- 你的 shell 有一個 `umask`
+- 你在那個 shell 裡執行你的程式，這個程式一開始就帶著同樣的 `umask`
+
+`umask` 可以在 shell 裡面設，也可以在 C program 裡面手動改
+
+### Sticky Bit
+
+- sticky bit 又稱 saved-text bit
+  - 常數為 `S_ISVTX`，見 `st_mode` 的設定
+- 在早期 Unix 中，若程式設了 sticky bit，第一次執行後在行程結束時，系統會把該程式的程式碼副本保留在記憶體某處
+  - 為什麼這有用？
+  - 在非常早期的 Unix，I/O 很慢、記憶體很小，而且讀取可執行檔（程式碼段）要從磁碟載入到記憶體再跑。跑完程式後，原則上核心可以把它從記憶體丟掉，之後有人再跑同一個程式，重新從磁碟載一次
+
+    - 但如果某個常用的程式有設 sticky bit（當時叫 saved-text bit）：
+    - 核心在程式第一次被執行後，不會馬上把它的程式碼段整個釋放掉
+
+    而是把它留在快取區（例如 swap / core image 之類可以快速載回的位置），讓下一次執行同一個程式時可以更快啟動
+
+    也就是說：sticky bit 當時的意思是「這個程式很常被跑，幫我把它留住，別每次都重讀磁碟」
+- 在現代 Unix 中，sticky bit 不再具有保留程式碼的效果
+- 如今 sticky bit 用在「目錄」上，提供檔案保護
+- 若目錄設了 sticky bit，則只有在同時具備「對該目錄的寫入權限」且滿足下列任一條件時，才能刪除或更名該目錄內的檔案：
+  - 使用者是檔案擁有者
+  - 使用者是目錄擁有者
+  - 使用者是超級使用者
+- 問：`/tmp` 給所有人寫入權，是否代表你可以刪 `/tmp` 裡任何檔案？
+  - 答：`/tmp` 是 sticky bit 的典型用法，使用者可以在 `/tmp` 中建立文件，但不能刪除或重新命名其他人擁有的文件！
+
+```bash
+shell> ls -ld /tmp
+drwxrwxrwt 30 root root 20480 Mar 11 14:17 /tmp
+```
+
+其中 `drwxrwxrwt` 的 `t` 就為 sticky bit
+
+SUID / SGID / sticky bit 都是把特殊位元疊在 owner/group/others 那三組的 `x` 的位置上顯示：
+
+- 第 4 個字元（owner 權限的 `x` 位置）如果不是 `x` 而是 `s` / `S` → 代表這個檔案有設 SUID
+- 第 7 個字元（group 權限的 `x` 位置）如果是 `s` / `S` → 代表有設 SGID
+- 第 10 個字元（others 權限的 `x` 位置）如果是 `t` / `T` → 代表有設 sticky bit
+
+### Function：`chmod`、`fchmod`
+
+```c
+#include <sys/stat.h>
+// returns 0 if OK, -1 on error
+int chmod(const char *pathname, mode_t mode);
+int fchmod(int fd, mode_t mode);
+```
+
+- `chmod()` 與 `fchmod()` 用來修改既有檔案的存取權限
+- `chmod()`：透過路徑對指定檔案操作
+- `fchmod()`：對一個開啟中的 file descriptor 操作
+- mode 以多個檔案模式常數的位元或組合來指定，見 `st_mode` 的設定
+
+下列程式會修改兩個檔案的模式（From APUE 3rd Edition Figure 4.12）：
+
+```c
+#include "apue.h"
+int main(void)
+{
+    struct stat statbuf;
+    /* turn on set-group-ID and turn off group-execute */
+    if (stat("foo", &statbuf) < 0)
+        err_sys("stat error for foo");
+
+    if (chmod("foo", (statbuf.st_mode &  ~S_IXGRP) | S_ISGID) < 0)
+        err_sys("chmod error for foo");
+
+    /* set absolute mode to "rw-r--r--" */
+    if (chmod("bar", S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) < 0)
+        err_sys("chmod error for bar");
+    exit(0);
+}
+```
+
+跑之前：
+
+```
+$ ls -l foo bar
+-rw------- 1 sar 0 Dec 7 21:20 bar
+-rw-rw-rw- 1 sar 0 Dec 7 21:20 foo
+```
+
+跑之後：
+
+```
+$ ls -l foo bar
+-rw-r--r-- 1 sar 0 Dec 7 21:20 bar
+-rw-rwSrw- 1 sar 0 Dec 7 21:20 foo
+```
+
+大寫 `S` 表示有設 SGID 但沒有執行權限 `x`，提醒你「這其實沒什麼意義」
+
+### Function：`chown`、`fchown`、`lchown`
+
+```c
+#include <unistd.h>
+// returns 0 if OK, -1 on error
+int chown(const char *pathname, uid_t owner, gid_t group);
+int fchown(int fd, uid_t owner, gid_t group);
+int lchown(const char *pathname, uid_t owner, gid_t group);
+```
+
+- 這些 `chown` 系列函式讓行程可以變更檔案的使用者 ID 與群組 ID
+  - `chown`：透過路徑對指定檔案操作
+  - `fchown`：變更已經開啟之檔案的擁有權
+  - `lchown`：與 `chown()` 類似，但當路徑指向符號連結時，`lchown` 會更改「符號連結本身」的擁有權； `chown()` 則會解參照到目標檔案
+- 若 `owner` 或 `group` 任一引數為 -1，對應的身分就保持不變
+- 備註：呼叫 `chmod` 或 `chown` 的行程必須是超級使用者，或其有效使用者 ID 等於該檔案的擁有者 ID
+
+### 檔案大小
+
+- `stat` 結構中的 `st_size` 成員以位元組記錄檔案大小
+  - `st_size` 只對一般檔案、目錄與符號連結有意義
+- 不同型態檔案的 `st_size`：
+  - 一般檔案：介於 0 到 `off_t` 的最大值
+  - 目錄：為 16 或 512 的倍數（依檔案系統實作而異）
+  - 符號連結：等於其所儲存之路徑名稱的長度
+
+### File Truncation
+
+```c
+#include <unistd.h>
+// returns 0 if OK, -1 on error
+int truncate(const char *pathname, off_t length);
+int ftruncate(int fd, off_t length);
+```
+
+- 這兩個截斷函式會把既存（且可寫）的檔案裁成正好 `length` 位元組
+  - 若原本檔案比 `length` 大，超出 `length` 之後的資料將無法再存取
+  - 若原本檔案比 `length` 小，檔案會被擴張，舊檔尾與新檔尾之間讀到的內容為 0
+
+## 檔案系統（File Systems）
+
+### Unix 的檔案與目錄
+
+- 檔案：一串位元組序列
+- 目錄：一種檔案，其內容是如何找到其他檔案的資訊
+
+你可以用 `mount` 命令列出所有已掛載的檔案系統
+
+### File Systems
+
+- 由目錄與檔案組成的階層式結構，自根目錄 `/` 開始
+  - 這個結構對應到實體裝置上所存放的檔案與目錄
+- 常見的 Unix 檔案系統實作有：UFS、HFS（舊版 macOS 的檔案系統）、ZFS、Ext4 等
+
+我們可以把磁碟機想像成被切成一或多個分割區（partitions）。 每個分割區都可以包含一個檔案系統，如下圖所示。 i-node 是固定長度的項目，其中包含了關於某個檔案的大部分資訊
+
+![（From APUE 3rd Edition Figure 4.13）](image/APUE4.13.png)
+
+### i-node and i-node links
+
+- i-node：固定大小的表目，保存一個檔案的各種資訊
+  - i-node 大小例子：V7 為 64B，4.3+BSD 與 UFS 為 128B 等
+  - i-node 包含檔案型態、存取權限位元、檔案大小、資料區塊指標、連結計數等（`stat` 結構中的資訊即取自 i-node）
+- i-node 的連結計數（對應 `stat` 的 `st_nlink`）：
+  - 記錄指向該 i-node 的目錄項數量（每個都稱為一個硬連結）
+  - 只有當連結計數降為 0 時，該 i-node 指涉的檔案才會從檔案系統中被完全刪除
+  - POSIX.1 的常數 `LINK_MAX` 規範了連結計數的上限
+- 符號連結（Symbolic link）：
+  - 其檔案內容儲存被指向檔案的路徑名稱
+  - 檔案型態常數：`S_IFLNK`
+  - 符號連結的大小就是其內容字串的長度
+- 移動檔案（例如 `mv file1 file2`）：
+  - 若在同一個檔案系統內，無須搬動磁碟上的資料區塊，只要更新目錄區塊中的目錄項即可：
+    - 先新增一個指向既有 i-node 的新目錄項，再把舊目錄項 unlink
+  - 移動完成後，檔案的連結計數維持不變
+
+以下翻譯自 APUE 3rd Edition 第 4.14 節
+
+如果我們把某個 cylinder group 裡的 i-node 區塊和資料區塊的部分放大來看，就會得到類似下圖的配置
+
+![（From APUE 3d Edition Figure 4.14）](image/APUE4.14.png)
+
+- 兩個目錄項目（directory entry）指向同一個 i-node。 每個 i-node 都有一個「連結計數」（link count），其內容是「有多少個目錄項目指向這個 i-node」。 只有當這個連結計數降到 0 時，這個檔案才可以被刪除（也就是釋放與這個檔案相關聯的資料區塊）
+
+- 這也就是為什麼「unlink 一個檔案」這個動作，並不一定等同於「把這個檔案的資料區塊刪掉」。 也因此，用來移除目錄項目的函式叫做 `unlink`，而不是叫 `delete`。 在 `stat` 結構裡，連結計數被放在 `st_nlink` 這個成員裡。 這個成員的底層系統資料型態是 `nlink_t`。 這類型的連結稱為硬連結（hard link）
+
+- 另一種類型的連結稱為符號連結（symbolic link，也稱為軟連結）。 對於符號連結來說，這個「檔案」本身的真正內容（也就是它的資料區塊）其實是存放「它所指向的檔案名稱」。 在下面的例子裡，目錄項目中的檔名是三個字元的字串 `lib`，而此檔案中那 7 個位元組的內容是 `usr/lib`：
+
+  ```bash
+  lrwxrwxrwx 1 root 7 Sep 25 07:14 lib -> usr/lib
+  ```
+
+  在這種情況下，該 i-node 裡的檔案型態欄位會是 `S_IFLNK`，用來讓系統知道這是一個符號連結
+
+- i-node 內含了關於檔案的所有資訊：檔案型態、檔案的存取權限位元、檔案大小、指向檔案資料區塊的指標，等等。 `stat` 結構裡的大部分資訊都是從 i-node 取得的。 相對地，目錄項目本身只儲存兩個我們在此關心的東西：檔名，以及 i-node 編號。 其他像「檔名長度」與「這個目錄紀錄本身的長度」在這裡不是重點。 i-node 編號的資料型態是 `ino_t`
+
+- 因為目錄項目中的 i-node 編號只能指向「同一個檔案系統」內的某個 i-node，所以一個目錄項目無法參照不同檔案系統裡的 i-node。 這就是為什麼 `ln(1)` 這個指令（它會建立一個新的目錄項目，指向一個既有檔案）不能跨檔案系統
+
+- 當我們更名（rename）一個檔案，而且沒有跨越檔案系統時，檔案的實際內容並不需要被搬移。 我們只需要新增一個新的目錄項目，讓它指向原本的 i-node，然後把舊的目錄項目做 `unlink` 即可，連結計數會保持不變。 舉例來說，若要把檔案 `/usr/lib/foo` 改名成 `/usr/foo`，而且 `/usr/lib` 和 `/usr` 這兩個目錄位在同一個檔案系統上，那麼檔案 `foo` 的內容不需要真的搬移。 `mv(1)` 指令通常就是這樣運作的
+
+我們前面談的是一般檔案（regular file）的連結計數這個概念，但那目錄的連結計數欄位呢？ 假設我們在目前的工作目錄底下建立一個新目錄，像這樣：
+
+```bash
+$ mkdir testdir
+```
+
+下圖顯示了結果。 在該圖中，我們特別把「`.`」和「`..`」這兩個項目也畫了出來
+
+![（From APUE 3d Edition Figure 4.15）](image/APUE4.15.png)
+
+那個 i-node 編號為 2549 的項目，它的型態欄位是「目錄」（directory），而它的連結計數是 2。 任何「葉節點目錄」（leaf directory，也就是不包含其他子目錄的目錄）的連結計數一定為 2。 2 這個值來自兩個來源：一是命名這個目錄本身的那個目錄項目（例如 `testdir` 這個名字），二是這個目錄裡的「`.`」項目。
+
+另外，i-node 編號為 1267 的那個項目，它的型態欄位同樣是「目錄」，而它的連結計數則大於或等於 3。 原因是：最低限度它會被以下幾個項目指到：命名它的那個目錄項目（圖 4.15 沒畫出來）、它自己目錄裡的「`.`」、以及 testdir 目錄裡的「`..`」。 請注意：在某個父目錄底下，每多一個子目錄，父目錄的連結計數就會再增加 1。
+
+### Function：`link` and `unlink`
+
+```c
+#include <unistd.h>
+// returns 0 if OK, -1 on error
+int link(const char *existingpath, const char *newpath);
+int unlink(const char *pathname);
+```
+
+- `link` 會建立一個新的目錄項 `newpath`，指向既有檔案 `existingpath`，等同幫檔案取了一個新名字，並把連結計數加一
+  - 這就是建立一個硬連結
+  - 若 `newpath` 已存在則回傳錯誤
+- `unlink` 會移除由 `pathname` 指定的目錄項，並將該檔案的連結計數減一，也就是從檔案系統刪除一個名稱
+  - 若該名稱是檔案的最後一個連結且沒有行程開啟該檔案，檔案就會被刪除，其占用空間可被重用
+- 當 unlink 使連結計數降為 0 時有些細節：
+  - 只要仍有行程開啟該檔案，其內容不會被刪除
+  - 當檔案被關閉時，核心會先檢查「開啟該檔案的行程數」是否為 0； 若為 0，再檢查連結計數； 若也為 0，才刪除檔案內容
+- 備註：
+  - 建立或移除連結時，使用者必須對「包含該目錄項的目錄」擁有寫與執行權限，不會檢查目標檔案本身的權限
+  - 若目錄設了 sticky bit，欲在該目錄中 unlink 檔案，行程還必須符合 sticky bit 的限制
+  - 問題：如果 `pathname` 是符號連結會怎樣？
+
+下例（From APUE 3d Edition Figure 4.16）會開啟一個檔案，再 unlink 它：
+
+```c
+#include "apue.h"
+#include <fcntl.h>
+int main(void)
+{
+    if (open("tempfile", O_RDWR) < 0)
+        err_sys("open error");
+    if (unlink("tempfile") < 0)
+        err_sys("unlink error");
+    printf("file unlinked\n");
+    sleep(15);
+    printf("done\n");
+    exit(0);
+}
+```
+
+輸出：
+
+```bash
+$ ls -l tempfile         # look at how big the file is
+-rw-r----- 1 sar 413265408 Jan 21 07:14 tempfile
+$ df /home               # check how much free space is available
+Filesystem 1K-blocks   Used   Available Use% Mounted on
+/dev/hda4 11021440 1956332    9065108  18%  /home
+$ ./a.out &             # run the program in Figure 4.16 in the background
+1364                    # the shell prints its process ID
+$ file unlinked         # the file is unlinked
+$ ls -l tempfile        # see if the filename is still there
+ls: tempfile: No such file or directory   the directory entry is gone
+$ df /home              # see if the space is available yet
+Filesystem 1K-blocks   Used   Available Use% Mounted on
+/dev/hda4 11021440 1956332    9065108  18%  /home
+$ done                  # the program is done, all open files are closed
+$ df /home              # now the disk space should be available
+Filesystem 1K-blocks   Used   Available Use% Mounted on
+/dev/hda4 11021440 1552352    9469088  15%  /home
+```
+
+- 硬連結的限制（多數 Unix 檔案系統，ZFS 例外）：
+  - `link()` 的兩個路徑必須位於同一檔案系統
+  - 一般使用者不可建立或刪除「指向目錄」的硬連結
+    - 即便系統支援對目錄的硬連結，也只有超級使用者能對目錄做 link / unlink
+
+### 符號連結 Symbolic (Soft) Links
+
+- 符號連結是指向檔案的間接指標
+- 由 4.2BSD 引入，用來解決硬連結的兩項限制：
+  - 不可跨檔案系統
+  - 無法連結到目錄
+- 符號連結的大小等於其所指路徑字串的長度
+- 使用以名稱操作檔案的函式時，必須了解該函式是否會「跟隨」符號連結
+  - `stat()` / `lstat()`、`chown()` / `lchown()` 等對 symlink 的行為不同，系統呼叫族通常提供「不跟隨」變體以避免誤操作目標
+
+![（From APUE 3d Edition Figure 4.17）](image/APUE4.17.png)
+
+以下翻譯自 APUE 3rd Edition 第 4.17 節
+
+使用符號連結可能在檔案系統中造成「迴圈」。 多數以路徑查找檔案的函式遇到此情況會回傳 `errno` 為 `ELOOP`。 下面的命令示範了建立自我循環的目錄連結：
+
+```bash
+$ mkdir foo           make a new directory
+$ touch foo/a         create a 0-length file
+$ ln -s ../foo foo/testdir   create a symbolic link
+$ ls -l foo
+total 0
+-rw-r----- 1 sar 0 Jan 22 00:16 a
+lrwxrwxrwx 1 sar 6 Jan 22 00:16 testdir -> ../foo
+```
+
+這會建立一個名為 `foo` 的目錄，其中包含檔案 `a` 以及一個指向 `foo` 的符號連結。 下圖展示了此結構，其中目錄以圓形表示，檔案則以方形表示：
+
+![（From APUE 3d Edition Figure 4.18）](image/APUE4.18.png)
+
+### 硬連結 vs 符號連結（軟連結）
+
+- 硬連結：
+  - 現有檔案的另一個名稱，目錄項直接指向該檔案的 i-node
+  - 在 `stat` 結構中不會呈現「特別的型態」，因為它與原檔案就是同一個 i-node
+  - 每個目錄項都是把某個檔名硬連到同一個 i-node
+- 符號連結（軟連結）：
+  - 一個內容保存被指向目標的路徑名稱的檔案，類似 Windows 的捷徑，用於簡化存取路徑
+    - 常被用來把檔案或整個目錄樹「移到」系統的其他位置
+  - 其目的正是為了彌補硬連結的限制
+  - 符號連結的檔案型態是 `S_IFLINK`（在 `stat` 結構中指定）
+  - 建立一個檔案，裡面放的是它所指向的路徑名稱
+
+### Function：`symlink` and `readlink`
+
+```c
+#include <unistd.h>
+// returns 0 if OK, -1 on error
+int symlink(const char *actualpath, const char *sympath);
+
+// returns the number of bytes read if OK, -1 on error
+int readlink(const char *restrict pathname, char *restrict buf, size_t bufsize);
+```
+
+- `symlink()` 用來建立符號連結：
+  - 產生名為 `sympath` 的符號連結，內容指向 `actualpath`
+  - 建立時不要求 `actualpath` 一定存在
+- `readlink()` 會把由 `pathname` 指定之符號連結的內容讀入 `buf`（長度為 `bufsize`）：
+  - 若緩衝區太小，`readlink` 會把內容截斷到 `bufsize` 長度
+  - 放入 `buf` 的內容不會以 NUL 結尾
+  - 另有 `readlinkat()`（與 `symlinkat()`）的變體，細節請參考課本
+    - 其關係類似 `open()` 對 `openat()`
