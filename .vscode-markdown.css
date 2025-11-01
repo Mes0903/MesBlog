@@ -21,8 +21,16 @@ h3 {
   color: #F5DEB3;
 }
 
-h4, h5 {
+h4 {
   color: #B3EBF5;
+}
+
+h5 { 
+  color: #BFD9C8; 
+}
+
+h6 { 
+  color: #D6C7C0; 
 }
 
 a.redlink {
