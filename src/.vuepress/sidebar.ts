@@ -43,6 +43,14 @@ export default sidebar([
     ],
   },
   {
+    text: "Infra 相關",
+    collapsible: true,
+    prefix: "/infra/",
+    children: [
+      "mcl_wiki/",
+    ]
+  },
+  {
     text: "Cpp-Miner",
     collapsible: true,
     children: [
