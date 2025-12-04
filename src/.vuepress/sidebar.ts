@@ -138,6 +138,14 @@ export default sidebar([
             ]
           },
           {
+            text: "Shichao's Notes APUE 翻譯 & 筆記",
+            collapsible: true,
+            prefix: "/OS/APUE/",
+            children: [
+              "10-signal/",
+            ],
+          },
+          {
             text: "OSTEP",
             collapsible: true,
             children: [
