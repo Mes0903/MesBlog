@@ -15,6 +15,8 @@ category:
 - [Virtqueues and virtio ring: How the data travels](https://www.redhat.com/en/blog/virtqueues-and-virtio-ring-how-data-travels)
 - [Packed virtqueue: How to reduce overhead with virtio](https://www.redhat.com/en/blog/packed-virtqueue-how-reduce-overhead-virtio)
 
+但因為第三部分原文寫得有問題（已與作者確認過），因此本文的 WIP 會一直掛到確認原文修復（但作者好像太忙了沒有辦法去修），儘管如此，前兩部分也在我一開始接觸 Virtio 時幫了我許多，所以建議可以閱讀看看
+
 ## Virtio devices and drivers overview: The headjack and the phone
 
 這個系列文有三篇，將帶你了解 virtio 資料平面（data plane）的兩種主要佈局：split virtqueue 與 packed virtqueue。 這些是 host 與虛擬環境（例如 guest 或 container）之間通訊的基礎。 要解釋這些做法的一大挑戰，在於文件稀少且涉及許多術語。 此系列文將嘗試為你揭開 virtio 資料平面的神祕面紗，並以簡單清楚的方式說明各個概念

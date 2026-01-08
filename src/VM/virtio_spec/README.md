@@ -2816,6 +2816,525 @@ le32 {
   - 檢查映射到該 MSI-X 向量的所有 virtqueue，檢查是否有需要服務的進度
   - 若該 MSI-X 向量等於 `config_msix_vector`，則重新檢查組態空間以查看變更
 
+### 4.2 Virtio Over MMIO
+
+不支援 PCI 的虛擬環境（嵌入式裝置模型中常見的情況）可能採用簡單的記憶體映射裝置（「virtio-mmio」）取代 PCI 裝置
+
+記憶體映射的 virtio 裝置行為是基於 PCI 裝置規格的。 因此多數操作（包括裝置初始化、佇列配置與緩衝區傳輸）幾乎完全相同，現存差異將於以下各節說明
+
+#### 4.2.1 MMIO Device Discovery
+
+與 PCI 不同，MMIO 並未提供通用的裝置探索機制。 對於每一個裝置，guest 作業系統都必須事先知道其所使用的暫存器與中斷的位置。 對於使用 flattened device tree 的系統，建議的綁定方式如下例所示：
+
+```c
+// EXAMPLE: virtio_block device taking 512 bytes at 0x1e000, interrupt 42. 
+virtio_block@1e000 { 
+        compatible = "virtio,mmio"; 
+        reg = <0x1e000 0x200>; 
+        interrupts = <42>; 
+}
+```
+
+#### 4.2.2 MMIO Device Register Layout
+
+MMIO virtio 裝置提供一組 memory-mapped 的控制暫存器，後面接著裝置特定的組態空間，如表 4.1 所述（我改成列點的形式呈現）。 所有暫存器的值都採用小端序（Little Endian）表示
+
+##### 表 4.1：MMIO Device Register Layout
+
+###### `MagicValue`
+
+- Offset from base：0x000  
+- Direction：R  
+- Function：Magic value（魔術值）  
+- Description：0x74726976（「virt」字串的小端序等價表示）
+
+###### `Version`
+
+- Offset from base：0x004  
+- Direction：R  
+- Function：Device version number（裝置版本號）  
+- Description：值為 0x2。 注意：舊式（legacy）裝置（見 4.2.4 Legacy interface）使用的是 0x1
+
+###### `DeviceID`
+
+- Offset from base：0x008  
+- Direction：R  
+- Function：Virtio Subsystem Device ID  
+- Description：可能的取值請參見第 5 章 Device Types。 值為 0（0x0）時，代表在系統記憶體映射中放置了位於固定、眾所周知位址的 placeholder 裝置，並依照使用者需求指派其功能
+
+###### `VendorID`
+
+- Offset from base：0x00c  
+- Direction：R  
+- Function：Virtio Subsystem Vendor ID  
+- Description：Virtio 子系統廠商識別碼
+
+###### `DeviceFeatures`
+
+- Offset from base：0x010  
+- Direction：R  
+- Function：Flags representing features the device supports（代表裝置所支援特性的旗標）  
+- Description：  
+  從此暫存器讀取時，會回傳 32 個連續的旗標位元，其最低有效位元取決於前一次寫入到 `DeviceFeaturesSel` 的值
+
+  存取此暫存器時，會回傳從 `DeviceFeaturesSel * 32` 到 (`DeviceFeaturesSel * 32`) + 31 的位元。 例如：若 `DeviceFeaturesSel` 設為 0，則讀回的為特徵位元 0 到 31；若 `DeviceFeaturesSel` 設為 1，則讀回特徵位元 32 到 63
+
+  另見 2.2 Feature Bits
+
+###### `DeviceFeaturesSel`
+
+- Offset from base：0x014  
+- Direction：W  
+- Function：Device (host) features word selection（裝置〈host 端〉特徵字選擇暫存器）  
+- Description：  
+  寫入此暫存器會選擇一組 32 個裝置特徵位元，之後即可透過讀取 `DeviceFeatures` 來存取該組特徵位元
+
+###### `DriverFeatures`
+
+- Offset from base：0x020  
+- Direction：W  
+- Function：Flags representing device features understood and activated by the driver（代表驅動程式已理解並啟用之裝置特徵的旗標）  
+- Description：  
+  寫入此暫存器會設定 32 個連續的旗標位元，其最低有效位元取決於前一次寫入到 `DriverFeaturesSel` 的值
+  存取此暫存器時，會設定從 `DriverFeaturesSel` ∗ 32 到 (`DriverFeaturesSel` ∗ 32) + 31 的位元。 例如：若 `DriverFeaturesSel` 設為 0，則設定特徵位元 0 到 31；若 `DriverFeaturesSel` 設為 1，則設定特徵位元 32 到 63
+  另見 2.2 Feature Bits
+
+###### `DriverFeaturesSel`
+
+- Offset from base：0x024  
+- Direction：W  
+- Function：Activated (guest) features word selection（已啟用之 guest 特徵字選擇暫存器）  
+- Description：  
+  寫入此暫存器會選擇一組 32 個已啟用的特徵位元，之後可透過寫入 `DriverFeatures` 來設定這些特徵位元
+
+###### `QueueSel`
+
+- Offset from base：0x030  
+- Direction：W  
+- Function：Virtqueue index（virtqueue 索引）  
+- Description：  
+  寫入此暫存器以選擇某個 virtqueue，後續對 `QueueSizeMax`、`QueueSize`、`QueueReady`、`QueueDescLow`、`QueueDescHigh`、`QueueDriverLow`、`QueueDriverHigh`、`QueueDeviceLow`、`QueueDeviceHigh` 與 `QueueReset` 的操作都會套用在被選擇的該個 virtqueue 上
+
+###### `QueueSizeMax`
+
+- Offset from base：0x034  
+- Direction：R  
+- Function：Maximum virtqueue size（virtqueue 可支援的最大大小）  
+- Description：  
+  從此暫存器讀取時，會回傳裝置準備處理的該隊列之最大大小（元素數量），若隊列不可用則回傳 0（0x0）。 此值會套用在透過寫入 `QueueSel` 所選擇的隊列上
+  注意：`QueueSizeMax` 先前稱為 `QueueNumMax`
+
+###### `QueueSize`
+
+- Offset from base：0x038  
+- Direction：W  
+- Function：Virtqueue size（virtqueue 大小）  
+- Description：  
+  virtqueue 的大小是隊列中元素的數量。 寫入此暫存器是用來通知裝置，驅動程式將使用多大的隊列。 此值套用在透過寫入 `QueueSel` 所選擇的隊列上
+  注意：`QueueSize` 先前稱為 `QueueNum`
+
+###### `QueueReady`
+
+- Offset from base：0x044  
+- Direction：RW  
+- Function：Virtqueue ready bit（virtqueue 就緒位元）  
+- Description：  
+  寫入值 1（0x1）到此暫存器，會通知裝置它可以開始從該 virtqueue 取出並執行請求
+  從此暫存器讀取時，會回傳最後一次寫入的值
+  讀寫皆套用在透過寫入 `QueueSel` 所選擇的隊列上
+
+###### `QueueNotify`
+
+- Offset from base：0x050  
+- Direction：W  
+- Function：Queue notifier（隊列通知器）  
+- Description：  
+  寫入某個值到此暫存器，會通知裝置在某個隊列中有新的 buffer 可以處理
+
+  - 當 `VIRTIO_F_NOTIFICATION_DATA` 尚未協商成功時，寫入的值為要通知之隊列的 virtqueue 索引
+  - 當 `VIRTIO_F_NOTIFICATION_DATA` 已協商成功時，寫入的 Notification data 值具有以下格式：
+
+  ```c
+  le32 { 
+    vq_index: 16; /* previously known as vqn */ 
+    next_off : 15; 
+    next_wrap : 1; 
+  };
+  ```
+
+  各欄位的定義請見 2.9 Driver Notifications
+
+###### `InterruptStatus`
+
+- Offset from base：0x060  
+- Direction：R  
+- Function：Interrupt status（中斷狀態）  
+- Description：  
+  從此暫存器讀取時，會回傳一個位元遮罩，指出哪些事件導致裝置將中斷訊號拉高。 可能的事件如下：
+
+  - Used Buffer Notification  
+    - 位元 0：因為裝置在至少一個作用中的 virtqueue 中使用了一個 buffer，而觸發中斷
+  - Configuration Change Notification  
+    - 位元 1：因為裝置的組態發生變更，而觸發中斷
+
+###### `InterruptACK`
+
+- Offset from base：0x064  
+- Direction：W  
+- Function：Interrupt acknowledge（中斷確認）  
+- Description：  
+  寫入一個值，其中相對應為 1 的位元需依照 `InterruptStatus` 中的定義設定，藉此告知裝置已經處理完觸發該中斷的事件
+
+###### `Status`
+
+- Offset from base：0x070  
+- Direction：RW  
+- Function：Device status（裝置狀態）  
+- Description：  
+  從此暫存器讀取時，會回傳目前的裝置狀態旗標
+  寫入非零值到此暫存器會設定狀態旗標，用以表示驅動程式的進度
+  寫入 0（0x0）到此暫存器會觸發裝置重設
+  亦可參見 4.2.3.1 Device Initialization
+
+###### `QueueDescLow` / `QueueDescHigh`
+
+- Offset from base：0x080（`QueueDescLow`）、0x084（`QueueDescHigh`）  
+- Direction：W  
+- Function：Virtqueue’s Descriptor Area 64 bit long physical address（virtqueue Descriptor Area 的 64 位元實體位址）  
+- Description：  
+  寫入這兩個暫存器（將位址的低 32 位元寫入 `QueueDescLow`、高 32 位元寫入 `QueueDescHigh`），是用來通知裝置，被 `QueueSel` 選擇的隊列之 Descriptor Area 在記憶體中的位置
+
+###### `QueueDriverLow` / `QueueDriverHigh`
+
+- Offset from base：0x090（`QueueDriverLow`）、0x094（`QueueDriverHigh`）  
+- Direction：W  
+- Function：Virtqueue’s Driver Area 64 bit long physical address（virtqueue Driver Area 的 64 位元實體位址）  
+- Description：  
+  寫入這兩個暫存器（將位址的低 32 位元寫入 `QueueDriverLow`、高 32 位元寫入 `QueueDriverHigh`），是用來通知裝置，被 `QueueSel` 選擇的隊列之 Driver Area 在記憶體中的位置
+
+###### `QueueDeviceLow` / `QueueDeviceHigh`
+
+- Offset from base：0x0a0（`QueueDeviceLow`）、0x0a4（`QueueDeviceHigh`）  
+- Direction：W  
+- Function：Virtqueue’s Device Area 64 bit long physical address（virtqueue Device Area 的 64 位元實體位址）  
+- Description：  
+  寫入這兩個暫存器（將位址的低 32 位元寫入 `QueueDeviceLow`、高 32 位元寫入 `QueueDeviceHigh`），是用來通知裝置，被 `QueueSel` 選擇的隊列之 Device Area 在記憶體中的位置
+
+###### `SHMSel`
+
+- Offset from base：0x0ac  
+- Direction：W  
+- Function：Shared memory id（共享記憶體 ID）  
+- Description：  
+  寫入此暫存器以選擇某個共享記憶體區域，之後對 `SHMLenLow`、`SHMLenHigh`、`SHMBaseLow` 與 `SHMBaseHigh` 的操作都會套用在這個共享記憶體區域上（見 2.10）
+
+###### `SHMLenLow` / `SHMLenHigh`
+
+- Offset from base：0x0b0（`SHMLenLow`）、0x0b4（`SHMLenHigh`）  
+- Direction：R  
+- Function：Shared memory region 64 bit long length（共享記憶體區域的 64 位元長度）  
+- Description：  
+  這兩個暫存器回傳由裝置對目前由 `SHMSel` 選擇之共享記憶體區域所定義的長度（單位為位元組）。 長度的低 32 位元由 `SHMLenLow` 讀取，高 32 位元由 `SHMLenHigh` 讀取
+  若讀取的是不存在的區域（也就是 `SHMSel` 中寫入的 ID 未被使用），則回傳的長度為 -1
+
+###### `SHMBaseLow` / `SHMBaseHigh`
+
+- Offset from base：0x0b8（`SHMBaseLow`）、0x0bc（`SHMBaseHigh`）  
+- Direction：R  
+- Function：Shared memory region 64 bit long physical address（共享記憶體區域的 64 位元實體位址）  
+- Description：  
+  驅動程式透過讀取這兩個暫存器，以取得該共享記憶體區域在實體位址空間中的基底位址。 此位址由裝置（或 VMM 的其他部分）選擇。 地址的低 32 位元由 `SHMBaseLow` 讀取，高 32 位元由 `SHMBaseHigh` 讀取
+  若讀取的是不存在的區域（也就是 `SHMSel` 中寫入的 ID 未被使用），則回傳的基底位址為 0xffffffffffffffff
+
+###### `QueueReset`
+
+- Offset from base：0x0c0  
+- Direction：RW  
+- Function：Virtqueue reset bit（virtqueue 重設位元）  
+- Description：  
+  若 `VIRTIO_F_RING_RESET` 已協商成功，寫入值 1（0x1）到此暫存器會選擇性地重設該隊列
+  讀寫皆套用在透過寫入 `QueueSel` 所選擇的隊列上
+
+###### `ConfigGeneration`
+
+- Offset from base：0x0fc  
+- Direction：R  
+- Function：Configuration atomicity value（組態原子性值）  
+- Description：  
+  從此暫存器讀取時，會回傳一個值，用來描述裝置特定組態空間（見 `Config`）的一個版本。 驅動程式可以先讀取 `ConfigGeneration`，接著存取組態空間，完成後再讀取一次 `ConfigGeneration`
+  如果兩次讀取之間，組態空間的任何部分都沒有變更，則兩次回傳的值會相同；若值不同，表示這段期間組態空間的存取並非原子性的，驅動程式必須重新執行這些操作。 另見 2.5
+
+###### `Config`
+
+- Offset from base：0x100+  
+- Direction：RW  
+- Function：Configuration space（組態空間）  
+- Description：  
+  裝置特定的組態空間自 offset 0x100 開始，並以位元組對齊方式存取。 其意義與大小取決於裝置與驅動程式
+
+##### 4.2.2.1 Device Requirements: MMIO Device Register Layout
+
+- 裝置 **必須** 在 `MagicValue` 中回傳值 0x74726976
+- 裝置 **必須** 在 `Version` 中回傳值 0x2
+- 裝置 **必須** 針對每一個事件，從事件發生的時刻起，一直到驅動程式透過將對應的位元遮罩寫入 `InterruptACK` 暫存器以確認該中斷為止，都在 `InterruptStatus` 中設定相對應的位元。 未對應到實際發生事件的位元 **必須** 為 0
+- 在重設時，裝置 **必須** 清除 `InterruptStatus` 中的所有位元，以及所有隊列在 `QueueReady` 暫存器中的 ready 位元
+- 若有任一種情況可能導致驅動程式看到不一致的組態狀態，裝置 **必須** 變更 `ConfigGeneration` 的回傳值
+- 當 `QueueReady` 為 0（0x0）時，裝置 **必須不得** 存取 virtqueue 的內容
+- 若 `VIRTIO_F_RING_RESET` 已協商成功，則裝置在重設時 **必須** 在 `QueueReset` 中呈現值 0
+- 若 `VIRTIO_F_RING_RESET` 已協商成功，當 virtqueue 使用 `QueueReady` 啟用之後，裝置 **必須** 在 `QueueReset` 中呈現值 0
+- 當值 1 被寫入 `QueueReset` 時，裝置 **必須** 重設該隊列。 在隊列重設進行期間，裝置 **必須** 在 `QueueReset` 中維持呈現值 1。 當隊列重設完成時，裝置 **必須** 同時在 `QueueReset` 與 `QueueReady` 中呈現值 0。 參見 2.6.1
+
+##### 4.2.2.2 Driver Requirements: MMIO Device Register Layout
+
+- 驅動程式 **不得** 存取未在表 4.1 中描述的記憶體位置（若為組態空間，則不得存取未在裝置規格中描述的區域），**不得** 對唯讀（Direction 為 R）的暫存器寫入，也 **不得** 從唯寫（Direction 為 W）的暫存器讀取
+- 驅動程式在存取表 4.1 所描述的控制暫存器時，**必須只使用** 32 位元寬且對齊的讀寫操作。 對於裝置特定的組態空間，8 位元欄位 **必須** 使用 8 位元寬的存取，16 位元欄位 **必須** 使用 16 位元寬且對齊的存取，而 32 與 64 位元欄位 **必須** 使用 32 位元寬且對齊的存取
+- 若 `MagicValue` 回傳的值不是 0x74726976，驅動程式 **必須** 忽略該裝置，但 **可以** 回報錯誤
+- 若 `Version` 回傳的值不是 0x2，驅動程式 **必須** 忽略該裝置，但 **可以** 回報錯誤
+- 若 `DeviceID` 的值為 0x0，驅動程式 **必須** 忽略該裝置，但 **不得** 報告任何錯誤
+- 在讀取 `DeviceFeatures` 之前，驅動程式 **必須** 先向 `DeviceFeaturesSel` 寫入一個值
+- 在寫入 `DriverFeatures` 暫存器之前，驅動程式 **必須** 先向 `DriverFeaturesSel` 暫存器寫入一個值
+- 驅動程式寫入 `QueueSize` 的值 **必須** 小於或等於裝置在 `QueueSizeMax` 中呈現的值
+- 當 `QueueReady` 非 0 時，驅動程式 **不得** 存取 `QueueSize`、`QueueDescLow`、`QueueDescHigh`、`QueueDriverLow`、`QueueDriverHigh`、`QueueDeviceLow`、`QueueDeviceHigh`
+- 若要停止使用某個隊列，驅動程式 **必須** 向該隊列的 `QueueReady` 寫入 0（0x0），並且 **必須** 重新讀回該值以確保同步
+- 驅動程式 **必須** 忽略 `InterruptStatus` 中未定義的位元
+- 驅動程式在完成中斷處理後，**必須** 向 `InterruptACK` 寫入一個值，其位元遮罩描述了已處理的事件，且 **不得** 在該值中設定任何未定義的位元
+- 若 `VIRTIO_F_RING_RESET` 已協商成功，在驅動程式寫入 1 到 `QueueReset` 以重設隊列之後，在它讀回 `QueueReset` 為 0 之前，驅動程式 **不得** 認定隊列重設已完成
+  驅動程式在確保其他 virtqueue 欄位已正確設定後，**可以** 透過向 `QueueReady` 寫入 1 來重新啟用隊列
+  驅動程式 **可以** 將可由驅動程式寫入的隊列組態值設定為與重設前不同的值（見 2.6.1）
+
+#### 4.2.3 MMIO-specific Initialization And Device Operation
+
+##### 4.2.3.1 Device Initialization
+
+###### 4.2.3.1.1 Driver Requirements: Device Initialization
+
+驅動程式 **必須** 以讀取並檢查 `MagicValue` 與 `Version` 的值作為裝置初始化的起點。 若兩個值皆有效，則 **必須** 讀取 `DeviceID`，若其值為 0（0x0），則 **必須** 中止初始化，且 **不得** 存取任何其他暫存器
+
+不預期使用共享記憶體的驅動程式 **不得** 使用共享記憶體相關的暫存器
+
+後續的初始化 **必須** 依照 3.1 Device Initialization 中所描述的程序進行
+
+##### 4.2.3.2 Virtqueue Configuration
+
+驅動程式通常會以如下方式初始化 virtqueue：
+
+1. 透過向 `QueueSel` 寫入隊列索引來選擇隊列
+2. 檢查該隊列是否尚未被使用：讀取 `QueueReady`，預期讀回的值為 0（0x0）
+3. 從 `QueueSizeMax` 讀取隊列可擁有的最大大小（元素數量）。 若回傳值為 0（0x0），則代表該隊列不可用
+4. 分配該隊列所需的記憶體並將其清零，並確保這塊記憶體在實體上是連續的
+5. 透過向 `QueueSize` 寫入大小值，通知裝置隊列的大小
+6. 將隊列的 Descriptor Area、Driver Area 與 Device Area 的實體位址分別寫入 `QueueDescLow`/`QueueDescHigh`、`QueueDriverLow`/`QueueDriverHigh` 與 `QueueDeviceLow`/`QueueDeviceHigh` 這三組暫存器
+7. 將值 0x1 寫入 `QueueReady`
+
+##### 4.2.3.3 Available Buffer Notifications
+
+當 `VIRTIO_F_NOTIFICATION_DATA` 尚未協商成功時，驅動程式會透過向 `QueueNotify` 寫入欲通知隊列的 16 位元 virtqueue 索引，來向裝置發送 available buffer notification
+
+當 `VIRTIO_F_NOTIFICATION_DATA` 已協商成功時，驅動程式會透過向 `QueueNotify` 寫入以下 32 位元的值，來向裝置發送 available buffer notification：
+
+```c
+le32 { 
+  vq_index: 16; /* previously known as vqn */ 
+  next_off : 15; 
+  next_wrap : 1; 
+};
+```
+
+各欄位的定義請見 2.9 Driver Notifications
+
+##### 4.2.3.4 Notifications From The Device
+
+memory-mapped 的 virtio 裝置會使用單一專用的中斷訊號；當 `InterruptStatus` 描述中所定義的至少一個位元被設定時，此中斷訊號就會被拉高。 裝置即是透過此方式向驅動程式發送 used buffer notification 或 configuration change notification
+
+###### 4.2.3.4.1 Driver Requirements: Notifications From The Device
+
+在接收到中斷後，驅動程式 **必須** 讀取 `InterruptStatus`，以檢查是什麼原因觸發中斷（詳見該暫存器的描述）
+
+若 used buffer notification 位元被設定，**應該** 將其解讀為針對每一個作用中 virtqueue 的 used buffer notification
+
+在處理完中斷後，驅動程式 **必須** 透過向 `InterruptACK` 暫存器寫入對應於已處理事件之位元遮罩，來確認該中斷
+
+#### 4.2.4 Legacy interface
+
+舊式（legacy）的 MMIO 傳輸使用 page-based addressing，導致控制暫存器的配置、裝置初始化與 virtqueue 組態程序略有不同
+
+表 4.2 呈現了控制暫存器的配置，省略了那些功能與行為未改變的暫存器的描述：
+
+##### 表 4.2：MMIO Device Legacy Register Layout
+
+###### `MagicValue`
+
+- Offset from base：0x000  
+- Direction：R  
+- Function：Magic value（魔術值）  
+- Description：魔術常數，用於識別裝置為 virtio MMIO 裝置
+
+###### `Version`
+
+- Offset from base：0x004  
+- Direction：R  
+- Function：Device version number（裝置版本號）  
+- Description：legacy 裝置回傳值 0x1
+
+###### `DeviceID`
+
+- Offset from base：0x008  
+- Direction：R  
+- Function：Virtio Subsystem Device ID  
+- Description：Virtio 子系統裝置識別碼
+
+###### `VendorID`
+
+- Offset from base：0x00c  
+- Direction：R  
+- Function：Virtio Subsystem Vendor ID  
+- Description：Virtio 子系統廠商識別碼
+
+###### `HostFeatures`
+
+- Offset from base：0x010  
+- Direction：R  
+- Function：Flags representing features the device supports（代表裝置所支援特性的旗標）  
+- Description：與非 legacy 介面中的 `DeviceFeatures` 相對應
+
+###### `HostFeaturesSel`
+
+- Offset from base：0x014  
+- Direction：W  
+- Function：Device (host) features word selection（裝置〈host 端〉特徵字選擇暫存器）  
+- Description：用來選擇要讀取的 32 位元 `HostFeatures` 字
+
+###### `GuestFeatures`
+
+- Offset from base：0x020  
+- Direction：W  
+- Function：Flags representing device features understood and activated by the driver（代表驅動程式已理解並啟用之裝置特徵的旗標）  
+- Description：與非 legacy 介面中的 `DriverFeatures` 相對應
+
+###### `GuestFeaturesSel`
+
+- Offset from base：0x024  
+- Direction：W  
+- Function：Activated (guest) features word selection（已啟用 guest 特徵字選擇暫存器）  
+- Description：用來選擇要透過 `GuestFeatures` 設定的 32 位元特徵字
+
+###### `GuestPageSize`
+
+- Offset from base：0x028  
+- Direction：W  
+- Function：Guest page size（guest 頁面大小）  
+- Description：  
+  在任何隊列被使用之前，驅動程式會在初始化期間將 guest 頁面大小（單位為位元組）寫入此暫存器。 此值應為 2 的次方，並且被裝置用來計算第一個隊列頁面的 guest 位址（見 `QueuePFN`）
+
+###### `QueueSel`
+
+- Offset from base：0x030  
+- Direction：W  
+- Function：Virtqueue index（virtqueue 索引）  
+- Description：  
+  寫入此暫存器以選擇某個 virtqueue，後續對 `QueueSizeMax`、`QueueSize`、`QueueAlign` 與 `QueuePFN` 的操作都會套用在被選擇的隊列上
+
+###### `QueueSizeMax`
+
+- Offset from base：0x034  
+- Direction：R  
+- Function：Maximum virtqueue size（virtqueue 可支援的最大大小）  
+- Description：  
+  從此暫存器讀取時，會回傳裝置準備處理的隊列之最大大小；若隊列不可用則回傳 0（0x0）。 此值套用在透過寫入 `QueueSel` 所選擇的隊列上，且只允許在 `QueuePFN` 被設為 0（0x0）時進行（也就是該隊列尚未被實際使用時）
+  注意：`QueueSizeMax` 先前稱為 `QueueNumMax`
+
+###### `QueueSize`
+
+- Offset from base：0x038  
+- Direction：W  
+- Function：Virtqueue size（virtqueue 大小）  
+- Description：  
+  virtqueue 的大小是隊列中元素的數量。 寫入此暫存器是用來通知裝置，驅動程式將使用多大的隊列。 此值套用在透過寫入 `QueueSel` 所選擇的隊列上
+  注意：`QueueSize` 先前稱為 `QueueNum`
+
+###### `QueueAlign`
+
+- Offset from base：0x03c  
+- Direction：W  
+- Function：Used Ring alignment in the virtqueue（virtqueue 中 Used Ring 的對齊）  
+- Description：  
+  寫入此暫存器以通知裝置 Used Ring 在位元組單位上的對齊邊界。 此值應為 2 的次方，並且套用在透過寫入 `QueueSel` 所選擇的隊列上
+
+###### `QueuePFN`
+
+- Offset from base：0x040  
+- Direction：RW  
+- Function：Guest physical page number of the virtqueue（virtqueue 的 guest 實體頁號）  
+- Description：  
+  寫入此暫存器是用來通知裝置，virtqueue 在 guest 實體位址空間中的位置。 此值是以 Descriptor Table 所在頁為起點的頁索引值
+  值 0（0x0）代表實體位址 0（0x00000000），且是非法值
+  當驅動程式停止使用該隊列時，會向此暫存器寫入 0（0x0）
+  從此暫存器讀取時，回傳的是目前該隊列所使用的頁號，因此非 0（0x0）的值表示該隊列正在使用中
+  讀寫皆套用在透過寫入 `QueueSel` 所選擇的隊列上
+
+###### `QueueNotify`
+
+- Offset from base：0x050  
+- Direction：W  
+- Function：Queue notifier（隊列通知器）  
+- Description：用於通知裝置某個隊列有可用 buffer，功能與非 legacy 介面類似
+
+###### `InterruptStatus`
+
+- Offset from base：0x060  
+- Direction：R  
+- Function：Interrupt status（中斷狀態）  
+- Description：與非 legacy 介面中的 `InterruptStatus` 功能相同
+
+###### `InterruptACK`
+
+- Offset from base：0x064  
+- Direction：W  
+- Function：Interrupt acknowledge（中斷確認）  
+- Description：與非 legacy 介面中的 `InterruptACK` 功能相同
+
+###### `Status`
+
+- Offset from base：0x070  
+- Direction：RW  
+- Function：Device status（裝置狀態）  
+- Description：  
+  從此暫存器讀取時，會回傳目前的裝置狀態旗標
+  寫入非零值到此暫存器會設定狀態旗標，以表示 OS/驅動程式的進度
+  寫入 0（0x0）到此暫存器會觸發裝置重設。 裝置會將所有隊列的 `QueuePFN` 設為 0（0x0）
+  亦可參見 3.1 Device Initialization
+
+###### `Config`
+
+- Offset from base：0x100+  
+- Direction：RW  
+- Function：Configuration space（組態空間）  
+- Description：裝置特定的組態空間，對應到非 legacy 介面中的 `Config`
+
+在 legacy 介面中，virtqueue 的頁面大小是由 guest 寫入 `GuestPageSize` 所定義；驅動程式會在 virtqueue 被設定之前完成這項動作
+
+virtqueue 的配置布局遵循 2.7.2 Legacy Interfaces: A Note on Virtqueue Layout 所述，其對齊由 `QueueAlign` 所定義
+
+virtqueue 的組態程序如下：
+
+1. 透過向 `QueueSel` 寫入隊列索引來選擇隊列
+2. 檢查該隊列是否尚未被使用：讀取 `QueuePFN`，預期讀回的值為 0（0x0）
+3. 從 `QueueSizeMax` 讀取隊列可擁有的最大大小（元素數量）。 若回傳值為 0（0x0），則代表該隊列不可用
+4. 在連續的虛擬記憶體中分配並清零隊列所需的頁面，並將 Used Ring 對齊到一個最佳邊界（通常為頁面大小）。 驅動程式應選擇一個小於或等於 `QueueSizeMax` 的隊列大小
+5. 透過向 `QueueSize` 寫入大小值，通知裝置隊列的大小
+6. 透過向 `QueueAlign` 寫入位元組為單位的對齊值，通知裝置 Used Ring 的對齊
+7. 將隊列第一個頁面的實體頁號寫入 `QueuePFN` 暫存器
+
+通知機制並未改變（與非 legacy 介面相同
+
+#### 4.2.5 Features reserved for future use
+
+使用 Virtio Over MMIO 的裝置與驅動程式不支援以下特徵：
+
+- `VIRTIO_F_ADMIN_VQ`
+
+這些特徵是為未來使用而保留
+
 ### 5.7 GPU 裝置
 
 virtio-gpu 是一個基於 virtio 的顯示配接器，它可以在 2D 模式與 3D 模式下運作。 3D 模式會把繪圖的 rendering 操作卸載到主機端的 GPU，因此主機必須具備支援 3D 的 GPU

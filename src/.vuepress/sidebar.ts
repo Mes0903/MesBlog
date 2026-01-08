@@ -118,6 +118,7 @@ export default sidebar([
         prefix: "/VM/",
         children: [
           "rv32emu-Introduction/",
+          "semu-vgpu-2D/",
           "redhat_virtio/",
           "virtio_spec/",
         ]
