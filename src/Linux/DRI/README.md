@@ -1,6 +1,4 @@
-
-
-## Direct Rendering Infrastructure
+# （WIP）Direct Rendering Infrastructure
 
 Direct Rendering Infrastructure（DRI，直接算繪基礎架構）是構成現代 Linux 圖形 stack 的框架，讓沒有特權的 user space 程式在不與其他程式產生衝突的情況下，能夠對圖形硬體下達命令。 DRI 的主要用途，是為 `Mesa` 的 `OpenGL` 實作提供硬體加速。 DRI 也曾被改造，用來在沒有執行顯示伺服器的 framebuffer console 上提供 `OpenGL` 加速
 

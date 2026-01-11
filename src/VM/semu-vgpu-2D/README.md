@@ -1,6 +1,6 @@
 ---
 title: （WIP）VirtIO-GPU in semu
-date: 2026-01-06
+date: 2026-01-09
 mathjax: true
 tag: 
 - VM
@@ -28,9 +28,38 @@ category:
 
 還有一些尚在進行中的筆記，集中在 DRM/KMS 的部分，底下是針對目前 semu 中 vgpu 2D 部分的實作的筆記，3D 部分尚未開始
 
+## 有關 VirGL
+
+以下片段翻譯自 [Do Nvidia GPUs require Mesa? (re: what is Mesa vs proprietary drivers?)](https://www.reddit.com/r/linux_gaming/comments/9firc7/do_nvidia_gpus_require_mesa_re_what_is_mesa_vs/)：
+
+在 Linux 當中，所有硬體的驅動程式都會以某種形式被包含在核心裡面，這當然也包含了 GPU 驅動。 每一張 GPU 都需要一個核心驅動（或說 kernel module 模組）才能運作
+
+但核心驅動只負責最低層級的硬體操作。 像 OpenGL、Vulkan、OpenCL 這些 API 的實作太龐大，無法放進核心驅動中，因此被放在 user space，透過系統呼叫與核心互動
+
+要使用任何圖形 API，你都需要有對應的使用者空間函式庫。 AMD 與 NVIDIA 的專有驅動都有提供每一個 API 的封閉原始碼版本，而 Mesa 則是試圖提供這些 API 的開源替代實作
+
+專有驅動通常也會附帶它們自己專有的核心驅動／模組，用來和它們的使用者空間函式庫溝通。 但對於 AMD 的新 GPU 來說，情況稍有不同：他們的專有與開源驅動會共用同一個核心模組。 換句話說，若你使用的是 Radeon R9 285（GCN 3） 之後的 GPU，你可以在相同的 AMDGPU 核心驅動 下，選擇搭配 Mesa（開源函式庫）或 AMD 專有函式庫
+
+---
+
+再來以 Collabora 的這張圖來說，VirGL 是適用於 virtio-gpu 的 OpenGL 驅動，Venus 是 virtio-gpu 的 Vulkan 驅動，這兩者都實作在 Mesa 中：
+
+![image](https://hackmd.io/_uploads/Skn-n5cpxl.png)
+![image](https://hackmd.io/_uploads/SJm935caex.png)
+
+但因為 virtio-gpu 只定義了要有哪些行為，例如建立 context、建立 BLOB 資源或提交 3D 指令之類的，所以實際填入 virtqueue 的內容（payload）是由實作方決定的
+
+具體來說要填入的內容是能讓 host 端轉譯器看懂的 payload，因此格式是以實作自己的協定來定義的，現在主流的實作是 Virgl 與 Venus（近年有新的叫 vDRM），他們在 host 端配合的轉譯器是 virglrenderer，用來解碼 VirGL/Venus 與 vDRM 的命令，再把這些命令轉成 host 端的 OpenGL/Vulkan 呼叫
+
+所以 virtio-gpu 決定封包的格式，而實作本身決定封包內容要怎麼解讀
+
+實作用的協定本身不一定有 spec（神奇），VirGL 就沒有，所以要直接看實作（[VirGL](https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/src/gallium/drivers/virgl/virgl_encode.c?ref_type=heads)、[virglrenderer](https://gitlab.freedesktop.org/virgl/virglrenderer/-/blob/main/src/virgl_protocol.h)），但 Venus 有（[venus-protocol](https://gitlab.freedesktop.org/virgl/venus-protocol)）
+
 ## Big Picture
 
 ### Resource 資料結構
+
+#### `vgpu_resource_2d` 與 `display_info`
 
 每個 2D resource 使用 `struct vgpu_resource_2d` 表示（定義於 virtio-gpu.h:19）：
 
@@ -122,6 +151,214 @@ struct display_info {
     因此 cursor plane 的像素在 `display_info` 內有自己的一份副本，後續即使原本的 resource 更新，也不會影響目前 cursor 的 texture
 
 詳細見後方章節與原始碼
+
+#### Virtqueue 相關
+
+semu 中使用的是 split virtqueue，其中只有 descriptor table 有特別寫結構體定義出來：
+
+```c
+PACKED(struct virtq_desc {
+    uint64_t addr;
+    uint32_t len;
+    uint16_t flags;
+    uint16_t next;
+});
+```
+
+而在規格中，對於 avail ring 與 used ring 的佈局示例如下：
+
+```c
+struct virtq_avail { 
+#define VIRTQ_AVAIL_F_NO_INTERRUPT  1 
+    le16 flags; 
+    le16 idx; /* driver 已經把多少個「可用的 ring entry」放進了 avail ring */
+    le16 ring[ /* Queue Size */ ]; 
+    le16 used_event; /* 只有在 VIRTIO_F_EVENT_IDX 協商成功時才存在 */ 
+};
+
+struct virtq_used { 
+#define VIRTQ_USED_F_NO_NOTIFY  1 
+    le16 flags; 
+    le16 idx; /* device 已經完成並回報了多少個 used entries */
+    struct virtq_used_elem ring[ /* Queue Size */]; 
+    le16 avail_event; /* 只有在 VIRTIO_F_EVENT_IDX 協商成功時才存在 */ 
+}; 
+
+/* 這裡 id 使用 le32 是為了填補（padding）的考量。 */ 
+struct virtq_used_elem { 
+    /* 已用描述符鏈的頭節點索引 */ 
+    le32 id; 
+    /* 裝置對該描述符鏈中屬於「裝置可寫」部分實際寫入的位元組數 */ 
+    le32 len; 
+};
+```
+
+但在 semu 中，avail ring 與 used ring 都是透過直接操作記憶體（`vinput->ram`）來讀取的，相關結構如下（以 virtio gpu 為例）：
+
+```c
+typedef struct {
+    uint32_t QueueNum;      // Queue 的大小
+    uint32_t QueueDesc;     // Descriptor Table 的起始索引
+    uint32_t QueueAvail;    // Available Ring 的起始索引
+    uint32_t QueueUsed;     // Used Ring 的起始索引
+    uint16_t last_avail;    // Device 已處理了幾個 buffer
+    bool ready;             // Queue 是否就緒
+} virtio_gpu_queue_t;
+
+typedef struct {
+    /* feature negotiation */
+    uint32_t DeviceFeaturesSel;
+    uint32_t DriverFeatures;
+    uint32_t DriverFeaturesSel;
+    /* queue config */
+    uint32_t QueueSel;
+    virtio_gpu_queue_t queues[2];
+    /* status */
+    uint32_t Status;
+    uint32_t InterruptStatus;
+    /* supplied by environment */
+    uint32_t *ram;
+    /* implementation-specific */
+    void *priv;
+} virtio_gpu_state_t;
+```
+
+`virtio_gpu_state_t` 中的 `queues` 是一個 virtqueue 的陣列，有兩個元素，代表 virtio-gpu 使用了兩個 virtqueue，在 spec 中分別名為 controlq 與 cursorq：
+
+- controlq：用於傳送控制命令的佇列
+- cursorq：用於傳送游標更新的佇列
+
+`virtio_gpu_queue_t` 內的元素用來幫助讀取 virtqueue 的內容，`QueueDesc`、`QueueAvail`、`QueueUsed` 的值代表的是索引，會搭配 `virtio_xxx_state_t` 結構體內的 `ram` 成員使用，其中 `ram` 與 `emu->ram` 指向相同的記憶體區塊（main 裡面 malloc 的那塊 guest memory）
+
+由於 avail ring 與 used ring 中的 `flags` 與 `idx` 欄位都是 `le16`，而 `ram` 是 `uint32_t*`，因此以 avail ring 為例，其在 `ram` 中的佈局看起來會類似下面這樣：
+
+```
+┌─────────────────────────────────┬──────────────────────────┐
+│     ram[queue->QueueAvail]      │ flags (low) | idx (high) │  ← Header
+├─────────────────────────────────┼──────────────────────────┤
+│   ram[queue->QueueAvail + 1]    │    ring[0]  |  ring[1]   │  ← Entries 0 & 1
+│   ram[queue->QueueAvail + 2]    │    ring[2]  |  ring[3]   │  ← Entries 2 & 3
+│   ram[queue->QueueAvail + 3]    │    ring[4]  |  ring[5]   │  ← Entries 4 & 5
+└─────────────────────────────────┴──────────────────────────┘
+```
+
+其中 `QueueAvail` 等值在對應的 `virtio_xxx_reg_write` 中設定：
+
+```c
+static inline uint32_t vinput_preprocess(virtio_input_state_t *vinput,
+                                         uint32_t addr)
+{
+    // 1. 檢查地址是否在 RAM 範圍內
+    if (addr >= RAM_SIZE)
+        return virtio_input_set_fail(vinput), 0;
+    
+    // 2. 檢查地址是否 4-byte 對齊
+    if (addr & 0b11)  // 檢查最低 2 bits
+        return virtio_input_set_fail(vinput), 0;
+
+    // 3. 將「字節地址」轉換為「uint32_t 索引」
+    return addr >> 2;  // 除以 4
+}
+
+...
+
+static bool virtio_input_reg_write(virtio_input_state_t *vinput,
+                                   uint32_t addr,
+                                   uint32_t value)
+{
+...
+case _(QueueDriverLow):
+    VINPUT_QUEUE.QueueAvail = vinput_preprocess(vinput, value);
+    return true;
+...
+}
+```
+
+因此如果 Guest 寫入的地址為 `0x80100000`，則 `QueueAvail` 為 `0x20040000`。 也因為 `vinput->ram` 的型態為 `uint32_t*`，所以在訪問的時候該段記憶體的時候是用 `ram[0x80100000 >> 2]` 而非 `ram[0x80100000]`，所以才說 `QueueAvail` 是索引：
+
+```
+字節視圖 (uint8_t*):       Word 視圖 (uint32_t*):
+┌────┬────┬────┬────┐     ┌──────────────┐
+│ 0  │ 1  │ 2  │ 3  │  →  │   ram[0]     │
+├────┼────┼────┼────┤     ├──────────────┤
+│ 4  │ 5  │ 6  │ 7  │  →  │   ram[1]     │
+├────┼────┼────┼────┤     ├──────────────┤
+│ 8  │ 9  │ 10 │ 11 │  →  │   ram[2]     │
+└────┴────┴────┴────┘     └──────────────┘
+
+字節地址 / 4 = uint32_t 索引
+```
+
+以 `virtio_input_desc_handler` 為例子來看一些使用範例
+
+1. 讀取 avail 與 used ring 的 `idx` 欄位
+    ```c
+    uint32_t *ram = vinput->ram;
+    uint16_t new_avail = ram[queue->QueueAvail] >> 16; /* virtq_avail.idx (le16) */
+    uint16_t new_used = ram[queue->QueueUsed] >> 16; /* virtq_used.idx (le16) */
+    ```
+2. 讀取 avail ring 內的第 `buffer_idx` 個元素
+    ```c
+    uint16_t queue_idx = queue->last_avail % queue->QueueNum;
+    uint16_t buffer_idx = ram[queue->QueueAvail + 1 + queue_idx / 2] >>
+                          (16 * (queue_idx % 2));
+    ```
+    這邊 `last_avail` 代表已處理過的 buffer 數量，由於 avail ring 是環形的，所以取模以得到下一個目標 buffer 的索引
+    
+    接下來的 `queue->QueueAvail + 1` 代表 avail ring 內 `ring` 的起始位址（`+1` 是為了跳過 header）； `queue_idx / 2` 用來找到目標 buffer 在 `ram` 的哪個元素內（見上方 avail ring 在 `ram` 中的示意圖）； 最後用 `16 * (queue_idx % 2)` 來找到對應的元素（一個 `ram` 的元素中有兩個 `ring` 的元素）
+
+    因此整個 `buffer_idx` 的計算其實是在讀取 `ring[queue_idx]` 的值，而該值代表的是目標 descriptor 的索引，所以變數名稱才會是 `buffer_idx`
+3. 讀取 Descriptor
+    ```c
+    uint32_t *desc;
+    desc = &vinput->ram[queue->QueueDesc + buffer_idx * 4];
+    vq_desc.addr = desc[0];  // buffer 的物理地址
+    uint32_t addr_high = desc[1]; // 目前只支援 32-bit addressing，因此應為 0
+    vq_desc.len = desc[2];   // buffer 大小
+    vq_desc.flags = desc[3] & 0xFFFF;  // flags
+    ```
+    `*4` 是因為每個 descriptor 佔 4 個 `uint32_t`，而算 `flags` 時取 `& 0xFFFF` 是因為 flags 在 `desc[3]` 的低 16 位
+4. 寫入事件到 Guest Buffer
+    ```c
+    ev = (struct virtio_input_event *)((uintptr_t)vinput->ram + vq_desc.addr);
+    ev->type = input_ev[i].type;
+    ev->code = input_ev[i].code;
+    ev->value = input_ev[i].value;
+    ```
+    注意這邊 `vinput->ram` 是 host virtual address，其值的意義是 guest memory 在 semu 中的起始位址（`malloc` 出來的一塊記憶體），而 `vq_desc.addr` 是 guest physical address，因此相加就可以得到目標 `virtio_input_event`（descriptor 指向的 buffer）的 host virtual address，後續便可以直接操作該 buffer
+5. 更新 used ring
+    ```c
+    uint32_t vq_used_addr = queue->QueueUsed + 1 + (new_used % queue->QueueNum) * 2;
+    ram[vq_used_addr] = buffer_idx;
+    ram[vq_used_addr + 1] = sizeof(struct virtio_input_event);
+    ```
+    與上方一樣，`new_used % queue->QueueNum` 是在計算目標 used ring entry 的索引，`*2` 是因為每個 used ring entry 佔 2 個 `uint32_t`（`id` + `len`）； 接著就依序填入目標 used ring entry 的 `id` 與 `len` 欄位
+
+總體來說，virtqueue 操作的流程大致如下：
+
+1. Linux 分配 virtqueue 記憶體  
+   - `vring_create_virtqueue()`
+   - 在 guest RAM 中分配 descriptor table, avail ring, used ring
+
+2. Linux 寫入 MMIO registers (通過 `writel`)，見 `vm_setup_vq`：
+   - `writel(addr_low, base + 0x080)`：`QUEUE_DESC_LOW`
+   - `writel(addr_high, base + 0x084)`：`QUEUE_DESC_HIGH`
+   - `writel(addr_low, base + 0x090)`：`QUEUE_AVAIL_LOW  `
+   - `writel(addr_high, base + 0x094)`：`QUEUE_AVAIL_HIGH`
+   - `writel(addr_low, base + 0x0a0)`：`QUEUE_USED_LOW`
+   - `writel(addr_high, base + 0x0a4)`：`QUEUE_USED_HIGH`
+   - `writel(1, base + 0x044)`：`QUEUE_READY`
+
+3. SEMU 接收 MMIO write (`virtio_xxx_reg_write`)
+   - `case QueueDescLow`：儲存 descriptor table 位址
+   - `case QueueDriverLow`：儲存 available ring 位址
+   - `case QueueDeviceLow`：儲存 used ring 位址
+   - `case QueueReady`：標記 queue 就緒
+
+4. 之後 SEMU 就可以通過這些位址訪問 guest 的 virtqueue 了
+   - `ram[queue->QueueDesc + offset]`
+   - `ram[queue->QueueAvail + offset]`
+   - `ram[queue->QueueUsed + offset]`
 
 ### 算繪流程
 
@@ -615,9 +852,8 @@ static void virtio_gpu_resource_create_2d_handler(virtio_gpu_state_t *vgpu,
     res_2d->height = request->height;
     res_2d->format = request->format;
     res_2d->bits_per_pixel = bits_per_pixel;
-    res_2d->stride = STRIDE_SIZE;
-    res_2d->image = malloc(bytes_per_pixel * (request->width + res_2d->stride) *
-                           request->height);
+    res_2d->stride = request->width * (bits_per_pixel / 8);
+    res_2d->image = malloc(res_2d->stride * request->height);
 
     // 回傳成功
     *plen = virtio_gpu_write_response(vgpu, vq_desc[1].addr,
@@ -849,7 +1085,7 @@ static void virtio_gpu_copy_image_from_pages(struct vgpu_trans_to_host_2d *req,
 其中，對於 `src_offset = req->offset + stride * h;` 的部分：
 
 - `req->offset`：guest 傳來的起始偏移量（這次搬運從 backing store 的哪個 byte 開始）
-  - 可以視為 `req->offset = fb->offsets[0] + y⋅fb->pitches[0] + x⋅fb->format->cpp[0]`
+  - 可以視為 `req->offset = fb->offsets[0] + y * fb->pitches[0] + x * fb->format->cpp[0]`
     - `fb->offsets[0]`：plane base（dumb BO 會是 0）
     - `y * pitches[0]`：往下走 `y` 列（每列 `pitch` bytes）
     - `x * cpp[0]`：往右走 `x` 個像素（每像素 `cpp` bytes）
@@ -1161,7 +1397,7 @@ void *vgpu_mem_guest_to_host(virtio_gpu_state_t *vgpu, uint32_t addr)
 
 #### iov_to_buf
 
-定義於 virtio-gpu.c:56，用於從 iovec 陣列複製資料到 buffer：
+定義於 virtio-gpu.c:56，用於從 scatter-gather 列表（iovec 陣列）複製資料到 buffer：
 
 ```c
 size_t iov_to_buf(const struct iovec *iov,
@@ -1179,14 +1415,14 @@ size_t iov_to_buf(const struct iovec *iov,
 
         if (offset < iov[i].iov_len) {
             // 計算可從當前頁面複製的資料量
-            size_t remained = bytes - done;
-            size_t page_avail = iov[i].iov_len - offset;
-            size_t len = (remained < page_avail) ? remained : page_avail;
+            size_t remained = bytes - done;    // 還需要複製多少
+            size_t page_avail = iov[i].iov_len - offset;    // 當前頁還有多少
+            size_t len = (remained < page_avail) ? remained : page_avail;    // 取較小值
 
             // 複製到 buffer
             void *src = (void *) ((uintptr_t) iov[i].iov_base + offset);
             void *dest = (void *) ((uintptr_t) buf + done);
-            memcpy((void *) ((uintptr_t) dest + done), src, len);
+            memcpy(dest, src, len);
 
             // 下一頁從頭開始讀取
             offset = 0;
@@ -1203,4 +1439,27 @@ size_t iov_to_buf(const struct iovec *iov,
 }
 ```
 
-此函式在 `virtio_gpu_copy_image_from_pages` 中被使用，從分散的 Guest 記憶體頁複製像素資料到連續的 Host buffer
+- `iov`：iovec 陣列的指標，每個 iovec 描述一個記憶體區段
+  - `iov[i].iov_base`：該區段的起始地址
+  - `iov[i].iov_len`：該區段的長度
+- `iov_cnt`：iovec 陣列的元素數量
+- `offset`：從 iovec 陣列的哪個位置開始讀取（可能跨越多個 iovec）
+- `buf`：目標緩衝區
+- `bytes`：要複製的總位元組數
+
+此函式在 `virtio_gpu_copy_image_from_pages` 中被使用，從分散不連續的 Guest 記憶體頁複製像素資料到連續的 Host buffer，被呼叫的形式如前所述：
+
+```c
+/* Copy image by row */
+for (uint32_t h = 0; h < height; h++) {
+    /* Note that source offset is in the image coordinate. The address to
+      * copy from is the page base address plus with the offset
+      */
+    size_t src_offset = req->offset + stride * h;
+    size_t dest_offset = (req->r.y + h) * stride + (req->r.x * bpp);
+    void *dest = (void *) ((uintptr_t) img_data + dest_offset);
+    size_t total = width * bpp;
+
+    iov_to_buf(res_2d->iovec, res_2d->page_cnt, src_offset, dest, total);
+}
+```
