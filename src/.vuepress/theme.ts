@@ -1,5 +1,13 @@
 import { hopeTheme } from "vuepress-theme-hope";
 import sidebar from "./sidebar.js";
+import fs from "node:fs";
+import path from "node:path";
+
+const callgraph = JSON.parse(
+  fs.readFileSync(path.resolve(__dirname, "./shiki/callgraph.tmLanguage.json"), "utf-8")
+);
+callgraph.name ??= "callgraph";
+callgraph.scopeName ??= "source.callgraph";
 
 export default hopeTheme({
   hostname: "https://mes0903.github.io",
@@ -43,7 +51,7 @@ export default hopeTheme({
   // These features are enabled for demo, only preserve features you need here
   markdown: {
     align: true,
-    attrs: true,
+    attrs: false,
     codeTabs: true,
     component: true,
     demo: true,
@@ -80,6 +88,14 @@ export default hopeTheme({
     //   type: "katex",
     //   // or install mathjax-full before enabling it
       type: "mathjax",
+    },
+
+    highlighter: {
+      type: "shiki",
+      highlightLines: true,
+      notationWordHighlight: true,
+      lineNumbers: true,
+      langs: [callgraph],
     },
 
     // install chart.js before enabling it
