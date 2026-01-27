@@ -3939,3 +3939,197 @@ struct virtio_gpu_update_cursor {
 在 VGA 相容模式下：PCI 區域 0 含有線性 framebuffer，並提供標準 VGA 暫存器。 設定 scanout（`VIRTIO_GPU_CMD_SET_SCANOUT`）會把裝置從 VGA 相容模式切換到原生的 virtio 模式，執行重置（reset）則會把它切回 VGA 相容模式
 
 注意：qemu 的實作同時提供 Bochs dispi 介面的 I/O 連接埠與位於 PCI 區域 1 的 MMIO BAR，因此可完全相容 qemu 的 stdvga（請見 qemu 原始碼樹中的 [docs/specs/standard-vga.txt](https://git.qemu-project.org/?p=qemu.git;a=blob;f=docs/specs/standard-vga.txt;hb=HEAD)）
+
+### 5.8 Input Device
+
+virtio input 裝置可用來建立虛擬的互動介面裝置，如鍵盤、滑鼠與平板等，每個 virtio 裝置的實例都代表一個這樣的 input 裝置，該裝置的行為與 Linux 中的 evdev 層類似，因此在 evdev 之上實作直通（pass-through）會很容易
+
+::: tip  
+最後一句話的意思是，virtio-input 的事件格式與能力查詢方式被刻意設計得很接近 Linux 的 evdev 介面，因此如果你在 host 端已經有一個 evdev 裝置（例如 `/dev/input/eventX`），你要把它「直通」到 guest 端時，幾乎可以把 evdev 收到的事件原封不動地轉送成 virtio-input 事件，不需要額外做複雜的語意轉換或重新定義事件模型
+
+「直通」指的是把某個既有介面或裝置的資料與操作，盡可能不做語意層級的轉換，直接轉送給另一端使用。 換句話說，虛擬層只扮演轉接與搬運的角色，不會重新實作一套全新的裝置行為  
+:::
+
+本規格定義 evdev 事件如何透過 virtio 傳輸，以及驅動程式該如何知道支援的事件集合。 不過，本規格不定義 input 事件的語意，因為這取決於特定的 evdev 實作。 若要查看 Linux input 裝置所使用的事件清單，請參閱 Linux 來源樹中的 [`include/uapi/linux/input-event-codes.h`](https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/include/uapi/linux/input-event-codes.h)
+
+#### 5.8.1 Device ID
+
+18
+
+#### 5.8.2 Virtqueues
+
+- 0：eventq
+- 1：statusq
+
+::: tip  
+- 0：eventq
+  - 用來讓裝置把 input 事件送到驅動程式
+  - 實作上是「驅動程式先把可寫入的接收緩衝區丟進 `eventq`，裝置在有事件時把 `struct virtio_input_event` 寫進這些緩衝區」。 因此規格要求驅動程式應維持 `eventq` 內持續有緩衝區可用，且這些緩衝區必須允許裝置寫入，大小至少要容得下 `struct virtio_input_event`
+
+- 1：statusq
+  - 用途是讓驅動程式把狀態回饋送回裝置，例如鍵盤 LED 更新這類輸出回饋
+  - 實作上是「驅動程式把要送出的 `struct virtio_input_event` 放進 `statusq`，裝置從 `statusq` 取走並處理」。 規格要求放進 `statusq` 的緩衝區大小至少要容得下 `struct virtio_input_event`
+
+- 兩個 queue 的資料格式
+  - `eventq` 與 `statusq` 都使用同一個 `struct virtio_input_event`，欄位為小端序。 這點與 evdev 的 ioctl 介面採原生端序不同
+:::
+
+#### 5.8.3 Feature bits
+
+None.
+
+#### 5.8.4 裝置組態配置
+
+裝置組態包含 guest 端處理裝置時需要的所有資訊，其中最重要的是支援哪些事件
+
+```c
+enum virtio_input_config_select { 
+  VIRTIO_INPUT_CFG_UNSET      = 0x00, 
+  VIRTIO_INPUT_CFG_ID_NAME    = 0x01, 
+  VIRTIO_INPUT_CFG_ID_SERIAL  = 0x02, 
+  VIRTIO_INPUT_CFG_ID_DEVIDS  = 0x03, 
+  VIRTIO_INPUT_CFG_PROP_BITS  = 0x10, 
+  VIRTIO_INPUT_CFG_EV_BITS    = 0x11, 
+  VIRTIO_INPUT_CFG_ABS_INFO   = 0x12, 
+}; 
+ 
+struct virtio_input_absinfo { 
+  le32  min; 
+  le32  max; 
+  le32  fuzz; 
+  le32  flat; 
+  le32  res; 
+}; 
+ 
+struct virtio_input_devids { 
+  le16  bustype; 
+  le16  vendor; 
+  le16  product; 
+  le16  version; 
+}; 
+ 
+struct virtio_input_config { 
+  u8    select; 
+  u8    subsel; 
+  u8    size; 
+  u8    reserved[5]; 
+  union { 
+    char string[128]; 
+    u8   bitmap[128]; 
+    struct virtio_input_absinfo abs; 
+    struct virtio_input_devids ids; 
+  } u; 
+};
+```
+
+::: tip  
+這段是在描述 virtio-input 的裝置組態空間怎麼設計，以及驅動程式要如何從裡面查到這個 input 裝置「是什麼」與「支援哪些事件」
+
+guest 端的 virtio-input 驅動程式需要先知道這個裝置會產生哪些 evdev 事件型別與事件代碼，才能在 guest 作業系統內建立對應的 input 裝置能力宣告，並正確解讀後續從 `eventq` 收到的 `type`、`code`、`value`
+
+其中 `struct virtio_input_config` 不會一次把所有資訊都放在組態空間裡，而是做成一個「查詢介面」。 驅動程式每次想要某一類資訊時，就先把 `select` 與 `subsel` 寫進去，裝置再把對應的資料放進 `union u`，並用 `size` 告訴你這次回覆了多少 bytes
+
+`union u` 是「承載回覆資料的容器」。 同一塊組態空間透過 `select` 與 `subsel` 的不同組合，會把不同型態的資料塞進 `union` 的不同欄位：
+
+- `u.string[128]`  
+  放名稱或序號這類字串資訊，實際長度看 `size`
+- `u.bitmap[128]`  
+  放位元集合，常見用法是用 bit 表示是否支援某個 property 或 event code。 位元對應規則通常是 code 值直接對應 bit 位置，例如 code 為 30 就看第 30 個 bit 是否為 1
+- `u.abs`  
+  放絕對軸參數，對應 evdev 的 ABS 軸資訊語意
+- `u.ids`
+  放裝置識別資訊，對應 evdev 常見的裝置 ID 語意  
+:::
+
+驅動程式若要查詢某一項特定資訊，需相應地設定 `select` 與 `subsel`，接著檢查 `size` 以確認可用資訊有多少。 若沒有任何可用資訊，`size` 可以為零。 字串不包含 NUL 結束字元。 文中亦提供相關的 evdev `ioctl` 名稱作為參考
+
+- `VIRTIO_INPUT_CFG_ID_NAME`  
+  - 查裝置名稱
+  - `subsel` 為零。 在 `u.string` 中回傳裝置名稱
+  - 類似於 Linux evdev 裝置的 `EVIOCGNAME` `ioctl`
+
+- `VIRTIO_INPUT_CFG_ID_SERIAL`  
+  - 查裝置序號
+  - `subsel` 為零。 在 `u.string` 中回傳裝置的序號
+
+- `VIRTIO_INPUT_CFG_ID_DEVIDS`
+  - 查裝置 ID
+  - `subsel` 為零。 在 `u.ids` 中回傳裝置的 ID 資訊
+    - 內容對應 bus type、vendor、product、version
+  - 類似於 Linux evdev 裝置的 `EVIOCGID` `ioctl`
+
+- `VIRTIO_INPUT_CFG_PROP_BITS`  
+  - 查 input properties
+  - `subsel` 為零。 在 `u.bitmap` 中回傳裝置的 input 屬性，其內的各個位元對應到底層 evdev 實作所使用的 `INPUT_PROP_*` 常數
+  - 類似於 Linux evdev 裝置的 `EVIOCGPROP` `ioctl`
+
+- `VIRTIO_INPUT_CFG_EV_BITS`
+  - 查某一個事件型別底下支援哪些事件代碼
+  - `subsel` 使用底層 evdev 實作中的 `EV_*` 常數來指定事件型別。 若 `size` 非零，表示支援該事件型別，並在 `u.bitmap` 中回傳支援的事件代碼點陣圖，其內的各個位元對應到實作所定義的 input 事件代碼，例如按鍵或指向裝置的軸
+  - 類似於 Linux evdev 裝置的 `EVIOCGBIT` `ioctl`
+
+- `VIRTIO_INPUT_CFG_ABS_INFO`  
+  - 查某一條絕對座標軸的參數
+  - `subsel` 使用底層 evdev 實作中的 `ABS_*` 常數來指定絕對座標軸。 會在 `u.abs` 中回傳該軸的資訊
+  - 類似於 Linux evdev 裝置的 `EVIOCGABS` `ioctl`
+
+::: tip  
+`subsel` 是次選擇器，用於在同一個 `select` 類別下再細分查詢目標
+
+- 對於 `VIRTIO_INPUT_CFG_ID_NAME`、`VIRTIO_INPUT_CFG_ID_SERIAL`、`VIRTIO_INPUT_CFG_ID_DEVIDS`、`VIRTIO_INPUT_CFG_PROP_BITS`
+  - 規格要求 `subsel = 0`
+- 對於 `VIRTIO_INPUT_CFG_EV_BITS`
+  - `subsel` 要填入 evdev 的事件型別 `EV_*`，例如 `EV_KEY`、`EV_REL`、`EV_ABS`。 裝置若支援該事件型別，`size` 會非零，並用 `u.bitmap` 回覆此事件型別底下支援哪些事件代碼
+- 對於 `VIRTIO_INPUT_CFG_ABS_INFO`
+  - `subsel` 要填入 evdev 的絕對軸 `ABS_*`，例如 `ABS_X`、`ABS_Y`。 裝置會在 `u.abs` 回覆這條軸的 min、max、fuzz、flat、res。
+
+evdev 的事件型別 `EV_*`、絕對軸 `ABS_*`、屬性 `INPUT_PROP_*` 的定義可參考 Linux 文件與 header：
+
+- https://docs.kernel.org/input/event-codes.html
+- https://github.com/torvalds/linux/blob/master/include/uapi/linux/input-event-codes.h
+
+另外，`size` 用來表示裝置這次回覆的資料中「有多少有效 bytes」：
+
+- 若裝置不支援你設定的 `select` 與 `subsel` 組合，必須回 `size = 0`
+- 驅動程式應先讀 `size` 再去讀 `union u`，避免把不存在的資料當成有效資料
+- 對字串類回覆，規格說字串不包含 `NUL` 結束字元，因此不能把 `u.string` 當成 C 字串直接用，必須依 `size` 取出有效長度，必要時自行補 `NUL`  
+:::
+
+#### 5.8.5 裝置初始化
+
+- 會查詢裝置以取得支援的事件型別與代碼
+- 會以接收緩衝區填入 `eventq`
+
+##### 5.8.5.1 驅動程式需求：裝置初始化
+
+- 驅動程式在查詢裝置組態時，必須同時設定 `select` 與 `subsel`，順序不限
+- 驅動程式不得寫入 `select` 與 `subsel` 之外的組態欄位
+- 驅動程式應在存取組態資訊前先檢查 `size` 欄位
+
+##### 5.8.5.2 裝置需求：裝置初始化
+
+- 若裝置不支援某個 `select` 與 `subsel` 的組合，裝置必須將 `size` 欄位設為零
+
+#### 5.8.6 裝置運作
+
+- 按鍵與按鈕的按下與放開事件，以及定點裝置（pointing devices）的移動事件之類的 input 事件，都會透過 `eventq` 由裝置送到驅動程式
+- 鍵盤 LED 更新之類的狀態回饋，會由驅動程式透過 `statusq` 送到裝置
+- 兩個佇列都使用相同的 `struct virtio_input_event`。 `type`、`code`、`value` 依照 Linux input 層（evdev）介面填入，但欄位採用小端序位元組順序，而 evdev `ioctl` 介面使用原生端序
+
+```c
+struct virtio_input_event {
+  le16 type;
+  le16 code;
+  le32 value;
+};
+```
+
+##### 5.8.6.1 驅動程式需求：裝置運作
+
+- 驅動程式應保持 `eventq` 中有足夠的緩衝區。 這些緩衝區必須可由裝置寫入，且大小至少須為 `struct virtio_input_event` 的大小
+- 驅動程式放入 `statusq` 的緩衝區大小必須至少為 `struct virtio_input_event` 的大小
+- 驅動程式應忽略 `eventq` 中不認得的 input 事件。 請注意，evdev 裝置通常會透過送出冗餘事件，基於消費端只會使用自己理解的事件、忽略其餘事件的機制，來維持向後相容性
+
+##### 5.8.6.2 裝置需求：裝置運作
+
+若 `eventq` 中沒有足夠可用的緩衝區，裝置可以丟棄 input 事件。 若某些 input 事件是構成一次 input 裝置更新的序列的一部分，裝置不應丟棄其中的個別 input 事件。 例如，定點裝置的一次更新中通常包含多個 input 事件，每個軸各一個，並以一個終止的 `EV_SYN` 事件結束。 裝置應該選擇緩衝整個序列，或丟棄整個序列
