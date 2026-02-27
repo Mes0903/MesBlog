@@ -1,6 +1,17 @@
-# （WIP）Direct Rendering Infrastructure
+---
+title: （WIP）Direct Rendering Infrastructure
+date: 2026-01-29
+tag: 
+- Linux
+- computer-graphic
+category: 
+- Linux
+- computer-graphic
+---
 
-Direct Rendering Infrastructure（DRI，直接算繪基礎架構）是構成現代 Linux 圖形 stack 的框架，讓沒有特權的 user space 程式在不與其他程式產生衝突的情況下，能夠對圖形硬體下達命令。 DRI 的主要用途，是為 `Mesa` 的 `OpenGL` 實作提供硬體加速。 DRI 也曾被改造，用來在沒有執行顯示伺服器的 framebuffer console 上提供 `OpenGL` 加速
+## （WIP）Direct Rendering Infrastructure
+
+Direct Rendering Infrastructure（DRI，直接算繪基礎架構）是構成現代 Linux 圖形堆疊的框架，讓沒有特權的 user space 程式在不與其他程式產生衝突的情況下，能夠對圖形硬體下達命令。 DRI 的主要用途，是為 `Mesa` 的 `OpenGL` 實作提供硬體加速。 DRI 也曾被改造，用來在沒有執行顯示伺服器（display server）的 framebuffer console 上提供 `OpenGL` 加速
 
 DRI 的實作分散在 X Server 以及其相關的 client 函式庫、`Mesa 3D`，還有 `Direct Rendering Manager` 核心子系統之中。 它的所有原始碼都是開放原始碼軟體
 
@@ -122,7 +133,7 @@ DRI3 與 Present 這兩個 extension 於 2013 年間被開發完成，並在 201
 
 Direct Rendering Manager（DRM）是 Linux 作業系統核心中的一個子系統，負責與現代顯示卡上的 GPU 進行介接。 DRM 對外提供一組 API，讓 user space 的程式可以把命令與資料送到 GPU，並執行各種操作，例如設定顯示器的模式（mode setting）
 
-DRM 一開始是作為 X Server Direct Rendering Infrastructure 的 kernel space 元件而被開發出來，但之後也被其他圖形 stack 的替代方案（例如 Wayland）以及各種獨立應用程式與函式庫（例如 `SDL2` 與 `Kodi`）採用
+DRM 一開始是作為 X Server Direct Rendering Infrastructure 的 kernel space 元件而被開發出來，但之後也被其他圖形堆疊的替代方案（例如 Wayland）以及各種獨立應用程式與函式庫（例如 `SDL2` 與 `Kodi`）採用
 
 user space 的程式可以透過 DRM API 控制 GPU 進行硬體加速的 3D 算繪與影片解碼，也可以做 GPGPU 計算
 
@@ -254,7 +265,7 @@ user space mode-setting 這種作法也帶來其他問題：
 
 - suspend/resume 流程必須仰賴 user space 工具來還原之前的 mode。 只要其中任何一個程式失敗或當掉，就可能因為 modeset 設定錯誤而讓系統失去可用的顯示畫面，整台機器等於無法使用
 - 當螢幕處於圖形模式時（例如 X 正在執行時），核心也無法在螢幕上顯示錯誤或除錯訊息，因為核心只知道 VESA BIOS 的標準文字模式
-- 更迫切的問題是，越來越多圖形應用程式開始繞過 X Server，並且出現了其他 X 的圖形 stack 替代方案，讓系統中到處都多了一份 mode-setting 程式碼的複本
+- 更迫切的問題是，越來越多圖形應用程式開始繞過 X Server，並且出現了其他 X 的圖形堆疊替代方案，讓系統中到處都多了一份 mode-setting 程式碼的複本
 
 為了處理這些問題，mode-setting 程式碼被移入核心內部的一個單一位置，具體來說就是現有的 DRM 模組。 之後，每個行程──包含 X Server 在內──都應該透過命令請核心執行 mode-setting 操作，而由核心負責確保並行的操作不會導致狀態不一致。 新增到 DRM 模組、用來執行這些 mode-setting 操作的核心 API 與程式碼，被稱為 Kernel Mode-Setting（KMS）
 
@@ -391,7 +402,7 @@ Linux 核心從來沒有維護一個穩定的核心內 application binary interf
 
 ### 歷史
 
-Linux 圖形 stack 的演進曾被 X Window System 的核心通訊協定帶離原本的路徑
+Linux 圖形堆疊的演進曾被 X Window System 的核心通訊協定帶離原本的路徑
 
 ### 自由與開放原始碼驅動程式
 
@@ -523,7 +534,7 @@ Broadcom 在其 SoC 中開發並設計 VideoCore GPU 系列。 由於它被用�
 
 VideoCore GPU 執行的是一個 RTOS，負責處理各種工作；視訊加速則由執行在這個專有 GPU 上的 RTOS 韌體完成，而這套韌體在當時並未一併開放原始碼。 由於當時既沒有以該專有 GPU 為目標的 toolchain，也沒有文件化的指令集，即使韌體原始碼開放，也沒有辦法從中獲得太多實際好處。 `Videocoreiv` 專案 則嘗試為 VideoCore GPU 撰寫文件
 
-2014 年 2 月 28 日（Raspberry Pi 問世滿兩週年），Broadcom 與 Raspberry Pi 基金會宣布釋出 VideoCore IV graphics core 的完整文件，以及整套圖形 stack 的原始碼，授權條款為 3-clause BSD。 這套採用自由授權條款的 3D 圖形程式碼於 2014 年 8 月 29 日被提交到 `Mesa`，並首次出現在 `Mesa` 10.3 版中
+2014 年 2 月 28 日（Raspberry Pi 問世滿兩週年），Broadcom 與 Raspberry Pi 基金會宣布釋出 VideoCore IV graphics core 的完整文件，以及整套圖形堆疊的原始碼，授權條款為 3-clause BSD。 這套採用自由授權條款的 3D 圖形程式碼於 2014 年 8 月 29 日被提交到 `Mesa`，並首次出現在 `Mesa` 10.3 版中
 
 #### 其他廠商
 

@@ -3043,7 +3043,7 @@ MMIO virtio 裝置提供一組 memory-mapped 的控制暫存器，後面接著�
 - Direction：R  
 - Function：Shared memory region 64 bit long physical address（共享記憶體區域的 64 位元實體位址）  
 - Description：  
-  驅動程式透過讀取這兩個暫存器，以取得該共享記憶體區域在實體位址空間中的基底位址。 此位址由裝置（或 VMM 的其他部分）選擇。 地址的低 32 位元由 `SHMBaseLow` 讀取，高 32 位元由 `SHMBaseHigh` 讀取
+  驅動程式透過讀取這兩個暫存器，以取得該共享記憶體區域在實體位址空間中的基底位址。 此位址由裝置（或 VMM 的其他部分）選擇。 地址的低 32 位元由 `SHMBaseLow` 讀取，高 32 位元由 `SHMBaseHigh` 讀取  
   若讀取的是不存在的區域（也就是 `SHMSel` 中寫入的 ID 未被使用），則回傳的基底位址為 0xffffffffffffffff
 
 ###### `QueueReset`
@@ -3541,7 +3541,7 @@ struct virtio_gpu_ctrl_hdr {
     - 若設置了 `VIRTIO_GPU_FLAG_FENCE`，`fence_id` 充當由 `ctx_id` 與該 ring 索引所定義之同步時間軸上的序號
     - 若設置了 `VIRTIO_GPU_FLAG_FENCE`，且與該 `fence_id` 關聯的命令已完成，裝置必須在同一條同步時間軸上，對所有序號小於或等於 `fence_id` 的待處理命令送出回應
 
-成功時，若沒有負載，裝置會回傳 `VIRTIO_GPU_RESP_OK_NODATA`，否則 type 欄位會指出負載的種類。 發生錯誤時，裝置會回傳某個 `VIRTIO_GPU_RESP_ERR_*` 錯誤碼
+成功時，若沒有 payload，裝置會回傳 `VIRTIO_GPU_RESP_OK_NODATA`，否則 type 欄位會指出 payload 的種類。 發生錯誤時，裝置會回傳某個 `VIRTIO_GPU_RESP_ERR_*` 錯誤碼
 
 ##### 5.7.6.8 裝置運作：controlq
 

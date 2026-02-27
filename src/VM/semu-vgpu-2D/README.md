@@ -20,7 +20,7 @@ category:
 
 目前已將 2D 的部分閱讀與整理完畢，剛將 commit 整理完畢，重新編譯沒問題後就 rebase 並發送 PR
 
-材料部份，目前已初步閱讀完 spec 中 virtqueue（ch1 & 2）、PCI（4.1）與 GPU（5.7）的部分。 另外也閱讀了一些還閱讀了一些 graphic stack 的東西，因此寫了一些筆記
+材料部份，目前已初步閱讀完 spec 中 virtqueue（ch1 & 2）、PCI（4.1）、GPU（5.7）與 Input（5.8）的部分。 另外也閱讀了一些還閱讀了一些 graphic stack 的東西，因此寫了一些筆記
 
 - [Red Hat Virtio 介紹文的翻譯 & 筆記](https://mes0903.github.io/VM/redhat_virtio/)
 - [Virtual I/O Device (VIRTIO) Version 1.3 翻譯 & 筆記](https://mes0903.github.io/VM/virtio_spec/)
@@ -28,7 +28,7 @@ category:
 
 還有一些尚在進行中的筆記，集中在 DRM/KMS 的部分，底下是針對目前 semu 中 vgpu 2D 部分的實作的筆記，3D 部分尚未開始
 
-後面有紀錄了一些遇到的問題，和做 trace code 的過程，但是我仍然不是很熟悉 Mesa 與 X11，如果有寫錯的部分，麻煩再告知我，謝謝
+後面有紀錄了一些遇到的問題，和做 trace code 的過程，但是我仍然不是很熟悉 Mesa、X11 與 DRM/KMS，如果有寫錯的部分，麻煩再告知我，謝謝
 
 ## 有關 VirGL
 
@@ -142,7 +142,7 @@ struct display_info {
    這個 memcpy 會把指標欄位也複製進去，所以 `display->resource.image` 會指向同一塊 `resource->image`（也就是 `TRANSFER_TO_HOST_2D` 寫入的那塊連續 buffer）
 
    接著 window thread 會用 `SDL_CreateRGBSurfaceWithFormatFrom(resource->image, ..., pitch=stride, ...)` 把這塊記憶體包成 surface，再建 texture
-2. Cursor plane：deep copy 像素到 `cursor_img`，避免後續資源改動影響游標
+2. Cursor plane：deep copy 像素到 `cursor_img`，避免後續資源改動影響鼠標
 
     `cursor_update_sw()` 的做法不同：
 
@@ -228,7 +228,7 @@ typedef struct {
 `virtio_gpu_state_t` 中的 `queues` 是一個 virtqueue 的陣列，有兩個元素，代表 virtio-gpu 使用了兩個 virtqueue，在 spec 中分別名為 controlq 與 cursorq：
 
 - controlq：用於傳送控制命令的佇列
-- cursorq：用於傳送游標更新的佇列
+- cursorq：用於傳送鼠標更新的佇列
 
 `virtio_gpu_queue_t` 內的元素用來幫助讀取 virtqueue 的內容，`QueueDesc`、`QueueAvail`、`QueueUsed` 的值代表的是索引，會搭配 `virtio_xxx_state_t` 結構體內的 `ram` 成員使用，其中 `ram` 與 `emu->ram` 指向相同的記憶體區塊（main 裡面 malloc 的那塊 guest memory）
 
@@ -4270,7 +4270,7 @@ Guest Linux Kernel - virtio-gpu driver
 
 #### code link
 
-<details> <summary><span class = "yellow"><strong>展開 </strong></span></summary>
+<details> <summary><span class = "yellow"><strong>展開</strong></span></summary>
 
 ##### Mesa (GL Frontend - Draw Entry)
 
@@ -4360,3 +4360,388 @@ Guest Linux Kernel - virtio-gpu driver
 - [spice-display.c:789](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/ui/spice-display.c#L789) - `display_update()`
 
 </details>
+
+### 問題 3：Cursor X-Format Alpha
+
+#### 現象
+
+在 commit `9ce4c60`（Track primary and cursor plane ops independently）中，cursor surface 的建立使用硬編碼的 `SDL_PIXELFORMAT_ARGB8888`：
+
+```c
+/* Generate cursor plane texture */
+surface = SDL_CreateRGBSurfaceWithFormatFrom(
+    cursor->image, cursor->width, cursor->height,
+    CURSOR_BPP * 8, CURSOR_STRIDE,
+    SDL_PIXELFORMAT_ARGB8888);
+```
+
+後來 AI 提到：
+
+> Cursor rendering ignores the negotiated SDL pixel format and always treats cursor data as ARGB8888. Use the cursor resource’s bits_per_pixel/stride and the converted SDL format so non-ARGB cursor resources render correctly.
+
+由於原先也有用來檢查 cursor format 的 code（`virtio_gpu_to_sdl_format`），所以後來就重構改為使用 `display->cursor_sdl_format`，該值由 `virtio_gpu_to_sdl_format()` 根據 guest 宣告的 resource format 轉換而來：
+
+```c
+surface = SDL_CreateRGBSurfaceWithFormatFrom(
+    cursor->image, cursor->width, cursor->height,
+    cursor->bits_per_pixel, cursor->stride,
+    display->cursor_sdl_format);
+```
+
+結果改完後，螢幕上的滑鼠鼠標變成了一個不透明的黑色方塊：
+
+![](image/cursor_alpha.png)
+
+所以後來決定保持原本的行為，並將下面研究出來的相關資訊整理一下加到註解中就好
+
+#### 原因
+
+Guest driver 送來的 cursor resource format 是 `VIRTIO_GPU_FORMAT_B8G8R8X8_UNORM`，對應到 `SDL_PIXELFORMAT_XRGB8888`
+
+由於 SDL 的 X 系列格式沒有 alpha channel —— 第 4 個 byte 被視為 padding，透明語意不會被使用，因此所有 pixel 都會以「不透明」方式顯示。 cursor 圖像的透明背景區域在實務上通常會把 alpha byte 設為 0x00，而且 RGB 三個 byte 也常見同時為 0x00（黑色）。 當 alpha 被忽略時，這些像素就會以不透明黑色顯示，形成黑色方塊：
+
+| 格式                         | SDL 如何讀第 4 byte | 透明區域常見內容                 | 結果          |
+| -------------------------- | --------------- | ------------------------ | ----------- |
+| `SDL_PIXELFORMAT_ARGB8888` | alpha channel   | A=0x00（且常見 RGB=0x00）     | 鼠標正常        |
+| `SDL_PIXELFORMAT_XRGB8888` | 忽略（padding）     | A=0x00 被忽略（RGB=0x00 仍生效） | 全不透明 → 黑色方塊 |
+
+##### `XRGB8888` 的來源：dumb buffer
+
+前面有提到，2D 的路徑下絕大部分都是走 dumb buffer 的路徑，因此 Resource 的 format 是在 dumb buffer 建立時就決定的。 [`virtio_gpu_mode_dumb_create()`](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_gem.c#L61-L99) 中（[virtgpu_gem.c:78](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_gem.c#L78)）：
+
+```c
+params.format = virtio_gpu_translate_format(DRM_FORMAT_HOST_XRGB8888);
+```
+
+`DRM_FORMAT_HOST_XRGB8888` 在 little-endian 下會展開為 `DRM_FORMAT_XRGB8888`，在 big-endian 下則展開為 `DRM_FORMAT_BGRX8888`（見 [drm_fourcc.h:42-54](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/include/drm/drm_fourcc.h#L42-L54)）。 semu 模擬的是 RISC-V（little-endian），因此展開為 `DRM_FORMAT_XRGB8888`
+
+接著其會透過 [`virtio_gpu_translate_format()`](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_plane.c#L45-L72) 轉為 `VIRTIO_GPU_FORMAT_B8G8R8X8_UNORM`（[virtgpu_plane.c:53-54](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_plane.c#L53-L54)）。 因此可見所有 dumb buffer 的 resource format 都被硬編碼成了 `B8G8R8X8_UNORM`，不管這個 buffer 之後會被用在 primary plane 還是 cursor plane
+
+到達 semu 的 device 端後，`virtio_gpu_to_sdl_format()` 將 `B8G8R8X8_UNORM` 轉為了 `SDL_PIXELFORMAT_XRGB8888`，而這是無 alpha 的格式，因此導致了黑色方塊問題
+
+##### Dumb buffer 與 plane format 的關係
+
+與 2D 不同，3D 的部分並不總是走 dumb buffer 的路徑，所以這邊提前做個紀錄，方便後續討論
+
+在 DRM 架構中，「GEM object / resource」和「framebuffer」是兩個不同的層級：
+
+1. **GEM object（virtio-gpu resource）**：由 `DRM_IOCTL_MODE_CREATE_DUMB` 建立，這會決定送往 device 的 resource format。 在 virtio-gpu 中，[`virtio_gpu_mode_dumb_create()`](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_gem.c#L78) 硬編碼為 `XRGB8888`，因此 `VIRTIO_GPU_CMD_RESOURCE_CREATE_2D` 中的 format 一律是 `B8G8R8X8_UNORM`
+
+2. **DRM framebuffer**：由 `DRM_IOCTL_MODE_ADDFB2` 建立，它只是對 GEM object 的一層包裝（wrapper），userspace 在此指定 pixel format（例如 `ARGB8888`）。 [`virtio_gpu_user_framebuffer_create()`](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_display.c#L319-L351) 只檢查 format 是否為 `XRGB8888` 或 `ARGB8888`（[virtgpu_display.c:328-329](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_display.c#L328-L329)），然後把 GEM object 包進 framebuffer，**不會修改底層 resource 的 format**
+
+3. **Plane format 列表**：由 [`virtio_gpu_plane_init()`](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_plane.c#L576-L608) 在初始化時設定。 Cursor plane 的 format 列表只有 `ARGB8888`（[virtgpu_plane.c:41-43](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_plane.c#L41-L43)），primary plane 只有 `XRGB8888`（[virtgpu_plane.c:37-39](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_plane.c#L37-L39)）。 這個列表約束的是「哪些 framebuffer format 可以 attach 到這個 plane」，由 `drm_atomic_helper_check_plane_state()` 在 atomic commit 時檢查
+
+關鍵在於：cursor plane 的格式約束是作用在 framebuffer format（metadata 層級）上的，但 device 端看到的卻是 resource format（GEM/resource 層級）。 而在 dumb 路徑下 resource format 固定為 XRGB，若 host 端依 resource format 解讀鼠標像素，就會失去 alpha 語意
+
+Framebuffer 只是一層 metadata wrapper，不會改變 resource 的 format。 所以 device 端收到的 resource format 始終是 `B8G8R8X8_UNORM`（無 alpha），即使 framebuffer 層級聲稱自己是 `ARGB8888`
+
+##### Callgraph：Cursor resource 建立到渲染的完整流程
+
+```callgraph
+Guest Kernel：Driver probe 時初始化 plane（早於所有 userspace 操作）
+===================================================================
+[virtgpu_display.c:274] vgdev_output_init()
+  │
+  │  // 為每個 output 建立 primary 和 cursor plane
+  │  primary = virtio_gpu_plane_init(vgdev, DRM_PLANE_TYPE_PRIMARY, index);
+  │  cursor  = virtio_gpu_plane_init(vgdev, DRM_PLANE_TYPE_CURSOR, index);
+  │  drm_crtc_init_with_planes(dev, crtc, primary, cursor, ...);
+  ↓
+[virtgpu_plane.c:576] virtio_gpu_plane_init()
+  │
+  │  if (type == DRM_PLANE_TYPE_CURSOR) {
+  │      formats = virtio_gpu_cursor_formats;   // {DRM_FORMAT_HOST_ARGB8888}
+  │  } else {
+  │      formats = virtio_gpu_formats;          // {DRM_FORMAT_HOST_XRGB8888}
+  │  }
+  │
+  │  // 將 format 列表註冊到 DRM plane
+  │  drmm_universal_plane_alloc(dev, ..., formats, nformats, ...);
+  │
+  │  // ⚠️ 此列表只約束 framebuffer format，不影響 resource format
+
+==================================================================
+```
+
+`virtio_gpu_plane_init()` 註冊的 format 列表會在後續 `DRM_IOCTL_MODE_ATOMIC` 時被用到：
+
+- Userspace 呼叫 `DRM_IOCTL_MODE_ATOMIC` 將 framebuffer attach 到 cursor plane
+- DRM core 在 [`drm_atomic_plane_check()`](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/drm_atomic.c#L672) 中呼叫 [`drm_plane_has_format()`](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/drm_plane.c#L916)，遍歷 `plane->format_types[]`（即 `virtio_gpu_plane_init()` 註冊的列表），檢查 framebuffer 的 format 是否在其中：
+  ```c
+  // drm_atomic.c:707
+  if (!drm_plane_has_format(plane, fb->format->format, fb->modifier)) {
+      return -EINVAL;
+  }
+  ```
+
+  ```c
+  // drm_plane.c:921-926
+  for (i = 0; i < plane->format_count; i++) {
+      if (format == plane->format_types[i])
+          break;
+  }
+  if (i == plane->format_count)
+      return false;
+  ```
+- 對於 cursor plane，`format_types[] = {ARGB8888}`。 如果 framebuffer format 是 `ARGB8888` 則通過，`XRGB8888` 則會被拒絕
+- 但這裡檢查的是 **framebuffer format**（由 `DRM_IOCTL_MODE_ADDFB2` 時 userspace 指定），不是底層 **resource format**（由 `virtio_gpu_mode_dumb_create()` 硬編碼的 `XRGB8888`）
+
+後續的使用如下：
+
+<details> <summary><span class = "yellow"><strong>展開 call graph</strong></span></summary>
+
+```callgraph
+Guest Userspace (e.g. X11 cursor)
+=================================
+DRM_IOCTL_MODE_CREATE_DUMB
+  ↓
+
+Guest Kernel：建立 GEM object / virtio-gpu resource
+====================================================
+[virtgpu_gem.c:61] virtio_gpu_mode_dumb_create()
+  │
+  │  params.format = virtio_gpu_translate_format(DRM_FORMAT_HOST_XRGB8888);
+  │  //                                          ^^^^^^^^^^^^^^^^^^^^^^^^
+  │  //                                          硬編碼 XRGB，不分 primary/cursor
+  │  params.width = args->width;
+  │  params.height = args->height;
+  │  params.dumb = true;
+  │
+  │  virtio_gpu_gem_create(file_priv, dev, &params, &gobj, &args->handle);
+  ↓
+[virtgpu_gem.c:31] virtio_gpu_gem_create()
+  │
+  │  virtio_gpu_object_create(vgdev, params, &obj, NULL);
+  ↓
+[virtgpu_object.c:205] virtio_gpu_object_create()
+  │
+  │  // params->blob == false, params->virgl == false (2D dumb path)
+  │  virtio_gpu_cmd_create_resource(vgdev, bo, params, objs, fence);
+  │  virtio_gpu_object_attach(vgdev, bo, ents, nents);
+  ↓
+[virtgpu_vq.c:594] virtio_gpu_cmd_create_resource()
+  │
+  │  cmd_p->hdr.type = VIRTIO_GPU_CMD_RESOURCE_CREATE_2D;
+  │  cmd_p->format = params->format;   // ← B8G8R8X8_UNORM（來自 dumb_create 硬編碼）
+  │  cmd_p->width = params->width;
+  │  cmd_p->height = params->height;
+  │
+  │  virtio_gpu_queue_fenced_ctrl_buffer(vgdev, vbuf, fence);
+  ↓
+  ↓ [透過 controlq 傳遞到 semu]
+  ↓
+
+semu (Host)：建立 resource
+============================
+[virtio-gpu-sw.c:12] virtio_gpu_resource_create_2d_handler()
+  │
+  │  res_2d->format = request->format;   // ← B8G8R8X8_UNORM
+  │  res_2d->width = request->width;
+  │  res_2d->height = request->height;
+  │  res_2d->image = malloc(...);
+  │
+  │  // format 被原樣存入 resource，後續 cursor_update 時會用到
+  ↓
+
+==================================================================
+[中間省略 RESOURCE_ATTACH_BACKING / TRANSFER_TO_HOST_2D 步驟]
+==================================================================
+
+Guest Userspace
+===============
+DRM_IOCTL_MODE_ADDFB2 (pixel_format = DRM_FORMAT_ARGB8888)
+  ↓
+
+Guest Kernel：建立 framebuffer（不影響 resource format）
+========================================================
+[virtgpu_display.c:319] virtio_gpu_user_framebuffer_create()
+  │
+  │  // 只檢查 format 是 XRGB 或 ARGB（都接受）
+  │  if (mode_cmd->pixel_format != DRM_FORMAT_HOST_XRGB8888 &&
+  │      mode_cmd->pixel_format != DRM_FORMAT_HOST_ARGB8888)
+  │      return ERR_PTR(-ENOENT);
+  │
+  │  // 把 GEM object 包進 framebuffer，不改變 resource format
+  │  virtio_gpu_framebuffer_init(dev, virtio_gpu_fb, info, mode_cmd, obj);
+  │  // framebuffer format = ARGB8888（userspace 指定）
+  │  // resource format    = B8G8R8X8_UNORM（dumb_create 時已決定，不變）
+  ↓
+
+Guest Userspace
+===============
+DRM_IOCTL_MODE_ATOMIC (attach framebuffer to cursor plane)
+  ↓
+
+Guest Kernel：cursor plane atomic check & update
+=================================================
+[drm_atomic.c:672] drm_atomic_plane_check()
+  │
+  │  // 檢查 framebuffer format 是否被此 plane 支援
+  │  drm_plane_has_format(plane, fb->format->format, fb->modifier);
+  ↓
+[drm_plane.c:916] drm_plane_has_format()
+  │
+  │  // 遍歷 plane->format_types[]（來自 virtio_gpu_plane_init 註冊的列表）
+  │  for (i = 0; i < plane->format_count; i++) {
+  │      if (format == plane->format_types[i])  // ARGB8888 == ARGB8888
+  │          break;
+  │  }
+  │  // ✓ 通過（fb format = ARGB8888 在 cursor plane 的列表中）
+  │  // ⚠️ 注意：這裡檢查的是 framebuffer format，不是 resource format
+  ↓
+[virtgpu_plane.c:425] virtio_gpu_cursor_plane_update()
+  │
+  │  vgfb = to_virtio_gpu_framebuffer(plane->state->fb);
+  │  bo = gem_to_virtio_gpu_obj(vgfb->base.obj[0]);
+  │  handle = bo->hw_res_handle;
+  │
+  │  // dumb cursor: 先 transfer pixel data 到 host
+  │  if (bo->dumb && fb changed) {
+  │      virtio_gpu_cmd_transfer_to_host_2d(...);
+  │      dma_fence_wait(...);
+  │  }
+  │
+  │  // 發送 UPDATE_CURSOR（只帶 resource_id，不帶 format）
+  │  output->cursor.hdr.type = VIRTIO_GPU_CMD_UPDATE_CURSOR;
+  │  output->cursor.resource_id = handle;
+  │  output->cursor.hot_x = plane->state->hotspot_x;
+  │  output->cursor.hot_y = plane->state->hotspot_y;
+  │
+  │  virtio_gpu_cursor_ping(vgdev, output);
+  ↓
+[virtgpu_vq.c:1299] virtio_gpu_cursor_ping()
+  │
+  │  // 透過 cursorq 發送 VIRTIO_GPU_CMD_UPDATE_CURSOR
+  │  virtio_gpu_queue_cursor(vgdev, vbuf);
+  ↓
+  ↓ [透過 cursorq 傳遞到 semu]
+  ↓
+
+semu (Host)：處理 cursor update
+=================================
+[virtio-gpu-sw.c:471] virtio_gpu_cmd_update_cursor_handler()
+  │
+  │  res_2d = vgpu_get_resource_2d(cursor->resource_id);
+  │  g_window.cursor_update(scanout_id, resource_id, x, y);
+  ↓
+[window-sw.c:341] cursor_update_sw()
+  │
+  │  resource = vgpu_get_resource_2d(res_id);
+  │
+  │  // ⚠️ 這裡讀取的是 resource format（B8G8R8X8_UNORM）
+  │  virtio_gpu_to_sdl_format(resource->format, &sdl_format);
+  │  //                       ^^^^^^^^^^^^^^^^
+  │  //                       B8G8R8X8_UNORM → SDL_PIXELFORMAT_XRGB8888（無 alpha）
+  │
+  │  display->cursor_sdl_format = sdl_format;
+  │  memcpy(display->cursor_img, resource->image, pixels_size);
+  │  display->cursor_pending = CURSOR_UPDATE;
+  ↓
+[window-sw.c:110] main loop：CURSOR_UPDATE 處理
+  │
+  | // 直接使用 SDL_PIXELFORMAT_XRGB8888 → 鼠標有黑色正方形
+  │ surface = SDL_CreateRGBSurfaceWithFormatFrom(
+  |     cursor->image, cursor->width, cursor->height,
+  |     cursor->bits_per_pixel, cursor->stride,
+  |     display->cursor_sdl_format);
+```
+
+</details>
+
+#### QEMU 的處理方法
+
+QEMU 的做法很簡單粗暴，它完全不看 resource 的 format，一律把 cursor 當 ARGB 處理。 這個行為在所有 device backend 和 display backend 下完全一致
+
+##### 1. QEMU virtio-gpu 架構
+
+QEMU 的 virtio-gpu 實現分為兩層：**device backend** 和 **display backend**
+
+**Device backend**（`hw/display/`）負責模擬 virtio-gpu 裝置、處理 guest 發來的 virtio 命令。 QEMU 使用 QOM（QEMU Object Model）繼承體系來組織不同的 device backend：
+
+- [`virtio-gpu.c`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu.c)：`TYPE_VIRTIO_GPU`，純 2D 軟體實現。 定義了 `VirtIOGPUClass` 的 virtual method table，包括 `handle_ctrl`、`process_cmd`、`update_cursor_data` 等（[virtio-gpu.c:1706-1708](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu.c#L1706-L1708)）。 2D 的命令處理實現也在這個檔案內（`virtio_gpu_simple_process_cmd`）
+- [`virtio-gpu-gl.c`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu-gl.c)：`TYPE_VIRTIO_GPU_GL`，繼承自 `TYPE_VIRTIO_GPU`（[virtio-gpu-gl.c:204-205](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu-gl.c#L204-L205)）。 這是 3D 加速的 QOM class，它 override 了父類的 virtual methods（[virtio-gpu-gl.c:192-195](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu-gl.c#L192-L195)）
+- [`virtio-gpu-virgl.c`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu-virgl.c)：**不是獨立的 device backend**，而是 `virtio-gpu-gl.c` 的命令處理函式庫。 它提供 [`virtio_gpu_virgl_process_cmd()`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu-virgl.c#L875) 給 `virtio-gpu-gl.c` 的 `vgc->process_cmd` 使用（[virtio-gpu-gl.c:194](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu-gl.c#L194)）。 它本身不定義 QOM class，沒有 `class_init`，也沒有任何 cursor 處理
+- [`virtio-gpu-rutabaga.c`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu-rutabaga.c)：`TYPE_VIRTIO_GPU_RUTABAGA`，同樣繼承自 `TYPE_VIRTIO_GPU`（[virtio-gpu-rutabaga.c:1131-1132](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu-rutabaga.c#L1131-L1132)）
+
+**Display backend**（`ui/`）負責把 device backend 產出的畫面顯示到 host 螢幕。 兩層之間透過 `dpy_*` API 溝通（如 [`dpy_cursor_define()`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/ui/console.c#L961)），device backend 傳遞 `QEMUCursor` 給 display backend：
+
+- [`ui/sdl2.c`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/ui/sdl2.c)：SDL2
+- [`ui/gtk.c`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/ui/gtk.c)：GTK
+- `ui/spice*.c`：SPICE
+- `ui/dbus.c`：D-Bus
+
+##### 2. Cursor 的跨層流程
+
+Cursor 的處理跨越兩層。 當 virtio cursorq 收到 `VIRTIO_GPU_CMD_UPDATE_CURSOR` 時，不管是哪個 device backend，都會進到同一個 [`update_cursor()`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu.c#L78)（定義在 `virtio-gpu.c`，子類不 override）。 關鍵兩步在 [virtio-gpu.c:104-106](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu.c#L104-L106)：
+
+```c
+vgc->update_cursor_data(g, s, cursor->resource_id);  // (1) device backend 取 pixel data
+dpy_cursor_define(s->con, s->current_cursor);          // (2) 廣播給所有 display backend
+```
+
+1. `vgc->update_cursor_data` 是 device backend 的 virtual method，由各子類各自實現，負責從 resource 中取出 pixel data 寫入 `QEMUCursor->data`
+2. `dpy_cursor_define()` 遍歷所有已註冊的 display backend，呼叫各自的 `dcl->ops->dpy_cursor_define` 傳遞 `QEMUCursor`
+
+三個 device backend 的 `update_cursor_data` 實現都是 blind memcpy，不讀取 resource format：
+
+| Device backend | 函式 | 資料來源 |
+|------|------|---------|
+| **2D** (`virtio-gpu.c`) | [`virtio_gpu_update_cursor_data()`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu.c#L45) | `pixman_image_get_data(res->image)` 或 `res->blob` |
+| **3D/GL** (`virtio-gpu-gl.c`) | [`virtio_gpu_gl_update_cursor_data()`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu-gl.c#L28) | `virgl_renderer_get_cursor_data()` |
+| **rutabaga** | [`virtio_gpu_rutabaga_update_cursor()`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu-rutabaga.c#L32) | `rutabaga_resource_transfer_read()` |
+
+以 2D 路徑為例（[virtio-gpu.c:73-75](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu.c#L73-L75)）：
+
+```c
+pixels = s->current_cursor->width * s->current_cursor->height;
+memcpy(s->current_cursor->data, data, pixels * sizeof(uint32_t));
+```
+
+3D/GL 路徑（[virtio-gpu-gl.c:51-52](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/hw/display/virtio-gpu-gl.c#L51-L52)）完全相同：
+
+```c
+pixels = s->current_cursor->width * s->current_cursor->height;
+memcpy(s->current_cursor->data, data, pixels * sizeof(uint32_t));
+```
+
+##### 3. QEMUCursor：無 format 欄位
+
+`QEMUCursor` 結構（[console.h:158](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/include/ui/console.h#L158)）沒有 format 欄位，註解直接寫死：
+
+```c
+/* cursor data format is 32bit RGBA */
+typedef struct QEMUCursor {
+    uint16_t            width, height;
+    int                 hot_x, hot_y;
+    int                 refcount;
+    uint32_t            data[];
+} QEMUCursor;
+```
+
+##### 4. SDL2 backend：硬編碼 ARGB masks
+
+[`sdl_mouse_define()`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/ui/sdl2.c#L748-L762) 建立 surface 時硬編碼 ARGB 的 channel masks：
+
+```c
+guest_sprite_surface =
+    SDL_CreateRGBSurfaceFrom(c->data, c->width, c->height, 32, c->width * 4,
+                             0xff0000, 0x00ff00, 0xff, 0xff000000);
+//                           Rmask    Gmask    Bmask  Amask（硬編碼）
+```
+
+這四個 mask 的意義：
+- `0x00ff0000`：R 在 bits 16-23
+- `0x0000ff00`：G 在 bits 8-15
+- `0x000000ff`：B 在 bits 0-7
+- `0xff000000`：A 在 bits 24-31（強制有 alpha）
+
+##### 5. GTK backend：硬編碼 has_alpha=true
+
+[`gd_cursor_define()`](https://github.com/qemu/qemu/tree/b254e486242466dad881fc2bbfa215f1b67cd30f/ui/gtk.c#L469) 也硬編碼 alpha：
+
+```c
+pixbuf = gdk_pixbuf_new_from_data((guchar *)(c->data),
+                                  GDK_COLORSPACE_RGB, true, 8, ...);
+//                                             ^^^^
+//                                    has_alpha = true（硬編碼）
+```
