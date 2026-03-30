@@ -11,47 +11,57 @@ category:
 
 ## （WIP）Direct Rendering Infrastructure
 
-Direct Rendering Infrastructure（DRI，直接算繪基礎架構）是構成現代 Linux 圖形堆疊的框架，讓沒有特權的 user space 程式在不與其他程式產生衝突的情況下，能夠對圖形硬體下達命令。 DRI 的主要用途，是為 `Mesa` 的 `OpenGL` 實作提供硬體加速。 DRI 也曾被改造，用來在沒有執行顯示伺服器（display server）的 framebuffer console 上提供 `OpenGL` 加速
+::: warning
+本文目前只做了初步的資料整理與翻譯，尚未進一步撰寫我對原資料的解釋，也尚未對透過 LLM 翻譯出來的文章進行用字上的調整，因此仍不太方便閱讀，可以參考以下原文：
+
+- [Direct Rendering Infrastructure](https://en.wikipedia.org/wiki/Direct_Rendering_Infrastructure)
+- [Direct Rendering Manager](https://en.wikipedia.org/wiki/Direct_Rendering_Manager)
+- [Free and open-source graphics device driver](https://en.wikipedia.org/wiki/Free_and_open-source_graphics_device_driver)
+
+這三篇 wikipedia 其實寫得非常的好，我認為已經將許多當初不懂的地方都解釋到了。 後續這篇文章的更新，如前所述，會有一大部分是用字上的調整，剩下的就是照以前的風格，把我認為有遺漏的地方補上  
+:::
+
+Direct Rendering Infrastructure（DRI，直接算繪基礎架構）是構成現代 Linux 圖形堆疊的框架，讓沒有特權的 user space 程式在不與其他程式產生衝突的情況下，能夠對圖形硬體下達命令。 DRI 的主要用途，是為 `Mesa` 的 `OpenGL` 實作提供硬體加速，也有被改造來在沒有執行顯示伺服器（display server）的 framebuffer console 上提供 `OpenGL` 加速
 
 DRI 的實作分散在 X Server 以及其相關的 client 函式庫、`Mesa 3D`，還有 `Direct Rendering Manager` 核心子系統之中。 它的所有原始碼都是開放原始碼軟體
 
 ### 概觀
 
-在傳統 X Window System 的架構裡，X Server 是唯一擁有對圖形硬體獨佔存取權的行程，因此也就是那個在 framebuffer 上做實際算繪的行程。 所有 X client 能做的事，就是和 X Server 溝通，並把算繪命令交給它
+在傳統 X Window System 的架構裡，X Server 是唯一擁有對圖形硬體獨佔存取權的行程，也是唯一實際在 framebuffer 上算繪的行程。 所有 X client 能做的事，就是和 X Server 溝通，並把算繪命令交給它
 
-這些命令與硬體無關，也就是說 X11 協定提供了一個 API 來抽象圖形裝置，讓 X client 不需要知道或擔心底層硬體的細節。 任何與硬體相關的程式碼都放在 Device Dependent X 之中，也就是 X Server 中負責管理各種顯示卡或圖形介面卡的部分，這一部分通常也被稱為顯示或圖形驅動程式
+這些命令本身與硬體無關：X11 協定提供了一層 API 來抽象圖形裝置，讓 X client 不必了解底層硬體的細節。 任何與硬體相關的程式碼都放在 Device Dependent X 之中，也就是 X Server 中負責管理各種顯示卡或圖形介面卡的部分，這一部分通常也被稱為顯示或圖形驅動程式
 
-3D 算繪的興起顯露出這套架構的限制。 3D 圖形應用程式往往會產生大量命令與資料，所有這些都必須送交 X Server 來算繪。 隨著 X client 與 X Server 之間的跨行程通訊（IPC）量愈來愈大，3D 算繪效能就會遭到影響，影響的程度甚至讓 X 驅動程式開發者認為，如果要充分善用最新顯示卡的 3D 硬體能力，就必須改用一種不再依賴 IPC 的新架構
+3D 算繪的興起顯露出這套架構的限制。 3D 圖形應用程式往往會產生大量命令與資料，所有這些都必須送交 X Server 來算繪。 隨著 X client 與 X Server 之間的 IPC 量不斷增加，3D 算繪效能也大受拖累。 X 驅動程式開發者因此認為，若要充分發揮最新顯示卡的 3D 能力，就必須改用不依賴 IPC 的新架構
 
-X client 應該能直接存取圖形硬體，而不是仰賴另一個行程代為存取，藉此節省所有 IPC 的額外負擔。 這種做法稱為「direct rendering」，與傳統 X 架構所提供的「indirect rendering」相對。 Direct Rendering Infrastructure 一開始的開發目標，就是讓任何 X client 都能用這種 direct rendering 的方式來進行 3D 算繪
+X client 應該能直接存取圖形硬體，而不是仰賴另一個行程代為存取，藉此節省所有 IPC 的額外負擔。 這種做法稱為「direct rendering」，與傳統 X 架構所提供的「indirect rendering」相對。 Direct Rendering Infrastructure 一開始的開發目標，就是讓任何 X client 都能以 direct rendering 的方式做 3D 算繪
 
-DRI 本身並沒有任何機制阻止人們用它來在 X client 內實作具加速功能的 2D direct rendering。 只是沒有人有這樣的需求，因為 2D indirect rendering 的效能已經夠好。 [by whom?]
+DRI 本身並沒有任何機制阻止人們用它來在 X client 內實作具加速功能的 2D direct rendering。 只是沒有人有這樣的需求，因為 2D indirect rendering 的效能已經夠好。
 
 ### 軟體架構
 
 Direct Rendering Infrastructure 的基本架構包含三個主要元件：
 
-- DRI client（例如執行 direct rendering 的 X client）需要一個與硬體相關的「驅動程式」，來管理目前的顯示卡或圖形介面卡，才能在其上進行算繪。 這些 DRI 驅動程式通常以 shared library 的形式提供，client 會在執行時動態連結到這些函式庫
+- DRI client（例如執行 direct rendering 的 X client）需要一個與硬體相關的「驅動程式」，來管理目前的顯示卡或圖形介面卡，才能在其上算繪。 這些 DRI 驅動程式通常以 shared library 的形式提供，client 會在執行時動態連結到這些函式庫
   
   由於 DRI 是為了充分利用 3D 圖形硬體而設計，這些函式庫在 client 看來，通常就是某個以硬體加速的 3D API 實作，例如 `OpenGL`，而這套實作可能由 3D 硬體廠商本身提供，也可能是像 `Mesa 3D` 這類自由軟體專案提供的第三方實作
-- X Server 提供一個 X11 協定擴充，也就是 DRI extension，DRI client 會透過它與視窗系統及 DDX 驅動程式協調運作。 作為 DDX 驅動程式的一部分，X Server 行程本身也很常會動態連結到與 DRI client 相同的 DRI 驅動程式，不過用途是透過 GLX extension，為那些使用 indirect rendering 的 X client（例如無法使用 direct rendering 的遠端 X client）提供硬體加速的 3D 算繪。 對於 2D 算繪，DDX 驅動程式也必須考慮那些使用相同圖形裝置的 DRI client
+- X Server 提供一個 X11 協定擴充，也就是 DRI extension，DRI client 會透過它與視窗系統及 DDX 驅動程式協調運作。 作為 DDX 驅動程式的一部分，X Server 行程本身通常也會動態連結到與 DRI client 相同的 DRI 驅動程式，不過用途是透過 GLX extension，為那些使用 indirect rendering 的 X client（例如無法使用 direct rendering 的遠端 X client）提供硬體加速的 3D 算繪。 對於 2D 算繪，DDX 驅動程式也必須考慮那些使用相同圖形裝置的 DRI client
 - 對顯示卡或圖形介面卡的存取則是由一個名為 `Direct Rendering Manager`（DRM）的核心元件負責管理。 X Server 的 DDX 驅動程式以及每一個 X client 的 DRI 驅動程式都必須透過 DRM 來存取圖形硬體
   
-  DRM 為圖形硬體的共享資源提供同步機制，例如 command queue、卡上的暫存器、視訊記憶體、DMA 引擎等，確保所有這些相互競爭的 user space 行程在同時存取時不會互相干擾。 DRM 同時也扮演基本的安全控管角色，不允許任何 X client 在進行 3D 算繪所需範圍之外直接存取硬體
+  DRM 為圖形硬體的共享資源提供同步機制，例如 command queue、卡上的暫存器、視訊記憶體、DMA 引擎等，確保所有這些相互競爭的 user space 行程在同時存取時不會互相干擾。 DRM 同時也扮演基本的安全控管角色，不允許任何 X client 在 3D 算繪所需範圍之外直接存取硬體
 
 ### DRI1
 
 在原始的 DRI 架構中，由於當時顯示卡的記憶體容量有限，畫面 front buffer 與 back buffer 只有一份實體，所有 DRI client 與 X Server 都共用同一組緩衝區（還有額外的 depth buffer 與 stencil buffer）。 它們全部都直接對 back buffer 做算繪，然後在垂直消隱期（vertical blanking interval）將 back buffer 與 front buffer 做交換。 為了能對 back buffer 做算繪，DRI 行程必須確保它的算繪結果會被裁剪在自己視窗所保留的區域之內
 
-與 X Server 的同步是透過訊號以及一塊名為 SAREA 的 shared memory 緩衝區來完成。 對 DRM 裝置的存取是獨佔的，也就是說，任何 DRI client 在開始一段算繪操作時，都必須先取得對裝置的 lock
+與 X Server 的同步是透過訊號以及一塊名為 SAREA 的 shared memory 緩衝區來完成。 對 DRM 裝置的存取是獨佔的，任何 DRI client 在開始算繪前都必須先取得裝置的 lock
 
-在這段期間，其他使用該裝置的程式（包含 X Server）都會被阻擋，只能等到目前這個算繪操作結束並釋放 lock 後才能繼續，即便兩邊的操作之間其實不會發生任何衝突也一樣。 另一個缺點是，當目前的 DRI 行程釋放對裝置的 lock 之後，各種作業不會保留記憶體配置狀態，因此任何已經上傳到圖形記憶體中的資料（例如貼圖）都會在之後的操作中消失，對圖形效能造成顯著影響
+在這段期間，其他使用該裝置的程式（包含 X Server）都會被阻擋，只能等到這段算繪結束並釋放 lock 後才能繼續，即便兩者之間根本沒有任何衝突也不例外。 另一個缺點是，一旦 DRI 行程釋放 lock，記憶體的配置狀態便不會保留，任何已上傳到圖形記憶體的資料（例如貼圖）在後續操作中都會消失，對效能造成顯著影響
 
 目前 DRI1 被視為完全過時，不應再被使用
 
 ### DRI2
 
-隨著像 Compiz 這類 compositing window manager 的普及，Direct Rendering Infrastructure 必須重新設計，讓 X client 在使用 direct rendering 時也能支援被重新導向到「offscreen pixmap」。 一般的 X client 會服從 X Server 所提供的 render target 重新導向，也就是所謂的 offscreen pixmap，並以這個 pixmap 作為繪圖目標
+隨著像 Compiz 這類 compositing window manager 的普及，Direct Rendering Infrastructure 必須重新設計，讓 X client 在 direct rendering 時也能把算繪目標導向 offscreen pixmap。 一般的 X client 會遵照 X Server 的指示，以 offscreen pixmap 作為 render target
 
 但是 DRI client 仍然直接算繪到共用的 backbuffer 上，實際上繞過了 compositing window manager。 最終的解決方案，是改變 DRI 處理 render buffer 的方式，這導致一個完全不同的 DRI extension（帶有一組新的操作），以及 Direct Rendering Manager 內部的大幅修改
 
@@ -59,16 +69,16 @@ Direct Rendering Infrastructure 的基本架構包含三個主要元件：
 
 在 DRI2 中，不再使用單一共用的（back）buffer，而是讓每個 DRI client 都擁有自己的私有 back buffer，同時還有對應的 depth buffer 與 stencil buffer，用來透過硬體加速為自己的視窗內容做算繪。 之後 DRI client 會把這個 back buffer 與一個假的「front buffer」做交換，compositing window manager 則會把這個 fake front buffer 當作來源之一，與其他來源一起組合出最終的畫面 back buffer，並在垂直消隱期時與真正的 front buffer 做交換
 
-為了處理所有這些新的緩衝區，Direct Rendering Manager 必須加入新的功能，特別是一個圖形記憶體管理器。 DRI2 一開始是以實驗性的 TTM 記憶體管理器開發，但在 `GEM` 被選為正式的 DRM 記憶體管理器之後，DRI2 又被改寫成使用 GEM。 新的 DRI2 內部緩衝區管理模型同時也解決了原始 DRI 實作中的兩個主要效能瓶頸：
+為了處理所有這些新的緩衝區，Direct Rendering Manager 必須加入新的功能，特別是一個圖形記憶體管理器。 DRI2 最初以實驗性的 TTM 記憶體管理器開發，`GEM` 確立為正式的 DRM 記憶體管理器後，DRI2 也跟著改用 GEM 重寫。 新的 DRI2 內部緩衝區管理模型同時也解決了原始 DRI 實作中的兩個主要效能瓶頸：
 
-- DRI2 client 在進行算繪時不再會 lock 住整個 DRM 裝置，因為現在每個 client 都有獨立的 render buffer，與其他行程彼此獨立
+- DRI2 client 算繪時不再鎖住整個 DRM 裝置，因為現在每個 client 都有獨立的 render buffer，與其他行程彼此獨立
 - DRI2 client 可以在視訊記憶體中自行配置、保留自己的緩衝區（用來存放貼圖、頂點列表等），而且可以按照自己需求保留任意久，這大幅降低了視訊記憶體頻寬的消耗
 
-在 DRI2 中，視窗所需的私有 offscreen 緩衝區（back buffer、fake front buffer、depth buffer、stencil buffer 等）的配置，是由 X Server 本身負責的。 DRI client 會透過 DRI2 extension 中的操作，例如 `DRI2GetBuffers` 與 `DRI2GetBuffersWithFormat`，來取得這些緩衝區，並在其上為視窗進行算繪
+在 DRI2 中，視窗所需的私有 offscreen 緩衝區（back buffer、fake front buffer、depth buffer、stencil buffer 等）由 X Server 負責配置。 DRI client 透過 DRI2 extension 的操作（例如 `DRI2GetBuffers` 與 `DRI2GetBuffersWithFormat`）取得這些緩衝區，並以此為視窗算繪
 
-在內部，DRI2 使用 GEM names，也就是 GEM API 所提供的一種 global handle，讓兩個存取同一個 DRM 裝置的行程可以用相同的名稱指到同一個 buffer，用這種方式在 X11 協定中傳遞這些緩衝區的「參照」。 會由 X Server 負責分配視窗 render buffer 的理由，是因為 GLX extension 允許多個 X client 在同一個視窗中協同進行 `OpenGL` 算繪
+在內部，DRI2 使用 GEM names，也就是 GEM API 所提供的一種 global handle，讓兩個存取同一個 DRM 裝置的行程可以用相同的名稱指到同一個 buffer，用這種方式在 X11 協定中傳遞這些緩衝區的「參照」。 之所以由 X Server 負責分配 render buffer，是因為 GLX extension 允許多個 X client 在同一視窗中協同做 `OpenGL` 算繪
 
-這樣一來，X Server 就能在整個算繪流程中管理 render buffer 的完整生命週期，並且知道什麼時候可以安全地回收或丟棄它們。 當視窗大小被調整時，X Server 也負責配置符合新視窗大小的 render buffer，並透過 `InvalidateBuffers` 事件通知那些對該視窗進行算繪的 DRI client，讓它們重新取得新緩衝區的 GEM name
+這樣一來，X Server 就能在整個算繪流程中管理 render buffer 的完整生命週期，並且知道什麼時候可以安全地回收或丟棄它們。 調整視窗大小時，X Server 也負責配置符合新視窗大小的 render buffer，並透過 `InvalidateBuffers` 事件通知正在為該視窗算繪的 DRI client，讓它們重新取得新緩衝區的 GEM name
 
 DRI2 extension 還提供了其他對 DRI client 而言的核心操作，例如用來查出應該使用哪一個 DRM 裝置與驅動程式的 `DRI2Connect`，或是讓 DRI client 通過 X Server 認證，才能使用 DRM 裝置提供的算繪與緩衝區功能的 `DRI2Authenticate`。 將算繪完成的緩衝區送上螢幕，則是透過 `DRI2CopyRegion` 與 `DRI2SwapBuffers` 這兩個請求來完成
 
@@ -76,16 +86,16 @@ DRI2 extension 還提供了其他對 DRI client 而言的核心操作，例如�
 
 ### DRI3
 
-雖然 DRI2 相對原始的 DRI 已經是顯著的改進，但這個新 extension 也引入了某些新的問題。 2013 年，Direct Rendering Infrastructure 的第三次演化，也就是 DRI3，被開發出來以解決這些問題
+雖然 DRI2 相對原始的 DRI 已經是顯著的改進，但這個新 extension 也引入了某些新的問題。 2013 年，DRI 的第三次演化 DRI3 就此誕生，用來解決這些問題
 
 DRI3 與 DRI2 的主要差異如下：
 
 - DRI3 client 會自行配置自己的 render buffer，而不是像 DRI2 那樣仰賴 X Server 幫忙配置
 - DRI3 不再使用舊有那套以 GEM name（global GEM handle）為基礎、用來在 DRI client 與 X Server 之間傳遞 buffer 物件的、不安全的 GEM buffer 分享機制，而是改用更安全、也更通用的 PRIME DMA-BUF 機制，這是一種以 file descriptor 為基礎的方式
 
-在 client 端進行緩衝區配置會打破 GLX 的某些假設，也就是不再可能讓多個 GLX 應用程式協同在同一個視窗中進行算繪。 但反過來看，由於 DRI client 在整個生命週期中都能完全掌控自己的緩衝區，因此也帶來許多好處。 例如，DRI3 client 可以很輕易地確保 render buffer 的大小永遠與視窗目前大小保持一致，從而消除 DRI2 時代因為 client 與 server 之間 buffer 尺寸同步不足而導致視窗調整大小時產生的各種畫面瑕疵
+在 client 端自行配置緩衝區，意味著多個 GLX 應用程式協同在同一視窗算繪的假設不再成立。 但反過來看，由於 DRI client 在整個生命週期中都能完全掌控自己的緩衝區，因此也帶來許多好處。 例如，DRI3 client 可以很輕易地確保 render buffer 的大小永遠與視窗目前大小保持一致，從而消除 DRI2 時代因為 client 與 server 之間 buffer 尺寸同步不足而導致視窗調整大小時產生的各種畫面瑕疵
 
-由於 DRI3 client 不再需要多等一次 X Server 回傳 render buffer 的往返時間，也能取得更好的效能。 DRI3 client，尤其是 compositing window manager，還可以利用保存前幾幀的舊緩衝區，只針對視窗中受損的區域進行增量算繪，作為另一項效能最佳化手段
+由於 DRI3 client 不再需要多等一次 X Server 回傳 render buffer 的往返時間，也能取得更好的效能。 DRI3 client，尤其是 compositing window manager，還可以利用保存前幾幀的舊緩衝區，只對受損區域做增量算繪，作為另一項效能最佳化手段
 
 DRI3 extension 也不再需要因應新的特殊緩衝區格式而修改，因為這些格式現在直接由 DRI client 驅動程式與 DRM 核心驅動程式之間處理。 另一方面，使用 file descriptor 也讓核心可以安全地清除任何不再使用的 GEM buffer 物件，也就是那些已經完全沒有任何參照的物件
 
@@ -99,7 +109,7 @@ DRI3 本身沒有任何將算繪完成的緩衝區顯示在螢幕上的機制，
 
 螢幕更新必須在適當的時機進行，通常要在垂直消隱期期間，才能避免撕裂這類顯示瑕疵。 Present 也負責將螢幕更新與垂直消隱期同步。 它還會透過事件讓 X client 知道每一個緩衝區實際出現在螢幕上的時間點，讓 client 可以把自己的算繪流程與目前的螢幕更新頻率同步
 
-Present 可以接受任何 X pixmap 作為螢幕更新的來源。 由於 pixmap 是標準的 X 物件，Present 不僅能被執行 direct rendering 的 DRI3 client 使用，也能被任何以 pixmap 作為算繪目標的 X client 使用，無論其算繪方式為何。 例如，多數既有、非 GL 為基礎的 GTK+ 與 Qt 應用程式，過去都是透過 `XRender` 使用 double buffered pixmap 算繪
+Present 可以接受任何 X pixmap 作為螢幕更新的來源。 由於 pixmap 是標準的 X 物件，Present 不僅 DRI3 client 能用，任何以 pixmap 為算繪目標的 X client 都可以使用，無論其算繪方式為何。 例如，多數既有、非 GL 為基礎的 GTK+ 與 Qt 應用程式，過去都是透過 `XRender` 使用 double buffered pixmap 算繪
 
 這些應用程式同樣可以使用 Present extension 來達成高效且不會撕裂的螢幕更新。 這也是為什麼 Present 會被設計成獨立於 DRI3 之外的 extension，而不是被視為 DRI3 的一部分
 
@@ -113,15 +123,15 @@ Present 向 X client 提供兩個主要操作：一個是使用 pixmap 的部分
 
 ### 採用情況
 
-已經被撰寫出來的多種開放原始碼 DRI 驅動程式，包含用於 ATI Mach64、ATI Rage128、ATI Radeon、3dfx Voodoo3 至 Voodoo5、Matrox G200 至 G400、SiS 300 系列、Intel i810 至 i965、S3 Savage、VIA UniChrome 圖形晶片組，以及用於 Nvidia 的 `nouveau`。 也有一些圖形廠商撰寫了封閉原始碼的 DRI 驅動程式，例如 ATI 與 PowerVR Kyro
+目前已有多種開放原始碼 DRI 驅動程式，包含用於 ATI Mach64、ATI Rage128、ATI Radeon、3dfx Voodoo3 至 Voodoo5、Matrox G200 至 G400、SiS 300 系列、Intel i810 至 i965、S3 Savage、VIA UniChrome 圖形晶片組，以及用於 Nvidia 的 `nouveau`。 也有一些圖形廠商撰寫了封閉原始碼的 DRI 驅動程式，例如 ATI 與 PowerVR Kyro
 
 各種版本的 DRI 也已在多種作業系統上實作，其中包括 Linux 核心、FreeBSD、NetBSD、OpenBSD 與 OpenSolaris
 
 ### 歷史
 
-這個專案最初是由 Precision Insight 的 Jens Owen 與 Kevin E. Martin 啟動，資金來源為 Silicon Graphics 與 Red Hat。 它第一次被廣泛使用，是作為 XFree86 4.0 的一部分，而如今則已成為 X.Org Server 的一部分。 目前由自由軟體社群負責維護
+這個專案最初是由 Precision Insight 的 Jens Owen 與 Kevin E. Martin 啟動，資金來源為 Silicon Graphics 與 Red Hat。 它最初以 XFree86 4.0 的一部分形式廣泛使用，如今已是 X.Org Server 的一部分。 目前由自由軟體社群負責維護
 
-關於 DRI2 的開發工作，是從 2007 年 X Developers' Summit 上 Kristian Høgsberg 提出的一項提案開始。 Høgsberg 本人撰寫了新的 DRI2 extension，以及對 `Mesa` 與 GLX 的修改。 2008 年 3 月時，DRI2 已大致完成，但無法趕上 X.Org Server 1.5 版，只好等到 2009 年 2 月釋出的 1.6 版才正式納入
+DRI2 的開發始於 2007 年 X Developers' Summit 上 Kristian Høgsberg 提出的一項提案。 Høgsberg 本人撰寫了新的 DRI2 extension，以及對 `Mesa` 與 GLX 的修改。 2008 年 3 月時，DRI2 已大致完成，但無法趕上 X.Org Server 1.5 版，只好等到 2009 年 2 月釋出的 1.6 版才正式納入
 
 DRI2 extension 正式包含在 2009 年 10 月發行的 X11R7.5 版本中。 DRI2 協定的第一個公開版本（2.0）於 2009 年 4 月宣布。 從那之後又有數次修訂，最近的一版是 2012 年 7 月的 2.8 版
 
@@ -133,7 +143,7 @@ DRI3 與 Present 這兩個 extension 於 2013 年間被開發完成，並在 201
 
 Direct Rendering Manager（DRM）是 Linux 作業系統核心中的一個子系統，負責與現代顯示卡上的 GPU 進行介接。 DRM 對外提供一組 API，讓 user space 的程式可以把命令與資料送到 GPU，並執行各種操作，例如設定顯示器的模式（mode setting）
 
-DRM 一開始是作為 X Server Direct Rendering Infrastructure 的 kernel space 元件而被開發出來，但之後也被其他圖形堆疊的替代方案（例如 Wayland）以及各種獨立應用程式與函式庫（例如 `SDL2` 與 `Kodi`）採用
+DRM 最初是作為 X Server Direct Rendering Infrastructure 的 kernel space 元件而開發，後來其他圖形堆疊的替代方案（例如 Wayland）以及各種獨立應用程式與函式庫（例如 `SDL2` 與 `Kodi`）也相繼採用了它
 
 user space 的程式可以透過 DRM API 控制 GPU 進行硬體加速的 3D 算繪與影片解碼，也可以做 GPGPU 計算
 
@@ -141,7 +151,7 @@ user space 的程式可以透過 DRM API 控制 GPU 進行硬體加速的 3D 算
 
 Linux 作業系統核心原本就有一個名為 `fbdev` 的 API，用來管理顯示卡的 framebuffer，但它無法滿足現代以 GPU 為基礎、支援 3D 加速的視訊硬體需求。 這些裝置通常需要在自己的記憶體中設定與管理一個命令佇列，用來把命令派送給 GPU，同時也必須管理該記憶體中的緩衝區與可用空間
 
-一開始，user space 的程式（例如 X Server）會直接管理這些資源，但它們通常的作法就像只有自己會存取這些資源一樣。 當兩個以上的程式同時嘗試控制同一套硬體，而且各自用自己的方式去設定這些資源時，多半會以災難性的結果收場
+一開始，user space 的程式（例如 X Server）會直接管理這些資源，但各程式通常都假設自己是唯一的使用者。 當兩個以上的程式同時嘗試控制同一套硬體，而且各自用自己的方式去設定這些資源時，多半會以災難性的結果收場
 
 Direct Rendering Manager 的設計目的，就是讓多個程式可以協同使用視訊硬體的資源。 DRM 會獨占存取 GPU，負責初始化與維護命令佇列、記憶體以及其他所有硬體資源。 想要使用 GPU 的程式會把請求送給 DRM，由 DRM 扮演仲裁者的角色，負責避免可能發生的衝突
 
@@ -149,13 +159,13 @@ Direct Rendering Manager 的設計目的，就是讓多個程式可以協同使�
 
 其中有些擴充功能被賦予了特定名稱，例如 Graphics Execution Manager（`GEM`）或 kernel mode-setting（`KMS`），當特別提到它們所提供的那些功能時，這些術語依然會被單獨拿出來說明。 不過，這些東西其實都只是整個核心 DRM 子系統的一部分
 
-在一台電腦中同時配備兩個 GPU（例如一個獨立 GPU 搭配一個整合式 GPU）的趨勢，帶來了像 GPU 切換這類新問題，而這些問題也必須在 DRM 這一層加以解決。 為了對應 Nvidia Optimus 技術，DRM 被加入了 GPU offloading 的能力，稱為 `PRIME`
+在一台電腦中同時配備兩個 GPU（例如一個獨立 GPU 搭配一個整合式 GPU）的趨勢，帶來了像 GPU 切換這類新問題，而這些問題也必須在 DRM 這一層加以解決。 為了對應 Nvidia Optimus 技術，DRM 也加入了 GPU offloading 的能力，稱為 `PRIME`
 
 ### 軟體架構
 
 Direct Rendering Manager 位在 kernel space，因此 user space 的程式必須透過核心的系統呼叫來請求它提供服務。 不過，DRM 本身並沒有定義一組客製化的系統呼叫，而是遵循 Unix 的「一切皆檔案」原則，透過檔案系統的命名空間，在 `/dev` 階層下使用裝置檔案來對外呈現 GPU
 
-每一個被 DRM 偵測到的 GPU 都被視為一個 DRM 裝置，系統會為它建立一個裝置檔案 `/dev/dri/cardX`（其中 X 是遞增的編號）作為與它互動的介面。 想要和 GPU 溝通的 user space 程式必須開啟這個檔案，並透過 `ioctl` 呼叫與 DRM 溝通，不同的 `ioctl` 對應到 DRM API 的不同功能
+DRM 偵測到的每個 GPU 都視為一個 DRM 裝置，系統會為其建立裝置檔案 `/dev/dri/cardX`（X 為遞增編號）作為互動介面。 想要和 GPU 溝通的 user space 程式必須開啟這個檔案，並透過 `ioctl` 呼叫與 DRM 溝通，不同的 `ioctl` 對應到 DRM API 的不同功能
 
 為了讓 user space 程式比較容易和 DRM 子系統互動，有人寫了一個名為 `libdrm` 的函式庫。 這個函式庫其實只是包了一層 wrapper，為 DRM API 的每一個 `ioctl` 提供一個對應的 C 語言函式，另外也定義了常數、結構以及其他輔助用的元素。 使用 `libdrm` 不只可以避免把核心介面直接暴露給應用程式，還能享有在程式之間重複利用與分享程式碼的常見好處
 
@@ -177,7 +187,7 @@ DRM core 對 user space 應用程式輸出數個介面，通常預期是透過�
 
 在實務上，X Server（或其他顯示 server）通常就是為每個它所管理的 DRM 裝置取得 DRM-Master 身分的那個行程，通常是在啟動時開啟對應的裝置節點時取得，之後會在整個圖形工作階段中持續保有這些權限，直到該行程結束或當掉為止
 
-對於其餘的 user space 行程，還有另一種方式可以取得在 DRM 裝置上呼叫部分受限制操作的權限，稱為 DRM-Auth。 它基本上是一種對 DRM 裝置做身分認證的方法，用來向裝置證明某個行程已經獲得 DRM-Master 核可，可以取得這些權限。 這個流程大致如下：:13
+對於其餘的 user space 行程，還有另一種方式可以取得在 DRM 裝置上呼叫部分受限制操作的權限，稱為 DRM-Auth。 它基本上是一種對 DRM 裝置做身分認證的方法，用來向裝置證明某個行程已經獲得 DRM-Master 核可，可以取得這些權限。 這個流程大致如下：
 
 - client 透過 `GET_MAGIC` `ioctl` 從 DRM 裝置取得一個唯一的權杖，也就是一個 32 位元整數，然後用任何方式把它傳給 DRM-Master 行程，通常是某種 IPC 機制，例如在 DRI2 中，任何 X client 都可以送一個 `DRI2Authenticate` 請求給 X Server
 - DRM-Master 行程接著呼叫 `AUTH_MAGIC` `ioctl`，把這個權杖送回 DRM 裝置
@@ -195,13 +205,13 @@ DRM core 對 user space 應用程式輸出數個介面，通常預期是透過�
 
 `GEM` 也允許兩個或更多使用同一個 DRM 裝置（也就是同一個 DRM driver）的 user space 行程，共享同一個 GEM object。 GEM handle 是區域性的 32 位元整數，在每個行程中都是唯一的，但不同行程之間可以重複，所以不適合作為共享識別
 
-所需要的是一個全域命名空間，`GEM` 透過稱為 GEM name 的全域 handle 來提供這個功能。 GEM name 使用一個唯一的 32 位元整數，對應於同一個 DRM 裝置上、由同一個 DRM driver 建立的唯一一個 GEM object。 `GEM` 提供了一個名為 `flink` 的操作，可以從 GEM handle 取得對應的 GEM name。 :16 
+所需要的是一個全域命名空間，`GEM` 透過稱為 GEM name 的全域 handle 來提供這個功能。 GEM name 使用一個唯一的 32 位元整數，對應於同一個 DRM 裝置上、由同一個 DRM driver 建立的唯一一個 GEM object。 `GEM` 提供了一個名為 `flink` 的操作，可以從 GEM handle 取得對應的 GEM name。
 
-行程接著可以透過任意可用的 IPC 機制，把這個 GEM name（那個 32 位元整數）傳給另一個行程。 :15 接收方可以用這個 GEM name 換取一個本地的 GEM handle，指向原本那個 GEM object
+行程接著可以透過任意可用的 IPC 機制，把這個 GEM name（那個 32 位元整數）傳給另一個行程。 接收方可以用這個 GEM name 換取一個本地的 GEM handle，指向原本那個 GEM object
 
-不幸的是，使用 GEM name 來分享緩衝區並不安全。 :16 某個惡意的第三方行程只要能存取同一個 DRM 裝置，就可以透過嘗試各種 32 位元整數的方式，去猜測由其他兩個行程共享的某個緩衝區的 GEM name。 一旦猜中這個 GEM name，就能存取甚至修改該緩衝區的內容，破壞其中資訊的機密性與完整性
+不幸的是，使用 GEM name 來分享緩衝區並不安全。 某個惡意的第三方行程只要能存取同一個 DRM 裝置，就可以透過嘗試各種 32 位元整數的方式，去猜測由其他兩個行程共享的某個緩衝區的 GEM name。 一旦猜中這個 GEM name，就能存取甚至修改該緩衝區的內容，破壞其中資訊的機密性與完整性
 
-這個缺點後來透過在 DRM 中加入 `DMA-BUF` 支援而被克服，因為 `DMA-BUF` 在 user space 中是用檔案描述元來代表緩衝區，這種表示方式可以安全地進行分享
+後來 DRM 加入了 `DMA-BUF` 支援，才克服了這個缺點。 `DMA-BUF` 在 user space 中用檔案描述元來代表緩衝區，這種表示方式可以安全地分享
 
 對任何視訊記憶體管理系統來說，除了管理視訊記憶體空間本身之外，另一項重要工作是處理 GPU 與 CPU 之間的記憶體同步。 現代的記憶體架構相當複雜，通常在系統記憶體上會有多層快取，有時候在視訊記憶體上也會有快取
 
@@ -215,7 +225,7 @@ DRM core 對 user space 應用程式輸出數個介面，通常預期是透過�
 
 ### Translation Table Maps
 
-Translation Table Maps（`TTM`）是比 `GEM` 更早出現的一個通用 GPU 記憶體管理器的名稱。 它被特別設計用來管理 GPU 可能會存取的各種不同型態的記憶體，其中包括專用的 Video RAM（通常焊在顯示卡上）以及透過一個稱為 Graphics Address Remapping Table（`GART`）的 I/O 記憶體管理單元所能存取的系統記憶體
+Translation Table Maps（`TTM`）是比 `GEM` 更早出現的一個通用 GPU 記憶體管理器的名稱。 它的設計目標是管理 GPU 可能存取的各種不同型態的記憶體，其中包括專用的 Video RAM（通常焊在顯示卡上）以及透過一個稱為 Graphics Address Remapping Table（`GART`）的 I/O 記憶體管理單元所能存取的系統記憶體
 
 `TTM` 也必須處理那些 CPU 無法直接定址的 VRAM 區段，並在考量 user space 圖形應用程式通常會處理大量視訊資料的情況下，以盡可能佳的效能來完成這些工作。 另一項重要的課題是要維持不同記憶體與相關快取之間的一致性
 
@@ -237,13 +247,13 @@ DMA Buffer Sharing API（通常縮寫為 `DMA-BUF`）是一個 Linux 作業系�
 
 例如，一個 Video4Linux 裝置與一個圖形介面卡裝置可以透過 `DMA-BUF` 共享緩衝區，達成影片串流資料從前者產生、後者消費的零拷貝（zero-copy）傳遞。 任何 Linux 裝置驅動程式都可以實作這個 API，扮演 exporter、user（consumer）或兩者兼具的角色
 
-這項能力最早是在 DRM 中被用來實作 `PRIME`，也就是一種 GPU offloading 的解法，它透過 `DMA-BUF` 在獨立 GPU 與整合式 GPU 的 DRM driver 之間共享算出的 framebuffer。 :13 
+DRM 最早利用這項能力來實作 `PRIME`，也就是一種 GPU offloading 的解法，它透過 `DMA-BUF` 在獨立 GPU 與整合式 GPU 的 DRM driver 之間共享算出的 framebuffer。
 
-`DMA-BUF` 一個重要的特性是，共享緩衝區在 user space 會以檔案描述元的形式呈現。 :17 為了開發 `PRIME`，DRM API 新增了兩個 `ioctl`，一個用來把本地的 GEM handle 轉換成 `DMA-BUF` 檔案描述元，另一個則做相反的轉換
+`DMA-BUF` 一個重要的特性是，共享緩衝區在 user space 會以檔案描述元的形式呈現。 為了開發 `PRIME`，DRM API 新增了兩個 `ioctl`，一個用來把本地的 GEM handle 轉換成 `DMA-BUF` 檔案描述元，另一個則做相反的轉換
 
-這兩個新的 `ioctl` 後來也被重新利用，拿來修補 GEM 緩衝區分享機制本身不安全的問題。 :17 和 GEM name 不同，檔案描述元無法被隨便猜測出來，因為它不是一個全域命名空間，而且 Unix 作業系統提供了一種安全的方式，可以在 Unix domain socket 中透過 `SCM_RIGHTS` 語意來傳遞檔案描述元。 :11 
+這兩個新的 `ioctl` 後來也重新派上用場，用來修補 GEM 緩衝區分享機制本身不安全的問題。 和 GEM name 不同，檔案描述元無法被隨便猜測出來，因為它不是一個全域命名空間，而且 Unix 作業系統提供了一種安全的方式，可以在 Unix domain socket 中透過 `SCM_RIGHTS` 語意來傳遞檔案描述元。
 
-某個行程如果想把一個 GEM object 分享給另一個行程，可以先把自己的本地 GEM handle 轉換成 `DMA-BUF` 檔案描述元，再把它傳給對方，接收方則可以從收到的檔案描述元當中取得自己的 GEM handle。 :16 這種方法在 `DRI3` 中被用來在 client 與 X Server 之間分享緩衝區，也同樣被 Wayland 採用
+某個行程如果想把一個 GEM object 分享給另一個行程，可以先把自己的本地 GEM handle 轉換成 `DMA-BUF` 檔案描述元，再把它傳給對方，接收方則可以從收到的檔案描述元當中取得自己的 GEM handle。 `DRI3` 使用這種方法在 client 與 X Server 之間分享緩衝區，Wayland 也同樣採用了它
 
 ### Kernel Mode Setting
 
@@ -255,7 +265,7 @@ DMA Buffer Sharing API（通常縮寫為 `DMA-BUF`）是一個 Linux 作業系�
 
 為了避免這些衝突，X Server 在實務上成為唯一會執行 mode-setting 操作的 user space 程式；其他 user space 程式則仰賴 X Server 來設定適當的 mode，並處理所有與 mode-setting 有關的其他操作。 一開始，mode-setting 只會在 X Server 啟動流程中執行，但後來 X Server 也獲得了在執行中進行 mode-setting 的能力
 
-XFree86 3.1.2 引入了 `XFree86-VidModeExtension` extension，讓任何 X client 都能向 X Server 請求更改 modeline（解析度）。 之後 VidMode extension 又被更通用的 `XRandR` extension 所取代
+XFree86 3.1.2 引入了 `XFree86-VidModeExtension` extension，讓任何 X client 都能向 X Server 請求更改 modeline（解析度）。 之後更通用的 `XRandR` extension 取代了 VidMode extension
 
 然而，在一套 Linux 系統中，負責做 mode-setting 的程式碼並不只有這些。 在系統開機過程中，Linux 核心必須為虛擬主控台設定一個最小的文字模式（這是依據 VESA BIOS extensions 所定義的標準模式）。 此外，Linux 核心的 framebuffer driver 裡也包含用來設定 framebuffer 裝置的 mode-setting 程式碼
 
@@ -267,15 +277,15 @@ user space mode-setting 這種作法也帶來其他問題：
 - 當螢幕處於圖形模式時（例如 X 正在執行時），核心也無法在螢幕上顯示錯誤或除錯訊息，因為核心只知道 VESA BIOS 的標準文字模式
 - 更迫切的問題是，越來越多圖形應用程式開始繞過 X Server，並且出現了其他 X 的圖形堆疊替代方案，讓系統中到處都多了一份 mode-setting 程式碼的複本
 
-為了處理這些問題，mode-setting 程式碼被移入核心內部的一個單一位置，具體來說就是現有的 DRM 模組。 之後，每個行程──包含 X Server 在內──都應該透過命令請核心執行 mode-setting 操作，而由核心負責確保並行的操作不會導致狀態不一致。 新增到 DRM 模組、用來執行這些 mode-setting 操作的核心 API 與程式碼，被稱為 Kernel Mode-Setting（KMS）
+為了處理這些問題，mode-setting 程式碼統一移入核心內部的同一個位置，具體來說就是現有的 DRM 模組。 之後，每個行程（包含 X Server 在內）都應該透過命令請核心執行 mode-setting 操作，由核心負責確保並行的操作不會導致狀態不一致。 新增到 DRM 模組、用來執行這些 mode-setting 操作的核心 API 與程式碼，被稱為 Kernel Mode-Setting（KMS）
 
 Kernel Mode-Setting 帶來了好幾項好處。 最直接的一點，就是可以把重複的 mode-setting 程式碼移除，無論是在核心端（Linux console、`fbdev`）還是 user space 端（X Server 的 DDX drivers）。 KMS 也讓撰寫替代性的圖形系統變得更容易，因為它們不再需要自行實作一套 mode-setting 程式碼
 
-透過集中化的模式管理，KMS 解決了在主控台與 X 之間切換，以及在不同 X 執行個體之間切換（fast user switching）時的螢幕閃爍問題。 由於 KMS 存在於核心中，它也能在開機過程一開始就被使用，避免在這些早期階段因 mode 變更而產生的閃爍
+透過集中化的模式管理，KMS 解決了在主控台與 X 之間切換，以及在不同 X 執行個體之間切換（fast user switching）時的螢幕閃爍問題。 由於 KMS 存在於核心中，開機過程一開始就能使用它，避免在這些早期階段因 mode 變更而產生的閃爍
 
 KMS 作為核心的一部分，讓它可以使用只有在 kernel space 中才有的資源，例如中斷。 比方說，由核心本身負責 suspend/resume 之後的 mode 回復，大幅簡化了這個流程，順帶也提升了安全性（不再需要具有 root 權限的 user space 工具）。 核心也能很容易地處理新顯示裝置的 hotplug，解決了長久以來的老問題
 
-mode-setting 也和記憶體管理緊密相關──因為 framebuffer 基本上就是記憶體緩衝區──因此和圖形記憶體管理器的緊密整合是非常被建議的。 這也是為什麼 kernel mode-setting 程式碼會被併入 DRM，而不是做成一個獨立子系統的主要原因
+mode-setting 也和記憶體管理緊密相關（framebuffer 本質上就是記憶體緩衝區），因此強烈建議與圖形記憶體管理器緊密整合。 這也是 kernel mode-setting 程式碼要併入 DRM 而非做成獨立子系統的主要原因
 
 為了避免破壞既有 DRM API 的相容性，Kernel Mode-Setting 是以某些 DRM driver 的額外功能來提供的。 任何 DRM driver 在向 DRM core 註冊時，都可以選擇提供 `DRIVER_MODESET` 這個旗標，以表示它支援 KMS API。 那些實作了 Kernel Mode-Setting 的 driver 通常被稱為 KMS drivers，用來區分舊式（不具 KMS）的 DRM drivers
 
@@ -290,19 +300,19 @@ KMS 會把輸出裝置建模並管理為一組抽象的硬體區塊，這些區�
   可用的 CRTC 數量決定硬體能同時處理多少個獨立輸出裝置，因此要使用 multi-head 設定時，每個顯示裝置至少需要一個 CRTC。 如果多個 CRTC 都從同一個 framebuffer 做 scanout，則兩個（或更多）CRTC 也可以以 clone 模式運作，把相同的影像送到多個輸出裝置上
 - Connectors：connector 代表顯示控制器把 scanout 作業產生的視訊訊號送往顯示的位置。 通常在 KMS 中的 connector 概念，對應到硬體上的某個實體連接埠（VGA、DVI、FPD-Link、HDMI、DisplayPort、S-Video 等），而輸出裝置（顯示器、筆電面板等）會永久或暫時接在這些連接埠上
   
-  與目前實體接上的輸出裝置相關的資訊──例如連線狀態、EDID 資料、DPMS 狀態或支援的視訊模式──也都儲存在這個 connector 物件之中
+  與目前實體接上的輸出裝置相關的資訊（例如連線狀態、EDID 資料、DPMS 狀態或支援的視訊模式）也都儲存在這個 connector 物件之中
 - Encoders：顯示控制器必須把來自 CRTC 的視訊模式時序訊號，以適合目標 connector 的格式進行編碼。 encoder 代表能執行其中一種編碼方式的硬體區塊。 以數位輸出為例，常見的編碼包括 TMDS 與 LVDS；對於 VGA、TV out 這類類比輸出，則通常會使用特定的 DAC 區塊
   
   每一個 connector 在同一時間只能從一個 encoder 接收訊號，而且每種 connector 也只支援部分編碼格式。 此外，實體上也可能存在額外的限制，導致不是每一個 CRTC 都能連到所有可用的 encoder，從而限制了 CRTC–encoder–connector 的可用組合
 - Planes：plane 本身不是一個硬體區塊，而是一個記憶體物件，裡面包含供 scanout 引擎（CRTC）讀取的緩衝區。 持有 framebuffer 的 plane 稱為 primary plane，而每個 CRTC 都必須有一個對應的 primary plane
   
-  因為它是 CRTC 用來決定視訊模式的來源──包括顯示解析度（寬與高）、像素大小、像素格式、重新整理率等。 如果顯示控制器支援硬體游標疊加，CRTC 也可能會有對應的 cursor planes；如果它能從額外的硬體 overlay 做 scanout，並在輸出給顯示裝置的過程中「on the fly」合成或混合，則還會有 secondary planes
+  因為它是 CRTC 用來決定視訊模式的來源，包括顯示解析度（寬與高）、像素大小、像素格式、重新整理率等。 如果顯示控制器支援硬體游標疊加，CRTC 也可能會有對應的 cursor planes；如果它能從額外的硬體 overlay 做 scanout，並在輸出給顯示裝置的過程中「on the fly」合成或混合，則還會有 secondary planes
 
 #### Atomic Display
 
 近年來，社群持續投入心力，試圖讓與 KMS API 有關的一些常見操作具備原子性，特別是 mode setting 與 page flipping 這兩類操作。 這套強化後的 KMS API 就是所謂的 Atomic Display（先前稱為 atomic mode-setting 以及 atomic 或 nuclear pageflip）
 
-atomic mode-setting 的目的，是在具有多重限制的複雜設定中，透過避免那些可能導致視訊狀態變得不一致或無效的中間步驟，來確保 mode 能被正確地變更； 它也避免了在 mode-setting 失敗並且必須回復（rollback）時產生高風險的視訊狀態。 :9 
+atomic mode-setting 的目的，是在具有多重限制的複雜設定中，透過避免那些可能導致視訊狀態變得不一致或無效的中間步驟，來確保 mode 能被正確地變更； 它也避免了在 mode-setting 失敗並且必須回復（rollback）時產生高風險的視訊狀態。
 
 atomic mode-setting 透過提供 mode 測試的能力，讓我們可以事先得知某個特定的 mode 設定是否合適。 當某個 atomic mode 已經過測試並確認有效後，就可以透過一次不可分割（atomic）的 commit 操作來套用。 測試與 commit 這兩種操作是由同一個新的 `ioctl` 提供，只是使用不同的旗標
 
@@ -316,11 +326,11 @@ atomic 程序的做法，是先修改相關屬性，去構成我們想要測試�
 
 在原始的 DRM API 中，DRM 裝置 `/dev/dri/cardX` 會同時用於具特權的操作（modesetting、其他顯示控制）以及非特權的操作（rendering、GPGPU 計算）。 基於安全性考量，開啟對應的 DRM 裝置檔需要具備「相當於 root 權限」的特殊權限
 
-這導致整體架構變成只有少數可靠的 user space 程式（X server、圖形 compositor 等）可以完整存取 DRM API，包括像 modeset API 這類具特權的部分。 其他想要進行算繪或 GPGPU 計算的 user space 應用程式，必須透過一個特殊的認證介面，由 DRM 裝置的擁有者（「DRM Master」）授權
+這導致整體架構變成只有少數可靠的 user space 程式（X server、圖形 compositor 等）可以完整存取 DRM API，包括像 modeset API 這類具特權的部分。 其他想做算繪或 GPGPU 計算的 user space 應用程式，必須透過一個特殊的認證介面，由 DRM 裝置的擁有者（「DRM Master」）授權
 
 之後，這些已通過認證的應用程式，就能使用一個不含特權操作的受限版本 DRM API 來做算繪或計算。 這種設計帶來一個嚴重限制：系統上必須永遠有一個圖形 server（X Server、Wayland compositor 等）執行中，擔任某個 DRM 裝置的 DRM-Master，如此其他 user space 程式才有機會被授權使用該裝置，即使在完全沒有任何圖形顯示需求、只做 GPGPU 計算的情境中也是如此
 
-「render nodes」這個概念試圖藉由把 DRM 的 user space API 拆成兩組介面──一組具特權，一組非特權──並且為每組介面使用獨立的裝置檔（或稱「節點」），來解決上述情境。 對於系統中找到的每一個 GPU，如果對應的 DRM driver 支援 render nodes 功能，它就會在既有的 primary node `/dev/dri/cardX` 之外，再建立一個名為 `/dev/dri/renderDX` 的裝置檔，稱為 render node
+「render nodes」這個概念試圖藉由把 DRM 的 user space API 拆成兩組介面（一組具特權、一組非特權），各自使用獨立的裝置檔（或稱「節點」），來解決上述情境。 對於系統中找到的每一個 GPU，如果對應的 DRM driver 支援 render nodes 功能，它就會在既有的 primary node `/dev/dri/cardX` 之外，再建立一個名為 `/dev/dri/renderDX` 的裝置檔，稱為 render node
 
 採用 direct rendering 模型的 client，以及想要利用 GPU 計算能力的應用程式，只要擁有開啟裝置檔所需的檔案系統權限，就可以直接開啟任一現有的 render node，並透過該節點所支援的那個受限版 DRM API 子集來派送 GPU 操作，而不需要額外的特權
 
@@ -340,7 +350,7 @@ Linux DRM 子系統包含了自由且開放原始碼的 drivers，用來支援�
 
 當無法取得技術文件時，人們往往會透過「乾淨室（clean-room）」的方式進行逆向工程，來了解底層硬體。 基於這種理解，就能撰寫裝置驅動程式，並在法律上允許的任何軟體授權條款下公開釋出
 
-在少數情況下，製造商的驅動程式原始碼雖然能在網路上取得，但並未採用自由授權條款。 這代表程式碼可以被研究並為個人用途進行修改，但修改後的（通常也包含原始的）程式碼無法自由散布。 對於驅動程式中錯誤的修補也無法輕易以修改版本的形式分享出去。 因此，相較於自由與開放原始碼驅動程式，這類驅動程式的實用性會大打折扣
+在少數情況下，製造商的驅動程式原始碼雖然能在網路上取得，但並未採用自由授權條款。 這代表任何人都可以研究這份程式碼，也可以為個人用途修改，但修改後的（通常也包含原始的）程式碼無法自由散布。 對於驅動程式中錯誤的修補也無法輕易以修改版本的形式分享出去。 因此，相較於自由與開放原始碼驅動程式，這類驅動程式的實用性會大打折扣
 
 ### 專有驅動程式的問題
 
@@ -380,9 +390,9 @@ Linux 核心從來沒有維護一個穩定的核心內 application binary interf
 
 2013 年第二季，全球銷售的智慧型手機中有 79.3% 採用某個版本的 Android 作業系統，而 Linux 核心則是智慧型手機領域的主流。 硬體開發者確實有動機為自己的硬體提供 Linux 驅動程式，但由於競爭關係，卻缺乏將這些驅動程式做成自由與開放原始碼的誘因
 
-另一項問題是 Android 對 Linux 核心做的特定擴充尚未被 mainline 接受，例如 Atomic Display Framework（`ADF`）。 `ADF` 是 3.10 版 AOSP 核心中的一項功能，它在 Android 的 `hwcomposer` HAL 與核心驅動程式之間提供一個以 `dma-buf` 為中心的 framework
+另一項問題是 mainline 尚未接受 Android 對 Linux 核心做的特定擴充，例如 Atomic Display Framework（`ADF`）。 `ADF` 是 3.10 版 AOSP 核心中的一項功能，它在 Android 的 `hwcomposer` HAL 與核心驅動程式之間提供一個以 `dma-buf` 為中心的 framework
 
-`ADF` 與 `DRM-KMS` framework 存在顯著重疊。 `ADF` 並未被主線核心接受，但另一組解法（稱為 atomic mode setting），針對相同問題提出了不同的方案，目前仍在開發中。 像 `libhybris` 這類專案則嘗試利用 Android 裝置驅動程式，讓它們可以在 Android 以外的 Linux 平台上運作
+`ADF` 與 `DRM-KMS` framework 存在顯著重疊。 主線核心並未接受 `ADF`，但另一組解法（稱為 atomic mode setting）針對相同問題提出了不同的方案，目前仍在開發中。 像 `libhybris` 這類專案則嘗試利用 Android 裝置驅動程式，讓它們可以在 Android 以外的 Linux 平台上運作
 
 ### 軟體架構
 
@@ -391,7 +401,7 @@ Linux 核心從來沒有維護一個穩定的核心內 application binary interf
 - 一個 Linux 核心元件 `DRM`
 - 一個 Linux 核心元件 `KMS` 驅動程式（顯示控制器驅動程式）
 - 一個 user space 的 `libDRM` 元件（`DRM` 系統呼叫的 wrapper 函式庫，理論上只應由 `Mesa 3D` 使用）
-- 一個 user space 的 `Mesa 3D` 元件。 這個元件與硬體相關，它在 CPU 上執行，並把 `OpenGL` 命令（例如）轉換成 GPU 的機器碼。 由於裝置驅動程式被切分成多個部分，因此可以進行 marshalling
+- 一個 user space 的 `Mesa 3D` 元件。 這個元件與硬體相關，它在 CPU 上執行，並把 `OpenGL` 命令（例如）轉換成 GPU 的機器碼。 由於裝置驅動程式分成多個部分，因此可以進行 marshalling
   
   `Mesa 3D` 是唯一同時提供 `OpenGL`、`OpenGL ES`、`OpenVG`、`GLX`、`EGL` 與 `OpenCL` 的自由與開放原始碼實作。 在 2014 年 7 月，多數元件都已符合 `Gallium3D` 的規格
   
@@ -402,7 +412,7 @@ Linux 核心從來沒有維護一個穩定的核心內 application binary interf
 
 ### 歷史
 
-Linux 圖形堆疊的演進曾被 X Window System 的核心通訊協定帶離原本的路徑
+X Window System 的核心通訊協定，讓 Linux 圖形堆疊的演進偏離了原本的方向
 
 ### 自由與開放原始碼驅動程式
 
@@ -414,9 +424,9 @@ Linux 圖形堆疊的演進曾被 X Window System 的核心通訊協定帶離原
 
 AMD 為其 `Radeon` 顯示卡提供一套專有驅動程式 AMD Catalyst，可用於 Microsoft Windows 與 Linux（先前稱為 `fglrx`）。 最新版本可以從 AMD 官網下載，也有一些 Linux 發行版會在其套件庫中收錄這套驅動程式。 目前它正逐步被一套名為 `AMDGPU-PRO` 的混合驅動程式取代，這套驅動程式把開放原始碼的核心、X 與 `Mesa` 多媒體驅動程式，與源自 Catalyst 的封閉原始碼 `OpenGL`、`OpenCL` 與 `Vulkan` 驅動程式結合在一起
 
-用於 ATI–AMD GPU 的 FOSS 驅動程式在開發上統稱為 Radeon（`xf86-video-ati` 或 `xserver-xorg-video-radeon`）。 不過，這些驅動程式仍然必須將專有 microcode 載入 GPU 才能啟用硬體加速。 [驗證失敗]
+用於 ATI–AMD GPU 的 FOSS 驅動程式在開發上統稱為 Radeon（`xf86-video-ati` 或 `xserver-xorg-video-radeon`）。 不過，這些驅動程式仍然必須將專有 microcode 載入 GPU 才能啟用硬體加速。
 
-Radeon 的 3D 程式碼依照 GPU 技術被分成六個驅動程式：`radeon`、`r200` 與 `r300` 這三個 classic 驅動程式，以及 `r300g`、`r600g` 與 `radeonsi` 這三個 `Gallium3D` 驅動程式：
+Radeon 的 3D 程式碼依照 GPU 技術分成六個驅動程式：`radeon`、`r200` 與 `r300` 這三個 classic 驅動程式，以及 `r300g`、`r600g` 與 `radeonsi` 這三個 `Gallium3D` 驅動程式：
 
 - `Radeon` 支援 R100 系列
 - `R200` 支援 R200 系列
@@ -450,7 +460,7 @@ Nvidia 的自由與開放原始碼驅動程式名為 `nv`。 它的功能相當�
 
 2009 年 12 月，Nvidia 宣布他們不會支持自由圖形相關的倡議。 2013 年 9 月 23 日，公司宣布他們將釋出部分 GPU 的技術文件
 
-`Nouveau` 幾乎完全是基於透過逆向工程取得的資訊。 這個專案的目標是使用 `Gallium3D` 來為 X.Org/Wayland 提供 3D 加速。 2012 年 3 月 26 日，`Nouveau` 的 DRM 元件被標記為穩定，並從 Linux 核心的 staging 區正式移
+`Nouveau` 幾乎完全是基於透過逆向工程取得的資訊。 這個專案的目標是使用 `Gallium3D` 來為 X.Org/Wayland 提供 3D 加速。 2012 年 3 月 26 日，`Nouveau` 的 DRM 元件正式標記為穩定，並從 Linux 核心的 staging 區移出
 
 `Nouveau` 支援基於 Tesla（及更早）、Fermi、Kepler 與 Maxwell 的 GPU。 2014 年 1 月 31 日，Nvidia 員工 Alexandre Courbot 提交了一組大幅的 patch，為 `Nouveau` 加入對 GK20A（Tegra K1）的初始支援。 2014 年 6 月，Codethink reportedly 在 Tegra K1 上使用 Linux kernel 3.15 搭配 `EGL` 與「完全 100% 開放原始碼的圖形驅動 stack」，成功執行以 Wayland 為基礎的 Weston compositor
 
@@ -464,7 +474,7 @@ Nvidia 的 Unified Memory 驅動程式（`nvidia-uvm.ko`），在 Linux 上為 P
 
 2022 年 5 月，Nvidia 宣布一項新計畫與政策，將以 GPL–MIT 雙授權條款開放其 GPU Loadable Kernel Modules 的原始碼，但僅限於新的 GPU 型號，且一開始只有 alpha 品質。 官方同時表示：「這些變更只影響核心模組，user-mode 元件則保持不變
 
-user-mode 仍為封閉原始碼，並會以預先編譯的二進位檔形式隨驅動程式與 CUDA 工具包一同發布。 」 之後，這套開放原始碼驅動程式已被提升為可用於正式環境的等級，並且現在正式被建議用於 RTX 20 系列與後續 GPU。 Blackwell（RTX 50 世代）以及之後的 NVIDIA GPU 架構則僅由這套開放原始碼驅動程式支援
+user-mode 仍為封閉原始碼，並會以預先編譯的二進位檔形式隨驅動程式與 CUDA 工具包一同發布。 」 之後，這套開放原始碼驅動程式已提升至正式環境可用的等級，Nvidia 現在也正式建議 RTX 20 系列與後續 GPU 使用這套驅動。 Blackwell（RTX 50 世代）以及之後的 NVIDIA GPU 架構則僅由這套開放原始碼驅動程式支援
 
 #### Intel
 
@@ -496,7 +506,7 @@ ARM 本身並未表示有意以自由與開放原始碼授權條款來支援其�
 
 #### Imagination Technologies
 
-Imagination Technologies 是一家無晶圓廠半導體公司，負責開發與授權半導體智慧財產核心，其中包含 PowerVR GPU。 Intel 曾製造多款基於 PowerVR 的 GPU。 PowerVR GPU 被廣泛使用在行動系統單晶片（SoC）裝置上
+Imagination Technologies 是一家無晶圓廠半導體公司，負責開發與授權半導體智慧財產核心，其中包含 PowerVR GPU。 Intel 曾製造多款基於 PowerVR 的 GPU。 PowerVR GPU 廣泛用於行動系統單晶片（SoC）裝置
 
 由於它在嵌入式裝置中的廣泛使用，Free Software Foundation 已將對 PowerVR 驅動程式進行逆向工程列入其高優先順序專案清單。 截至 2022 年 3 月，Imagination 已為其 2014 年推出、基於 Rogue 架構的 PowerVR GX6250，以及較新的 A-Series 架構 AXE-1-16M 與 BXS-4-64 GPU 提供 FOSS 驅動程式
 
@@ -504,11 +514,11 @@ Imagination Technologies 是一家無晶圓廠半導體公司，負責開發與�
 
 另見：Vivante GCxxxx
 
-Vivante Corporation 是一家無晶圓廠半導體公司，授權半導體智慧財產核心並開發 GCxxxx 系列 GPU。 一套 Vivante 專有、封閉原始碼 Linux 驅動程式由 kernel space 與 user space 兩個部分組成。 雖然核心元件是開放原始碼（GPL），但 user space 元件──包含 GLES(2) 實作與 HAL 函式庫──並非開放原始碼；這些部分才是驅動程式邏輯的主要所在
+Vivante Corporation 是一家無晶圓廠半導體公司，授權半導體智慧財產核心並開發 GCxxxx 系列 GPU。 一套 Vivante 專有、封閉原始碼 Linux 驅動程式由 kernel space 與 user space 兩個部分組成。 雖然核心元件是開放原始碼（GPL），但 user space 元件（包含 GLES(2) 實作與 HAL 函式庫）並非開放原始碼，這些部分才是驅動程式邏輯的主要所在
 
 Wladimir J. van der Laan 透過研究這些二進位 blobs 的行為、檢視與修改命令串流 dump，找出並記錄了狀態位元、命令串流以及 shader ISA。 `Etnaviv` `Gallium3D` 驅動程式正是基於這份文件撰寫而成。 Van der Laan 的工作受到 `Lima` 驅動程式的啟發，該專案已產出一個功能可用但尚未最佳化的 `Gallium3D` `LLVM` 驅動程式
 
-`Etnaviv` 驅動程式在某些效能測試中表現優於 Vivante 的專有程式碼，並支援 Vivante GC400、GC800、GC1000、GC2000、GC3000 與 GC7000 系列。 2017 年 1 月，`Etnaviv` 被加入 `Mesa`，同時提供 `OpenGL ES 2.0` 與 Desktop OpenGL 2.1 支援
+`Etnaviv` 驅動程式在某些效能測試中表現優於 Vivante 的專有程式碼，並支援 Vivante GC400、GC800、GC1000、GC2000、GC3000 與 GC7000 系列。 2017 年 1 月，`Etnaviv` 進入了 `Mesa`，同時提供 `OpenGL ES 2.0` 與 Desktop OpenGL 2.1 支援
 
 #### Qualcomm
 
@@ -516,11 +526,11 @@ Wladimir J. van der Laan 透過研究這些二進位 blobs 的行為、檢視與
 
 Qualcomm 開發了 Adreno（先前稱為 ATI Imageon）行動 GPU 系列，並將其納入自家 Snapdragon 行動 SoC 系列之中。 2012 年，Phoronix 與 Slashdot 報導指出，Rob Clark 受到 `Lima` 驅動程式的啟發，正在為 Adreno GPU 系列進行驅動程式逆向工程。 在一篇被引用的部落格文章中，Clark 表示他是在自己的空閒時間進行這個專案，且 Qualcomm 平台是他唯一有可能針對開放 3D 圖形進行實作的目標
 
-他的雇主（Texas Instruments 與 Linaro）與 Imagination PowerVR 與 ARM Mali cores 有合作關係，原本應該是他主要的開發對象；他已經有可用的 2D 支援命令串流，而 3D 命令看起來具有相同特性。 驅動程式原始碼最初發佈在 Gitorious 上，專案名稱為 `freedreno`，之後被移入 `Mesa`
+他的雇主（Texas Instruments 與 Linaro）與 Imagination PowerVR 與 ARM Mali cores 有合作關係，原本應該是他主要的開發對象；他已經有可用的 2D 支援命令串流，而 3D 命令看起來具有相同特性。 驅動程式原始碼最初以 `freedreno` 為名發佈在 Gitorious 上，之後移入 `Mesa`
 
 2012 年，功能正常的 shader assembler 已經完成； 之後又基於逆向工程出的 shader compiler 開發了用於 texture mapping 與 phong shading 的示範版本。 Clark 於 2013 年 2 月 2 日的 FOSDEM 上，展示了在 `Freedreno` 上執行桌面 compositing、XBMC 媒體播放器與 Quake III Arena 的成果
 
-2013 年 8 月，`freedreno` 的核心元件（MSM 驅動程式）被接受進 mainline，並自 Linux kernel 3.12 起可供使用。 DDX 驅動程式於 2014 年 7 月加入了對 server-managed file descriptor 的支援，需要 `X.Org Server` 版本 1.16 以上
+2013 年 8 月，`freedreno` 的核心元件（MSM 驅動程式）進入 mainline，自 Linux kernel 3.12 起可供使用。 DDX 驅動程式於 2014 年 7 月加入了對 server-managed file descriptor 的支援，需要 `X.Org Server` 版本 1.16 以上
 
 2016 年 1 月，`Mesa` 的 `Gallium3D` 風格驅動程式加入了對 Adreno 430 的支援； 同年 11 月又加入了 Adreno 500 系列的支援。 `Freedreno` 可用於像 96Boards Dragonboard 410c 與 Nexus 7（2013）這類裝置上，在傳統 Linux 發行版（如 Debian 與 Fedora）以及 Android 平台中運作
 
@@ -528,13 +538,13 @@ Qualcomm 開發了 Adreno（先前稱為 ATI Imageon）行動 GPU 系列，並�
 
 另見：VideoCore
 
-Broadcom 在其 SoC 中開發並設計 VideoCore GPU 系列。 由於它被用在 Raspberry Pi 上，因此社群對於 VideoCore 的 FOSS 驅動程式有相當高的興趣。 Raspberry Pi 基金會與 Broadcom 合作，於 2012 年 10 月 24 日宣布他們已開放「所有用來驅動 GPU 的 ARM（CPU）端程式碼」為開放原始碼
+Broadcom 在其 SoC 中開發並設計 VideoCore GPU 系列。 由於 Raspberry Pi 使用了它，社群對於 VideoCore 的 FOSS 驅動程式有相當高的興趣。 Raspberry Pi 基金會與 Broadcom 合作，於 2012 年 10 月 24 日宣布他們已開放「所有用來驅動 GPU 的 ARM（CPU）端程式碼」為開放原始碼
 
 不過，根據 `Lima` 逆向工程驅動程式作者的說法，這項公告有些誤導；新開放原始碼的元件只提供 ARM CPU 與 VideoCore 之間的訊息傳遞能力，對於了解 VideoCore 本身或增加可程式性幫助不大
 
 VideoCore GPU 執行的是一個 RTOS，負責處理各種工作；視訊加速則由執行在這個專有 GPU 上的 RTOS 韌體完成，而這套韌體在當時並未一併開放原始碼。 由於當時既沒有以該專有 GPU 為目標的 toolchain，也沒有文件化的指令集，即使韌體原始碼開放，也沒有辦法從中獲得太多實際好處。 `Videocoreiv` 專案 則嘗試為 VideoCore GPU 撰寫文件
 
-2014 年 2 月 28 日（Raspberry Pi 問世滿兩週年），Broadcom 與 Raspberry Pi 基金會宣布釋出 VideoCore IV graphics core 的完整文件，以及整套圖形堆疊的原始碼，授權條款為 3-clause BSD。 這套採用自由授權條款的 3D 圖形程式碼於 2014 年 8 月 29 日被提交到 `Mesa`，並首次出現在 `Mesa` 10.3 版中
+2014 年 2 月 28 日（Raspberry Pi 問世滿兩週年），Broadcom 與 Raspberry Pi 基金會宣布釋出 VideoCore IV graphics core 的完整文件，以及整套圖形堆疊的原始碼，授權條款為 3-clause BSD。 這套採用自由授權條款的 3D 圖形程式碼於 2014 年 8 月 29 日提交到 `Mesa`，並首次出現在 `Mesa` 10.3 版中
 
 #### 其他廠商
 
@@ -542,7 +552,7 @@ VideoCore GPU 執行的是一個 RTOS，負責處理各種工作；視訊加速�
 
 然而，該公司並未與開放原始碼社群妥善合作來提供技術文件與可用的 DRM 驅動程式，使得人們對 Linux 支援的期待落空。 2011 年 1 月 6 日，有消息指出 VIA 不再有意支援自由圖形相關的倡議
 
-DisplayLink 宣布了一個名為 `Libdlo` 的開放原始碼專案，目標是在 Linux 與其他平台上支援其 USB 圖形技術。 這個專案的程式碼以 LGPL 授權釋出，但尚未被整合進任何 `X.Org` 驅動程式中。 DisplayLink 圖形支援目前可透過 mainline 核心中的 `udlfb` 驅動程式（搭配 `fbdev`），以及 `udl/drm` 驅動程式取得，後者在 2012 年 3 月時僅存在於 `drm-next` 分支中
+DisplayLink 宣布了一個名為 `Libdlo` 的開放原始碼專案，目標是在 Linux 與其他平台上支援其 USB 圖形技術。 這個專案的程式碼以 LGPL 授權釋出，但尚未整合進任何 `X.Org` 驅動程式。 DisplayLink 圖形支援目前可透過 mainline 核心中的 `udlfb` 驅動程式（搭配 `fbdev`），以及 `udl/drm` 驅動程式取得，後者在 2012 年 3 月時僅存在於 `drm-next` 分支中
 
 非硬體相關的廠商也可能協助自由圖形的發展。 Red Hat 有兩名全職員工（David Airlie 與 Jérôme Glisse）負責 Radeon 軟體的開發，而 Fedora 專案在發行新版 Linux 發行版之前，會舉辦 Fedora Graphics Test Week 活動來測試自由圖形驅動程式。 其他提供開發或支援的公司則包括 Novell 與 VMware
 
@@ -556,7 +566,7 @@ DisplayLink 宣布了一個名為 `Libdlo` 的開放原始碼專案，目標是�
 
 ## GPU 虛擬化
 
-GPU 虛擬化是指一系列技術，允許在虛擬機器上執行的圖形或 GPGPU 應用程式能夠使用 GPU 來加速。 GPU 虛擬化被用在各種應用當中，例如桌面虛擬化、雲端遊戲，以及計算科學（例如流體動力學模擬）
+GPU 虛擬化是指一系列技術，允許在虛擬機器上執行的圖形或 GPGPU 應用程式能夠使用 GPU 來加速。 GPU 虛擬化應用於各種場景，例如桌面虛擬化、雲端遊戲，以及計算科學（例如流體動力學模擬）
 
 GPU 虛擬化的實作通常會採用以下一種或多種技術：裝置模擬（device emulation）、API remoting、固定 pass-through（fixed pass-through）以及媒介式 pass-through（mediated pass-through）。 在虛擬機與 GPU 的整合比、圖形加速能力、算繪忠實度與功能支援度、跨不同硬體的可攜性、虛擬機之間的隔離性、以及支援暫停/恢復與即時遷移等面向上，每一種技術都會帶來不同的取捨
 
@@ -564,12 +574,12 @@ GPU 虛擬化的實作通常會採用以下一種或多種技術：裝置模擬�
 
 在 API remoting（也稱為 API forwarding）中，guest 應用程式對圖形 API 的呼叫會透過遠端程序呼叫轉送到 host，由 host 代表多個 guest 執行圖形命令，並以 host 的 GPU 當作單一使用者來使用
 
-當 API remoting 與裝置模擬結合時，也可以被視為一種半虛擬化（paravirtualization）形式。 當 GPU 不支援硬體輔助虛擬化時，這種技術允許在多個 guest 與 host 之間共享 GPU 資源。 這種作法在概念上相對容易實作，但也有數個缺點：
+當 API remoting 與裝置模擬結合時，也可視為一種半虛擬化（paravirtualization）形式。 當 GPU 不支援硬體輔助虛擬化時，這種技術允許在多個 guest 與 host 之間共享 GPU 資源。 這種作法在概念上相對容易實作，但也有數個缺點：
 
 - 在純粹的 API remoting 中，虛擬機在存取圖形 API 時幾乎沒有隔離性；可以透過半虛擬化來改善隔離
 - 在每個 frame 會發出大量繪圖呼叫的應用程式中，其效能可能從原生效能的 86% 低到只有 12%
 - 需要轉送的大量 API 進入點可能很複雜，若僅部分實作某些進入點，會降低算繪的忠實度
-- guest 上的應用程式可能會被限制只能使用少數可用的 API
+- guest 上的應用程式可能只能使用少數可用的 API
 
 為了最大化效能並將延遲降到最低，hypervisor 通常會在 guest 與 host 之間使用 shared memory。 若改成使用網路介面（這在分散式算繪中是常見作法），第三方軟體可以額外支援特定的 API（例如用於 CUDA 的 `rCUDA`），或在 hypervisor 的軟體套件尚未支援常見 API 時，加入典型 API 的支援（例如用於 OpenGL 的 `VMGL`）。 不過，網路延遲與序列化的額外負擔可能會抵銷這些好處
 
@@ -597,7 +607,7 @@ GPU 虛擬化的實作通常會採用以下一種或多種技術：裝置模擬�
 
 以下軟體技術實作了 fixed pass-through：
 
-- VMware Virtual Dedicated Graphics Acceleration (vDGA)[a]
+- VMware Virtual Dedicated Graphics Acceleration (vDGA)
 - Parallels Workstation Extreme
 - Hyper-V Discrete Device Assignment (DDA)
 - Citrix XenServer GPU pass-through
@@ -612,7 +622,7 @@ GPU 虛擬化的實作通常會採用以下一種或多種技術：裝置模擬�
 
 ###### 桌機
 
-在桌上型電腦中，多數顯示卡都可以被做 pass-through，不過對於使用 Pascal 架構或更早架構的顯示卡而言，如果該 GPU 也被用來啟動 host 系統，那麼其 VBIOS 就必須一併在虛擬機器中做 pass-through
+在桌上型電腦中，多數顯示卡都可以做 pass-through，不過對於使用 Pascal 架構或更早架構的顯示卡而言，如果該 GPU 也被用來啟動 host 系統，那麼其 VBIOS 就必須一併在虛擬機器中做 pass-through
 
 ###### 筆電
 
@@ -628,13 +638,13 @@ GPU 虛擬化的實作通常會採用以下一種或多種技術：裝置模擬�
 
 ### Mediated pass-through
 
-在 mediated device pass-through 或 full GPU virtualization 中，GPU 硬體會透過 IOMMU 為每個 guest 提供帶有虛擬記憶體範圍的 context，而 hypervisor 則會把各個 guest 的圖形命令直接送往 GPU。 這種技術是一種硬體輔助虛擬化形式，能達到接近原生[b] 的效能與高度的算繪忠實度
+在 mediated device pass-through 或 full GPU virtualization 中，GPU 硬體會透過 IOMMU 為每個 guest 提供帶有虛擬記憶體範圍的 context，而 hypervisor 則會把各個 guest 的圖形命令直接送往 GPU。 這種技術是一種硬體輔助虛擬化形式，能達到接近原生的效能與高度的算繪忠實度
 
 如果硬體能把各個 context 暴露成完整的邏輯裝置，那麼 guest 就能使用任意 API；否則，各種 API 與驅動程式就必須自行處理 GPU context 所帶來的額外複雜度。 其缺點之一，是在存取 GPU 資源時，虛擬機之間可能只有很少的隔離性
 
 以下軟體與硬體技術實作了 mediated pass-through：
 
-- VMware Virtual Shared Pass-Through Graphics Acceleration[a]，搭配 Nvidia vGPU 或 AMD MxGPU
+- VMware Virtual Shared Pass-Through Graphics Acceleration，搭配 Nvidia vGPU 或 AMD MxGPU
 - Citrix XenServer shared GPU，搭配 Nvidia vGPU、AMD MxGPU 或 Intel GVT-g
 - 搭配 Intel GVT-g 的 Xen 與 KVM
 - Thincast Workstation - Virtual 3D 功能（Direct X 12 與 Vulkan 3D API）

@@ -16,7 +16,7 @@ virtio 及本規格的目的在於讓虛擬環境與 guest 能夠透過一個直
 - 直接：  
   Virtio 裝置使用中斷與 DMA 等常見的匯流排機制，撰寫裝置驅動程式的人應該不陌生。 Virtio 裝置並沒有使用 page-flipping 或 COW（Copy-On-Write）等特殊的機制，它就是一個普通的裝置
 - 高效：  
-  Virtio 裝置由輸入與輸出的描述符的環（ring）組成，這些環被整齊地排列，以避免驅動程式與裝置同時寫入同一快取列時所產生的快取效應
+  Virtio 裝置由輸入與輸出的描述符環（ring）組成，這些環整齊排列，以避免驅動程式與裝置同時寫入同一快取列時所產生的快取效應
 - 標準：  
   除了需要支援裝置所連接的匯流排以外，Virtio 對其運作環境沒有其他要求。 本規格中，virtio 裝置透過 MMIO、Channel I/O 與 PCI 匯流排傳輸來實作，早期的草稿曾在其他匯流排上實作過，但未收錄於此
 - 可擴充：  
@@ -131,7 +131,7 @@ Legacy 裝置與 Legacy 驅動程式不符合本規格。 為了簡化從這些�
 
 ### 1.4 結構規格
 
-許多裝置與驅動程式的「記憶體內」結構配置使用 C 的 `struct` 語法來描述。 所有結構預設都不包含額外的填充（padding）。 為了強調這點，在已知一般 C 編譯器可能在結構內插入額外填充的情況，會以 GNU C 的 `__attribute__((packed))` 語法加以標示
+許多裝置與驅動程式的「記憶體內」結構配置使用 C 的 `struct` 語法來描述。 所有結構均假設不含額外的填充（padding）。 為了強調這點，在已知一般 C 編譯器可能在結構內插入額外填充的情況，會以 GNU C 的 `__attribute__((packed))` 語法加以標示
 
 在結構定義中使用的整數資料型別，遵循以下慣例：
 
@@ -538,7 +538,7 @@ Legacy 要求「以頁對齊的大區塊」配置，三者按順序排在同一�
 控制整個 virtqueue 總位元組數的是匯流排特定的 Queue Size 欄位。 在使用 Legacy 介面時，transitional 驅動程式必須從裝置讀取該 Queue Size，並且必須依照下列公式配置整個 virtqueue 的總大小（其中 Queue Align 記作 `qalign`，Queue Size 記作 `qsz`）：
 
 ```c
-#define ALIGN(x) (((x) + qalign) & qalign)
+#define ALIGN(x) (((x) + qalign) & ~qalign)
 static inline unsigned virtq_size(unsigned int qsz) 
 { 
     return ALIGN(sizeof(struct virtq_desc)*qsz + sizeof(u16)*(3 + qsz)) 
@@ -1224,7 +1224,7 @@ virtqueue 的各部分在 guest 記憶體中都必須是物理連續的，且有
 
 #### 2.8.12 裝置需求：Virtqueue
 
-裝置必須「依環上出現的順序」處理驅動的描述符。 裝置必須「依實際完成的順序」把裝置端的描述符寫回環中。 裝置在「開始寫入描述符之後」可以重新排序描述符寫入的順序
+裝置必須「依環上出現的順序」開始處理驅動的描述符。 裝置必須「依實際完成的順序」開始把裝置端的描述符寫入環中。 裝置在開始寫入之後，可以對寫入順序做重新排序
 
 #### 2.8.13 Virtqueue 描述符格式
 
@@ -1284,7 +1284,7 @@ struct pvirtq_event_suppress {
 
 #### 2.8.19 驅動需求：間接描述符
 
-若為協商 `VIRTIO_F_INDIRECT_DESC` 特徵，驅動不得自行設定 `VIRTQ_DESC_F_INDIRECT` 旗標。 對於間接描述符表中的描述符，驅動除了 `VIRTQ_DESC_F_WRITE` 外，不得設定任何其他旗標
+若未協商 `VIRTIO_F_INDIRECT_DESC` 特徵，驅動不得設定 `VIRTQ_DESC_F_INDIRECT` 旗標。 對於間接描述符表中的描述符，驅動除了 `VIRTQ_DESC_F_WRITE` 外，不得設定任何其他旗標
 
 驅動不得建立長度超過裝置允許的描述符鏈。 在由 `VIRTQ_DESC_F_NEXT` 鏈接的 scatter-gather 清單中，驅動不得在「直接描述符」上設置 `VIRTQ_DESC_F_INDIRECT` 旗標
 
@@ -1320,7 +1320,7 @@ virtqueue 的運作分成兩部分：向裝置提供新的可用緩衝，以及�
 9. 若 `d` 是環中的最後一個描述符，則切換 Driver Ring Wrap Counter
 10. 否則，將 `d` 前進到下一個描述符
 
-上述流程會讓「單一描述符的緩衝」變成可用的。 然而一般來說，驅動程式可能會將一批描述符作為單一請求的一部分。 在那種情況下，驅動程式會延後更新第一個描述子的 `flags`（以及先前的記憶體屏障），直至其餘描述符都完成了初始化之後
+上述流程會讓「單一描述符的緩衝」變成可用的。 然而一般來說，驅動程式可能會將一批描述符作為單一請求的一部分。 在那種情況下，驅動程式會延後更新第一個描述符的 `flags`（以及先前的記憶體屏障），直至其餘描述符都完成了初始化之後
 
 一旦驅動更新了描述符的 `flags` 欄位，就等於公開了該描述符及其內容。 裝置可以立即存取該描述符、驅動所建立的任何後續描述符，以及它們所參考的記憶體
 
@@ -1342,8 +1342,8 @@ virtqueue 的運作分成兩部分：向裝置提供新的可用緩衝，以及�
 /* 注意：vq->avail_wrap_count 的初始值為 1 */
 /* 注意：vq->sgs 是與 ring 同大小的陣列 */
 
-d = alloc_id(vq); 
- 
+id = alloc_id(vq);
+
 first = vq->next_avail; 
 sgs = 0; 
 for (each buffer element b) { 
@@ -2092,7 +2092,7 @@ struct virtio_admin_cmd_legacy_notify_info_result {
 
 一旦驅動程式設定了 `DRIVER_OK` 狀態位元，裝置上所有已配置的 virtqueue 都被視為「已上線（live）」。 而只要裝置被重置，該裝置的所有 virtqueue 就都不再是 live
 
-#### 3.3.1 驅動程式需求：裝置清理由
+#### 3.3.1 驅動程式需求：裝置清理
 
 在 live 的 virtqueue 上，對於已暴露（exposed）的緩衝區，也就是那些已被提供給裝置、但尚未被裝置使用的緩衝區——驅動程式不得修改其 virtqueue 項目
 
@@ -2444,7 +2444,7 @@ cap.offset + queue_notify_off * notify_off_multiplier
 對於未提供 `VIRTIO_F_NOTIFICATION_DATA` 的裝置：
 
 - `cap.offset` 必須以 2-byte 對齊
-- 裝置必須將 `notify_off_multiplier` 設為 2 的偶次方，或設為 0
+- 裝置必須將 `notify_off_multiplier` 設為 2 的偶數次方，或設為 0
 - 裝置所呈現的 `cap.length` 值必須至少為 2，且必須足以支援所有受支援佇列在所有可能組態下的通知偏移量
 - 對於所有佇列，裝置所呈現的 `cap.length` 必須滿足：
   ```c
@@ -2593,7 +2593,7 @@ struct virtio_pci_cfg_cap {
 
 裝置必須至少提供一個 `VIRTIO_PCI_CAP_PCI_CFG` 能力。 當偵測到驅動對 `pci_cfg_data` 的寫入時，裝置必須在由 `cap.bar` 指定的 BAR 與 `cap.offset` 指定的偏移量組合起來的位址，使用 `pci_cfg_data` 的前 `cap.length` 個位元組，執行一次寫入存取
 
-當偵測到驅動對 `pci_cfg_data` 的讀取時，裝置必須在由 `cap.bar` 指定的 BAR 與 `cap.offset` 指定的偏移量組合起來的位址，執行一次長度為 `cap.length` 的讀取，並把讀得的前 `cap.length` 個位元組存回 `pci_cfg_dat`
+當偵測到驅動對 `pci_cfg_data` 的讀取時，裝置必須在由 `cap.bar` 指定的 BAR 與 `cap.offset` 指定的偏移量組合起來的位址，執行一次長度為 `cap.length` 的讀取，並把讀得的前 `cap.length` 個位元組存回 `pci_cfg_data`
 
 ###### 4.1.4.9.2 驅動程式需求：PCI configuration access 能力
 
@@ -3325,7 +3325,7 @@ virtqueue 的組態程序如下：
 6. 透過向 `QueueAlign` 寫入位元組為單位的對齊值，通知裝置 Used Ring 的對齊
 7. 將隊列第一個頁面的實體頁號寫入 `QueuePFN` 暫存器
 
-通知機制並未改變（與非 legacy 介面相同
+通知機制並未改變（與非 legacy 介面相同）
 
 #### 4.2.5 Features reserved for future use
 
