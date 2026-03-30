@@ -325,7 +325,8 @@ export default sidebar([
       "RasterI/",
       "ShionGraduate/",
       "FeelWithTheHeart/",
-      "AboutTranslation/"
+      "AboutTranslation/",
+      "TheStubborn/"
     ],
   },
 ]);
