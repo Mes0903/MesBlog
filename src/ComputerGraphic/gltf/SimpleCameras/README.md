@@ -117,12 +117,7 @@ category: computer-graphic
 
 這份 asset 的幾何模型是單位正方形（unit square），它會繞著 x 軸旋轉 -45 度，以突顯不同相機的視角效果。 下圖 15a 展示了三種視角的渲染結果，前兩張是來自 asset 中的兩台相機，第三張則是使用外部、使用者自定義視角所看到的畫面：
 
-<div class = "center-column">
-
-![](image/cameras.png)
-(Image 15a: The effect of rendering the scene with different cameras.)
-
-</div>
+![（Image 15a: The effect of rendering the scene with different cameras.）](image/cameras.png)
 
 ## Camera definitions
 

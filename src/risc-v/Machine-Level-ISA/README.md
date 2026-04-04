@@ -23,7 +23,7 @@ category: risc-v
 
 `MXL`（Machine XLEN）欄位會編碼這顆 hart 所使用的基礎整數指令集（base integer ISA）的寬度，如表 9 所示。 `MXL` 是唯讀欄位。 若 `misa` 的值不為 0，則 `MXL` 欄位代表 M-mode 下的有效 XLEN，這個常數值被稱為 MXLEN。 XLEN 永遠不會大於 MXLEN，但在較低權限的模式中，XLEN 可能小於 MXLEN
 
-<span class = "center-column">
+<center-panel natural title="（Table 9. Encoding of MXL field in `misa`）">
 
 | MXL | XLEN |
 | - | - |
@@ -31,9 +31,7 @@ category: risc-v
 | 2 | 64 |
 | 3 | Reserved |
 
-（Table 9. Encoding of MXL field in `misa`）
-
-</span>
+</center-panel>
 
 ::: tip  
 在 RISC-V 規格裡有三種基礎整數指令集（base integer ISA）：RV32I、RV64I、RV128I，它們的 XLEN 分別為 32、64、128 bit
@@ -67,7 +65,7 @@ category: risc-v
 而 `misa` 只是表達你「打算」支援哪些 extension，一旦你把某個 bit 清掉（即使電路還在），它的指令行為就不是照規範走，因此就不算有「實作」該 extension。 比如把 `misa.F` 清掉後，即使硬體能跑浮點指令，CPU 也會當作這些指令是非法的，這就是「未實作」。 這讓 `misa` 不只是資訊回報用途，也可以讓實作端支援切換功能  
 :::
 
-<span class = "center-column">
+<center-panel natural title="（Table 10. Encoding of Extensions field in `misa`. All bits that are reserved for future use must return zero when read.）">
 
 | Bit | Character | Description                                                |
 | --: | :-------: | ---------------------------------------------------------- |
@@ -98,9 +96,7 @@ category: risc-v
 |  24 |     Y     | *Reserved*                                                 |
 |  25 |     Z     | *Reserved*                                                 |
 
-（Table 10. Encoding of Extensions field in `misa`. All bits that are reserved for future use must return zero when read.）
-
-</span>
+</center-panel>
 
 - 若「X」這個 bit 為 1，表示有非標準的 extension 被實作，像是廠商自訂的功能之類的
 - 若「B」這個 bit 為 1，表示該實作支援 Zba、Zbb 和 Zbs 這些 extension 所定義的指令。 若「B」是 0，則表示該實作可能不支援其中一個或多個 Zba、Zbb、Zbs extension
@@ -521,7 +517,7 @@ HINT 指令是一種「無作用指令」，常用來對 CPU 下 hint 或佔位�
 
 `mstatus` 和 `mstatush` 中的 `MBE`、`SBE`、`UBE` 位元是 WARL 的欄位，用來控制「非 instruction fetch」的記憶體存取的位元端序（endianness）。 instruction fetch 始終是用 little-endian
 
-`MBE` 用來控制當處於 M-mode（且 `mstatus.MPRV=0`）時，非指令抓取的記憶體存取是使用 little-endian (`MBE=0`) 還是 big-endian (`MBE=1`)。 若系統不支援 S-mode，則 `SBE` 為唯讀的 0，否則 `SBE` 用來控制當處於 S-mode 時，顯式執行的 load 與 store 指令是採用 little-endian (`SBE=0`) 還是 big-endian (`SBE=1`)。 若系統不支援 U-mode，則 `UBE` 為唯讀的 0，否則 `UBE` 用來控制當處於 U-mode 時，顯式執行的 load 與 store 指令是採用 little-endian (`UBE=0`) 還是 big-endian (`UBE=1`)
+`MBE` 用來控制當處於 M-mode（且 `mstatus.MPRV=0`）時，非指令抓取的記憶體存取是使用 little-endian（`MBE=0`） 還是 big-endian（`MBE=1`）。 若系統不支援 S-mode，則 `SBE` 為唯讀的 0，否則 `SBE` 用來控制當處於 S-mode 時，顯式執行的 load 與 store 指令是採用 little-endian（`SBE=0`） 還是 big-endian（`SBE=1`）。 若系統不支援 U-mode，則 `UBE` 為唯讀的 0，否則 `UBE` 用來控制當處於 U-mode 時，顯式執行的 load 與 store 指令是採用 little-endian（`UBE=0`） 還是 big-endian（`UBE=1`)
 
 對於如 page table 等 supervisor-level 的記憶體管理資料結構所進行的「隱式存取」，其端序始終由 `SBE` 控制。 由於變更 `SBE` 會改變硬體對這些資料結構的解讀方式，若在 `SBE` 變更期間仍有這些資料結構在使用中，M-mode 軟體必須在變更 `SBE` 後執行 `SFENCE.VMA x0, x0` 指令
 
@@ -613,7 +609,7 @@ TVM 機制透過允許 guest OS 執行於 S-mode 上（而非傳統上使用 U-m
 
 `FS`、`VS`、與 `XS` 這三個欄位都使用與 Table 11 相同的狀態編碼，其有四種可能的狀態值，分別是 `Off`、`Initial`、`Clean`、與 `Dirty`：
 
-<span class = "center-column">
+<center-panel natural title="（Table 11. Encoding of FS[1:0], VS[1:0], and XS[1:0] status fields）">
 
 | Status | FS and VS Meaning | XS Meaning                              |
 |--------|-------------------|-----------------------------------------|
@@ -622,9 +618,7 @@ TVM 機制透過允許 guest OS 執行於 S-mode 上（而非傳統上使用 U-m
 | 2      | Clean             | None dirty, some clean                  |
 | 3      | Dirty             | Some dirty                              |
 
-（Table 11. Encoding of FS[1:0], VS[1:0], and XS[1:0] status fields）
-
-</span>
+</center-panel>
 
 ::: tip  
 
@@ -702,7 +696,7 @@ U-mode ISA 的擴充常常會包含額外的 U-mode 狀態，這些狀態可能�
 
 表格 12 顯示了 `FS`、`VS` 和 `XS` 狀態位元的所有可能狀態轉移。 注意，標準的浮點與向量 extension 並不支援 U-mode 的 unconfigure 或 enable/disable 等用來切換狀態的指令：
 
-<span class = "center-column">
+<center-panel natural title="（Table 12. `FS`, `VS`, and `XS` state transitions）">
 
 | <span class = "purple">**Current State / Action**</span> | <span class = "purple">**Off**</span>     | <span class = "purple">**Initial**</span> | <span class = "purple">**Clean**</span>   | <span class = "purple">**Dirty**</span>   |
 |----------------------------|-------------|-------------|-------------|-------------|
@@ -728,9 +722,7 @@ U-mode ISA 的擴充常常會包含額外的 U-mode 狀態，這些狀態可能�
 | Action?                   | Execute     | Execute     | Execute     | Execute     |
 | Next state                | Initial     | Initial     | Initial     | Initial     |
 
-（Table 12. `FS`, `VS`, and `XS` state transitions）
-
-</span>
+</center-panel>
 
 系統提供標準的特權指令來初始化、儲存與還原 extension 狀態，透過將該狀態視為不透明物件的方式，使 S-mode 的程式碼不需要了解所新增 extension 狀態的細節
 
@@ -783,7 +775,7 @@ Zicfilp extension 新增了 `SPELP` 和 `MPELP` 欄位，這兩個欄位會記�
 標準在 trap vector 基底位址的設計上提供了高度的彈性。 一方面，我們不希望低階實作需要儲存太多額外狀態； 另一方面，我們也希望保有對大型系統的靈活支援能力
 :::
 
-<span class = "center-column">
+<center-panel natural title="（Table 13. Encoding of `mtvec` MODE field.）">
 
 | Value | Name     | Description                                               |
 |-------|----------|-----------------------------------------------------------|
@@ -791,9 +783,7 @@ Zicfilp extension 新增了 `SPELP` 和 `MPELP` 欄位，這兩個欄位會記�
 | 1     | Vectored | Asynchronous interrupts set `pc` to `BASE` + 4 × cause      |
 | ≥2    | ---      | *Reserved*                                                |
 
-（Table 13. Encoding of `mtvec` MODE field.）
-
-</span>
+</center-panel>
 
 `MODE` 欄位的編碼方式如表 13 所示。 當 `MODE` 設為 `Direct` 時，所有進入 M-mode 的 trap 都會把 `pc` 設定為 `BASE` 欄位中的位址。 而當 `MODE` 設為 `Vectored` 時，所有同步例外依然會跳到 `BASE`，但中斷會跳到 `BASE` 加上中斷原因編號乘以 4 的偏移位址。 例如，一個 M-mode 的 timer 中斷（見表 14）會讓 `pc` 被設為 `BASE + 0x1c`
 
@@ -920,7 +910,7 @@ trap delegation 只能從 M-mode 向下轉交下層權限的 trap，但不能逆
 machine-level 的中斷暫存器負責處理少數幾個核心中斷來源，這些來源被指派了固定的服務優先順序以簡化設計。 而外部中斷控制器則可以實作更複雜的優先排序機制，對大量中斷來源進行管理，最後再將它們多工輸入到 machine-level 的中斷來源中
 
 ::: tip  
-machine-level (`mip`, `mie`) 處理的是「根中斷來源」，如軟體、timer、外部中斷。 外部中斷控制器（如 PLIC）可以管理更多中斷來源（例如 GPIO、UART、Ethernet），PLIC 會根據內部設定的優先權做 arbitration，然後把最高優先權的中斷送到 `MEIP`，這樣 machine-level 就只需要處理一個外部中斷來源了  
+machine-level (`mip`, `mie`） 處理的是「根中斷來源」，如軟體、timer、外部中斷。 外部中斷控制器（如 PLIC）可以管理更多中斷來源（例如 GPIO、UART、Ethernet），PLIC 會根據內部設定的優先權做 arbitration，然後把最高優先權的中斷送到 `MEIP`，這樣 machine-level 就只需要處理一個外部中斷來源了  
 :::
 
 不可遮蔽中斷（non-maskable interrupt, NMI）不會透過 `mip` 暫存器顯示，因為在執行 NMI 的 trap handler 時，處理器就會隱含地知道 NMI 已經發生了  
@@ -1119,7 +1109,7 @@ load 與 load-reserved 指令會產生 load 類型的例外，而 store、store-
 我們並不區分特權指令例外與非法指令例外。 這簡化了整體架構，也能隱藏某些高特權指令是否被實作的細節。 負責處理 trap 的特權層可以自行決定是否需要區分這些情況，以及要視某個目標 opcode 為非法還是特權的  
 :::
 
-<span class = "center-column">
+<center-panel natural title="（Table 14. Machine cause (`mcause`) register values after trap.）">
 
 | Interrupt | Exception Code | Description                            |
 |-----------|----------------|----------------------------------------|
@@ -1165,11 +1155,9 @@ load 與 load-reserved 指令會產生 load 類型的例外，而 store、store-
 | 0         | 48–63          | *Designated for custom use*            |
 | 0         | ≥64            | *Reserved*                             |
 
-（Table 14. Machine cause (`mcause`) register values after trap.）
+</center-panel>
 
-</span>
-
-<span class = "center-column">
+<center-panel natural title="（Table 15. Synchronous exception priority in decreasing priority order）">
 
 | Priority  | Exc.Code      | Description                                                                 |
 |-----------|---------------|-----------------------------------------------------------------------------|
@@ -1186,9 +1174,7 @@ load 與 load-reserved 指令會產生 load 類型的例外，而 store、store-
 |           | 5, 7          | With physical address for an explicit memory access: Load/store/AMO access fault |
 | *Lowest*  | 4, 6          | If not higher priority: Load/store/AMO address misaligned                   |
 
-（Table 15. Synchronous exception priority in decreasing priority order）
-
-</span>
+</center-panel>
 
 當虛擬位址被轉換為物理位址時，位址轉譯演算法會決定要觸發哪一種例外。 load/store/AMO 的 address-misaligned 例外，可能比 page fault 或 access fault 優先，也可能較晚發生
 
@@ -1269,7 +1255,7 @@ software-check exception 是軟體保護機制（如 CFI、shadow stack）檢查
 
 ![（Figure 24. Machine Configuration Pointer (`mconfigptr`) register.）](image/mconfigptr.png)
 
-這個指標的位元對齊程度不能少於 MXLEN。 也就是說，如果 MXLEN 是 8n，則 `mconfigptr` 的第 0 至 (log<sub>2</sub>n) – 1 位元必須為 0
+這個指標的位元對齊程度不能少於 MXLEN。 也就是說，如果 MXLEN 是 8n，則 `mconfigptr` 的第 0 至（log<sub>2</sub>n） – 1 位元必須為 0
 
 ::: info  
 設定資料結構的格式與結構尚未標準化。 某些實作中，`mconfigptr` 可能會是硬編碼的固定值； 也有可能允許設定其內容，使其在 CSR 讀取時回傳不同的值。 舉例來說，`mconfigptr` 可能會對應到某個記憶體映射的暫存器，而該暫存器會在開機過程中由平台或 M-mode 軟體設定  
@@ -1287,7 +1273,7 @@ software-check exception 是軟體保護機制（如 CFI、shadow stack）檢查
 
 如果不支援 S-mode，或是 `satp.MODE` 為唯讀的 0（即永遠是 Bare 模式），則實作可以將 `FIOM` 設為唯讀的 0
 
-<span class = "center-column">
+<center-panel natural title="（Table 16. Modified interpretation of FENCE predecessor and successor sets for modes less privileged than M when `FIOM=1`）">
 
 | Instruction bit | Meaning when set                                                         |
 |------------------|-------------------------------------------------------------------------|
@@ -1296,9 +1282,7 @@ software-check exception 是軟體保護機制（如 CFI、shadow stack）檢查
 | SI               | Successor device input and memory reads (SR implied)                    |
 | SO               | Successor device output and memory writes (SW implied)                  |
 
-（Table 16. Modified interpretation of FENCE predecessor and successor sets for modes less privileged than M when `FIOM=1`）
-
-</span>
+</center-panel>
 
 ::: info  
 `menvcfg` 中的 `FIOM` 位元之所以存在，是為了讓 M-mode 可以模擬第 21 章中的 hypervisor extension，而該 extension 中的 hypervisor CSR henvcfg 也有相對應的 FIOM 位元  
@@ -1483,7 +1467,7 @@ sw a0, 0(t1)     # New value.
 `xRET` 指令可以在其特權模式 `x` 或更高的特權模式中執行。 如果在較高特權層執行一條「較低特權層的 `xRET`」，處理器會從該較低特權層的「中斷啟用欄位」與「特權堆疊」中彈出（pop）狀態，並依此恢復中斷啟用位與特權級。 若試圖在低於 `x` 的特權模式下執行 `xRET` 指令，則會觸發 illegal-instruction 例外。 除了第 3.1.6.1 節所述的特權堆疊操作之外，`xRET` 還會將 `pc` 設為儲存在對應 `xepc` 暫存器中的位址
 
 ::: tip  
-簡單來說執行一條「返回到較低特權層 (`x`) 的 `xRET`」時，硬體會從 `xPIE` / `xPP` 欄位（一格的硬體堆疊），把先前保存的 `IE` 位與特權級拿出來做 restore。 有關特權堆疊（privilege stack），詳細請回去看 3.1.6.1 節的描述  
+簡單來說執行一條「返回到較低特權層（`x`） 的 `xRET`」時，硬體會從 `xPIE` / `xPP` 欄位（一格的硬體堆疊），把先前保存的 `IE` 位與特權級拿出來做 restore。 有關特權堆疊（privilege stack），詳細請回去看 3.1.6.1 節的描述  
 :::
 
 若系統支援 A 擴充（Atomic extension），則 `xRET` 指令可以清除任何未完成的 `LR` 位址保留，但不強制要清除。 若 trap handler 需要清除保留，應該在執行 `xRET` 前就顯式地清除它（例如透過執行一個假的 `SC` 指令）
@@ -1685,7 +1669,7 @@ PMA 描述的是系統中每個物理記憶體位址區段的硬體屬性。 這
 
 - 在發生故障的指令之前，所有指令都已完全執行（retired）並更新了架構狀態
 - 故障之後的所有指令都還沒有開始、或即使開始也沒有對架構狀態留下任何副作用
-- 保存的程式計數器 (`PC`) 精確指向引發 trap 的那條指令（若 trap 是同步的）
+- 保存的程式計數器（`PC`） 精確指向引發 trap 的那條指令（若 trap 是同步的）
 
 換句話說，從軟體觀點來看，程式執行到發生 trap 的那條指令時就「暫停」下來了，之前的都算數、之後的都沒發生，好像在一條完美的順序化機器上執行一樣  
 :::
@@ -1777,7 +1761,7 @@ attached processors 指的是除了主 hart 之外，也能直接存取系�
 建議在可能的情況下，I/O 區段至少提供 AMOLogical 的支援
 :::
 
-<span class = "center-column">
+<center-panel natural title="（Table 17. Classes of AMOs supported by I/O regions.）">
 
 | AMO Class       | Supported Operations                                                                      |
 |----------------|--------------------------------------------------------------------------------------------|
@@ -1786,9 +1770,7 @@ attached processors 指的是除了主 hart 之外，也能直接存取系�
 | AMOLogical     | above + `amoand`, `amoor`, `amoxor`                                                        |
 | AMOArithmetic  | above + `amoadd`, `amomin`, `amomax`, `amominu`, `amomaxu`                                 |
 
-（Table 17. Classes of AMOs supported by I/O regions.）
-
-</span>
+</center-panel>
 
 #### 3.6.3.2. Reservability PMA
 
@@ -1923,8 +1905,8 @@ RISC-V 的設計哲學是「軟體可替代硬體」，所以理論上，如果�
 ::: tip  
 當 A 核心寫入某資料，B 核心也能讀寫該資料，且其中有快取，那就必須做同步：
 
-- 硬體實作： 如 MESI / MOESI 協議，會透過 snooping 或 directory-based coherence 維護一致性
-- 軟體實作： OS 需手動執行 fence、flush、invalidate，管理複雜、且容易出錯
+- 硬體實作：如 MESI / MOESI 協議，會透過 snooping 或 directory-based coherence 維護一致性
+- 軟體實作：OS 需手動執行 fence、flush、invalidate，管理複雜、且容易出錯
 
 硬體一致性較快但成本高，軟體一致性可省硬體但犧牲效能與穩定性  
 :::
@@ -2069,7 +2051,7 @@ PMP 檢查適用於所有「有效特權模式」為 S 或 U 的存取，例如�
 :::
 
 ::: info  
-在 RV64 中，項目 `8` ~ `15` 的組態存放於 `pmpcfg2`（而不是 `pmpcfg1`）。 這樣的設計可降低同時支援不同 MXLEN（32 與 64 位元）時的成本，因為在 RV32 與 RV64 裡，項目 `8` ~ `11` 的設定都位於 `pmpcfg2` 的低 32 位元（bits 31:0）  
+在 RV64 中，項目 `8` ~ `15` 的組態存放於 `pmpcfg2`（而不是 `pmpcfg1`）。 這樣的設計可降低同時支援不同 MXLEN（32 與 64 位元）時的成本，因為在 RV32 與 RV64 裡，項目 `8` ~ `11` 的設定都位於 `pmpcfg2` 的低 32 位元（bits 31：0）  
 :::
 
 ![（Figure 30. RV32 PMP configuration CSR layout.）](image/rv32_pmp.png)
@@ -2123,7 +2105,7 @@ PMP 組態暫存器中的 `A` 欄位用來編碼對應 PMP 位址暫存器的位
   - 任意範圍的上界（top boundary of an arbitrary range，簡稱 TOR）
   - 這些模式都可達到 4 byte 的粒度
 
-<span class = "center-column">
+<center-panel natural title="（Table 18. Encoding of A field in PMP configuration registers）">
 
 | A | Name  | Description                                      |
 |---|-------|--------------------------------------------------|
@@ -2132,9 +2114,7 @@ PMP 組態暫存器中的 `A` 欄位用來編碼對應 PMP 位址暫存器的位
 | 2 | NA4   | Naturally aligned four-byte region               |
 | 3 | NAPOT | Naturally aligned power-of-two region, ≥8 bytes  |
 
-（Table 18. Encoding of A field in PMP configuration registers）
-
-</span>
+</center-panel>
 
 ::: tip  
 位址暫存器並不一定是直接存著一段位址範圍，其會利用 `A` 欄位來表示「這顆位址暫存器如何描述一段範圍？」，然後再依規則把位址範圍解析出來  
@@ -2142,7 +2122,7 @@ PMP 組態暫存器中的 `A` 欄位用來編碼對應 PMP 位址暫存器的位
 
 NAPOT 會利用相關的位址暫存器的低位元來編碼其區域大小，如表 19 所示：
 
-<span class = "center-column">
+<center-panel natural title="（Table 19. NAPOT range encoding in PMP address and configuration registers）">
 
 | pmpaddr           | pmpcfg.A | Match type and size                |
 |-------------------|----------|------------------------------------|
@@ -2156,9 +2136,7 @@ NAPOT 會利用相關的位址暫存器的低位元來編碼其區域大小，�
 | 0111...​1111       | NAPOT    | 2<sup>(XLEN+2)</sup>-byte NAPOT range        |
 | 1111...​1111       | NAPOT    | 2<sup>(XLEN+3)</sup>-byte NAPOT range        |
 
-（Table 19. NAPOT range encoding in PMP address and configuration registers）
-
-</span>
+</center-panel>
 
 ::: tip  
 把位址暫存器最後出現的「連續 1」的數目當作要的區塊範圍。 有 N 個連續的 1 → 大小為 2<sup>(N+3)</sup>，而起點為上表中 `y` 的部分。 舉個例子，假設 `XLEN = 32`，如果我們想要用 NAPOT 表示 `0x2040_0000` ~ `0x2080_0000`（4 MiB 區段），則：

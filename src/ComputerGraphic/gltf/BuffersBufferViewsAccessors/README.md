@@ -27,12 +27,7 @@ category: computer-graphic
   ],
 ```
 
-<div class = "center-column">
-
-![](image/buffer.png)
-(Image 5a: The buffer data, consisting of 44 bytes.)
-
-</div>
+![（Image 5a: The buffer data, consisting of 44 bytes.）](image/buffer.png)
 
 一個 `buffer` 中的某些資料區塊，可能會需要作為頂點屬性（vertex attributes）、索引（indices）、骨骼綁定資訊（skinning information），或者動畫關鍵影格（animation keyframes）等等傳遞給渲染器（renderer）使用。 為了能夠正確使用這些資料，還需要額外描述資料的結構（structure）與型態（type）的資訊
 
@@ -64,12 +59,7 @@ category: computer-graphic
 
 如下圖所示：
 
-<div class = "center-column">
-
-![](image/bufferBufferView.png)
-(Image 5b: The buffer views, referring to parts of the buffer.)
-
-</div>
+![（Image 5b: The buffer views, referring to parts of the buffer.）](image/bufferBufferView.png)
 
 圖中淺灰色的位元組是為了正確對齊 accessor 而用來做填充（padding）的位元組，每個 `bufferView` 還會包含一個 `target` 屬性，這個屬性可以讓渲染器（renderer）知道這段資料的使用性質：
 
@@ -148,12 +138,7 @@ accessor 指向的資料可能會被傳送到顯卡作為渲染用的資料，�
 - `bufferView` 如何從原始 buffer 切出資料區段
 - accessor 如何為這些資料段指定型態資訊
 
-<div class = "center-column">
-
-![](image/bufferBufferViewAccessor.png)
-(Image 5c: The accessors defining how to interpret the data of the buffer views.)
-
-</div>
+![（Image 5c: The accessors defining how to interpret the data of the buffer views.）](image/bufferBufferViewAccessor.png)
 
 ::: tip  
 總而言之，buffer 可以想成一個 memory pool，裡面就是存單純的 binary，需要靠 bufferView 和 accessor 的資訊才能解讀。 其中 bufferView 對應到一個物件，負責告訴你這個物件在 buffer 中的哪裡，佔了多大的區域，還有他是哪種 buffer；accessor 則告訴你要怎麼解讀對應 buffer 內的這段 binary
@@ -208,12 +193,7 @@ accessor 指向的資料可能會被傳送到顯卡作為渲染用的資料，�
 
 舉例來說，下圖 5d 示範了一個交錯存放 position 和 normal 屬性的 `bufferView`：
 
-<div class = "center-column">
-
-![](image/aos.png)
-(Image 5d: Interleaved accessors in one buffer view.)
-
-</div>
+![（Image 5d: Interleaved accessors in one buffer view.）](image/aos.png)
 
 ### Data contents
 
@@ -324,12 +304,7 @@ quantize 基本上就是在做壓縮，你直接查 mesh quantize 或 gltf quant
 
 渲染結果如下圖 5e 所示：
 
-<div class = "center-column">
-
-![](image/simpleSparseAccessor.png)
-(Image 5e: The result of rendering the simple sparse accessor asset.)
-
-</div>
+![（Image 5e: The result of rendering the simple sparse accessor asset.）](image/simpleSparseAccessor.png)
 
 這個範例中包含了兩個 accessor：
 
@@ -377,9 +352,4 @@ quantize 基本上就是在做壓縮，你直接查 mesh quantize 或 gltf quant
 
 套用這些替換後的結果如下圖 5f 所示：
 
-<div class = "center-column">
-
-![](image/simpleSparseAccessorDescription.png)
-(Image 5f: The substitution that is done with the sparse accessor.)
-
-</div>
+![（Image 5f: The substitution that is done with the sparse accessor.）](image/simpleSparseAccessorDescription.png)

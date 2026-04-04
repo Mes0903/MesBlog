@@ -98,12 +98,7 @@ category: computer-graphic
 
 當這個 asset 被渲染時，畫面中會顯示出一個套用了新材質的三角形，如下圖 11a 所示：
 
-<div class = "center-column">
-
-![](image/simpleMaterial.png)
-(Image 11a: A triangle with a simple material.)
-
-</div>
+![（Image 11a: A triangle with a simple material.）](image/simpleMaterial.png)
 
 ## Material definition
 

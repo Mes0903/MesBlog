@@ -9,7 +9,7 @@ category: OS
 
 # OSTEP 29：Locked Data Structures
 
-在討論其他主題之前，我們先說明如何在一些常見資料結構中使用鎖。 在資料結構中加入鎖，使其可供多執行緒使用，就能讓該結構具備 thread safe 的特性。 當然，加入鎖的方式會同時決定資料結構的正確性與效能。 因此，我們面臨的挑戰是：  
+在討論其他主題之前，我們先說明如何在一些常見資料結構中使用鎖。 在資料結構中加入鎖，使其可供多執行緒使用，就能讓該結構具備 thread safe 的特性。 當然，加入鎖的方式會同時決定資料結構的正確性與效能。 因此，我們面臨的挑戰是：
 
 :::info  
 如何向資料結構中加入鎖  
@@ -23,7 +23,7 @@ category: OS
 
 最簡單的資料結構之一是計數器。 它是一種常見且介面簡單的結構。 我們在圖 29.1 中定義了一個非並行的簡易計數器：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 29.1: A Counter Without Locks）">
 
 ```c
 typedef struct __counter_t {
@@ -51,15 +51,13 @@ int get(counter_t* c)
 }
 ```
 
-（Figure 29.1: A Counter Without Locks）
-
-</div>
+</center-panel>
 
 ### Simple But Not Scalable
 
 如你所見，非同步計數器是極為簡單的資料結構，只需極少程式碼即可實作。 接下來我們面臨的挑戰是：如何讓這段程式碼具備 thread safe？ 圖 29.2 展示了我們的做法：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 29.2: A Counter With Locks）">
 
 ```c
 typedef struct __counter_t {
@@ -96,9 +94,7 @@ int get(counter_t* c)
 }
 ```
 
-（Figure 29.2: A Counter With Locks）
-
-</div>
+</center-panel>
 
 這個並行的 counter 很簡單，而且能正確運作。 實際上，它遵循了一種最簡單的並行資料結構的設計模式：在操作這個資料結構的 routine 被呼叫時加上一把鎖，然後在從呼叫返回時釋放鎖。 以這種方式，它類似於用 monitor 建構的資料結構 [BH73]，在呼叫與返回 object 方法的同時，自動取得與釋放鎖
 
@@ -106,11 +102,7 @@ int get(counter_t* c)
 
 為了瞭解這種簡單方法的效能代價，我們執行了一個基準測試，讓每個 thread 更新同一個共享計數器固定次數； 接著我們改變 thread 的數量。 圖 29.5 顯示了從一個到四個 thread 同時執行時所需的總時間，每個 thread 各更新計數器一百萬次。 這個實驗在一台搭載四顆 Intel 2.7 GHz i5 CPU 的 iMac 上進行； 我們預期隨著更多 CPU 同時運作，每單位時間內應要完成更多工作：
 
-<div class = "center-column">
-
 ![（Figure 29.5: Performance of Traditional vs. Approximate Counters）](image/29-5.png)
-
-</div>
 
 從圖中的最上方曲線（標示為 "Precise"）可以看到同步計數器的效能擴展性很差。 單一 thread 完成百萬次計數更新大約只需極短時間（約 0.03 秒），但若讓兩個 thread 同時各更新百萬次，卻會造成極大延遲（超過 5 秒！） 隨著 thread 數量增加，情況只會更糟
 
@@ -132,27 +124,19 @@ local-to-global 轉移的頻率由閾值 S 決定。 S 越小，counter 就越�
 
 為了說明這一點，我們來看一個例子（圖 29.3）：
 
-<div class = "center-column">
-
 ![（Figure 29.3: Tracing the Approximate Counters）](image/29-3.png)
 
-</div>
-
-在這個例子中，閾值 S 設為 5，並且在四個 CPU 上各有一個 thread 更新其 local counters L1 ~ L4。 trace 中也顯示了 global counter 的值 (G)，時間由上向下推移。 在每個時間點，都可能對某個 local counter 進行遞增操作； 一旦 local counter 的值達到閾值 S，就會將其累積值轉移到 global counter，然後將 local counter 重置
+在這個例子中，閾值 S 設為 5，並且在四個 CPU 上各有一個 thread 更新其 local counters L1 ~ L4。 trace 中也顯示了 global counter 的值（G），時間由上向下推移。 在每個時間點，都可能對某個 local counter 進行遞增操作； 一旦 local counter 的值達到閾值 S，就會將其累積值轉移到 global counter，然後將 local counter 重置
 
 圖 29.5 下方的曲線（標為 "Approximate"）顯示了在閾值 S 為 1024 時 approximate counters 的效能表現。 效能非常出色：在四顆處理器上執行四百萬次遞增操作所需的時間幾乎與單顆處理器執行一百萬次的時間相同
 
 圖 29.6 顯示了閾值 S 的重要性：在四個 CPU 上有四個 threads 各自執行一百萬次遞增操作。 如果 S 設得很低，效能會很差（但 global count 始終相當準確）； 如果 S 設得很高，效能會非常好，但 global count 會有所滯後（最多延遲 CPU 數量乘以 S）。 這種精確度與效能之間的取捨正是 approximate counter 所能實現的
 
-<div class = "center-column">
-
 ![（Figure 29.6: Scaling Approximate Counters）](image/29-6.png)
-
-</div>
 
 在圖 29.4 中可以看到 approximate counter 的一個簡化版本。 建議你閱讀程式碼，或更好地，親自執行一些實驗，以更清楚地理解其運作原理：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 29.4: Approximate Counter Implementation）">
 
 ```c
 typedef struct __counter_t {
@@ -205,9 +189,7 @@ int get(counter_t* c)
 }
 ```
 
-（Figure 29.4: Approximate Counter Implementation）
-
-</div>
+</center-panel>
 
 :::info  
 更多的並行性並不一定更快
@@ -221,7 +203,7 @@ int get(counter_t* c)
 
 圖 29.7 顯示了這個原始資料結構的程式碼：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 29.7: Concurrent Linked List）">
 
 ```c
 // basic node structure
@@ -274,9 +256,7 @@ int List_Lookup(list_t* L, int key)
 }
 ```
 
-（Figure 29.7: Concurrent Linked List）
-
-</div>
+</center-panel>
 
 如你所見，在 insert routine 進入時程式只會獲取一把鎖，並在退出時釋放它。 如果 `malloc()` 恰好失敗，程式就必須在插入失敗前先釋放鎖，這裡就出現了一個棘手的小問題：這類異常控制流程已被證明相當容易出錯； 一項對 Linux kernel patches 的研究發現，幾乎 40% 的 bugs 都出現在這些很少觸發的程式路徑上（事實上，這一發現也引發了我們自己的研究，我們從一個 Linux 檔案系統中移除了所有 memory-failing paths，結果讓系統更穩健了 [S+11]）
 
@@ -286,7 +266,7 @@ int List_Lookup(list_t* L, int key)
 
 至於 lookup routine，只需簡單地將搜尋主迴圈跳躍到單一 return 路徑，即可將程式中的鎖獲取/釋放點數量減少，從而降低意外引入錯誤（例如在 return 前忘記 unlock）的機率。 有關這些修改的詳細資料，請參見圖 29.8：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 29.8: Concurrent Linked List: Rewritten）">
 
 ```c
 void List_Init(list_t* L)
@@ -329,9 +309,7 @@ int List_Lookup(list_t* L, int key)
 }
 ```
 
-（Figure 29.8: Concurrent Linked List: Rewritten）
-
-</div>
+</center-panel>
 
 ### Scaling Linked Lists
 
@@ -349,7 +327,7 @@ int List_Lookup(list_t* L, int key)
 
 如你所知，總有一種對並行資料結構的標準做法：加一把大鎖。 對於 queue，我們就略過這種做法，你應該可以自行推敲。 取而代之地，我們來看看由 Michael 和 Scott 設計的一種具備更高並行度的 queue [MS98]。 這個 queue 使用的資料結構與程式碼見圖 29.9：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 29.9: Michael and Scott Concurrent Queue）">
 
 ```c
 typedef struct __node_t {
@@ -402,9 +380,7 @@ int Queue_Dequeue(queue_t* q, int* value)
 }
 ```
 
-（Figure 29.9: Michael and Scott Concurrent Queue）
-
-</div>
+</center-panel>
 
 細讀程式碼後，你會發現它使用了兩把鎖，一把保護 queue 的 head，另一把保護 tail。 這兩把鎖的目標是允許 enqueue 與 dequeue 操作並行執行。 在常見情況下，enqueue routine 只會存取 tail 鎖，而 dequeue 只會存取 head 鎖
 
@@ -418,7 +394,7 @@ Queues 在多執行緒應用中十分常見。 然而，此處使用的那種僅
 
 這個並行 hash table（圖 29.10）非常直觀，採用了我們先前建立的 concurrent linked lists 實作而成，且效能極佳。 其優異表現的關鍵在於，它不是對整個結構只使用一把鎖，而是對每個 hash bucket（由列表表示）各自加上一把鎖。 如此一來，就能允許大量並行操作同時進行
 
-<div class = "center-column">
+<center-panel natural title="（Figure 29.10: A Concurrent Hash Table）">
 
 ```c
 #define BUCKETS (101)
@@ -445,17 +421,11 @@ int Hash_Lookup(hash_t* H, int key)
 }
 ```
 
-（Figure 29.10: A Concurrent Hash Table）
-
-</div>
+</center-panel>
 
 圖 29.11 展示了在同一台搭載四顆 CPU 的 iMac 上，四個 threads 分別執行 10,000 到 50,000 次 concurrent updates 時，hash table 的效能表現。 圖中並同時繪製了僅使用單鎖的 linked list 作為比較。 從曲線可以看出，這個簡易的並行 hash table 擴展性極佳； 相較之下，linked list 卻無法有效擴展
 
-<div class = "center-column">
-
 ![（Figure 29.11: Scaling Hash Tables）](image/29-7.png)
-
-</div>
 
 ## 29.5 Summary
 
@@ -468,7 +438,7 @@ int Hash_Lookup(hash_t* H, int key)
 
 在構建並行資料結構時，先採用最基本的方法 ── 加一把大鎖以提供同步存取。 這麼做，你很可能會構建出正確的鎖； 若之後發現它出現效能問題，再進行優化，只有在必要時才讓它快速。 正如 Knuth 所言：「過早優化是一切惡的根源」
 
-許多作業系統在最初轉向多處理器時都使用單一鎖，包括 Sun OS 和 Linux。 在 Linux 中，這把鎖甚至有個專有名稱 ── big kernel lock (BKL)。 多年來，這種簡單做法成效不錯； 但當多 CPU 系統成為主流後，內核一次只允許一個 thread 活動便成了效能瓶頸。 因此，終於到了要對這些系統進行並行度優化的時候。 Linux 採用了較直接的方法：將一把鎖換成多把鎖；而 Sun 則做出更激進的決定：從一開始就從根本上整合並行性的全新作業系統 Solaris。 欲了解這些引人入勝的系統更多細節，請參考 Linux 與 Solaris 內核專書 [BC05, MM00]  
+許多作業系統在最初轉向多處理器時都使用單一鎖，包括 Sun OS 和 Linux。 在 Linux 中，這把鎖甚至有個專有名稱 ── big kernel lock（BKL）。 多年來，這種簡單做法成效不錯； 但當多 CPU 系統成為主流後，內核一次只允許一個 thread 活動便成了效能瓶頸。 因此，終於到了要對這些系統進行並行度優化的時候。 Linux 採用了較直接的方法：將一把鎖換成多把鎖；而 Sun 則做出更激進的決定：從一開始就從根本上整合並行性的全新作業系統 Solaris。 欲了解這些引人入勝的系統更多細節，請參考 Linux 與 Solaris 內核專書 [BC05, MM00]  
 :::
 
 ## Reference

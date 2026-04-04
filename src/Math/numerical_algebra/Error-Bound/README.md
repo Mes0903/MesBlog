@@ -22,11 +22,7 @@ order: 4
 
 我們看個例子，這邊我們解一個 Ax = b：
 
-<div class = "center-column">
-
 ![](image/1.png)
-
-</div>
 
 A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們用手去解你會發現他是可逆的，然後解會是 $\vec x = (1,1)^T$
 
@@ -38,13 +34,9 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 我們假設 $\bar x$ 是一個 Ax = b 的逼近解且 A 是 nonsingular，那我們會發現 $||\vec x - \bar x|| \leq ||\vec r||\cdot||A^{-1}||$
 
-然後如果 $\vec x$ 不是 trivial 的解且 b 不是 0 向量，那我們可以導出這件事來(我全貼) ：
-
-<div class = "center-column">
+然後如果 $\vec x$ 不是 trivial 的解且 b 不是 0 向量，那我們可以導出這件事來（我全貼） ：
 
 ![](image/2.png)
-
-</div>
 
 我們先看一下上面的在說什麼，他的意思是逼近解跟真實解的絕對誤差會小於等於右邊那個東西，而下面那個則是逼近解與真實解的相對誤差會小於等於右邊那個式子
 
@@ -52,74 +44,42 @@ A 矩陣的第一個 row 和第二個 row 只有一點點差異，如果我們�
 
 套用到剛剛的例子，就會長這樣：
 
-<div class = "center-column">
-
 ![](image/3.png)
-
-</div>
 
 也就是說雖然 $||\vec r||$ 很小，但 $||A||\cdot||A^{-1}||$ 很大的話仍然會爆掉：
 
-<div class = "center-column">
-
 ![](image/4.png)
-
-</div>
 
 所以關鍵就是在 $||A||\cdot||A^{-1}||$
 
 證明：
 
-<div class = "center-column">
-
 ![](image/5.png)
-
-</div>
 
 #### Def 7.28
 
-$||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數(condition number)，記做 K(A)
-
-<div class = "center-column">
+$||A||\cdot||A^{-1}||$ 在線代裡面是個很重要的東西叫做條件數（condition number），記做 K（A）
 
 ![](image/6.png)
 
-</div>
-
-如果 K(A) 接近 1，我們就說這個系統是良置的，如果遠遠大於 1，就說這個系統是病態的
+如果 K（A） 接近 1，我們就說這個系統是良置的，如果遠遠大於 1，就說這個系統是病態的
 
 舉個例子：
 
-<div class = "center-column">
-
 ![](image/7.png)
-
-</div>
 
 #### Thm 7.29
 
 接下來是另一個主題，就像一開始所說我們會有 rouding error，又稱 perturbation，也就是說我們實際上 Ax = b 丟進去電腦時會跑出個 $\delta$，像這樣：
 
-<div class = "center-column">
-
 ![](image/8.png)
-
-</div>
 
 那我們把它就代回 Ax = b：
 
-<div class = "center-column">
-
 ![](image/9.png)
 
-</div>
-
-這時我們就會發現電腦裡面算出來的 $\bar x$ 和我們實際上的 x 的相對誤差是上圖下面那樣，一樣取決於 K(A)
+這時我們就會發現電腦裡面算出來的 $\bar x$ 和我們實際上的 x 的相對誤差是上圖下面那樣，一樣取決於 K（A）
 
 證明：
 
-<div class = "center-column">
-
 ![](image/10.png)
-
-</div>

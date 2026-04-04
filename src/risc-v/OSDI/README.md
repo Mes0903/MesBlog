@@ -26,7 +26,7 @@ category:
 
 三個都是可選的，因此可接受空行。 label 後面需接上冒號；operation 是比較重要的部分，真正的操作在這裡，裡面還可以分解；comment 是註釋。 
 
-#### label(標籤)
+#### label（標籤）
 
 任何以冒號結尾的標示符都會被認為是一個標籤，看個例子
 
@@ -56,12 +56,12 @@ label 可以想成幫一段位址取了一個名字，方便我們後續使用
 
 operation 總共有四種變化：
 
-+ instruction (指令)
++ instruction（指令）
     直接對應二進位的機器指令字符串
-+ pseudo-instruction (偽指令)
++ pseudo-instruction（偽指令）
     為了提高寫程式的效率，可以用一條偽指令指示組譯器產生多條實際的 instruction
-+ directive (指示/偽操作)
-    通過類似 instruction 的形式(以 「.」 開頭)，通知組譯器如何控制程式碼的產生，不對應具體的指令，是由組譯器定義的
++ directive（指示/偽操作）
+    通過類似 instruction 的形式（以 「.」 開頭），通知組譯器如何控制程式碼的產生，不對應具體的指令，是由組譯器定義的
 + macro
     採用 .macro/.endm 自定義的 macro
 
@@ -70,7 +70,7 @@ operation 總共有四種變化：
 指令的操作對象可以分兩大類：
 
 + 暫存器
-    + RV32I 中共有 32 個通用暫存器，x0~x31，還有一些特權暫存器，其中 x0 是 0 暫存器，不可寫(但可以做為 `rd`)，讀出來的值永遠為 0
+    + RV32I 中共有 32 個通用暫存器，x0~x31，還有一些特權暫存器，其中 x0 是 0 暫存器，不可寫（但可以做為 `rd`），讀出來的值永遠為 0
       > Register x0 can be used as the destination if the result is not required.
     + 在 RISC-V 中，Hart 在執行算術邏輯運算時操作的數據需要直接來自暫存器
 + 記憶體
@@ -80,29 +80,21 @@ operation 總共有四種變化：
 
 ### 指令編碼格式
 
-<div class = "center-column">
-
 ![](image/1.png)
 
-</div>
-
-指令最後會被翻譯為機器指令，裡面的 32 bits 都有對應的意思，以 32 bits 對齊，每個 32 bits 會照上面的圖被劃分為不同的區域(field)
+指令最後會被翻譯為機器指令，裡面的 32 bits 都有對應的意思，以 32 bits 對齊，每個 32 bits 會照上面的圖被劃分為不同的區域（field）
 
 最終的指令類型是由 funct3/funct7 和 opcode 一起決定的，題外話，funct3 中的 "3" 代表佔了 3 個 bit，funct7 同理
 
 對於 opcode 的部分有另一張表規定了其內容意義：
 
-<div class = "center-column">
-
 ![](image/2.png)
-
-</div>
 
 opcode 的前兩位永遠為 11，而第 2~4 位是一組的，5~6 位是一組的，我們用一個例子來學習這個表格是怎麼看得：
 
 > 0000000 rs2 rs1 000 rd 0110011 | ADD
 
-這是 ADD 這個指令的機器碼範例，依照最前面的表格我們知道後面的 `0110011` 是 opcode，可以看見前兩位(最右邊)為 `11`
+這是 ADD 這個指令的機器碼範例，依照最前面的表格我們知道後面的 `0110011` 是 opcode，可以看見前兩位（最右邊）為 `11`
 
 我們先看第 5~6 位，這裡是 `01`，因此我們去上表的左邊縱排找 `01`，之後看有哪些可能，有 STORE、STORE-FP、custom-1、AMO、OP、LUI、OP-32 這些
 
@@ -110,29 +102,24 @@ opcode 的前兩位永遠為 11，而第 2~4 位是一組的，5~6 位是一組�
 
 RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`，則需要先將其倒反過來為：`00 95 05 b3`，寫為二進制的話為 `00000000-10010101-00000101-10110011`，到標準中查表可知此指令為 `add x11, x10, x9`
 
-<div class = "center-column">
-
 ![](image/3.png)
-
-</div>
 
 指令格式有 6 種，也就是第一張圖裡面的 R、I、S 那些：
 
 + R-type (register)
     每條指令中有三個 fields，用於指定 3 個暫存器參數
 + I-type (Immediate)
-    每條指令除了帶有兩個暫存器參數以外，還帶有一個常數參數 (寬度為 12 bits)
+    每條指令除了帶有兩個暫存器參數以外，還帶有一個常數參數（寬度為 12 bits）
 + S-type (Store)
-    每條指令除了帶有兩個暫存器參數以外，還帶有一個常數參數 (寬度為 12 bits，但 fields 的組成方式不同於 I-type)
+    每條指令除了帶有兩個暫存器參數以外，還帶有一個常數參數（寬度為 12 bits，但 fields 的組成方式不同於 I-type）
 + B-type (Branch)
-    每條指令除了帶有兩個暫存器參數外，還有一個常數參數 (寬度為 12 bits，但取值為 2 的倍數)
+    每條指令除了帶有兩個暫存器參數外，還有一個常數參數（寬度為 12 bits，但取值為 2 的倍數）
 + U-type (Upper)
-    每條指令含有一個暫存器參數和一個常數參數 (寬度為 20 bits，用來表示一個常數的高 20 位)
+    每條指令含有一個暫存器參數和一個常數參數（寬度為 20 bits，用來表示一個常數的高 20 位）
 + J-type (Jump)
-    每條指令內有一個暫存器參數和一個常數參數 (寬度為 20 bits)
+    每條指令內有一個暫存器參數和一個常數參數（寬度為 20 bits）
 
-
-### 算術運算指令(Arithmetic Instruction)
+### 算術運算指令（Arithmetic Instruction）
 
 #### ADD
 
@@ -142,18 +129,14 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：R-type
 
-<div class = "center-column">
-
 ![](image/4.png)
-
-</div>
 
 對應意義：
 + opcode(7)：0110011 (OP)
 + funct3 為 000，funct7 為 0000000
-+ rs1(5)：第一個 operand (source register 1)
-+ rs2(5)：第二個 operand (source register 2)
-+ rd(5)：destination register，用於存放加出來的結果
++ rs1（5）：第一個 operand（source register 1）
++ rs2（5）：第二個 operand（source register 2）
++ rd（5）：destination register，用於存放加出來的結果
 
 #### SUB
 
@@ -166,24 +149,20 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 #### ADDI (ADD Immediate)
 
 功能：將暫存器中的值與一常數相加
-語法： `ADDI RD, RS1, IMM`
+語法：`ADDI RD, RS1, IMM`
 > 例：addi x5, x6, 1  為 x5 = x6 + 1
 
 格式：I-type
 
-<div class = "center-column">
-
 ![](image/5.png)
-
-</div>
 
 對應意義：
 
 + opcode (7)：0b0010011 (OP-IMM)
-+ funct3 (3)：和 opcode 一起決定最終指令
-+ rs1 (5)：第一個 opecrand (source register 1)
-+ rd (5)：destination register，用於存放加出來的結果
-+ imm (12)：immediate，常數，要注意只有 12 bits，所以範圍是有限的
++ funct3（3）：和 opcode 一起決定最終指令
++ rs1（5）：第一個 opecrand（source register 1）
++ rd（5）：destination register，用於存放加出來的結果
++ imm（12）：immediate，常數，要注意只有 12 bits，所以範圍是有限的
 
 在運算前 `imm` 會被 sign-extension 為一個 32 位的數，可以表達的範圍為 $-2^{11} ~ 2^{11}$，也就是 $[-2048, 2047)$
 
@@ -199,16 +178,12 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：U-type
 
-<div class = "center-column">
-
 ![](image/6.png)
-
-</div>
 
 對應意義：
 + opcode (7)：0b0110111 (LUI)
-+ rd (5)：destination register，用於存放加出來的結果
-+ imm (20)：immediate，常數
++ rd（5）：destination register，用於存放加出來的結果
++ imm（20）：immediate，常數
 
 假設我們今天要載入 `0x12345678`，那步驟為：
 
@@ -232,7 +207,6 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 功能：構造一個 32 bits 的常數，高 20 位為 `imm`，低 12 位為 0，但會將此常數與 `PC` 值相加，結果存於 RD
 語法：`AUIPC RD, IMM`
 > 例：auipc x5, 0x12345 為 x5 = 0x12345 << 12 + PC
-
 
 #### 相關的 pseudo-instruction
 
@@ -266,14 +240,14 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 語法：`LA RD, LABEL`
 > 例：la x5, foo
 
-##### NOP (空指令)
+##### NOP（空指令）
 
 功能：不做任何事
 語法：`NOP`
 等價指令：`ADDI x0, 0, 0`
 > 例：nop
 
-### 邏輯運算指令 (Logical Instructions)
+### 邏輯運算指令（Logical Instructions）
 
 #### AND
 
@@ -326,9 +300,9 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 等價指令：`XORI RD, RS, -1`
 > 例：not x5, x6
 
-### 移位運算指令 (Shifting Instructions)
+### 移位運算指令（Shifting Instructions）
 
-#### SLL (邏輯左移)
+#### SLL（邏輯左移）
 
 補 0
 
@@ -337,7 +311,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：R-type
 > 例：sll x5, x6, x7
 
-#### SRL (邏輯右移)
+#### SRL（邏輯右移）
 
 補 0
 
@@ -346,7 +320,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：R-type
 > 例：srl x5, x6, x7
 
-#### SLLI (邏輯左移常數)
+#### SLLI（邏輯左移常數）
 
 補 0
 
@@ -355,7 +329,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：slli x5, x6, 3
 
-#### SRLI (邏輯右移常數)
+#### SRLI（邏輯右移常數）
 
 補 0
 
@@ -364,7 +338,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：srli x5, x6, 3
 
-#### SRA (算術右移)
+#### SRA（算術右移）
 
 按符號位補足
 
@@ -373,7 +347,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：R-type
 > 例：sra x5, x6, x7
 
-#### SRAI (算術右移常數)
+#### SRAI（算術右移常數）
 
 按符號位補足
 
@@ -382,7 +356,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：I-type
 > 例：srai x5, x6, 3
 
-### 記憶體讀寫指令 (Load and Store Instructions)
+### 記憶體讀寫指令（Load and Store Instructions）
 
 #### LB
 
@@ -391,7 +365,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 功能：Load Byte，從記憶體中讀一個 8 bits 的數據到 RD 中，記憶體位址為 `RS1 + IMM`
 語法：`LB RD, IMM(RS1)`
 格式：I-type
-> 例：lb x5, 40(x6)
+> 例：`lb x5, 40(x6)`
 
 #### LBU
 
@@ -400,7 +374,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 功能：Load Byte Unsigned，從記憶體中讀一個 8 bits 的數據到 RD 中，記憶體位址為 `RS1 + IMM`
 語法：`LBU RD, IMM(RS1)`
 格式：I-type
-> 例：lbu x5, 40(x6)
+> 例：`lbu x5, 40(x6)`
 
 #### LH
 
@@ -409,7 +383,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 功能：Load Halfword，從記憶體中讀一個 16 bits 的數據到 RD 中，記憶體位址為 `RS1 + IMM`
 語法：`LH RD, IMM(RS1)`
 格式：I-type
-> 例：lh x5, 40(x6)
+> 例：`lh x5, 40(x6)`
 
 #### LHU
 
@@ -418,7 +392,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 功能：Load Halfword Unsigned，從記憶體中讀一個 16 bits 的數據到 RD 中，記憶體位址為 `RS1 + IMM`
 語法：`LHU RD, IMM(RS1)`
 格式：I-type
-> 例：lhu x5, 40(x6)
+> 例：`lhu x5, 40(x6)`
 
 #### LW
 
@@ -427,7 +401,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 功能：Load Word，從記憶體中讀一個 32 bits 的數據到 RD 中，記憶體位址為 `RS1 + IMM`
 語法：`LW RD, IMM(RS1)`
 格式：I-type
-> 例：lw x5, 40(x6)
+> 例：`lw x5, 40(x6)`
 
 #### SB
 
@@ -436,7 +410,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 功能：Store Byte，將 RS2 中低 8 bits 的資料寫到記憶體中，記憶體位址為 `RS1 + IMM`
 語法：`SB RS2, IMM(RS1)`
 格式：S-type
-> 例：sb x5, 40(x6)
+> 例：`sb x5, 40(x6)`
 
 #### SH
 
@@ -445,7 +419,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 功能：Store Halfword，將 RS2 中低 16 bits 的資料寫到記憶體中，記憶體位址為 `RS1 + IMM`
 語法：`SH RS2, IMM(RS1)`
 格式：S-type
-> 例：sh x5, 40(x6)
+> 例：`sh x5, 40(x6)`
 
 #### SW
 
@@ -454,13 +428,13 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 功能：Store Word，將 RS2 中低 32 bits 的資料寫到記憶體中，記憶體位址為 `RS1 + IMM`
 語法：`SW RS2, IMM(RS1)`
 格式：S-type
-> 例：sw x5, 40(x6)
+> 例：`sw x5, 40(x6)`
 
-### 分支指令 (Conditional Branch Instructions)
+### 分支指令（Conditional Branch Instructions）
 
 #### BEQ
 
-跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
+跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右（$[-4096, 4094]$)
 
 實際上在寫的時候不會直接寫常數，而是會寫標籤帶體，交由 Linker 決定最終的 `IMM` 值
 
@@ -471,7 +445,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 
 #### BNE
 
-跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
+跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右（$[-4096, 4094]$)
 
 實際上在寫的時候不會直接寫常數，而是會寫標籤帶體，交由 Linker 決定最終的 `IMM` 值
 
@@ -482,7 +456,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 
 #### BLT
 
-跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
+跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右（$[-4096, 4094]$)
 
 實際上在寫的時候不會直接寫常數，而是會寫標籤帶體，交由 Linker 決定最終的 `IMM` 值
 
@@ -493,18 +467,18 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 
 #### BLTU
 
-跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
+跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右（$[-4096, 4094]$)
 
 實際上在寫的時候不會直接寫常數，而是會寫標籤帶體，交由 Linker 決定最終的 `IMM` 值
 
-功能：Branch if Less Than (Unsigned)，依照「無號」方式比較 RS1 和 RS2 的值，若 RS1 < RS2，則執行路徑跳躍到新的地址
+功能：Branch if Less Than（Unsigned），依照「無號」方式比較 RS1 和 RS2 的值，若 RS1 < RS2，則執行路徑跳躍到新的地址
 語法：`BLTU RS1, RS2, IMM`
 格式：B-type
 > 例：bltu x5, x6, 100
 
 #### BGE
 
-跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
+跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右（$[-4096, 4094]$)
 
 實際上在寫的時候不會直接寫常數，而是會寫標籤帶體，交由 Linker 決定最終的 `IMM` 值
 
@@ -515,11 +489,11 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 
 #### BGEU
 
-跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右 ($[-4096, 4094]$)
+跳躍的目標地址計算方法為：先將 IMM * 2，符號擴展後和 PC 值相加得到最終的目標位址，所以跳躍的範圍是以 PC 為基準，加減 4KB 左右（$[-4096, 4094]$)
 
 實際上在寫的時候不會直接寫常數，而是會寫標籤帶體，交由 Linker 決定最終的 `IMM` 值
 
-功能：Branch if Greator than or Equal (Unsigned)，依照「無號」方式比較 RS1 和 RS2 的值，若 RS1 >= RS2，則執行路徑跳躍到新的地址
+功能：Branch if Greator than or Equal（Unsigned），依照「無號」方式比較 RS1 和 RS2 的值，若 RS1 >= RS2，則執行路徑跳躍到新的地址
 語法：`BGEU RS1, RS2, IMM`
 格式：B-type
 > 例：bgeu x5, x6, 100
@@ -586,7 +560,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 語法：`BGEZ RS, OFFSET`
 等價指令：`BGE RS, x0, OFFSET`
 
-### 無條件跳躍 (Unconditional Jump Instructions)
+### 無條件跳躍（Unconditional Jump Instructions）
 
 #### JAL (Jump And Link)
 
@@ -595,11 +569,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：J-type
 > 例：jal x1, label
 
-<div class = "center-column">
-
 ![](image/7.png)
-
-</div>
 
 調用函式時地址的計算方法為先對 20 bits 寬的 `IMM` 乘以 2，然後進行 sign-extension，最後與 PC 相加，因此跳躍的範圍是以 PC 為基準，上下加減 1 MB
 
@@ -608,17 +578,13 @@ JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實�
 #### JALR (Jump And Link Register)
 
 功能：跳躍到目標位址，用於呼叫函式
-語法：`JALR RD, IMM (RS1)`
+語法：`JALR RD, IMM(RS1)`
 格式：I-type
-> 例：jalr x0, 0(x5)
-
-<div class = "center-column">
+> 例：`jalr x0, 0(x5)`
 
 ![](image/8.png)
 
-</div>
-
-調用函式時地址的計算方法為先對 12 bits 寬的 `IMM` 進行 sign-extension，然後將其與 RS1 的值相加，得到最終的結果後將其最低位設為 0 (用以確保對齊)，因此跳躍的範圍是以 RS1 為基準，上下加減 2KB
+調用函式時地址的計算方法為先對 12 bits 寬的 `IMM` 進行 sign-extension，然後將其與 RS1 的值相加，得到最終的結果後將其最低位設為 0（用以確保對齊），因此跳躍的範圍是以 RS1 為基準，上下加減 2KB
 
 ## OS Development
 
@@ -632,41 +598,33 @@ RISC-V 中，每一個 privilege level 都對應到一組特定的暫存器，�
 
 首先要看的是 Machine 模式下的 CSR 列表，因為 CPU 一上電時默認是在 machine 模式下，有點類似 x86 的 real mode：
 
-<div class = "center-column">
-
 ![](image/1.png)
-
-</div>
 
 可以看見前面有與 Hart ID 相關的暫存器，像是 `mvendorid`、`marchid` 等，那接下來要看怎麼讀：
 
-<div class = "center-column">
-
 ![](image/2.png)
 
-</div>
-
-我們關心的是前兩個，先看 CSRRW (Atomic Read/Write CSR)：
+我們關心的是前兩個，先看 CSRRW（Atomic Read/Write CSR）：
 
 + CSRRW
     + 會先讀出 CSR 中的值，將其按 XLEN 位的寬度進行 zero-extensio 後寫入 RD，然後 RS1 中的值寫入 CSR
-    + 為原子操作 (atomically)
+    + 為原子操作（atomically）
     + 如果 RD 是 x0，則不讀 CSR
     + 語法：`CSRRW RD, CSR, RS1`
-    + 例子：`csrrw t6, mscratch, t6` 為 `t6 = mscratch; mscratch = t6`(交換值)
+    + 例子：`csrrw t6, mscratch, t6` 為 `t6 = mscratch; mscratch = t6`（交換值）
 + CSRW
     + 由 CSRRW 來的 pseudo-instruction
     + 用來寫 CSR
     + 語法為：`csrw csr, rs`
     + 等價指令為：`csrrw x0, csr, rs`
 
-接下來是 CSRRS (Atomic Read and Set Bits in CSR)：
+接下來是 CSRRS（Atomic Read and Set Bits in CSR）：
 
 + CSRRS
     + 會先讀出 CSR 中的值，將其按 XLEN 位的寬度進行 zero-extensio 後寫入 RD，然後逐位檢查 RS1 中的值，如果某一位為 1 則將 CSR 的對應位置設為 1，否則保持不變
-    + 為原子操作 (atomically)
+    + 為原子操作（atomically）
     + 語法為：`CSRRS RD, CSR, RS1`
-    + 例子：`csrrs x5, mie, x6` 為 `x5 = mie; mie |= x6` (做 mask)
+    + 例子：`csrrs x5, mie, x6` 為 `x5 = mie; mie |= x6` （做 mask）
 
 + CSRR
     + 由 CSRRS 來的 pseudo-instruction
@@ -676,7 +634,7 @@ RISC-V 中，每一個 privilege level 都對應到一組特定的暫存器，�
 
 所以一開始就先去讀 machine 模式下存有 Hart ID 的暫存器，這個暫存器為 `mhartid`，它包含了運行當前指令的 Hart 的 ID
 
-標準中有規定多個 Hart 的 ID 必須是唯一的，而且必須有一個 Hart ID 為 0 (第一個 Hart 的 ID)，所以我們就找 0 的那個用就好：
+標準中有規定多個 Hart 的 ID 必須是唯一的，而且必須有一個 Hart ID 為 0（第一個 Hart 的 ID），所以我們就找 0 的那個用就好：
 
 ```asm
 _start:
@@ -688,7 +646,7 @@ park:
     j park
 ```
 
-這邊做的事為讀取 `mhartid`，如果不是 0，就跳到下方標籤處做 `wfi`(Wait for Interrupt)，Hart 執行到 `wfi` 後會進入類似休眠的狀態
+這邊做的事為讀取 `mhartid`，如果不是 0，就跳到下方標籤處做 `wfi`（Wait for Interrupt），Hart 執行到 `wfi` 後會進入類似休眠的狀態
 
 接下來下一件事是想辦法進到 C 語言的環境中，設定好 stack 後直接 jump 到 main function 就好：
 
@@ -731,17 +689,17 @@ stacks:
 
 為了方便後面 Debug，接下來的目標是要能夠顯示訊息在螢幕上，我們這邊使用 uart 來傳輸數據，將訊息從板子上傳送到主機上，並在主機上顯示出來
 
-UART 全名為 Universal Asynchronous Receiver and Transmitter，是一種 Serial communication，代表會一位一位的發送和接收數據，因此需要設定波特率(baud rate)，數字越大發送越快；另外 UART 還支援非同步與全雙工
+UART 全名為 Universal Asynchronous Receiver and Transmitter，是一種 Serial communication，代表會一位一位的發送和接收數據，因此需要設定波特率（baud rate），數字越大發送越快；另外 UART 還支援非同步與全雙工
 
 這邊簡單看一下 UART 的通訊協議：
 
 + 空閒位：空閒時處於高電位
-+ 起始位：開始發送時發送方(TX) 要先發出一個低電位(0)來表示傳輸字符的開始
-+ 數據位：起始位之後就是要傳輸的數據，數據長度(word length) 可以事 5/6/7/8/9 位，構成一個字符，一般是 8 位。先發送最低位，最後發送最高位
-+ 奇偶檢查位(parity)：分幾種檢查方式：
-    + 無檢查(no parity)
-    + 奇檢驗(odd parity)：如果數據中 1 的數目為偶數，則檢驗位為 1，反之為 0
-    + 偶檢驗(even parity)：如果數據中 1 的數目是偶數，則檢驗位為 0，反之為 1
++ 起始位：開始發送時發送方（TX） 要先發出一個低電位（0）來表示傳輸字符的開始
++ 數據位：起始位之後就是要傳輸的數據，數據長度（word length） 可以事 5/6/7/8/9 位，構成一個字符，一般是 8 位。先發送最低位，最後發送最高位
++ 奇偶檢查位（parity）：分幾種檢查方式：
+    + 無檢查（no parity）
+    + 奇檢驗（odd parity）：如果數據中 1 的數目為偶數，則檢驗位為 1，反之為 0
+    + 偶檢驗（even parity）：如果數據中 1 的數目是偶數，則檢驗位為 0，反之為 1
     + mark parity：檢驗位始終為 1
     + space parity：檢驗位始終為 0
 + 停止位：數據結束的標誌，可以是 1 位、1.5 位、2 位的高電位
@@ -791,7 +749,7 @@ UART 全名為 Universal Asynchronous Receiver and Transmitter，是一種 Seria
 uart_write_reg(IER, 0x00);
 ```
 
-然後要設定波特率(baud rate)：
+然後要設定波特率（baud rate）：
 
 ```c
 uint8_t lcr = uart_read_reg(LCR);
@@ -834,7 +792,7 @@ void uart_puts(char *s)
 
 首先來設定記憶體區段，這部份我們可以用 gcc link script 完成：
 
-```ld
+```
 MEMORY
 {
     ram   (wxa!ri) : ORIGIN = 0x80000000, LENGTH = 128M
@@ -931,11 +889,7 @@ extern uint32_t HEAP_SIZE;
 
 這邊使用陣列來實作 page 的管理：
 
-<div class = "center-column">
-
 ![](image/3.png)
-
-</div>
 
 前方紅藍的部分為管理對應 page 狀態的區域，後方白色的是一個一個的 page
 
@@ -1128,10 +1082,10 @@ struct context {
 
 多任務可以分成兩種實現方式：協作式與搶占式的多任務，兩者的差別在於交換 context 的方法不一樣
 
-+ 協作式多任務(Cooperative Multitasking)
++ 協作式多任務（Cooperative Multitasking）
     目前正在執行的 task 會主動放棄 Hart，呼叫下一個 task，讓下一個 task 來使用 CPU
     
-+ 搶占式多任務(Preemptive Multitasking)
++ 搶占式多任務（Preemptive Multitasking）
     由 OS 來決定哪個 task 來使用 CPU，OS 可以剝奪當前 task 對處理器的使用，將處理器交給其他的 task
     
 目前主流的 OS 都是使用 Preemtive Multitasking，早期的 OS 才會使用 Cooperative Multitasking 這種方法
@@ -1144,21 +1098,13 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 
 前面提到了一個 task 的本質是一堆指令的序列，假設這邊有 Task A 和 B，在 Cooperative Multitasking 的情況下他們會長這樣：
 
-<div class = "center-column">
-
 ![](image/4.png)
 
-</div>
-
-可以看見兩個 Task 內都是由指令序列組成的(Instruction i)，中間有一個指令是 `call switch_to`，這就是讓下一個 task 來使用 CPU 的 function
+可以看見兩個 Task 內都是由指令序列組成的（Instruction i），中間有一個指令是 `call switch_to`，這就是讓下一個 task 來使用 CPU 的 function
 
 那我們就來看一下這個 `switch_to` 裡面到底做了什麼：
 
-<div class = "center-column">
-
 ![](image/5.png)
-
-</div>
 
 步驟是：
 
@@ -1172,7 +1118,7 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 1. `ra`
     跟 return 指令有關，用來存放返回的位址
 2. `mscratch`
-    這是一個 machine 下的暫存器，紀錄(指向)目前的 context
+    這是一個 machine 下的暫存器，紀錄（指向）目前的 context
     
 為了讓 `mscratch` 可以指向 context，我們需要給 context 分配記憶體空間，保存該 context 的暫存器內容，也就是對應到上面寫的那個 `struct context`
 
@@ -1184,35 +1130,19 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 
 前面有提到 `call` 這個指令執行的時候是會把下一條指令的位址放到 ra 裡面去的，因此 `i+M` 會被放到 ra 裡面去：
 
-<div class = "center-column">
-
 ![](image/6.png)
-
-</div>
 
 接下來就可以開始執行 `switch_to` 的內容，根據前面的步驟，第一步是儲存當前的 context，會將剛剛 `struct context` 內列出的暫存器內容全部從 CPU 儲存起來到 context A 的記憶體中
 
-<div class = "center-column">
-
 ![](image/7.png)
-
-</div>
 
 下一步是切換 context，改變 CPU 的 ra 就可以了：
 
-<div class = "center-column">
-
 ![](image/8.png)
-
-</div>
 
 下一步是 restore，也就是要載入 Task B 的暫存器內容：
 
-<div class = "center-column">
-
 ![](image/9.png)
-
-</div>
 
 最後是 return，前面有提到 `ret` 這個指令會跳回到 `ra` 暫存器儲存的記憶體位址，這邊已經被我們改成 Instruction j 了，因此就會切換到 Task B 了
 
@@ -1339,30 +1269,26 @@ csrw    mscratch, a0
 
 既然要講 Preemtive Multitasking，那就需要中斷的概念
 
-#### 異常控制流(Exceptional Control Flow)
+#### 異常控制流（Exceptional Control Flow）
 
-控制流(Control Flow) 這個名詞代表程式執行的過程，正常的控制流代表著使用者自己寫的指令
+控制流（Control Flow） 這個名詞代表程式執行的過程，正常的控制流代表著使用者自己寫的指令
 
 但是一旦有了中斷，程式在執行時就不會只跑使用者寫的指令，因為 OS 會將中斷插入進來影響程式的執行
 
-這樣的過程被稱為異常控制流，簡稱為 ECP，分為兩種：異常(Exception) 與中斷(Interrupt)；在 risc-v 內統一把 ECP 稱為 Trap
+這樣的過程被稱為異常控制流，簡稱為 ECP，分為兩種：異常（Exception） 與中斷（Interrupt）；在 risc-v 內統一把 ECP 稱為 Trap
 
 #### Machine mode 下的 CSR
 
 因為我們這邊 OS 是寫在 Machine mode 下的，因此就看 Machine mode 下的 CSR：
 
-<div class = "center-column">
-
 ![](image/10.png)
-
-</div>
 
 然後我們把跟 Trap 有關的整理出來：
 
 + mtvec (Machine Trap-Vector Base-Address)
     + 保存發生異常時楚利器需要跳轉到的位址
 + mepc (Machine Exception Program Counter)
-    + 當 trap 發生時，Hart 會將發生 trap 所對應的指令的位址(pc) 保存在 mepc 中
+    + 當 trap 發生時，Hart 會將發生 trap 所對應的指令的位址（pc） 保存在 mepc 中
 + mcause (Machine Cause)
     + 當 trap 發生時，Hart 會設置此暫存器通知我們 trap 發生的原因
 + mtval (Machine Trap Value)
@@ -1377,7 +1303,7 @@ csrw    mscratch, a0
     + Machine mode 下專用的暫存器，我們可以自己定義其用法
         + 如使用此暫存器保存當前 Hart 上運行的 task 的 context 的位址
 + mie (Machine Interrupt Enable)
-    + 用於進一步控制(打開和關閉) software interrupt、timer interrupt、external interrupt
+    + 用於進一步控制（打開和關閉） software interrupt、timer interrupt、external interrupt
 + mip (Machine Interrupt Pending)
     + 列出目前已發生等待處理的中斷
 
@@ -1385,11 +1311,7 @@ csrw    mscratch, a0
 
 #### mtvec (Machine Trap-Vector Base-Address)
 
-<div class = "center-column">
-
 ![](image/11.png)
-
-</div>
 
 這裡 WARL 的意思是「Write Any Values，Reads Legal Values」，也就是說這個地方可以隨便我們寫的，而讀出來的值都是合法的
 
@@ -1401,19 +1323,11 @@ csrw    mscratch, a0
         + Direct：所有的 exception 和 interrupt 發生後，PC 都跳轉到 BASE 指定的位址處
         + Vectored：exception 處理方式同 Direct；但 interrupt 的入口地址以 array 方式排列
 
-    <div class = "center-column">
-
     ![](image/12.png)
-
-    </div>
 
 #### mepc (Machine Exception Program Counter)
 
-<div class = "center-column">
-
 ![](image/13.png)
-
-</div>
 
 + 當 trap 發生時，PC 會被替換為 mtvec 設定的位址，同時 Hart 會將 mepc 設為目前指令或下一條指令的位址，當我們需要退出 trap 時可以呼叫特殊的 mret 指令，該指令會將 mepc 中的值還原為 PC 中（實現返回的效果）
 
@@ -1421,11 +1335,7 @@ csrw    mscratch, a0
 
 #### mcause (Machine Cause)
 
-<div class = "center-column">
-
 ![](image/14.png)
-
-</div>
 
 這裡 WLRL 的意思是「Write/Read Only Legal Values」，表示我們在讀寫的時候需要確保它的值是合法的
 
@@ -1433,21 +1343,13 @@ csrw    mscratch, a0
 + 最高位元 Interrupt 為 1 時標識了目前 trap 為 interrupt，否則是  exception
 + 剩餘的 Exception Code 用來標識具體的 interrupt 或 exception 的種類
 + spec 內有附一張表格
-    <div class = "center-column">
-
     ![](image/15.png)
-
-    </div>
 
 #### mtval (Machine Trap Value)
 
 用來輔助 mcause 用的暫存器
 
-<div class = "center-column">
-
 ![](image/16.png)
-
-</div>
 
 + 當 trap 發生時，除了透過 mcause 可以取得 exception 的種類 code 值外，hart 還提供了 mtval 來提供 exception 的其他資訊來輔助我們執行更進一步的操作
 
@@ -1457,11 +1359,7 @@ csrw    mscratch, a0
 
 用來描述一些狀態信息的，分得很細
 
-<div class = "center-column">
-
 ![](image/17.png)
-
-</div>
 
 WPRL 的意思是「Reserved Writes Preserve Values，Reads Ignore Values」，也就是說寫是保留值，忽略讀，簡單來說就是盡量不要去動它 
 
@@ -1485,9 +1383,9 @@ Trap 處理的流程主要如下
 
 1. Trap 初始化
     + 如設置入口位址
-2. Trap 的上半部(Top Half)
+2. Trap 的上半部（Top Half）
     + 發生在硬體部份，不受我們控制
-3. Trap 的下半部(Bottom Half)
+3. Trap 的下半部（Bottom Half）
     + 軟體部分，可由我們控制
 4. 從 Trap 返回
 
@@ -1519,11 +1417,7 @@ void trap_init()
     + 前面有提到 MIE 代表中斷的開或關
     + MIE 清除的話代表填 0，也就是說中斷目前是被關掉的狀態
 2. 設定 mepc，同時 PC 被設定為 mtvec；需要注意的是，對於exception，mepc 指向導致異常的指令；對於 interrupt，它指向被中斷的指令的下一條指令的位置
-    <div class = "center-column">
-
     ![](image/18.png)
-
-    </div>
 3. 根據 trap 的種類設定 mcause，並根據需要為 mtval 設定附加資訊
 4. 將 trap 發生之前的權限模式保存在 mstatus 的 MPP 域中，再把 hart 權限模式改為 M（也就是說無論在任何 Level 下觸發 trap，hart 首先切換到 Machine 模式）
 
@@ -1619,13 +1513,9 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 從 trap 返回的話我們需要 MRET 這個指令
 
-<div class = "center-column">
-
 ![](image/19.png)
 
-</div>
-
-+ 針對不同權限等級下如何退出 trap 有各自的回傳指令 xRET（x = M/S/U)
++ 針對不同權限等級下如何退出 trap 有各自的回傳指令 xRET（x = M/S/U）
     + 我們這裡用的是 MRET
 
 + 以在 M 模式下執行 mret 指令為例，會執行以下操作：
@@ -1644,19 +1534,15 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 中斷有分兩種：
 
-+ 本地中斷(Local Interrupt)
++ 本地中斷（Local Interrupt）
     + software interrupt
     + timer interrupt
-+ 全局中斷(Global Interrupt)
++ 全局中斷（Global Interrupt）
     + externel interrupt
 
 所以我們也可以說有三種：software、timer 與 externel；每一種下面都會再分 User、Supervisor、Reserved 與 Machine：
 
-<div class = "center-column">
-
 ![](image/20.png)
-
-</div>
 
 #### mie 與 mip
 
@@ -1664,37 +1550,21 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 mie 用於控制 Interrupt 的開或關；前面有提到一個 mstatus，那個是控制全局的，一旦關閉，不管是哪種中斷都無法使用，而 mie 是可以設置要單獨關閉 software interrupt 這類的操作：
 
-<div class = "center-column">
-
 ![](image/21.png)
-
-</div>
 
 如果 mie 是用來寫的，那 mip 你可以認為就是拿來讀的，透過讀對應的 bit，我們可以得知當前發生了哪種中斷：
 
-<div class = "center-column">
-
 ![](image/22.png)
-
-</div>
 
 #### PLIC
 
 外部中斷代表的是外部設備所產生的中斷，通常一個 Hart 會有一根引腳來傳遞外部中斷的訊號，然而外部設備很多，那該怎麼辦呢?
 
-<div class = "center-column">
-
 ![](image/23.png)
-
-</div>
 
 此時我們就引入了一個叫做 PLIC 的設備，全名為 Platform-Level Interrupt Controller，類似一個 hub：
 
-<div class = "center-column">
-
 ![](image/24.png)
-
-</div>
 
 左邊是很多不同的外設，它們全都會接到 PLIC 上；而 PLIC 到每一個 Hart 只會接一根引腳
 
@@ -1702,11 +1572,7 @@ mie 用於控制 Interrupt 的開或關；前面有提到一個 mstatus，那個
 
 左邊的這些外設我們將其稱為中斷源：
 
-<div class = "center-column">
-
 ![](image/25.png)
-
-</div>
 
 每一個外設我們會給他一個編號，標準內定義了 53 個中斷源，0 號預留不用，因此實際有效的中斷源為 1~53；前面我們有用到 UART，UART 的 id 為 10，下面是 QEMU 的實作：
 
@@ -1806,53 +1672,29 @@ static const MemMapEntry virt_memmap[] = {
 
 這邊通過一張圖來了解一下設置這些暫存器到底起到了什麼作用
 
-<div class = "center-column">
-
 ![](image/26.png)
-
-</div>
 
 左方的這個大正方形是一個 PLIC，上面接了兩個中斷源進來，右邊接了兩個 CPU 出去
 
 這個是用來設置中斷源優先級的：
 
-<div class = "center-column">
-
 ![](image/27.png)
-
-</div>
 
 這個是用來設定是否要啟用此中斷源的：
 
-<div class = "center-column">
-
 ![](image/28.png)
-
-</div>
 
 這個用來設定中斷源的閥值：
 
-<div class = "center-column">
-
 ![](image/29.png)
-
-</div>
 
 這個是 Pending，用來判斷中斷是不是發生了：
 
-<div class = "center-column">
-
 ![](image/30.png)
-
-</div>
 
 這個是 Claim/Complete：
 
-<div class = "center-column">
-
 ![](image/31.png)
-
-</div>
 
 #### UART 的例子
 
@@ -1949,11 +1791,7 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 `cause_code` 的數字含意見下表，前面也有貼過：
 
-<div class = "center-column">
-
 ![](image/32.png)
-
-</div>
 
 `external_interrupt_handler` 的定義如下：
 
@@ -2024,11 +1862,7 @@ void uart_init()
 
 一個 Hart 會有三個 Interrupt 的引腳，剛剛講的屬於 External Interrupt，這邊來講 Timer Interrupt
 
-<div class = "center-column">
-
 ![](image/33.png)
-
-</div>
 
 Timer Interrupt 屬於本地中斷，這代表他不是由外部設備發起的，而是由一個叫做 CLINT 的設備發出來的，其全名為 Core Local Interrupt，主要負責產生 software interrupt 與 timer interrupt
 
@@ -2146,7 +1980,7 @@ OS 裡面的時間管理就是利用硬體的 time counter 完成的
 + tick 的單位由硬體的 time counter 週期決定
     + 通常為 1~100 ms
 + tick 週期越小，OS 的精度越高
-    + 但相對的開銷越大(因為 Interrupt 數量比較多)
+    + 但相對的開銷越大（因為 Interrupt 數量比較多）
 + OS 中通常會維護一個自己的 tick 值，紀錄系統啟動到現在發生的 tick 總數
 
 ### Preemtive Multitasking
@@ -2155,11 +1989,7 @@ OS 裡面的時間管理就是利用硬體的 time counter 完成的
 
 所以我們這邊就來實作搶占式的多任務，首先一樣會有兩個 Task A 和 B：
 
-<div class = "center-column">
-
 ![](image/34.png)
-
-</div>
 
 可以看見因為式搶占式的多任務，因此 Task 中不會有放棄 CPU 的這個指令
 
@@ -2262,56 +2092,28 @@ switch_to:
 
 接下來用圖來演示一下步驟：
 
-<div class = "center-column">
-
 ![](image/35.png)
-
-</div>
 
 跟前面一樣，先初始化，並且假設第一個呼叫的任務為 A：
 
-<div class = "center-column">
-
 ![](image/36.png)
-
-</div>
 
 之後就開始執行了，因此 PC 會跟著改變：
 
-<div class = "center-column">
-
 ![](image/37.png)
-
-</div>
 
 此時 timer interrupt 發生了，因此將 `i+2` 存入 `mepc`，並開始執行 trap 處理函式，首先要保存 context，因此將 `mepc` 存入 `pc`：
 
-<div class = "center-column">
-
 ![](image/38.png)
-
-</div>
 
 接著切換 context：
 
-<div class = "center-column">
-
 ![](image/39.png)
-
-</div>
 
 然後載入 B 的 context：
 
-<div class = "center-column">
-
 ![](image/40.png)
-
-</div>
 
 最後執行 `mret` 返回，進到 Task B：
 
-<div class = "center-column">
-
 ![](image/41.png)
-
-</div>

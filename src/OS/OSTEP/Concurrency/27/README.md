@@ -56,7 +56,7 @@ int pthread_create(..., // first two args are the same
 
 請看圖 27.1 的範例：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 27.1: Creating a Thread）">
 
 ```c
 #include <stdio.h>
@@ -82,9 +82,7 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-（Figure 27.1: Creating a Thread）
-
-</div>
+</center-panel>
 
 我們建立一個 thread，並傳入兩個參數，這兩個參數會先打包成我們自定義的型別 `myarg_t`。 thread 建立後，就可以將傳進來的指標轉型成它所期待的型別，接著從中解包參數
 
@@ -104,7 +102,7 @@ int pthread_join(pthread_t thread, void **value_ptr);
 
 請看下圖 27.2 的另一個範例：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 27.2: Waiting for Thread Completion）">
 
 ```c
 typedef struct { int a; int b; } myarg_t;
@@ -129,9 +127,7 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-（Figure 27.2: Waiting for Thread Completion）
-
-</div>
+</center-panel>
 
 程式中再一次建立了一個 thread，並透過 `myarg_t` 結構傳入兩個參數。 若要傳回值，則使用 `myret_t` 結構。 一旦該 thread 執行完畢，main thread（此時正在 `pthread_join()` 裡等待）就會回來，接著我們就能取得該 thread 回傳的結果，也就是 `myret_t` 裡的內容
 
@@ -139,7 +135,7 @@ int main(int argc, char *argv[]) {
 
 第二，如果你只要傳一個單值（例如 `long long int`），那就不需要把它包進結構體。 圖 27.3 是一個範例，這種情況下會簡單一點，因為不必用結構體包裝參數與回傳值：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 27.3: Simpler Argument Passing to a Thread）">
 
 ```c
 void *mythread(void *arg) {
@@ -158,9 +154,7 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-（Figure 27.3: Simpler Argument Passing to a Thread）
-
-</div>
+</center-panel>
 
 第三，我們必須特別注意 thread 回傳值的方式。 切記絕對不能回傳指向 thread 自己 stack 上變數的指標。 下面是從圖 27.2 修改而來的一段危險程式碼：
 
@@ -220,7 +214,7 @@ assert(rc == 0); // always check success!
 
 這段程式碼的第二個問題是：它在呼叫 lock 和 unlock 時沒有檢查錯誤代碼。 就像你在 UNIX 系統中呼叫的幾乎所有函式一樣，這些函式也是可能失敗的！ 如果你沒檢查 return code，失敗就會默默發生，這在這種情況下可能會導致多個 thread 同時進入 critical section。 至少，你應該使用包裝函式來 assert 呼叫成功（就像圖 27.4 所示）； 如果是比較複雜（非玩具等級）的程式，不能單純出錯就 exit，那就應該檢查失敗狀態並採取適當的處理措施
 
-<div class = "center-column">
+<center-panel natural title="（Figure 27.4: An Example Wrapper）">
 
 ```c
 // Keeps code clean; only use if exit() OK upon failure
@@ -230,9 +224,7 @@ void Pthread_mutex_lock(pthread_mutex_t *mutex) {
 }
 ```
 
-（Figure 27.4: An Example Wrapper）
-
-</div>
+</center-panel>
 
 這種寫法能讓主程式碼更乾淨，前提是發生錯誤時程式可以直接 exit（例如開發階段）。 呼叫時若 `pthread_mutex_lock()` 失敗，`assert(rc == 0)` 會直接終止程式執行
 

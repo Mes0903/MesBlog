@@ -25,11 +25,7 @@ category: OS
 
 圖 32.1 彙整了 Lu 等人研究的錯誤統計。 從圖中可見，總共分析了 105 個錯誤，其中大多數（74 個）並非 deadlock，剩下 31 個為 deadlock 錯誤。 此外，圖中還顯示了各應用程式中錯誤的數量； OpenOffice 僅有 8 件並行錯誤，而 Mozilla 則接近 60 件
 
-<div class = "center-column">
-
 ![（Figure 32.1: Bugs In Modern Applications）](image/32-1.png)
-
-</div>
 
 接下來，我們將更深入探討這兩類錯誤（非 deadlock 與 deadlock）。 對於第一類非 deadlock 錯誤，我們將使用該研究中的實例來展開討論； 至於第二類 deadlock 錯誤，則會介紹過去為預防、避免或處理 deadlock 所做的大量工作
 
@@ -41,7 +37,7 @@ category: OS
 
 第一類錯誤稱為 atomicity violation（原子性違反）。 以下是一個在 MySQL 中出現的簡單範例。 在閱讀解說前，你可以先嘗試找出程式中的缺陷
 
-<div class = "center-column">
+<center-panel natural title="（Figure 32.2: Atomicity Violation (atomicity.c)）">
 
 ```c
 // Thread 1:
@@ -55,9 +51,7 @@ if (thd->proc_info) {
 thd->proc_info = NULL;
 ```
 
-（Figure 32.2: Atomicity Violation (atomicity.c)）
-
-</div>
+</center-panel>
 
 在此範例中，兩個不同的執行緒會存取結構 `thd` 的 `proc_info` 欄位。 第一個執行緒檢查該值是不是 non-NULL 的，然後印出它； 第二個執行緒則會將它設成 `NULL`。 顯然，如果第一個執行緒在呼叫 `fputs()` 前完成檢查卻遭中斷，第二個執行緒就可能會在中途將指標設為 `NULL`； 等第一個執行緒恢復執行時，`fputs()` 便會對 `NULL` 指標 dereference 並導致當機
 
@@ -67,7 +61,7 @@ thd->proc_info = NULL;
 
 在此解法（圖 32.3）中，我們只要在共用變數存取處加入鎖，確保每次執行緒要操作 `proc_info` 欄位時，都先取得 `proc_info_lock`。 當然，程式中其他所有存取該結構的程式碼，也都應該先取得此鎖才行
 
-<div class = "center-column">
+<center-panel natural title="（Figure 32.3: Atomicity Violation Fixed (atomicity fixed.c)）">
 
 ```c
 pthread_mutex_t proc_info_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -87,15 +81,13 @@ thd->proc_info = NULL;
 pthread_mutex_unlock(&proc_info_lock);
 ```
 
-（Figure 32.3: Atomicity Violation Fixed (atomicity fixed.c)）
-
-</div>
+</center-panel>
 
 ### Order-Violation Bugs
 
 另一種 Lu 等人發現的非 deadlock 錯誤稱為 order violation（順序違反）。 以下是一個簡單範例，同樣地，先試著看出程式在哪裡出了問題
 
-<div class = "center-column">
+<center-panel natural title="（Figure 32.4: Ordering Bug (ordering.c)）">
 
 ```c
 // Thread 1:
@@ -113,9 +105,7 @@ void mMain(...)
 }
 ```
 
-（Figure 32.4: Ordering Bug (ordering.c)）
-
-</div>
+</center-panel>
 
 如你所料，Thread 2 中的程式似乎假設變數 `mThread` 已經完成了初始化（且非 `NULL`）； 但如果 Thread 2 在被建立後立即執行，`mMain()` 存取 `mThread` 時該值尚未被設定，就會因對 `NULL` 指標 dereference 而當機。 請注意，我們假設 `mThread` 的初始值為 `NULL`； 若非如此，Thread 2  dereference 任意記憶體位置時甚至會發生更怪異的錯誤
 
@@ -123,7 +113,7 @@ void mMain(...)
 
 此類錯誤的修正通常是強制維護順序。 如前所述，使用 condition variables 是向現代程式庫中加入此類同步的簡單且可靠方式。 在上述範例中，我們可將程式重寫為圖 32.5 所示
 
-<div class = "center-column">
+<center-panel natural title="（Figure 32.5: Fixing The Ordering Violation (ordering fixed.c)）">
 
 ```c
 pthread_mutex_t mtLock = PTHREAD_MUTEX_INITIALIZER;
@@ -161,9 +151,7 @@ void mMain(...)
 }
 ```
 
-（Figure 32.5: Fixing The Ordering Violation (ordering fixed.c)）
-
-</div>
+</center-panel>
 
 在此修正後的程式中，我們加入了一個 condition variable（`mtCond`）及其對應的鎖（`mtLock`），還有一個用以追蹤狀態的變數 `mtInit`。 當初始化程式執行時，它會將 `mtInit` 設為 1，並對 `mtCond` 發出 signal。 若 Thread 2 在此之前已經執行，它會在等待該 signal 及狀態變更； 若在此之後執行，則會檢查 `mtInit` 並發現初始化已完成（`mtInit` 為 1），便繼續執行。 請注意，為了簡化，我們並未使用 `mThread` 本身作為狀態變數。 當執行緒之間的執行順序至關重要時，condition variables（或 semaphores）就能派上用場
 
@@ -177,7 +165,7 @@ void mMain(...)
 
 除了前述的並行錯誤外，另一個在具有複雜的鎖協定的並行系統中經常出現的經典問題稱為 deadlock。 deadlock 的典型情況是：執行緒（例如 Thread 1）持有鎖 L1 並等待鎖 L2； 不巧的是，持有鎖 L2 的執行緒（Thread 2）正在等待 L1 被釋放。 以下程式片段展示了可能導致 deadlock 的情境：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 32.6: Simple Deadlock (deadlock.c)）">
 
 ```c
 Thread 1:                  Thread 2:
@@ -185,17 +173,11 @@ pthread_mutex_lock(L1);    pthread_mutex_lock(L2);
 pthread_mutex_lock(L2);    pthread_mutex_lock(L1);
 ```
 
-（Figure 32.6: Simple Deadlock (deadlock.c)）
-
-</div>
+</center-panel>
 
 請注意，程式執行時不一定會發生 deadlock； 但若 Thread 1 先取得鎖 L1，接著切換到 Thread 2 執行，Thread 2 再取得 L2 並嘗試取得 L1，便會陷入 deadlock，因為兩者互相等待而無法繼續執行。 圖 32.7 以圖形方式示意此情況：圖中出現的環路即代表 deadlock。 上述說明應該足以讓問題變得清晰。 那麼，程式設計師應如何撰寫程式，才能以某種方式處理 deadlock 呢？
 
-<div class = "center-column">
-
 ![（Figure 32.7: The Deadlock Dependency Graph）](image/32-7.png)
-
-</div>
 
 :::info  
 如何處理 deadlock？
@@ -389,43 +371,35 @@ void insert(int value) {
 
 舉例來說，假設有兩個處理器和四個執行緒必須在其上排程；且我們知道 T1 在執行期間會取得 `L1` 與 `L2`（任意順序）、T2 同樣取得 `L1` 與 `L2`、T3 只取得 `L2`、T4 則不會取得任何鎖。 我們可將這些鎖需求以表格呈現：
 
-<div class = "center-column">
+<center-panel natural>
 
 | | T1 | T2 | T3 | T4 |
 |-|-|-|-|-|
 | L1| yes| yes| no| no|
 | L2| yes| yes| yes| no|
 
-</div>
+</center-panel>
 
 聰明的排程器便可計算：只要 T1 和 T2 永不同時執行，就不會有 deadlock。 下列即為一種可行排程：
 
-<div class = "center-column">
-
 ![](image/schedule1.png)
 
-</div>
-
-請注意，(T3 與 T1) 或 (T3 與 T2) 同時執行是沒問題的。 儘管 T3 會取得 `L2`，但它僅持有一把鎖，無法與其他執行緒並行時引發 deadlock
+請注意，（T3 與 T1） 或（T3 與 T2） 同時執行是沒問題的。 儘管 T3 會取得 `L2`，但它僅持有一把鎖，無法與其他執行緒並行時引發 deadlock
 
 再來看另一個例子。 在此例中，對相同資源（即 L1 與 L2）的競爭更激烈，其鎖需求表如下：
 
-<div class = "center-column">
+<center-panel natural>
 
 | | T1 | T2 | T3 | T4 |
 |-|-|-|-|-|
 | L1 | yes | yes | yes | no |
 | L2 | yes | yes | yes | no |
 
-</div>
+</center-panel>
 
 具體而言，T1、T2、T3 都會在執行期間取得 `L1` 與 `L2`。 下方是一種可保證永不 deadlock 的排程：
 
-<div class = "center-column">
-
 ![](image/schedule2.png)
-
-</div>
 
 如你所見，靜態排程採取保守策略，將 T1、T2、T3 全部分配到同一處理器，導致整體執行時間大幅增加。 雖然可以考慮同時執行這些工作，但因為怕 deadlock，所以不敢，代價便是效能下降
 

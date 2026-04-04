@@ -19,11 +19,7 @@ category: computer-graphic
 
 下面這張是圖來自 Learn OpenGL：
 
-<div class = "center-column">
-
 ![（img src：https://learnopengl.com/Getting-started/Coordinate-Systems）](image/coordinate_system.png)
-
-</div>
 
 這三個轉換我們常合起來簡稱為 MVP 轉換。 而前兩個變換通常會一起做，也因此會被合稱為 model-view transformation，接下來我們就來詳細看一下這三個轉換
 
@@ -70,11 +66,7 @@ glm::mat4 GameObject::calculateTransformMatrix_() const
 
 在習慣上，我們會將相機移動到 $(0,0,0)$ 的位置，看向 $-Z$ 方向，並以 $+Y$ 為向上方向，將世界的座標系轉換為相機的座標系
 
-<div class = "center-column">
-
-![(這三個相機拍出來的照片會一模一樣)](image/view1.png)
-
-</div>
+![（這三個相機拍出來的照片會一模一樣）](image/view1.png)
 
 這裡用的是右手坐標系，X 外積 Y 為 Z 方向
 
@@ -88,11 +80,7 @@ glm::mat4 GameObject::calculateTransformMatrix_() const
 
 這樣做完後自然而然 X 方向也就對上了，這就是我們的基本思路
 
-<div class = "center-column">
-
 ![](image/view2.png)
-
-</div>
 
 我們可以將 model-view transformation 的矩陣記為 $M_{view}$，其由一個平移與一個旋轉矩陣構成：
 
@@ -185,16 +173,12 @@ $$
 
 我們有兩種不同的投影方式：
 
-- Orthographic projection (正交投影 / 平行投影)
-- Perspective projection (透视投影)
+- Orthographic projection（正交投影 / 平行投影）
+- Perspective projection（透视投影）
 
 虎書裡面給了一個比較不直觀的例子：
 
-<div class = "center-column">
-
 ![](image/projection1.png)
-
-</div>
 
 左邊和右邊分別使用了兩種不同的投影方式，你可以看到一個現象，立方體不同的面上有不同組的平行線，一個面由兩組不同的平行線組成
 
@@ -202,11 +186,7 @@ $$
 
 如果你學習過素描，或是畫畫，就會知道說右邊的這種投影方式更接近人眼的成像，它會有一個性質：看到的平行線不再平行，最終都會相交到某一個點去，也因此其可以反映近大遠小的特性
 
-<div class = "center-column">
-
-![(img src: [From perspective picture to orthographic picture](https://stackoverflow.com/questions/36573283/from-perspective-picture-to-orthographic-picture))](image/projection2.png)
-
-</div>
+![（img src：[From perspective picture to orthographic picture](https://stackoverflow.com/questions/36573283/from-perspective-picture-to-orthographic-picture)）](image/projection2.png)
 
 那現在就來看看在數學上要怎麼說這件事情，所謂的透視投影，我們可以認為是把相機放在某一個位置，並近似的將相機認為是一個點，再從這個點連出一個空間中的錐
 
@@ -218,11 +198,7 @@ $$
 
 那我們就從正交投影開始講，其非常好理解，只要不管遠近，統一將物體擠到某個平面上去就可以了，那這要怎麼做呢?
 
-<div class = "center-column">
-
 ![](image/orthographic1.png)
-
-</div>
 
 假設相機已被放在了原點，往 $-Z$ 看，向上方向為 $Y$，也許我們僅需要將 Z 座標給扔掉就可以得到正交投影的結果了?
 
@@ -230,18 +206,14 @@ $$
 
 此外，我們還需要做個約定俗成的操作：把所有物體都移到 $-1$ 至 $1$ 之間，這可以方便之後的計算。 我們再看個例子，假設空間中有個立方體，如下圖：
 
-<div class = "center-column">
-
 ![](image/orthographic2.png)
-
-</div>
 
 我們只需要定義立方體的左右在 X 軸上是多少，上下在 Y 軸上是多少，遠近在 Z 軸上各占多少的範圍，就可以將這個立方體給描述出來了
 
 我們的目的是將最左方的立方體映射為最右方的標準立方體，英文叫 canonical cube。 可以看到中間多了一個步驟，要先將立方體的中心移到原點，然後把 XYZ 軸都拉伸到 $-1$ 到 $1$ 的範圍就可以了，換句話說就是先做平移再做縮放
 
 ::: tip  
-在 X 軸上我們定義左比右小，Y 軸上定義下比上小，但對於 Z 軸的遠近會有點不一樣，仔細看圖中的 Z 是向外的(出螢幕方向)，我們是看向 $-Z$ 方向的，所以如果一個物體離我們較遠，其實代表它的 Z 值較小，較近則 Z 值較大
+在 X 軸上我們定義左比右小，Y 軸上定義下比上小，但對於 Z 軸的遠近會有點不一樣，仔細看圖中的 Z 是向外的（出螢幕方向），我們是看向 $-Z$ 方向的，所以如果一個物體離我們較遠，其實代表它的 Z 值較小，較近則 Z 值較大
 
 要注意你用的是哪種座標系，這裡我們用的是右手系所以會有這個問題，如果是左手系，在這點上會比較方便，但左手系的 X 外積 Y 不再等於 Z，因此我們還是偏好右手系  
 :::
@@ -280,11 +252,7 @@ $$
 
 回到透視投影，它是由一個點開始往外延伸出來的四稜錐所形成的，這個形狀和長方體的差別在於遠平面相對大一點：
 
-<div class = "center-column">
-
 ![](image/orthographic3.png)
-
-</div>
 
 所以我們要做的事情基本上有兩步：
 
@@ -297,13 +265,9 @@ $$
 - 遠平面上的點 Z 值不變
 - 每個平面中心點的 x, y 座標不變
 
-現在就開始擠它，我們從側面來看這個四角錐的話它長這樣(省略下面部分)：
+現在就開始擠它，我們從側面來看這個四角錐的話它長這樣（省略下面部分）：
 
-<div class = "center-column">
-
-![(n 為近平面距離相機的距離，z 為遠平面距離相機的距離)](image/orthographic4.png)
-
-</div>
+![（n 為近平面距離相機的距離，z 為遠平面距離相機的距離）](image/orthographic4.png)
 
 我們想知道對於任何一個點 $(x,y,z)$，經過了擠壓之後座標會如何變化，以上圖來說 $(x,y,z)$ 因為是頂點，因此我們知道他最後的高度與近平面的高度要是一樣的，也就是說 $y$ 經過擠壓後會變為 $y'$
 
@@ -500,11 +464,7 @@ $$
 
 而要定義一個四角錐其實也很簡單，我們從相機出發，看向某一個區域，如果假設我們看到的就是近平面，那麼我們可以給近平面定義一個寬度和高度，就好像人在看螢幕一樣
 
-<div class = "center-column">
-
 ![](image/Frustum.png)
-
-</div>
 
 我們可以給螢幕定義一個寬高比，這被稱為 aspect ration，值為寬度除以高度。 另外還有一個概念，如果有玩過相機的可能會知道，叫做視角，英文叫 field of view，表示可以看到的角度範圍
 
@@ -512,11 +472,7 @@ $$
 
 有了這兩個概念我們就可以來定義四角錐了：
 
-<div class = "center-column">
-
 ![](image/Frustum2.png)
-
-</div>
 
 左上角的右邊那條線為近平面，與相機的距離為 $|n|$，而垂直可視角度為 $fovY$，如此一來馬上就可以知道這個三角形的三角函數關係了
 
@@ -526,13 +482,9 @@ $$
 
 因此我們需要先把螢幕的概念定義好，在圖學中螢幕被抽象的認為是一個二維陣列，陣列的每個元素是一個像素，假設你的螢幕是 `1920x1080` 的，那就表示有這麼多的像素形成了一個二維陣列
 
-換句話說螢幕可以被表示成一個坐標系，這個坐標系我們通常稱其為螢幕空間(screen space)，虎書內有自己的一套坐標定義方式，而這邊(GAMES101) 我們有另一套定義方式：
-
-<div class="center-column">
+換句話說螢幕可以被表示成一個坐標系，這個坐標系我們通常稱其為螢幕空間（screen space），虎書內有自己的一套坐標定義方式，而這邊（GAMES101） 我們有另一套定義方式：
 
 ![](image/screen.png)
-
-</div>
 
 螢幕的左下角為原點，向右是 $X$，向左是 $Y$，坐標以完整的 $(X, Y)$ 組成，因此圖中藍色像素的坐標為 $(2, 1)$，因此整個 $X$ 為 `0 ~ width-1`，高度為 `0 ~ height-1`
 

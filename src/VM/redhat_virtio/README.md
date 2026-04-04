@@ -260,29 +260,25 @@ struct virtq_used_elem {
 
 如果我們想把〈Chained descriptors〉一節的那條鏈放進一張間接表，driver 會先配置可容納 2 筆項目的記憶體區域（32 位元組），以存放該表（在圖中這是步驟 2，步驟 1 則是先配置各 buffer）：
 
-<span class = "center-column">
+<center-panel natural title="（Figure 4: Indirect table for indirect descriptors）">
 
 | Buffer | Len    | Flags | Next |
 | - | - | - | - |
 | 0x8000 | 0x2000 | W \| N   | 1 |
 | 0xD000 | 0x2000 | W     | ... |
 
-（Figure 4: Indirect table for indirect descriptors）
-
-</span>
+</center-panel>
 
 假設這張間接表被配置在位址 `0x2000`，且它是第一個被宣告為 available 的描述符。 照慣例，第一步要把它放進 Descriptor area（圖中的步驟 3），因此看起來會是：
 
-<span class = "center-column">
+<center-panel natural title="（Figure 5: Add indirect table to Descriptor area）">
 
 | Descriptor Area | | | |
 |-|-|-|-|
 | Buffer | Len | Flags | Next |
 | 0x2000 | 32 | I | ... |
 
-（Figure 5: Add indirect table to Descriptor area）
-
-</span>
+</center-panel>
 
 之後的步驟就與一般描述符相同：driver 把該帶有該旗標的描述符索引（本例為 `#0`）寫入 avail ring（圖中的步驟 4），並照常通知 device（步驟 5）
 
@@ -365,16 +361,14 @@ wrap 計數器用來解決「同一槽位被循環重用」時，如何區分「
 
 舉例來說，若 driver 在圖中的步驟 1 於位址 `0x80000000` 配置了一個 `0x1000` bytes 的可寫 buffer，並在步驟 2 將其設為第一個 available 描述符，同時將 `AVAIL` 旗標設成與內部 wrap 計數器相同的值（本例中為 1），則描述符表會如下：
 
-<span class = "center-column">
+<center-panel natural title="（Figure: Descriptor table after add the first buffer）">
 
 | Avail idx | Address | Length | ID | Flags | Used idx |
 | -: | - | - | - | - | - |
 | | 0x80000000 | 0x1000 | 0 | W \| A | ← |
 | → | ... | | | | |
 
-（Figure: Descriptor table after add the first buffer）
-
-</span>
+</center-panel>
 
 請注意：表格中的 avail idx 與 used idx 欄只用來輔助說明，它們並不存在於描述符表中。 雙方都應該各自維護內部的計數器，用來知道下一個要輪詢或寫入的位置。 此外，device 也必須追蹤 driver 的 wrap 計數器。 最後，與 used virtqueue 的情況一樣，若裝置已啟用通知，driver 也會通知裝置（圖中的步驟 3）
 
@@ -394,16 +388,14 @@ wrap 計數器用來解決「同一槽位被循環重用」時，如何區分「
 
 沿用前面的例子，裝置更新後的描述符表如 Figure 6。 裝置知道該 buffer 已被「歸還」，因為 `USED` 與 `AVAIL` 旗標的值相同，且等於裝置在寫入該描述符時的內部 wrap 值。 回報時實際的位址並不重要，只有 ID 才重要
 
-<span class = "center-column">
+<center-panel natural title="（Figure: Descriptor table after add the first buffer）">
 
 | Avail idx | Address | Length | ID | Flags | Used idx |
 | -: | - | - | - | - | - |
 | | 0x80000000 | 0x1000 | 0 | W \| A \| U | |
 | → | ... | | | | ← |
 
-（Figure: Descriptor table after add the first buffer）
-
-</span>
+</center-panel>
 
 ![（Diagram: Device marks a descriptor as used using a packed queue）](image/2020-07-15-vdpa-2.png)
 
@@ -413,29 +405,25 @@ wrap 計數器用來解決「同一槽位被循環重用」時，如何區分「
 
 若描述符表只有兩個項目，且 Driver Ring Wrap Counter 目前為 1，當驅動在操作開始時就會把兩個 buffer 都標示為 available，之後會把內部 wrap 計數器翻轉為清除狀態（0）。 此時的狀態如下所示：
 
-<span class = "center-column">
+<center-panel natural title="（Figure: Full two-entries descriptor table）">
 
 | Avail idx | Address    | Length | ID | Flags  | Used idx |
 | ---------:| ---------- | ------ | -- | ------ | -------- |
 | →         | 0x80000000 | 0x1000 | 0  | W \| A | ←        |
 |           | 0x81000000 | 0x1000 | 1  | W \| A |          |
 
-（Figure: Full two-entries descriptor table）
-
-</span>
+</center-panel>
 
 接著，裝置判斷 ID `#0` 與 `#1` 兩筆皆可用：因為驅動在寫入時 wrap 為 1，兩列的 `AVAIL` 都有被設置，`USED` 皆被清除。 若裝置先使用 ID `#1`，那麼表格會變成圖 8 所示，此時 `#0` 仍屬於裝置可用的項目
 
-<span class = "center-column">
+<center-panel natural title="（Figure: Using first buffer out of order）">
 
 | Avail idx | Address    | Length | ID | Flags       | Used idx |
 | ---------:| ---------- | ------ | -- | ----------- | -------- |
 | →         | 0x80000000 | 0x1000 | 1  | W \| A \| U |          |
 |           | 0x81000000 | 0x1000 | 1  | W \| A      | ←        |
 
-（Figure: Using first buffer out of order）
-
-</span>
+</center-panel>
 
 ::: tip  
 Descriptor table 並不是用來記錄「所有描述符的狀態」的，它只是一塊環狀的共用記憶體，拿來放給彼此的通知的。 因此當對方讀完該描述符後，那個項目就沒用了，可以被回收、覆寫。 這就是為什麼上方兩個欄位的 ID 都是 1，至於 Address 沒有變，是因為裝置寫回欄位時會忽略 Address 這欄，驅動在讀「used descriptor」的時候也會忽略它
@@ -463,29 +451,25 @@ Descriptor table 並不是用來記錄「所有描述符的狀態」的，它只
 
 此時驅動察覺到 `#1` 已被使用：因為 `AVAIL` 與 `USED` 旗標相同（為 1），且等於裝置在寫回時的內部 wrap 值。 若裝置接著處理 ID `#0`，表格會變成下面這樣：
 
-<span class = "center-column">
+<center-panel natural title="（Figure: Using second buffer out of order）">
 
 | Avail idx | Address    | Length | ID | Flags       | Used idx |
 | ---------:| ---------- | ------ | -- | ----------- | -------- |
 | →         | 0x80000000 | 0x1000 | 1  | W \| A \| U | ←        |
 |           | 0x81000000 | 0x1000 | 0  | W \| A \| U |          |
 
-（Figure: Using second buffer out of order）
-
-</span>
+</center-panel>
 
 更有趣的情況是：從「先取用第二筆（不照順序）」的狀態開始，驅動會再次把 `#1` 重新標示為 available。 這種情況下，描述符表會直接從「Using first buffer out of order」的樣貌，跳到下一張表「Full two-entries descriptor table」
 
-<span class = "center-column">
+<center-panel natural title="（Figure: Full two-entries descriptor table）">
 
 | Avail idx | Address    | Length | ID | Flags          | Used idx |
 | ---------:| ---------- | ------ | -- | -------------- | -------- |
 |           | 0x81000000 | 0x1000 | 1  | W \| (!A) \| U | ←        |
 | →         | 0x81000000 | 0x1000 | 1  | W \| A         |          |
 
-（Figure: Full two-entries descriptor table）
-
-</span>
+</center-panel>
 
 請注意，繞回來之後，驅動需要清掉 `AVAIL` 旗標，並把 `USED` 設為相反值。 當裝置在繞回來後尋找 available buffer 時，理所當然地也要改用這組新的條件，因此它會停在表中的索引 1，因為該列呈現的是上一輪的「可用」組合，而不是這一輪的。 此時 `#0` 與 `#1` 都對裝置可用，而裝置也確實可能再度取用 `#1`！
 
@@ -501,7 +485,7 @@ Descriptor table 並不是用來記錄「所有描述符的狀態」的，它只
 
 例如，在一個有四個項目的 ring 中，driver 提交了一條由三個描述符組成的鏈：
 
-<span class = "center-column">
+<center-panel natural title="（Figure: Three chained descriptors available）">
 
 | Avail idx | Address    | Length |  ID |  Flags   | Used idx |
 |  -------: | :--------- | :----: | :-: | :------: | :------  |
@@ -510,13 +494,11 @@ Descriptor table 並不是用來記錄「所有描述符的狀態」的，它只
 |           | 0x82000000 | 0x1000 |  2  |  W \| A  |          |
 |     →     |            |        |     |  0       |          |
 
-（Figure: Three chained descriptors available）
-
-</span>
+</center-panel>
 
 接著，裝置從位置 0 開始輪詢，發現這是一條鏈，於是將其標記為 used，但只會覆寫位置 0，完全跳過位置 1 與 2。 當驅動輪詢 used 項目時，也會一併略過它們，因為它知道這是一條長度為三個描述符的鏈：
 
-<span class = "center-column">
+<center-panel natural title="（Figure: Using the descriptor chain）">
 
 | Avail idx | Address    | Length |  ID | Flags       | Used idx |
 |  -------: | :--------- | :----: | :-: | ----------- | :------  |
@@ -525,13 +507,11 @@ Descriptor table 並不是用來記錄「所有描述符的狀態」的，它只
 |           | 0x82000000 | 0x1000 |  2  | W \| A      |          |
 |     →     |            |        |     | 0           |     ←    |
 
-（Figure: Using the descriptor chain）
-
-</span>
+</center-panel>
 
 之後，driver 再提交一條長度為兩個描述符的鏈，並且必須考量到環繞（wrap）回起點的情況：
 
-<span class = "center-column">
+<center-panel natural title="（Figure: Make available another descriptor chain）">
 
 | Avail idx | Address    | Length |  ID |   Flags        | Used idx |
 |  -------: | :--------- | :----: | :-: | ------         | :------  |
@@ -540,13 +520,11 @@ Descriptor table 並不是用來記錄「所有描述符的狀態」的，它只
 |           | 0x82000000 | 0x1000 |  2  |    W \| A      |          |
 |           | 0x80000000 | 0x1000 |  0  |    W \| A      |     ←    |
 
-（Figure: Make available another descriptor chain）
-
-</span>
+</center-panel>
 
 接著裝置把這條鏈標記為 used，因此只需要更新鏈的第一個位置（在表中的第 4 列）
 
-<span class = "center-column">
+<center-panel natural title="（Figure: Using another descriptor chain）">
 
 | Avail idx | Address    | Length |  ID |   Flags        | Used idx |
 |  -------: | :--------- | :----: | :-: |   ------       | :------  |
@@ -555,15 +533,13 @@ Descriptor table 並不是用來記錄「所有描述符的狀態」的，它只
 |           | 0x82000000 | 0x1000 |  2  | W \| A         |          |
 |           | 0x80000000 | 0x1000 |  0  | W \| A \| U    |          |
 
-（Figure: Using another descriptor chain）
-
-</span>
+</center-panel>
 
 雖然看起來下一個描述子（第二個）看起來是可用的，因為 avail 與 used 旗標不同，但裝置知道它其實不可用：根據它掌握的 Driver Wrap Counter，這一輪正確的可用組合應該是清除 avail，設定 used 的，也就是 `(!A) | U`
 
 #### Indirect descriptors：當「鏈」無法滿足需求的時候
 
-間接描述符的運作和 split 情況相同。 首先，driver 會在記憶體的某處配置一張「間接描述符表」，其中每一個間接描述符的佈局與一般的 packed 描述符相同。 接著，它把這張間接表裡的每一個項目都指到自己要提供給裝置使用的 buffer（步驟 1–2），然後在 virtqueue 中放入一個帶有 `VIRTQ_DESC_F_INDIRECT` (0x4) 旗標的描述符（步驟 3）。 這個主描述符的位址與長度欄位，就對應到那張間接表的位址與大小
+間接描述符的運作和 split 情況相同。 首先，driver 會在記憶體的某處配置一張「間接描述符表」，其中每一個間接描述符的佈局與一般的 packed 描述符相同。 接著，它把這張間接表裡的每一個項目都指到自己要提供給裝置使用的 buffer（步驟 1–2），然後在 virtqueue 中放入一個帶有 `VIRTQ_DESC_F_INDIRECT` （0x4） 旗標的描述符（步驟 3）。 這個主描述符的位址與長度欄位，就對應到那張間接表的位址與大小
 
 在 packed 佈局中，間接表裡的 buffers 必須依順序排列，且 ID 欄位會完全被忽略。 此外，對間接表項目而言，唯一有效的旗標是 `VIRTQ_DESC_F_WRITE`，其他旗標都是保留的，裝置會忽略。 照慣例，若滿足通知條件，driver 會發出通知（步驟 4）
 
@@ -571,7 +547,7 @@ Descriptor table 並不是用來記錄「所有描述符的狀態」的，它只
 
 例如，如果要建立一張包含 3 個描述符的間接表，driver 需要配置一張 48 bytes 的表：
 
-<span class = "center-column">
+<center-panel natural title="（Figure: Three descriptor long indirect packed table）">
 
 | Address    | Length |  ID   | Flags |
 | :--------- | :----: | :-:   | :---: |
@@ -579,35 +555,29 @@ Descriptor table 並不是用來記錄「所有描述符的狀態」的，它只
 | 0x81000000 | 0x1000 |  ...  |   W   |
 | 0x82000000 | 0x1000 |  ...  |   W   |
 
-（Figure: Three descriptor long indirect packed table）
-
-</span>
+</center-panel>
 
 接著，如果把這張間接表作為主描述符表中的第一個項目提交（假設間接表配置在位址 `0x83000000`），則主描述符表如下：
 
-<span class = "center-column">
+<center-panel natural title="（Figure: Drivers makes an indirect table available）">
 
 | Avail idx | Address    | Length |  ID | Flags   | Used idx |
 |  -------: | :--------- | :----: | :-: | :---:   | :------  |
 |           | 0x80000000 |   48   |  0  |  A \| I |     ←    |
 |     →     | ...        |        |     |         |          |
 
-（Figure: Drivers makes an indirect table available）
-
-</span>
+</center-panel>
 
 在消費完這批間接 buffers 之後，裝置需要在 used descriptor 中寫回這筆間接請求的 id（本例為 0）。 整體看起來就與「回報第一個 buffer 完成」類似，只是會帶上間接（`I`）的旗標：
 
-<span class = "center-column">
+<center-panel natural title="（Figure: Device makes an indirect table used）">
 
 | Avail idx | Address    | Length |  ID | Flags       | Used idx |
 |  -------: | :--------- | :----: | :-: | :---:       | :------  |
 |           | 0x80000000 |   48   |  0  | A \| U \| I |          |
 |     →     | …          |        |     |             |     ←    |
 
-（Figure: Device makes an indirect table used）
-
-</span>
+</center-panel>
 
 之後，除非 driver 再次把它標示為 available，否則裝置無法再存取這張記憶體表，因此 driver 可以將其釋放或重新使用它
 

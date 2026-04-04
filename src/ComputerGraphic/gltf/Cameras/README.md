@@ -45,7 +45,6 @@ glTF 中有兩種相機類型：
 ],
 ```
 
-
 The `type` of the camera is given as a string, which can be `"perspective"` or  `"orthographic"`. Depending on this type, the `camera` object contains a [`camera.perspective`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-camera-perspective) object or a [`camera.orthographic`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-camera-orthographic) object. These objects contain additional parameters that define the actual viewing volume.
 
 The `camera.perspective` object contains an `aspectRatio` property that defines the aspect ratio of the viewport. Additionally, it contains a property called `yfov`, which stands for *Field Of View in Y-direction*. It defines the "opening angle" of the camera and is given in radians.
@@ -69,7 +68,7 @@ Explaining the details of cameras, viewing, and projections is beyond the scope 
 
 此外，兩種相機都需要定義 `znear`（近平面）與 `zfar`（遠平面），不過對於透視相機而言，`zfar` 是可選的，若省略，則視為使用「無限遠投影矩陣」
 
-這些相機參數對應到大多數圖形 API 中的攝影機設定函式，因此可直接用來建立投影矩陣（projection matrix），再與 model matrix 結合形成最終的 model-view-projection (MVP) 矩陣
+這些相機參數對應到大多數圖形 API 中的攝影機設定函式，因此可直接用來建立投影矩陣（projection matrix），再與 model matrix 結合形成最終的 model-view-projection（MVP） 矩陣
 
 # Camera orientation
 

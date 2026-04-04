@@ -13,13 +13,13 @@ category:
 
 virtio 及本規格的目的在於讓虛擬環境與 guest 能夠透過一個直接、有效率、標準且可擴充的機制來使用虛擬裝置，而不是依賴每個環境或作業系統特製化的機制
 
-- 直接：  
+- 直接：
   Virtio 裝置使用中斷與 DMA 等常見的匯流排機制，撰寫裝置驅動程式的人應該不陌生。 Virtio 裝置並沒有使用 page-flipping 或 COW（Copy-On-Write）等特殊的機制，它就是一個普通的裝置
-- 高效：  
+- 高效：
   Virtio 裝置由輸入與輸出的描述符環（ring）組成，這些環整齊排列，以避免驅動程式與裝置同時寫入同一快取列時所產生的快取效應
-- 標準：  
+- 標準：
   除了需要支援裝置所連接的匯流排以外，Virtio 對其運作環境沒有其他要求。 本規格中，virtio 裝置透過 MMIO、Channel I/O 與 PCI 匯流排傳輸來實作，早期的草稿曾在其他匯流排上實作過，但未收錄於此
-- 可擴充：  
+- 可擴充：
   Virtio 裝置包含旗標，guest 作業系統在裝置初始化時會確認這些位元。 這機制允許向前與向後相容：裝置會提供所有它支援的功能，而驅動程式則會確認它支援且想要使用的部分
 
 ### 1.1 Normative References
@@ -240,11 +240,11 @@ Virtio 裝置的枚舉／識別方式取決於其所連接的匯流排（見各�
 
 旗標的配置如下：
 
-- 0 到 23，以及 50 到 127：  
+- 0 到 23，以及 50 到 127：
   用於特定裝置型別的旗標
-- 24 到 41：  
+- 24 到 41：
   保留給 virtqueue 與功能協商機制的擴充用旗標
-- 42 到 49，以及 128 與以上：  
+- 42 到 49，以及 128 與以上：
   保留給未來擴充使用的旗標
 
 注意：例如，對網路裝置（也就是 Device ID 1）而言，旗標 0 表示該裝置支援封包的 checksum。 而對於裝置組態空間（device configuration space），如果有了新欄位，則需要搭配一個新的旗標來表示
@@ -488,7 +488,7 @@ virtqueue 由三個部分組成：
 
 每一部分在 guest 記憶體中都必須是實體連續（physically-contiguous）的，並且各自有不同的對齊要求。 各部分的記憶體對齊與大小如下：
 
-<span class = "center-column">
+<center-panel natural>
 
 | Virtqueue 部分     | 對齊（bytes） |              大小（bytes） |
 | ---------------- | --------: | ---------------------: |
@@ -496,7 +496,7 @@ virtqueue 由三個部分組成：
 | Available Ring   |         2 | `6 + 2 × (Queue Size)` |
 | Used Ring        |         4 | `6 + 8 × (Queue Size)` |
 
-</span>
+</center-panel>
 
 其中對齊欄給出每個部分所需的最小對齊，大小欄給出該部分的總位元組數
 
@@ -524,12 +524,12 @@ Queue Size 對應於一個 virtqueue 中所能容納的最大緩衝區數量，�
 
 在 Legacy 介面下，virtqueue 的佈局有額外限制。 每個 virtqueue 會佔用兩個或更多個實體連續的頁面（通常一頁是 4096 bytes，但會依 transport 而異，以下稱作 Queue Align），並由三個部分構成：
 
-<span class = "center-column">
+<center-panel natural>
 
 | Descriptor Table |　Available Ring（...padding...）　| Used Ring |
 |-|-|-|
 
-</span>
+</center-panel>
 
 ::: tip  
 Legacy 要求「以頁對齊的大區塊」配置，三者按順序排在同一片連續區域，中間以 padding 補到 Queue Align 邊界，接著才放 Used Ring，以便舊硬體/舊驅動一次性地映射整個 virtqueue 區塊  
@@ -924,8 +924,8 @@ Virtqueue 的操作分成兩個部分：向裝置供給新的可用緩衝區，�
 3. 把 `d.len` 設為 `b` 的長度
 4. 若 `b` 是裝置可寫，則把 `d.flags` 設為 `VIRTQ_DESC_F_WRITE`，否則設為 0
 5. 若後面還有下一個元素：
-   - (a) 把 `d.next` 設為下一個可用描述符的索引
-   - (b) 在 `d.flags` 中設置 `VIRTQ_DESC_F_NEXT` 位元
+   - （a） 把 `d.next` 設為下一個可用描述符的索引
+   - （b） 在 `d.flags` 中設置 `VIRTQ_DESC_F_NEXT` 位元
 
 實務上，`d.next` 平時也會拿來把空閒描述符串成 free list。 開始映射前，通常會先用一個「剩餘可用數量」的計數來檢查是否足夠
 
@@ -1206,7 +1206,7 @@ Device Event Suppression 結構對驅動而言是唯讀的，用來控制「驅�
 
 virtqueue 的各部分在 guest 記憶體中都必須是物理連續的，且有不同的對齊需求。 各部分的記憶體對齊與大小需求（單位為位元組）如下表：
 
-<span class = "center-column">
+<center-panel natural>
 
 | Virtqueue Part | Alignment | Size |
 | - | - | - |
@@ -1214,7 +1214,7 @@ virtqueue 的各部分在 guest 記憶體中都必須是物理連續的，且有
 | Device Event Suppression | 4 | 4 |
 | Driver Event Suppression | 4 | 4 |
 
-</span>
+</center-panel>
 
 「Alignment」欄顯示了 virtqueue 每個部分所需的最小對齊需求。 「Size」欄顯示了每個部分的總位元組數。 Queue Size 對應於該 virtqueue 中描述符的最大數量，例如，若佇列大小為 4，則在任何特定時間最多可將 4 個緩衝區佇列。 Queue Size 不一定要是 2 的冪次
 
@@ -1312,9 +1312,9 @@ virtqueue 的運作分成兩部分：向裝置提供新的可用緩衝，以及�
 4. 將 `d.len` 設為 `b` 的長度
 5. 將 `d.id` 設為該 buffer id
 6. 依下列方式計算 `flags`：
-   - (a) 若 `b` 為裝置可寫，將 `VIRTQ_DESC_F_WRITE` 位設為 1，否則設為 0
-   - (b) 將 `VIRTQ_DESC_F_AVAIL` 設為當前 Driver Ring Wrap Counter 的值
-   - (c) 將 `VIRTQ_DESC_F_USED` 設為與當前 Driver Ring Wrap Counter 相反的值
+   - （a） 若 `b` 為裝置可寫，將 `VIRTQ_DESC_F_WRITE` 位設為 1，否則設為 0
+   - （b） 將 `VIRTQ_DESC_F_AVAIL` 設為當前 Driver Ring Wrap Counter 的值
+   - （c） 將 `VIRTQ_DESC_F_USED` 設為與當前 Driver Ring Wrap Counter 相反的值
 7. 執行記憶體屏障，以確保描述符已完成初始化
 8. 將 `d.flags` 設為計算出的 `flags` 值
 9. 若 `d` 是環中的最後一個描述符，則切換 Driver Ring Wrap Counter
@@ -1529,7 +1529,7 @@ for (;;) {
 
 - SR-IOV 群組型別（0x1）  
 
-  此裝置群組以 PCI Single Root I/O Virtualization (SR-IOV) 的實體功能（PF）裝置作為擁有者，並把其所有 SR-IOV 虛擬功能（VF）作為成員（參見 [[PCIe]](https://docs.oasis-open.org/virtio/virtio/v1.3/csd01/virtio-v1.3-csd01.html#x1-3001r1)）
+  此裝置群組以 PCI Single Root I/O Virtualization（SR-IOV） 的實體功能（PF）裝置作為擁有者，並把其所有 SR-IOV 虛擬功能（VF）作為成員（參見 [[PCIe]](https://docs.oasis-open.org/virtio/virtio/v1.3/csd01/virtio-v1.3-csd01.html#x1-3001r1)）
 
   這個群組的群組型別識別碼為 0x1，PF 裝置本身不是該群組的成員
 
@@ -1578,7 +1578,7 @@ struct virtio_admin_cmd {
 
 `opcode` 指定命令種類。 `opcode` 的有效數值如下表所示：
 
-<span class = "center-column">
+<center-panel natural>
 
 | opcode          | 名稱                                             | 命令描述                                                         |
 | --------------- | ---------------------------------------------- | ------------------------------------------------------------ |
@@ -1592,13 +1592,13 @@ struct virtio_admin_cmd {
 | 0x0007 - 0x7FFF | -                                              | 使用 `struct virtio_admin_cmd` 的命令                             |
 | 0x8000 - 0xFFFF | -                                              | 保留給未來命令（可能使用不同結構）                                            |
 
-</span>
+</center-panel>
 
 `group_type` 用來指定群組型別識別碼，`group_member_id` 則用來指定群組內的成員識別碼。 關於群組型別識別碼與成員識別碼的定義，請參見 [2.12](https://docs.oasis-open.org/virtio/virtio/v1.3/csd01/virtio-v1.3-csd01.html#x1-10600012) 節
 
 `status` 以較抽象的形式來描述命令結果與（可能的）失敗原因，適合轉發給應用程式。 `status_qualifier` 則以較低階、特定於 virtio 的形式描述失敗情形，方便除錯。 下表列出了可能的 `status` 值，為了簡化常見實作，這些值刻意與常見的 Linux 錯誤名稱與代碼相對應：
 
-<span class = "center-column">
+<center-panel natural>
 
 | 狀態（十進位） | 名稱                            | 描述       |
 | ------- | ----------------------------- | -------- |
@@ -1608,7 +1608,7 @@ struct virtio_admin_cmd {
 | 22      | VIRTIO\_ADMIN\_STATUS\_EINVAL | 無效的命令    |
 | other   | -                             | 群組管理命令錯誤 |
 
-</span>
+</center-panel>
 
 當 `status` 為 `VIRTIO_ADMIN_STATUS_OK` 時，`status_qualifier` 為保留位，裝置會把它設為 0。 下表列出了可能的 `status_qualifier` 值：
 
@@ -2124,7 +2124,7 @@ Device ID 有兩種來源：現代（非過渡）裝置用「Virtio Device ID + 
 
 裝置必須具有 PCI Vendor ID 0x1AF4。 裝置必須滿足下列其一：依第 [5](https://docs.oasis-open.org/virtio/virtio/v1.3/csd01/virtio-v1.3-csd01.html#x1-2330005) 節所示，將 0x1040 加到 Virtio Device ID 以得到 PCI Device ID； 或依裝置類型使用過渡（Transitional）PCI Device ID，對應如下：
 
-<span class = "center-column">
+<center-panel natural>
 
 | Transitional PCI Device ID | Virtio 裝置 | 
 | - | - |
@@ -2136,7 +2136,7 @@ Device ID 有兩種來源：現代（非過渡）裝置用「Virtio Device ID + 
 | 0x1005 | entropy source（熵來源） |
 | 0x1009 | 9P 傳輸 |
 
-</span>
+</center-panel>
 
 例如，Virtio Device ID 為 1 的網路裝置，其 PCI Device ID 為 0x1041； 或在過渡情況下，為 0x1000
 
@@ -2469,13 +2469,13 @@ ISR status 的 `offset` 沒有對齊要求
 
 ISR 的各位元使驅動能夠區分「裝置特定組態變更中斷」與「一般 virtqueue 中斷」：
 
-<span class = "center-column">
+<center-panel natural>
 
 | Bits     | 0                 | 1                      |   2 ~ 31 |
 | - | - | - | - |
 | Purpose  | Queue Interrupt   | Device Configuration   |   保留|
 
-</span>
+</center-panel>
 
 ::: tip  
 ISR status 能力提供簡單的「中斷來源區分」：位元 0 表示佇列事件，位元 1 表示組態變更，其餘保留  
@@ -2610,7 +2610,7 @@ Transitional 裝置必須在 PCI 裝置的第一個 I/O 區域的 BAR0 中，以
 
 透過 legacy 介面使用時，virtio 的 common configuration 結構如下：
 
-<span class = "center-column">
+<center-panel natural>
 
 | Bits | Read / Write | Purpose                   |
 | ---: | :----------: | ------------------------- |
@@ -2623,30 +2623,30 @@ Transitional 裝置必須在 PCI 裝置的第一個 I/O 區域的 BAR0 中，以
 |    8 |      R+W     | Device Status             |
 |    8 |       R      | ISR Status                |
 
-</span>
+</center-panel>
 
 若裝置啟用了 MSI-X，則在此標頭之後會緊接兩個欄位：
 
-<span class = "center-column">
+<center-panel natural>
 
 | Bits | Read/Write | Purpose (MSI-X)      |
 | ---: | :--------: | -------------------- |
 |   16 |     R+W    | config\_msix\_vector |
 |   16 |     R+W    | queue\_msix\_vector  |
 
-</span>
+</center-panel>
 
 注意：當啟用了 MSI-X 能力時，device-specific configuration 在 virtio common configuration 結構中的起始偏移量為 24 位元組。 當未啟用 MSI-X 能力時，device-specific configuration 在 virtio 標頭中的起始偏移量為 20 位元組。 也就是說，一旦你在裝置上啟用 MSI-X，其他欄位的位置會往後移，如果再次關閉，它們又會移回原處！
 
 任何 device-specific configuration 空間都緊接在這些通用標頭之後：
 
-<span class = "center-column">
+<center-panel natural>
 
 | Bits            | Read / Write    | Purpose         |
 | --------------- | --------------- | --------------- |
 | Device Specific | Device Specific | Device Specific |
 
-</span>
+</center-panel>
 
 在使用 legacy 介面存取 device-specific configuration 空間時，transitional 驅動程式必須以位於緊接一般標頭之後的偏移量處來存取該空間
 
@@ -2877,7 +2877,7 @@ MMIO virtio 裝置提供一組 memory-mapped 的控制暫存器，後面接著�
 - Description：  
   從此暫存器讀取時，會回傳 32 個連續的旗標位元，其最低有效位元取決於前一次寫入到 `DeviceFeaturesSel` 的值
 
-  存取此暫存器時，會回傳從 `DeviceFeaturesSel * 32` 到 (`DeviceFeaturesSel * 32`) + 31 的位元。 例如：若 `DeviceFeaturesSel` 設為 0，則讀回的為特徵位元 0 到 31；若 `DeviceFeaturesSel` 設為 1，則讀回特徵位元 32 到 63
+  存取此暫存器時，會回傳從 `DeviceFeaturesSel * 32` 到（`DeviceFeaturesSel * 32`） + 31 的位元。 例如：若 `DeviceFeaturesSel` 設為 0，則讀回的為特徵位元 0 到 31；若 `DeviceFeaturesSel` 設為 1，則讀回特徵位元 32 到 63
 
   另見 2.2 Feature Bits
 
@@ -2885,7 +2885,7 @@ MMIO virtio 裝置提供一組 memory-mapped 的控制暫存器，後面接著�
 
 - Offset from base：0x014  
 - Direction：W  
-- Function：Device (host) features word selection（裝置〈host 端〉特徵字選擇暫存器）  
+- Function：Device（host） features word selection（裝置〈host 端〉特徵字選擇暫存器）  
 - Description：  
   寫入此暫存器會選擇一組 32 個裝置特徵位元，之後即可透過讀取 `DeviceFeatures` 來存取該組特徵位元
 
@@ -2896,14 +2896,14 @@ MMIO virtio 裝置提供一組 memory-mapped 的控制暫存器，後面接著�
 - Function：Flags representing device features understood and activated by the driver（代表驅動程式已理解並啟用之裝置特徵的旗標）  
 - Description：  
   寫入此暫存器會設定 32 個連續的旗標位元，其最低有效位元取決於前一次寫入到 `DriverFeaturesSel` 的值
-  存取此暫存器時，會設定從 `DriverFeaturesSel` ∗ 32 到 (`DriverFeaturesSel` ∗ 32) + 31 的位元。 例如：若 `DriverFeaturesSel` 設為 0，則設定特徵位元 0 到 31；若 `DriverFeaturesSel` 設為 1，則設定特徵位元 32 到 63
+  存取此暫存器時，會設定從 `DriverFeaturesSel` ∗ 32 到（`DriverFeaturesSel` ∗ 32） + 31 的位元。 例如：若 `DriverFeaturesSel` 設為 0，則設定特徵位元 0 到 31；若 `DriverFeaturesSel` 設為 1，則設定特徵位元 32 到 63
   另見 2.2 Feature Bits
 
 ###### `DriverFeaturesSel`
 
 - Offset from base：0x024  
 - Direction：W  
-- Function：Activated (guest) features word selection（已啟用之 guest 特徵字選擇暫存器）  
+- Function：Activated（guest） features word selection（已啟用之 guest 特徵字選擇暫存器）  
 - Description：  
   寫入此暫存器會選擇一組 32 個已啟用的特徵位元，之後可透過寫入 `DriverFeatures` 來設定這些特徵位元
 
@@ -3201,7 +3201,7 @@ memory-mapped 的 virtio 裝置會使用單一專用的中斷訊號；當 `Inter
 
 - Offset from base：0x014  
 - Direction：W  
-- Function：Device (host) features word selection（裝置〈host 端〉特徵字選擇暫存器）  
+- Function：Device（host） features word selection（裝置〈host 端〉特徵字選擇暫存器）  
 - Description：用來選擇要讀取的 32 位元 `HostFeatures` 字
 
 ###### `GuestFeatures`
@@ -3215,7 +3215,7 @@ memory-mapped 的 virtio 裝置會使用單一專用的中斷訊號；當 `Inter
 
 - Offset from base：0x024  
 - Direction：W  
-- Function：Activated (guest) features word selection（已啟用 guest 特徵字選擇暫存器）  
+- Function：Activated（guest） features word selection（已啟用 guest 特徵字選擇暫存器）  
 - Description：用來選擇要透過 `GuestFeatures` 設定的 32 位元特徵字
 
 ###### `GuestPageSize`
@@ -3313,7 +3313,7 @@ memory-mapped 的 virtio 裝置會使用單一專用的中斷訊號；當 `Inter
 
 在 legacy 介面中，virtqueue 的頁面大小是由 guest 寫入 `GuestPageSize` 所定義；驅動程式會在 virtqueue 被設定之前完成這項動作
 
-virtqueue 的配置布局遵循 2.7.2 Legacy Interfaces: A Note on Virtqueue Layout 所述，其對齊由 `QueueAlign` 所定義
+virtqueue 的配置布局遵循 2.7.2 Legacy Interfaces：A Note on Virtqueue Layout 所述，其對齊由 `QueueAlign` 所定義
 
 virtqueue 的組態程序如下：
 
@@ -3545,7 +3545,7 @@ struct virtio_gpu_ctrl_hdr {
 
 ##### 5.7.6.8 裝置運作：controlq
 
-對於任何座標，(0,0) 位於左上角，x 向右越大，y 向下越大
+對於任何座標，（0,0） 位於左上角，x 向右越大，y 向下越大
 
 - `VIRTIO_GPU_CMD_GET_DISPLAY_INFO`  
   擷取目前的輸出組態。 請求沒有額外資料（僅有 `struct virtio_gpu_ctrl_hdr` 表頭）。 回應類型為 `VIRTIO_GPU_RESP_OK_DISPLAY_INFO`，回應資料為 `struct virtio_gpu_resp_display_info`

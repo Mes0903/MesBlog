@@ -59,7 +59,7 @@ $$
 
 我們用一個簡單的例子來理解最佳策略會做出的選擇，假設一個程式會依序存取以下的 virtual page：0, 1, 2, 0, 1, 3, 0, 3, 1, 2, 1。 下表（Figure 22.1）展示了在 cache 能容納三個 page 的情況下，最佳策略的行為
 
-<div class = "center-column">
+<center-panel natural title="(Figure 22.2: Tracing The FIFO Policy)">
 
 | Access | Hit/Miss? | Evict | Resulting Cache State |
 |--------|-----------|--------|------------------------|
@@ -75,9 +75,7 @@ $$
 |   2    | Miss      | 3      | 0, 1, 2                |
 |   1    | Hit       |        | 0, 1, 2                |
 
-(Figure 22.2: Tracing The FIFO Policy)
-
-</div>
+</center-panel>
 
 首先前三個存取會 miss，因為 cache 一開始是空的，這種 miss 有時被稱為 cold-start miss（或 compulsory miss）。 接著我們再度存取 page 0 和 1，這兩次都會 hit。 接下來遇到 page 3 的 miss，但這次 cache 已滿，所以必須替換某個 page
 
@@ -127,7 +125,7 @@ Belady（最佳策略的提出者）和他的同事們發現了一個有趣的�
 
 另一個類似的替換策略是 Random，它在記憶體壓力下會隨機選一個 page 替換。 Random 和 FIFO 有類似的特性 — 實作簡單，但選擇要 evict 的 page 時並不聰明。 我們來看看 Random 在經典序列上的表現：
 
-<div class = "center-column">
+<center-panel natural title="(Figure 22.3: Tracing The Random Policy)">
 
 | Access | Hit/Miss? | Evict | Resulting Cache State |
 |--------|-----------|--------|------------------------|
@@ -143,17 +141,11 @@ Belady（最佳策略的提出者）和他的同事們發現了一個有趣的�
 |   2    | Hit       |        | 2, 0, 1                |
 |   1    | Hit       |        | 2, 0, 1                |
 
-(Figure 22.3: Tracing The Random Policy)
-
-</div>
+</center-panel>
 
 當然，Random 的表現完全取決於它選得有多「幸運」或「倒楣」。 在上面的例子中，Random 的表現比 FIFO 好一點、比最佳策略差一點。 我們可以試著實驗看看 Random 跑上幾千次的表現如何：
 
-<div class = "center-column">
-
 ![](image/22-4.png)
-
-</div>
 
 Figure 22.4 顯示 Random 在 10,000 次試驗中所達到的 hit 數，每次使用不同的 random seed。 你可以看到有些時候（大約 40% 的時間）Random 表現跟最佳策略一樣好，在這個例子中代表達到 6 次 hit； 但也有時候非常糟，只命中 2 次或更少，可見 Random 的好壞全靠運氣
 
@@ -171,7 +163,7 @@ page-replacement policy 可以使用的一種歷史資訊是頻率，如果某�
 
 為了更好地理解 LRU，我們來看看 LRU 在經典序列上的表現，Figure 22.5 顯示了結果：
 
-<div class = "center-column">
+<center-panel natural title="(Figure 22.5: Tracing The LRU Policy)">
 
 | Access | Hit/Miss? | Evict | Resulting Cache State |
 |--------|-----------|--------|------------------------|
@@ -187,9 +179,7 @@ page-replacement policy 可以使用的一種歷史資訊是頻率，如果某�
 |   2    | Miss      | 0      | LRU→ 3, 1, 2           |
 |   1    | Hit       |        | LRU→ 3, 2, 1           |
 
-(Figure 22.5: Tracing The LRU Policy)
-
-</div>
+</center-panel>
 
 從圖中你可以看到，LRU 如何透過歷史資訊來取得優勢，LRU 第一次替換 page 時，選擇的是 page 2，因為 page 0 和 1 最近被使用過。 接著它替換掉 page 0，因為 page 1 和 3 最近有被用。 這兩次替換 LRU 的判斷都正確，下一次的記憶體存取都命中了，因此在這個例子中，LRU 的表現和最佳策略一樣好
 
@@ -213,11 +203,7 @@ ASIDE: TYPES OF LOCALITY
 
 在這個實驗中，我們讓 cache 的大小從非常小（只有 1 個 page）變化到可以裝下全部 100 個 page，觀察各種策略在不同 cache 大小下的行為：
 
-<div class = "center-column">
-
 ![](image/22-6.png)
-
-</div>
 
 Figure 22.6 畫出了這個實驗，包含 optimal、LRU、Random 和 FIFO 這四種策略的結果。 圖中的 y 軸代表各策略達成的 hit rate，x 軸則是 cache 的大小
 
@@ -225,11 +211,7 @@ Figure 22.6 畫出了這個實驗，包含 optimal、LRU、Random 和 FIFO 這�
 
 接下來我們要看的 workload 是所謂的「80-20」workload，也就是帶有 locality 的例子：80% 的操作會落在 20% 的 page 上（hot page），其餘 20% 的操作則落在剩下的 80% page 上（cold page）。 在這個 workload 中，我們仍然使用 100 個獨立的 page，因此大部分時間會存取 hot page，剩下的時間則存取 cold page。 Figure 22.7展示了這些策略在這個 workload 下的表現：
 
-<div class = "center-column">
-
 ![](image/22-7.png)
-
-</div>
 
 從圖中可以看到，雖然 random 和 FIFO 表現也不錯，但 LRU 表現得比兩者更好，因為它有更高的機率把 hot page 留在記憶體裡，這些 page 在過去常常被存取，因此也很有可能在不久後再次被存取。 而 optimal 再次表現得最好，說明 LRU 的歷史資訊還是有限的
 
@@ -237,11 +219,7 @@ Figure 22.6 畫出了這個實驗，包含 optimal、LRU、Random 和 FIFO 這�
 
 我們來看最後一個 workload。 我們稱它為「looping sequential」workload，意思是它會循序存取 page，從 0 開始，接著是 1、2，一直到 49，然後再從頭開始重複，總共進行 10,000 次參照，page 數量為 50。 圖 Figure 22.8展示了各種策略在這個 workload 下的行為：
 
-<div class = "center-column">
-
 ![](image/22-8.png)
-
-</div>
 
 這個 workload 在很多應用程式中都很常見（包括重要的商業應用如資料庫 [CD85]），但它卻是 LRU 和 FIFO 的 worst-case。 在 looping-sequential 的 workload 中，這些策略會踢掉舊的 page。 不幸的是，由於 workload 是循環的，那些舊 page 很快就又會被用到，而那些策略偏好保留的 page 反而用不到
 
@@ -281,11 +259,7 @@ LRU 這種策略通常比 FIFO 或 Random 更有效，因為後者可能會隨�
 
 要注意，這種做法不是唯一使用 use bit 近似 LRU 的方式。 事實上，只要能定期清除 use bit，然後利用 use bit 是 1 或 0 來做替換決策的方式都可以。 Corbato 提出的 clock algorithm 是早期一個成功的例子，它有個不錯的特性 — 不需要不斷地掃描整個記憶體找「沒被用到的 page」
 
-<div class = "center-column">
-
 ![](image/22-9.png)
-
-</div>
 
 Figure 22.9 展示了一個 clock algorithm 變形版本的行為。 這個變形版本在做替換時會隨機掃描 page，當它遇到一個 reference bit 是 1 的 page，就把該 bit 清為 0；當它找到 reference bit 是 0 的 page，就把它當作犧牲對象替換掉。 你可以看到，雖然它無法做到像完美 LRU 一樣好，但比那些完全不考慮歷史的策略要好
 
@@ -325,11 +299,11 @@ page replacement 並不是 VM 子系統中唯一的策略（雖然可能是最�
 
 ## References
 
-- [AD03] “Run-Time Adaptation in River” by Remzi H. Arpaci-Dusseau. ACM TOCS, 21:1, February 2003. 這篇是作者 Remzi 博士論文工作的摘要，他在 River 系統中發現，與理想模型做比較，是系統設計者的重要技巧
+- [AD03] “Run-Time Adaptation in River” by Remzi H. Arpaci-Dusseau. ACM TOCS, 21：1, February 2003. 這篇是作者 Remzi 博士論文工作的摘要，他在 River 系統中發現，與理想模型做比較，是系統設計者的重要技巧
 
-- [B66] “A Study of Replacement Algorithms for Virtual-Storage Computer” by Laszlo A. Belady. IBM Systems Journal 5(2): 78-101, 1966. 提出 MIN 演算法的經典論文，提供計算最理想策略行為的簡單方法
+- [B66] “A Study of Replacement Algorithms for Virtual-Storage Computer” by Laszlo A. Belady. IBM Systems Journal 5（2）：78-101, 1966. 提出 MIN 演算法的經典論文，提供計算最理想策略行為的簡單方法
 
-- [BNS69] “An Anomaly in Space-time Characteristics of Certain Programs Running in a Paging Machine” by L. A. Belady, R. A. Nelson, G. S. Shedler. Communications of the ACM, 12:6, June 1969. 引入了知名的 Belady’s Anomaly 記憶體存取序列。 我們也很好奇 Nelson 和 Shedler 對這個名字有什麼感想
+- [BNS69] “An Anomaly in Space-time Characteristics of Certain Programs Running in a Paging Machine” by L. A. Belady, R. A. Nelson, G. S. Shedler. Communications of the ACM, 12：6, June 1969. 引入了知名的 Belady’s Anomaly 記憶體存取序列。 我們也很好奇 Nelson 和 Shedler 對這個名字有什麼感想
 
 - [CD85] “An Evaluation of Buffer Management Strategies for Relational Database Systems” by Hong-Tai Chou, David J. DeWitt. VLDB ’85, Stockholm, Sweden, August 1985. 資料庫領域中的知名論文，探討在常見資料庫存取模式下該使用哪些 buffer 管理策略。 更普遍的教訓是 — 如果你知道 workload 的特性，就能設計出比 OS 的通用策略還要更有效的對應策略
 
@@ -337,7 +311,7 @@ page replacement 並不是 VM 子系統中唯一的策略（雖然可能是最�
 
 - [D70] “Virtual Memory” by Peter J. Denning. Computing Surveys, Vol. 2, No. 3, September 1970. Denning 關於 virtual memory 系統的早期經典綜述
 
-- [EF78] “Cold-start vs. Warm-start Miss Ratios” by Malcolm C. Easton, Ronald Fagin. Communications of the ACM, 21:10, October 1978. 討論 cold-start 和 warm-start miss 差異的好文章
+- [EF78] “Cold-start vs. Warm-start Miss Ratios” by Malcolm C. Easton, Ronald Fagin. Communications of the ACM, 21：10, October 1978. 討論 cold-start 和 warm-start miss 差異的好文章
 
 - [FP89] “Electrochemically Induced Nuclear Fusion of Deuterium” by Martin Fleischmann, Stanley Pons. Journal of Electroanalytical Chemistry, Volume 26, Number 2, Part 1, April, 1989. 這篇論文聲稱可以從水和金屬產生近乎無限的能源，原本可能顛覆世界，但結果無法複現，因此作者最後聲名狼藉（也被嘲笑）。 唯一幸運的大概是 Marvin Hawkins，他雖參與研究卻沒被列名，從而避免與這個 20 世紀最大的科學糗事之一有所關聯
 
@@ -345,9 +319,9 @@ page replacement 並不是 VM 子系統中唯一的策略（雖然可能是最�
 
 - [H87] “Aspects of Cache Memory and Instruction Buffer Performance” by Mark D. Hill. Ph.D. Dissertation, U.C. Berkeley, 1987. Mark Hill 在博士論文中提出 Three C’s 概念，後來因為出現在 H&P [HP06] 中而廣為人知。 其中的名言：「我發現將 miss 分成三種型態很有幫助... 根據 miss 的成因來直覺地劃分（第 49 頁）」
 
-- [KE+62] “One-level Storage System” by T. Kilburn, D.B.G. Edwards, M.J. Lanigan, F.H. Sumner. IRE Trans. EC-11:2, 1962. 雖然 Atlas 系統有 use bit，但因為 page 數量少，所以他們沒有處理大記憶體中 use bit 掃描的問題
+- [KE+62] “One-level Storage System” by T. Kilburn, D.B.G. Edwards, M.J. Lanigan, F.H. Sumner. IRE Trans. EC-11：2, 1962. 雖然 Atlas 系統有 use bit，但因為 page 數量少，所以他們沒有處理大記憶體中 use bit 掃描的問題
 
-- [M+70] “Evaluation Techniques for Storage Hierarchies” by R. L. Mattson, J. Gecsei, D. R. Slutz, I. L. Traiger. IBM Systems Journal, Volume 9:2, 1970. 這篇主要討論如何有效模擬 cache 階層，是這方面的經典論文，也深入說明了各種替換策略的特性。 你能想出 stack property 如何幫助模擬不同大小的 cache 嗎？
+- [M+70] “Evaluation Techniques for Storage Hierarchies” by R. L. Mattson, J. Gecsei, D. R. Slutz, I. L. Traiger. IBM Systems Journal, Volume 9：2, 1970. 這篇主要討論如何有效模擬 cache 階層，是這方面的經典論文，也深入說明了各種替換策略的特性。 你能想出 stack property 如何幫助模擬不同大小的 cache 嗎？
 
 - [MM03] “ARC: A Self-Tuning, Low Overhead Replacement Cache” by Nimrod Megiddo and Dharmendra S. Modha. FAST 2003, February 2003, San Jose, California. 這篇現代替換策略的優秀論文提出 ARC 策略，已被一些系統採用。 在 FAST ’14 大會中獲頒 “Test of Time” 獎
 

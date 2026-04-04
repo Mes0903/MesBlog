@@ -109,7 +109,7 @@ void unlock() {
 
 這個最初的嘗試（見 Figure 28.1）想法非常單純：用一個簡單的變數（flag）來表示 lock 是否被某個 thread 持有。 第一個進入 critical section 的 thread 會呼叫 `lock()`，它先檢查 flag 是否為 1（這個例子中一開始不是），然後將 flag 設為 1 表示該 thread 成功取得 lock。 執行完 critical section 之後，該 thread 呼叫 `unlock()` 將 flag 清為 0，表示 lock 已被釋放
 
-<div class = "center-column">
+<center-panel natural title="（Figure 28.1: First Attempt: A Simple Flag）">
 
 ```c
 typedef struct __lock_t { int flag; } lock_t;
@@ -130,19 +130,13 @@ void unlock(lock_t *mutex) {
 }
 ```
 
-（Figure 28.1: First Attempt: A Simple Flag）
-
-</div>
+</center-panel>
 
 如果在第一個 thread 還在 critical section 裡時，另一個 thread 呼叫了 `lock()`，它會在 while 迴圈中 spin-wait（空轉等待），直到第一個 thread 呼叫 `unlock()` 並清除 flag。 一旦 flag 被清除，這個等待中的 thread 就會跳出迴圈，將 flag 設為 1，然後進入 critical section。 不幸的是，這段程式碼存在兩個問題：正確性問題與效能問題
 
 正確性上的問題在你習慣 concurrent 程式設計思維之後會很容易看出來。 請想像如下交錯執行的情境（見 Figure 28.2），假設一開始 flag = 0：
 
-<div class = "center-column">
-
 ![（Figure 28.2: Trace: No Mutual Exclusion）](image/28-2.png)
-
-</div>
 
 從這種交錯中你可以看出，只要中斷發生得剛剛好（或說剛剛不好），我們就能輕易出現這種情況：兩個 thread 都設了 `flag = 1`，然後都進入了 critical section。 這種行為在業界的術語裡叫作「災難性錯誤」—— 我們顯然無法保證 mutual exclusion，連最基本的目標都沒達成
 
@@ -250,7 +244,7 @@ void unlock() {
 
 另一種某些系統提供的硬體原語叫做 compare-and-swap 指令（在 SPARC 上的名稱），在 x86 則稱為 compare-and-exchange。 圖 28.4 給出了這條單一指令的 C 風格偽碼：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 28.4: Compare-and-swap）">
 
 ```c
 int CompareAndSwap(int *ptr, int expected, int new) {
@@ -261,9 +255,7 @@ int CompareAndSwap(int *ptr, int expected, int new) {
 }
 ```
 
-（Figure 28.4: Compare-and-swap）
-
-</div>
+</center-panel>
 
 compare-and-swap 的基本概念是：先檢查由 ptr 指向的記憶體值是否等於 expected； 若相等，就把 new 寫入該位置； 若不相等，則什麼也不做。 無論哪種情況，都會回傳該位置的舊值，讓呼叫 compare-and-swap 的程式碼能得知操作是否成功
 
@@ -284,7 +276,7 @@ void lock(lock_t *lock) {
 
 某些平台提供一對能協同運作的指令，用來構建 critical section。 例如在 MIPS 架構 [H93] 中，你可以結合 load-linked 與 store-conditional 指令來實作鎖與其他並行結構。 這兩條指令的 C 偽碼列在圖 28.5 中，Alpha、PowerPC 與 ARM 也提供了類似的指令 [W09]
 
-<div class = "center-column">
+<center-panel natural title="（Figure 28.5: Load-linked And Store-conditional）">
 
 ```c
 int LoadLinked(int *ptr) {
@@ -301,15 +293,13 @@ int StoreConditional(int *ptr, int value) {
 }
 ```
 
-（Figure 28.5: Load-linked And Store-conditional）
-
-</div>
+</center-panel>
 
 load-linked 的行為與一般 load 指令類似，僅是從記憶體抓取一個值並放進暫存器。 關鍵差別在 store-conditional：只有當這段期間內沒有其他針對同一位址的 store 發生，store-conditional 才會成功（並更新剛剛 load-linked 的位址）。 若成功，store-conditional 回傳 1 並把 ptr 指向的值改成 value； 若失敗，ptr 的值保持不變且回傳 0
 
 試著自我挑戰：用 load-linked 與 store-conditional 來實作鎖。 完成後再看看下面的程式碼，這是其中一種簡單解答，見圖 28.6：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 28.6: Using LL/SC To Build A Lock）">
 
 ```c
 void lock(lock_t *lock) {
@@ -328,9 +318,7 @@ void unlock(lock_t *lock) {
 }
 ```
 
-（Figure 28.6: Using LL/SC To Build A Lock）
-
-</div>
+</center-panel>
 
 這裡 `lock()` 是關鍵。 先讓 thread 自旋等 flag 變成 0（表示鎖未被持有）。 一旦條件符合，thread 便以 store-conditional 嘗試取得鎖； 若成功，它就以原子方式把 flag 設為 1，隨即進入 critical section
 
@@ -360,7 +348,7 @@ int FetchAndAdd(int *ptr) {
 
 在本範例中，我們將利用 fetch-and-add 來實作一種更有意思的 ticket lock，這種鎖最早由 Mellor-Crummey 和 Scott 提出 [MS91]。 其 lock 與 unlock 程式碼如圖 28.7 所示
 
-<div class = "center-column">
+<center-panel natural title="（Figure 28.7: Ticket Locks）">
 
 ```c
 typedef struct __lock_t {
@@ -384,11 +372,9 @@ void unlock(lock_t *lock) {
 }
 ```
 
-（Figure 28.7: Ticket Locks）
+</center-panel>
 
-</div>
-
-這種做法不是只用單一變數，而是結合 ticket 與 turn 兩個變數來構成鎖。 運作流程很簡單：當某個 thread 想取得鎖時，先對 ticket 執行一次原子的 fetch-and-add； 得到的回傳值即成為該 thread 的「號碼牌」(`myturn`)。 系統再透過全域共享的 `lock->turn` 來判斷輪到哪個 thread； 當某個 thread 發現 (`myturn == turn`) 時，就代表輪到它進入 critical section。 釋放鎖時只需把 turn 加一，讓下一個等待中的 thread（若存在）可以進入 critical section
+這種做法不是只用單一變數，而是結合 ticket 與 turn 兩個變數來構成鎖。 運作流程很簡單：當某個 thread 想取得鎖時，先對 ticket 執行一次原子的 fetch-and-add； 得到的回傳值即成為該 thread 的「號碼牌」（`myturn`）。 系統再透過全域共享的 `lock->turn` 來判斷輪到哪個 thread； 當某個 thread 發現（`myturn == turn`） 時，就代表輪到它進入 critical section。 釋放鎖時只需把 turn 加一，讓下一個等待中的 thread（若存在）可以進入 critical section
 
 請注意，這個方案與我們之前的嘗試有個重要差異：它保證所有 threads 都能取得進展。 一旦 thread 拿到自己的號碼牌，就能確定未來某個時刻一定輪到它（前面的 thread 通過 critical section 並釋放鎖之後）。 在之前的自旋鎖中則沒有這種保證，例如使用 test-and-set 的 thread 可能會無限自旋，而其他 threads 卻持續取得並釋放鎖
 
@@ -418,7 +404,7 @@ void unlock(lock_t *lock) {
 
 我們的第一個嘗試是個簡單又友善的方法：當你即將開始自旋時，不如把 CPU 讓給其他 thread。 用 Al Davis 的話來說，「just yield, baby！」[D91]。 圖 28.8（第 15 頁）展示了這種做法：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 28.8: Lock With Test-and-set And Yield）">
 
 ```c
 void init() {
@@ -435,9 +421,7 @@ void unlock() {
 }
 ```
 
-（Figure 28.8: Lock With Test-and-set And Yield）
-
-</div>
+</center-panel>
 
 在這種做法中，我們假設作業系統提供一個基本呼叫 `yield()`，當 thread 想放棄 CPU、讓其他 thread 執行時可以呼叫它。 一條 thread 可能處於三種狀態（running、ready 或 blocked）； `yield` 這個 system call 的功能很單純，就是把呼叫者從 running 狀態移到 ready 狀態，並讓另一條 thread 變成 running。 換言之，呼叫 yield 的 thread 基本上是把自己從排程中摘下
 
@@ -457,7 +441,7 @@ void unlock() {
 
 為了簡化，我們採用 Solaris 提供的兩個呼叫：`park()` 把呼叫的 thread 掛起睡眠，`unpark(threadID)` 依 threadID 喚醒指定 thread。 利用這兩個函式配合，我們可以實作一把鎖：若 thread 嘗試取得已被持有的鎖，就讓它睡； 當鎖變為可用的時，再喚醒它。 參考圖 28.9 的程式碼了解這些原語的一種用法
 
-<div class = "center-column">
+<center-panel natural title="（Figure 28.9: Lock With Queues, Test-and-set, Yield, And Wakeup）">
 
 ```c
 typedef struct __lock_t {
@@ -500,9 +484,7 @@ void unlock(lock_t *m) {
 }
 ```
 
-（Figure 28.9: Lock With Queues, Test-and-set, Yield, And Wakeup）
-
-</div>
+</center-panel>
 
 這個範例裡做了幾件有趣的事。 第一，我們把舊的 test-and-set 概念與 wait queue 結合，打造出了更有效率的鎖。 第二，我們用 queue 來控制下一個取得鎖的 thread，從而避免 starvation
 
@@ -563,7 +545,7 @@ m->guard = 0;
 另一種做法是把 guard 鎖權限交給核心，這樣核心就能保證在原子釋放鎖與將執行中的 thread 移出 queue，兩步驟之間不會出問題
 
 :::info  
-避免 spin 鎖的另一個重要原因： priority inversion  
+避免 spin 鎖的另一個重要原因：priority inversion  
 
 避免使用 spin 鎖的一個好理由是效能：如同主文所述，如果一個執行緒在持有鎖時被中斷，其他使用 spin 鎖的執行緒就會花費大量 CPU 時間等待鎖變為可用。 然而在某些系統上，還有另一個有趣的原因要避免使用 spin 鎖：正確性。 這個問題被稱為 priority inversion，不幸的是，它是一種星際禍害，曾在地球 [M15] 與火星 [R97] 發生
 
@@ -584,7 +566,7 @@ m->guard = 0;
 
 具體來說，有兩個可用的呼叫。 呼叫 `futex_wait(address, expected)` 會讓呼叫執行緒進入休眠，前提是位於 address 的值等於 expected。 如果不相等，該呼叫會立即返回。 `futex_wake(address)` 會喚醒在隊列上等待的其中一個執行緒。 這些呼叫在 Linux mutex 中的使用方式如圖 28.10 所示：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 28.10: Linux-based Futex Locks）">
 
 ```c
 void mutex_lock(int* mutex)
@@ -624,9 +606,7 @@ void mutex_unlock(int* mutex)
 }
 ```
 
-（Figure 28.10: Linux-based Futex Locks）
-
-</div>
+</center-panel>
 
 這段來自 nptl 函式庫（屬於 GNU libc 函式庫）的 `lowlevellock.h` 原始碼片段 [L09] 有幾個有趣之處。 首先，它使用單一整數同時追蹤鎖是否被佔用（整數的最高位）以及等待鎖的執行緒數量（其他所有位）。 因此，如果整數為負值，則表示鎖已被佔用（因為最高位被設為 1，該位決定了整數的符號）。  
 

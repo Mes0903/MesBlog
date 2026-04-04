@@ -12,31 +12,19 @@ order: 5
 
 給定一個 $\mathbb{R}^{n\times n}$ 裡的 symmetric postive matrix $A$，當我們想解 $A\vec x = \vec b$ 的 $\vec x$ 時，等價於找到能 minimizes $\Phi(\vec y) = \frac{1}{2}<A\vec y, \vec y> - <\vec b, \vec y>$ 的 $\vec x$
 
-<div class = "center-column">
-
 ![](image/1.png)
-
-</div>
 
 而怎麼去找 $\Phi$ 的最小值的方法就叫 Gradient Method
 
 證明：
 
-<div class = "center-column">
-
 ![](image/2.png)
-
-</div>
 
 而我們利用這個方法去找到每次的 $x^{(k)}$：
 
-<div class = "center-column">
-
 ![](image/3.png)
 
-</div>
-
-也就是用上一步的 $x^{(k-1)}$，加上某一個純量(scalar) $\alpha_{k-1}$ 乘上更新的方向 $\vec p^{(k-1)}$
+也就是用上一步的 $x^{(k-1)}$，加上某一個純量（scalar） $\alpha_{k-1}$ 乘上更新的方向 $\vec p^{(k-1)}$
 
 所以我們需要知道 $\vec p^{(k-1)}$ 長怎樣，另外一個就是要知道每一步要跨多大，所以要知道 $\alpha_{k-1}$ 的值是多少，要注意 $\alpha_{k-1}$ 需要大於 0，這樣才會是我們要的方向
 
@@ -44,11 +32,7 @@ order: 5
 
 因為之前有說過如果一個函數可微的話，那麼這個函數的負的 gradient 方向就會指出它最大的遞減方向
 
-<div class = "center-column">
-
 ![](image/4.png)
-
-</div>
 
 所以 $\vec p^{(k-1)} = -\nabla\Phi(\vec x^{(k-1)})$ 就會是 $\vec x^{(k-1)}$ 那點的最大遞減方向，那麼 $\vec x^{(k-1)}$ 加上 $-\alpha_{k-1}\nabla\Phi(\vec x^{(k-1)})$ 就可以保證越來越小
 
@@ -60,26 +44,14 @@ order: 5
 
 接下來要來決定 $\alpha_{k-1}$，推導：
 
-<div class = "center-column">
-
 ![](image/5.png)
-
-</div>
 
 那我們可以做個簡單的操作來得到 residual vector 的 equation：
 
-<div class = "center-column">
-
 ![](image/6.png)
 
-</div>
-
 #### Pseudo Code
-
-<div class = "center-column">
 
 ![](image/7.png)
 
 ![](image/8.png)
-
-</div>

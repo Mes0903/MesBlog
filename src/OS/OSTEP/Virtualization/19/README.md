@@ -81,11 +81,7 @@ TLB 和所有快取一樣，建立在一個基本假設上 — 大部分情況�
 
 因此一個虛擬位址會被劃分成兩個部分 — 4 bits 的 VPN（總共 16 個 virtual page）以及 4 bits 的 offset（每個 page 有 16 bytes）
 
-<div class = "center-column">
-
 ![](image/19-2.png)
-
-</div>
 
 圖 19.2 顯示了這個陣列在系統中的 16 個 16-byte page 上的分布情形。 可以看到陣列的第一個元素 `a[0]` 從 **VPN=06**、**offset=04** 開始；只有三個 4-byte 整數可以放在這個 page 上。 陣列接著延伸到下一個 page（**VPN=07**），其中存放了接下來四個元素（`a[3]` 到 `a[6]`）。 最後三個元素（`a[7]` 到 `a[9]`）則位於 **VPN=08** 的 page 上
 
@@ -233,7 +229,7 @@ $$
 
 接著假設有另一個 process（$P2$），OS 等等會透過 context switch 去執行它。 假設在這裡，$P2$ 的第 10 個 virtual page 被映射到 physical frame 170。 如果兩個 process 的 entry 都在 TLB 中，那 TLB 的內容會長這樣：
 
-<div class = "center-column">
+<center-panel natural>
 
 | VPN | PFN | valid | prot |
 |-----|-----|-------|------|
@@ -242,7 +238,7 @@ $$
 | 10  | 170 | 1     | rwx  |
 | ... | ... | ...   | ...  |
 
-</div>
+</center-panel>
 
 這個 TLB 有個問題 — VPN 10 會被轉譯為 PFN 100（$P1$）或 PFN 170（$P2$），但硬體無法區分哪一個 entry 是屬於哪一個 process 的。 因此，我們需要做些額外的處理，讓 TLB 可以正確且有效率地支援多個 process 的虛擬化
 
@@ -258,7 +254,7 @@ $$
 
 如果我們拿剛才的 TLB 範例來加上 ASID 欄位，用 ASID 欄位來區分這些原本看起來一模一樣的 translations，就可以看到不同 process 的 translation 同時存在於 TLB 中了：
 
-<div class = "center-column">
+<center-panel natural>
 
 | VPN | PFN | valid | prot | ASID |
 |-----|-----|-------|------|-----|
@@ -267,13 +263,13 @@ $$
 | 10  | 170 | 1     | rwx  | 2   |
 | ... | ... | ...   | ...  | ... |
 
-</div>
+</center-panel>
 
 有了 ASID，TLB 就可以同時保存多個不同 process 的 translation 而不產生混淆。 當然，硬體也必須知道當前執行的是哪個 process，才能正確進行轉譯。 因此 OS 在 context switch 時，必須把目前的 ASID 設定到某個特權暫存器中
 
 順帶一提，你可能還想到另一種情況，就是 TLB 中有兩個不同 process 的 entries，它們的 VPN 不同，但都指向相同的 page frame：
 
-<div class = "center-column">
+<center-panel natural>
 
 | VPN | PFN | valid | prot | ASID |
 |-----|-----|-------|------|-----|
@@ -282,7 +278,7 @@ $$
 | 50  | 101 | 1     | r-x  | 2   |
 | ... | ... | ...   | ...  | ... |
 
-</div>
+</center-panel>
 
 這種情況可能會發生在兩個 process 共用某個 page（例如 code page）時。 在上例中，$P1$ 與 $P2$ 共享 page frame 101；$P1$ 把這個 page 映射到它位址空間的第 10 個 page，而 $P2$ 則把它映射到第 50 個。 共用 code pages（不論是 binary 或 shared library）很有用，因為它可以減少所需的 page frame 數量，進而降低記憶體開銷
 
@@ -300,11 +296,7 @@ $$
 
 最後我們來快速看看一個真實世界中的 TLB。 這個例子來自 MIPS R4000 [H93]，這是一個使用 software-managed TLB 的現代系統。 圖 19.4 展示了一個簡化版的 MIPS TLB entry：
 
-<div class = "center-column">
-
 ![](image/19-4.png)
-
-</div>
 
 MIPS R4000 支援一個 32-bit 的位址空間，每個 page 大小為 4KB。 因此，一個典型的虛擬位址應該會有 20-bit 的 VPN 與 12-bit 的 offset。 然而如圖所示，TLB 中只有 19-bit 的 VPN。 這是因為 user address 只使用一半的位址空間（另一半保留給 kernel），所以只需要 19-bit 的 VPN 
 
@@ -363,23 +355,23 @@ TIP：RAM 並不總是 RAM（Culler 定律）
 
 ## References
 
-- [BC91] 「Performance from Architecture: Comparing a RISC and a CISC with Similar Hardware Organization」 by D. Bhandarkar and Douglas W. Clark. Communications of the ACM, September 1991. 一篇針對 RISC 與 CISC 進行公平比較的好文章。結論是 — 在相同硬體條件下，RISC 的效能大約是 CISC 的三倍
+- [BC91] 「Performance from Architecture：Comparing a RISC and a CISC with Similar Hardware Organization」 by D. Bhandarkar and Douglas W. Clark. Communications of the ACM, September 1991. 一篇針對 RISC 與 CISC 進行公平比較的好文章。結論是 — 在相同硬體條件下，RISC 的效能大約是 CISC 的三倍
 
-- [CM00] 「The evolution of RISC technology at IBM」 by John Cocke, V. Markstein. IBM Journal of Research and Development, 44:1/2. 這篇文章概述了 IBM 801 背後的構想與發展，許多人認為它是第一個真正的 RISC 微處理器
+- [CM00] 「The evolution of RISC technology at IBM」 by John Cocke, V. Markstein. IBM Journal of Research and Development, 44：1/2. 這篇文章概述了 IBM 801 背後的構想與發展，許多人認為它是第一個真正的 RISC 微處理器
 
-- [C95] 「The Core of the Black Canyon Computer Corporation」 by John Couleur. IEEE Annals of History of Computing, 17:4, 1995. 在這篇有趣的歷史回顧中，Couleur 討論了他在 GE 任職期間，如何於 1964 年發明 TLB，以及這項發明如何促成了與 MIT Project MAC 團隊的合作
+- [C95] 「The Core of the Black Canyon Computer Corporation」 by John Couleur. IEEE Annals of History of Computing, 17：4, 1995. 在這篇有趣的歷史回顧中，Couleur 討論了他在 GE 任職期間，如何於 1964 年發明 TLB，以及這項發明如何促成了與 MIT Project MAC 團隊的合作
 
 - [CG68] 「Shared-access Data Processing System」 by John F. Couleur, Edward L. Glaser. Patent 3412382, November 1968. 這篇專利介紹了一種用來儲存位址轉譯資訊的關聯式記憶體（associative memory）的構想。據 Couleur 所說，這個想法是在 1964 年產生的
 
-- [CP78] 「The architecture of the IBM System/370」 by R.P. Case, A. Padegs. Communications of the ACM. 21:1, 73-96, January 1978. 可能是第一篇使用 translation lookaside buffer 這個術語的文章。這個名稱來自於 cache 的歷史名稱 lookaside buffer，該名稱是當初參與 Atlas 系統開發的曼徹斯特大學團隊所提出；當這種快取被用來儲存 address translation 時，就被稱作 translation lookaside buffer。即使 lookaside buffer 這個詞後來被淘汰，TLB 這個縮寫卻沿用至今
+- [CP78] 「The architecture of the IBM System/370」 by R.P. Case, A. Padegs. Communications of the ACM. 21：1, 73-96, January 1978. 可能是第一篇使用 translation lookaside buffer 這個術語的文章。這個名稱來自於 cache 的歷史名稱 lookaside buffer，該名稱是當初參與 Atlas 系統開發的曼徹斯特大學團隊所提出；當這種快取被用來儲存 address translation 時，就被稱作 translation lookaside buffer。即使 lookaside buffer 這個詞後來被淘汰，TLB 這個縮寫卻沿用至今
 
 - [H93] 「MIPS R4000 Microprocessor User’s Manual」 by Joe Heinrich. Prentice-Hall, June 1993. 可從 http://cag.csail.mit.edu/raw/ . documents/R4400 Uman book Ed2.pdf 取得。這本手冊出乎意料地好讀（還是說其實沒有？）
 
-- [HP06] 「Computer Architecture: A Quantitative Approach」 by John Hennessy and David Patterson. Morgan-Kaufmann, 2006. 一本關於電腦架構的經典好書。我們特別鍾愛它的第一版
+- [HP06] 「Computer Architecture：A Quantitative Approach」 by John Hennessy and David Patterson. Morgan-Kaufmann, 2006. 一本關於電腦架構的經典好書。我們特別鍾愛它的第一版
 
-- [I09] 「Intel 64 and IA-32 Architectures Software Developer’s Manuals」 by Intel, 2009. Available: http://www.intel.com/products/processor/manuals. 特別注意其中的 Volume 3A: System Programming Guide Part 1 和 Volume 3B: System Programming Guide Part 2
+- [I09] 「Intel 64 and IA-32 Architectures Software Developer’s Manuals」 by Intel, 2009. Available: http://www.intel.com/products/processor/manuals. 特別注意其中的 Volume 3A：System Programming Guide Part 1 和 Volume 3B：System Programming Guide Part 2
 
-- [PS81] 「RISC-I: A Reduced Instruction Set VLSI Computer」 by D.A. Patterson and C.H. Sequin. ISCA ’81, Minneapolis, May 1981. 本文首次提出 RISC 這個術語，並掀起了精簡化電腦架構的研究浪潮
+- [PS81] 「RISC-I：A Reduced Instruction Set VLSI Computer」 by D.A. Patterson and C.H. Sequin. ISCA ’81, Minneapolis, May 1981. 本文首次提出 RISC 這個術語，並掀起了精簡化電腦架構的研究浪潮
 
 - [SB92] 「CPU Performance Evaluation and Execution Time Prediction Using Narrow Spectrum Benchmarking」 by Rafael H. Saavedra-Barrera. EECS Department, University of California, Berkeley. Technical Report No. UCB/CSD-92-684, February 1992. 一本很棒的博士論文，說明如何將應用程式分解為多個部分，並計算每個部分的成本來預測整體執行時間。裡面對 cache hierarchy 的分析工具特別值得一看（在第 5 章有介紹），圖也畫得很漂亮
 

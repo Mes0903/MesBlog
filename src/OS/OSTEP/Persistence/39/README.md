@@ -31,11 +31,7 @@ category: OS
 
 目錄階層從根目錄開始（在 UNIX 系統中，根目錄簡稱為 `/`），並使用某種分隔符號來為後續的子目錄命名，直到指定到目標檔案或目錄。 例如，如果使用者在根目錄 `/` 中建立了一個名為 `foo` 的目錄，然後在 `foo` 內建立了一個名為 `bar.txt` 的檔案，我們就可以透過其絕對路徑名來參考該檔案，在此情況下就是 `/foo/bar.txt`。 請參考圖 39.1 了解更複雜的目錄樹； 範例中有效的目錄有 `/`、`/foo`、`/bar`、`/bar/bar`、`/bar/foo`； 有效的檔案有 `/foo/bar.txt` 和 `/bar/foo/bar.txt`
 
-<div class = "center-column">
-
 ![（Figure 39.1: An Example Directory Tree）](image/39-1.png)
-
-</div>
 
 只要位於檔案系統樹的不同位置，目錄與檔案可以使用相同的名稱（例如，圖中有兩個名為 `bar.txt` 的檔案，分別是 `/foo/bar.txt` 和 `/bar/foo/bar.txt`）
 
@@ -105,7 +101,7 @@ prompt>
 
 為了找出這個問題，我們將使用一個非常有用的工具來追蹤程式所呼叫的系統呼叫。 在 Linux 上，此工具稱為 `strace`； 其他系統也有類似的工具（例如在 Mac 上的 `dtruss`，或在某些較舊 UNIX 變體上的 `truss`）。 `strace` 的作用是在程式執行期間追蹤它所發出的每個系統呼叫，並將追蹤結果輸出到螢幕供你查看
 
-以下是一個使用 `strace` 來了解 `cat` 正在做什麼的範例（為了可讀性我們移除了部分呼叫）：  
+以下是一個使用 `strace` 來了解 `cat` 正在做什麼的範例（為了可讀性我們移除了部分呼叫）：
 
 ```cmd
 prompt> strace cat foo  
@@ -191,31 +187,19 @@ struct {
 
 讓我們透過幾個範例來澄清這個概念。 首先，假設有個 process 打開了一個大小為 300 位元組的檔案，並透過重複呼叫 `read()` 系統呼叫來讀取檔案，每次讀取 100 位元組。 底下列出相關系統呼叫的追蹤結果，以及每個系統呼叫回傳的值，還有針對該檔案存取在已開啟檔案表中的目前偏移值：
 
-<div class = "center-column">
-
 ![](image/t1.png)
-
-</div>
 
 從追蹤結果中可以注意到幾項重點。 首先，你可以看到當檔案被開啟時，目前偏移會初始化為零。 接著，你會看到隨著 process 每次呼叫 `read()`，該偏移會遞增； 這讓 process 只要一直呼叫 `read()` 就能輕鬆取得下一段檔案內容。 最後，你可以看到當嘗試在檔案結尾之後執行 `read()` 時會回傳零，藉此告知 process 已經完整地讀取了整個檔案
 
 接下來，我們假設有個 process 先後兩次打開了相同的檔案，並對它們各自執行讀取的情況：
 
-<div class = "center-column">
-
 ![](image/t2.png)
-
-</div>
 
 在此範例中，會分別配置兩個 file descriptor（3 和 4），它們各自對應到已開啟檔案表中的不同條目（此例中是條目 10 和 11，如表格標題所示； OFT 代表 Open File Table）。 如果你仔細追蹤，就會看到每個目前偏移都是獨立更新的
 
 在最後一個範例中，process 在讀取之前先使用 `lseek()` 重新設定目前偏移； 在這種情況下，只需要單一的已開啟檔案表條目（就如第一個範例一樣）。 此處，首先呼叫 `lseek()` 將目前偏移設為 200。 隨後的 `read()` 就會讀取接下來的 50 位元組，並相應地更新目前偏移
 
-<div class = "center-column">
-
 ![](image/t3.png)
-
-</div>
 
 :::info  
 呼叫 `lseek()` 並不會執行硬碟搜尋
@@ -229,9 +213,9 @@ struct {
 
 在許多情況下（如上述範例所示），file descriptor 與開啟檔案表中的條目之間是一對一的對應。 例如，當一個 process 執行時，可能會決定打開一個檔案、讀取它，然後關閉它； 在這種情況下，該檔案在開啟檔案表中會擁有唯一的條目。 即使有其他 process 同時讀取同一個檔案，它們也各自會在開啟檔案表中有自己的條目。 透過這種方式，每個對檔案的邏輯讀取或寫入都是獨立的，並且在存取該檔案時，各自都擁有自己的目前偏移
 
-不過，也有一些有趣的情況，讓開啟檔案表中的條目會被共享。其中一種情況發生在父 process 使用 fork() 建立子 process 時。 圖 39.2 顯示了一段簡短的程式碼，父 process 建立子 process 後再等待它完成。 子 process 透過呼叫 `lseek()` 調整目前偏移，然後結束。 最後，父 process 在等待子 process 後，檢查目前偏移並將其值輸出：
+不過，也有一些有趣的情況，讓開啟檔案表中的條目會被共享。其中一種情況發生在父 process 使用 `fork()` 建立子 process 時。 圖 39.2 顯示了一段簡短的程式碼，父 process 建立子 process 後再等待它完成。 子 process 透過呼叫 `lseek()` 調整目前偏移，然後結束。 最後，父 process 在等待子 process 後，檢查目前偏移並將其值輸出：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 39.2: Shared Parent/Child File Table Entries (fork-seek.c)）">
 
 ```c
 int main(int argc, char* argv[])
@@ -251,9 +235,7 @@ int main(int argc, char* argv[])
 }
 ```
 
-（Figure 39.2: Shared Parent/Child File Table Entries (fork-seek.c)）
-
-</div>
+</center-panel>
 
 當我們執行此程式時，會看到以下輸出：
 
@@ -266,17 +248,13 @@ prompt>
 
 圖 39.3 顯示了將每個 process 的私有 descriptor 陣列、共享的開啟檔案表條目，以及該條目對底層檔案系統 inode 之參照連結起來的關係。 請注意，我們在此終於實際使用了參考計數。 當某個檔案表條目被共享時，其參考計數會遞增； 只有當兩個 process 都關閉該檔案（或結束）時，該條目才會被移除
 
-<div class = "center-column">
-
 ![（Figure 39.3: Processes Sharing An Open File Table Entry）](image/39-3.png)
-
-</div>
 
 在父 process 與子 process 之間共享開啟檔案表條目有時相當有用。 例如，若你建立多個共同協作處理某項任務的 process，它們可以寫入同一個輸出檔案而不需額外協調。 如要進一步了解在呼叫 `fork()` 時 processes 之間會共享什麼，請參閱 man page
 
 另一個有趣且或許更實用的共享案例發生於 `dup()` 系統呼叫（及其親戚 `dup2()` 與 `dup3()`）。 `dup()` 呼叫讓 process 能建立一個新的 file descriptor，該 descriptor 指向與某現有 descriptor 相同的底層已開啟檔案。 圖 39.4 顯示了一段簡短程式碼，說明如何使用 `dup()`：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 39.4: Shared File Table Entry With dup() (dup.c)）">
 
 ```c
 int main(int argc, char* argv[])
@@ -289,9 +267,7 @@ int main(int argc, char* argv[])
 }
 ```
 
-（Figure 39.4: Shared File Table Entry With dup() (dup.c)）
-
-</div>
+</center-panel>
 
 `dup()` 呼叫（尤其是 `dup2()`）在撰寫 UNIX shell 並執行像輸出重導向等操作時相當有用； 花點時間想想原因吧！
 
@@ -373,7 +349,7 @@ for (int i = 1; i < argc; i++) {
 
 超越一般的檔案存取，我們期望檔案系統能保存相當多關於每個檔案的資訊，這些關於檔案的資料通常稱為 metadata。 要查看某個檔案的 metadata，可以使用 `stat()` 或 `fstat()` 這兩個系統呼叫。 這些呼叫會接收一個檔案的路徑名稱（或 file descriptor），並將相關資訊填入如圖 39.5 所示的 `stat` 結構中：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 39.5 : The stat structure.）">
 
 ```c
 struct stat {
@@ -393,9 +369,7 @@ struct stat {
 };
 ```
 
-（Figure 39.5 : The stat structure.）
-
-</div>
+</center-panel>
 
 可以看到，關於每個檔案儲存了很多資訊，包括檔案大小（以位元組為單位）、其低階名稱（也就是 inode number）、部分所有權資訊，以及檔案何時被存取或修改的時間等。 若想查看這些資訊，可以使用命令列工具 `stat`。 以下範例中，我們先建立一個名為 file 的檔案，然後使用 `stat` 命令列工具來檢視該檔案的一些資訊
 
@@ -756,7 +730,7 @@ UNIX 系統（實際上任何系統）中的檔案系統介面看似相當原始
 :::info  
 關鍵檔案系統術語
 
-- 檔案（file）是一個位元組陣列，可以建立、讀取、寫入與刪除。 它擁有一個低階名稱（也就是一個數字），用來唯一識別該檔案。 此低階名稱通常稱為 inode number （i-number）
+- 檔案（file）是一個位元組陣列，可以建立、讀取、寫入與刪除。 它擁有一個低階名稱（也就是一個數字），用來唯一識別該檔案。 此低階名稱通常稱為 inode number（i-number）
 - 目錄（directory）是一組二元組的集合，每個二元組包含一個使用者可讀名稱與對應的低階名稱。 每個條目要麼指向另一個目錄，要麼指向檔案。 每個目錄本身也有一個低階名稱（i-number）。 目錄永遠包含兩個特殊條目：「.」條目指向自己，「..」條目指向其父目錄
 - 目錄樹（directory tree）或目錄階層（directory hierarchy）將所有檔案與目錄組織成一個以根為起點的大樹
 - 若要存取檔案，process 必須呼叫系統呼叫（通常是 `open()`）向作業系統請求權限。 若獲准，作業系統會回傳一個檔案描述符（file descriptor），以供後續的讀取或寫入操作使用，視權限與意圖而定
@@ -774,7 +748,7 @@ bits）； 更進階的存取控制清單（access control lists，ACL）則可�
   檢查檔案存取中的競爭條件問題的精彩描述，介紹了 TOCTTOU 問題及其在檔案系統中的影響
 
 - [CK+08] “The xv6 Operating System” by Russ Cox, Frans Kaashoek, Robert Morris, Nickolai Zeldovich. From: [https://github.com/mit-pdos/xv6-public](https://github.com/mit-pdos/xv6-public). As mentioned before, a cool and simple Unix implementation. We have been using an older version (2012-01-30-1-g1c41342) and hence some examples in the book may not match the latest in the source.  
-  xv6 作業系統簡要介紹，提供了簡潔的 Unix 實作； 書中使用舊版 (2012-01-30-1-g1c41342)，可能與最新程式碼有差異
+  xv6 作業系統簡要介紹，提供了簡潔的 Unix 實作； 書中使用舊版（2012-01-30-1-g1c41342），可能與最新程式碼有差異
 
 - [H+18] “TxFS: Leveraging File-System Crash Consistency to Provide ACID Transactions” by Y. Hu, Z. Zhu, I. Neal, Y. Kwon, T. Cheng, V. Chidambaram, E. Witchel. USENIX ATC ’18, June 2018. The best paper at USENIX ATC ’18, and a good recent place to start to learn about transactional file systems.  
   最佳 USENIX ATC ’18 論文，介紹如何利用檔案系統崩潰一致性提供 ACID 交易，是學習交易式檔案系統的近年佳作
@@ -792,7 +766,7 @@ bits）； 更進階的存取控制清單（access control lists，ACL）則可�
   早期 capability-based 系統的概覽著作，提供深入見解
 
 - [MJLF84] “A Fast File System for UNIX” by Marshall K. McKusick, William N. Joy, Sam J. Leffler, Robert S. Fabry. ACM TOCS, 2:3, August 1984. We’ll talk about the Fast File System (FFS) explicitly later on. Here, we refer to it because of all the other random fun things it introduced, like long file names and symbolic links. Sometimes, when you are building a system to improve one thing, you improve a lot of other things along the way.  
-  介紹 Fast File System (FFS) 的經典論文，因其引入長檔名與符號連結等創新而被引用； 強調構建系統時可帶來多重改進
+  介紹 Fast File System（FFS） 的經典論文，因其引入長檔名與符號連結等創新而被引用； 強調構建系統時可帶來多重改進
 
 - [P+13] “Towards Efficient, Portable Application-Level Consistency” by Thanumalayan S. Pillai, Vijay Chidambaram, Joo-Young Hwang, Andrea C. Arpaci-Dusseau, and Remzi H. Arpaci-Dusseau. HotDep ’13, November 2013. Our own work that shows how readily applications can make mistakes in committing data to disk; in particular, assumptions about the file system creep into applications and thus make the applications work correctly only if they are running on a specific file system.  
   我們的研究展示應用程式在提交資料到硬碟時容易出錯； 尤其是檔案系統的假設會滲入應用，使其僅在特定檔案系統上正確運作

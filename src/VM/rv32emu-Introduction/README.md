@@ -24,28 +24,24 @@ rv32emu 是針對 32 bit [RISC-V processor model](https://riscv.org/technical/sp
 
 下圖為 rv32emu 的架構圖：
 
-<div class = "center-column">
-
 ![](image/1.png)
-
-</div>
 
 為了模擬硬體，模擬器主要的邏輯為
 
-1. 將要模擬的軟體載入到記憶體中 (load ELF)
-2. 指令擷取 (Instruction Fetch)：從記憶體中讀取當前 PC 指向的指令
-3. 指令解碼 (Instruction Decode)：解析指令中的欄位，例如 opcode、rd、rs1、rs2 和立即值 (immediate) 等
+1. 將要模擬的軟體載入到記憶體中（load ELF）
+2. 指令擷取（Instruction Fetch）：從記憶體中讀取當前 PC 指向的指令
+3. 指令解碼（Instruction Decode）：解析指令中的欄位，例如 opcode、rd、rs1、rs2 和立即值（immediate） 等
 4. 指令執行：根據解碼的結果模擬對應的運算，更新暫存器或記憶體的內容，以及調整 PC 值
 
 > 後面三點可以簡稱為 CPU emulation
 
-依照 RISC-V 的[規格書](https://riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf)定義暫存器的數量與功能，並以不同指令集定義的操作和欄位來實作 CPU decoder 與指令集對應的操作(e.g. 加減乘除)，並將結果存在指定的暫存器，換句話說就是模擬 CPU 的[指令周期](https://en.wikipedia.org/wiki/Instruction_cycle)，這樣一來就能在不同的指令集架構的電腦上模擬 RISC-V 指令集的軟體
+依照 RISC-V 的[規格書](https://riscv.org/wp-content/uploads/2017/05/riscv-spec-v2.2.pdf)定義暫存器的數量與功能，並以不同指令集定義的操作和欄位來實作 CPU decoder 與指令集對應的操作（e.g. 加減乘除），並將結果存在指定的暫存器，換句話說就是模擬 CPU 的[指令周期](https://en.wikipedia.org/wiki/Instruction_cycle)，這樣一來就能在不同的指令集架構的電腦上模擬 RISC-V 指令集的軟體
 
 ## 系統模擬的組成
 
 為了達成上面的目的，至少需要實作以下三個單元：
 
-- ELF loader （針對系統模擬，這項非必要）
+- ELF loader（針對系統模擬，這項非必要）
 - CPU emulator
 - Memory I/O
 
@@ -56,10 +52,10 @@ rv32emu 是針對 32 bit [RISC-V processor model](https://riscv.org/technical/sp
 - MMU
   - 以 RISC-V 的 virtual-memory system 來說，`SXLEN=32` 時使用 SV32 model，`SXLEN=64` 時使用 SV39、SV48 或 SV57 model，詳見 priviledge spec 中的第 12 節
   - `satp` CSR 控制 S mode 下的位址轉換與保護，此暫存器會保存 root page table 的物理頁號（PPN）與 ASID
-  - linux kernel 利用 virtual memory(VM) 的機制來實現記憶體管理的機制，但在 linux 中 VM 是透過 MMU 來實作的
+  - linux kernel 利用 virtual memory（VM） 的機制來實現記憶體管理的機制，但在 linux 中 VM 是透過 MMU 來實作的
   - 在缺乏 MMU 的環境下，如一些 microcontroller，使用的是 uClinux，其為「MicroController Linux」的縮寫，在此環境中會缺乏一些 systemcall，如 `fork` 與 `brk`/`sbrk`
     - 詳見 [No-MMU memory mapping support](https://www.kernel.org/doc/html/v6.9/admin-guide/mm/nommu-mmap.html) 與 [uClinux](https://wiki.csie.ncku.edu.tw/embedded/uclinux)
-- peripherals (週邊)
+- peripherals（週邊）
   - PLIC
     - 用來管理外部中斷，提供多核處理器的中斷控制功能
   - CLINT/ACLINT
@@ -263,25 +259,13 @@ static inline void set_dest(hart_t *vm, uint32_t insn, uint32_t x)
 
 RISC-V 內將 Trap 分為 Exception 與 Interrupt，而 Interrupt 有三種，分別為 software interrupt、timer interrupt 與 external interrupt。 而 PLIC 全名為 Platform Level Interrupt Controller，是一個 memory mapped device，如上述所說的用來處理 external interrupt，也就是下圖左邊的部分：
 
-<div class = "center-column">
-
-![](image/2.png)
-
-(img src: [Tuesday @ 0900 RISC V Interrupts Krste Asanović, UC Berkeley & SiFive Inc](https://www.youtube.com/watch?v=iPbaG_wnNJY))
-
-</div>
+![（img src：[Tuesday @ 0900 RISC V Interrupts Krste Asanović, UC Berkeley & SiFive Inc](https://www.youtube.com/watch?v=iPbaG_wnNJY)）](image/2.png)
 
 PLIC 內主要分為 PLIC Gateway 與 PLIC Core，當中斷源（Interrupt Source）發起中斷時，其訊號會到達 Gateway，Gateway 再根據規定將這個中斷轉發給 PLIC Core，而 PLIC Core 再根據規定，利用 multicasting 的方式尋找可以處理這個中斷的 hart
 
 下圖是更具體的流程：
 
-<div class = "center-column">
-
-![](image/3.png)
- 
-(Figure 2. PLIC Interrupt Flow)
-
-</div>
+![（Figure 2. PLIC Interrupt Flow）](image/3.png)
 
 步驟如下：
 
@@ -300,7 +284,7 @@ PLIC 內主要分為 PLIC Gateway 與 PLIC Core，當中斷源（Interrupt Sourc
 ACLINT 是一「組」 memory mapped devices，用於在 multi-hart 的 RISC-V 平台上提供
 
 - inter-processor interrupts (IPI)
-- 定時器功能 (Timer functionalities)
+- 定時器功能（Timer functionalities）
 
 內部分為有三個部分：
 
@@ -327,7 +311,7 @@ dtc -I dtb -O dts -o qemu.dts qemu.dtb
 
 你會看到內部有這三個 interrupt controller：
 
-```dts
+```
 sswi@2f00000 {
   #interrupt-cells = <0x00>;
   interrupt-controller;
@@ -386,11 +370,7 @@ SBI 是 RISC-V 定義的一個位於 OS 和 Firmware 之間的介面，用來提
 
 這樣的設計上底下的 SEE 可以抽換成不同的實作，上層的 OS 也可以正常的運作，也因此 rv32emu 實作在 S mode 下，在 linux 中可以定義不同的 interrupt controller，實作在 S mode 就可以避免每更新 interrupt controller 就需要修改 linux guest 的情況
 
-<div class = "center-column">
-
 ![](image/4.png)
-
-</div>
 
 #### SBI HSM Extension
 
@@ -406,7 +386,7 @@ HSM 全名為 Hart State Management，定義了其一系列的 hart 狀態，並
 - `Ordered booting`  
     僅會啟動一個 hart，執行 initialization phase，接著使用 SBI HSM extension 來啟動其他的所有 hart
 
-在 Commit `cfafe26` ([link](https://github.com/torvalds/linux/commit/cfafe260137418d0265d0df3bb18dc494af2b43e)) 中引入了第二種方法：
+在 Commit `cfafe26` ([link](https://github.com/torvalds/linux/commit/cfafe260137418d0265d0df3bb18dc494af2b43e)） 中引入了第二種方法：
 
 > RISC-V: Add supported for ordered booting method using HSM<br><br>
 >
@@ -421,9 +401,9 @@ HSM 全名為 Hart State Management，定義了其一系列的 hart 狀態，並
 而 SBI HSM extension 簡化了啟動過程，只需要一個 hart 即可開機並進入 Linux，主 hart 進入 Linux 後，可以依序啟動其他 hart
 
 以下是 [RISC-V SBI HSM Extension](https://github.com/riscv-non-isa/riscv-sbi-doc/blob/master/src/ext-hsm.adoc) 管理 hart 的方式，從下圖片中可以看到 hart 在 HSM 的管理下會有以下七種狀態，分別為：
-- `STARTED`: hart 已物理上電並正常執行
-- `STOPPED`: hart 不在 S mode 或更低特權模式下運行，如果底層平台具有物理斷電 hart 的機制，則它可以會被 SBI 實現斷電
-- `SUSPENDED`: hart 處於低耗電狀態，如等待中斷或特定事件發生，發生時就會回到 `STARTED` 狀態
+- `STARTED`：hart 已物理上電並正常執行
+- `STOPPED`：hart 不在 S mode 或更低特權模式下運行，如果底層平台具有物理斷電 hart 的機制，則它可以會被 SBI 實現斷電
+- `SUSPENDED`：hart 處於低耗電狀態，如等待中斷或特定事件發生，發生時就會回到 `STARTED` 狀態
 - `STOP_PENDING`、`START_PENDING`、`SUSPEND_PENDING`、`RESUME_PENDING`：代表正在進入下一個狀態，但由於 semu 是模擬器，因此這幾個狀態可以直接忽略，但在實際硬體運作上，作業系統會透過 sbi_hart_get_status 來取得 hart 的狀態，並根據取得的狀態做後續的動作
 
 #### SBI IPI Extension

@@ -19,9 +19,9 @@ GLFW 的其他項目的文件：
 - [Vulkan guide](https://www.glfw.org/docs/3.3/vulkan_guide.html)
 - [Monitor guide](https://www.glfw.org/docs/3.3/monitor_guide.html)
 
-GLFW 支持多種輸入方式，其被稱為事件(event)。 不同的事件使用的方法也不同，有些只能透過輪詢(polling) 的方式來使用，例如時間； 有些則只能通過回調(callback) 函式來使用，例如滑鼠滾輪滾動。 但大部分的事件會同時提供回調和輪詢的方法，回調用起來比輪詢麻煩，但對 CPU 的需求較低，而且保證不會錯過狀態變化
+GLFW 支持多種輸入方式，其被稱為事件（event）。 不同的事件使用的方法也不同，有些只能透過輪詢（polling） 的方式來使用，例如時間； 有些則只能通過回調（callback） 函式來使用，例如滑鼠滾輪滾動。 但大部分的事件會同時提供回調和輪詢的方法，回調用起來比輪詢麻煩，但對 CPU 的需求較低，而且保證不會錯過狀態變化
 
-所有輸入的回調函式都需要傳入一個 handle 參數(`GLFWwindow*`)，代表該事件發生於哪個視窗。 你可以利用 [window user pointer](https://www.glfw.org/docs/3.3/window_guide.html#window_userptr)，從回調函式中存取非全域的結構或物件，這樣每個視窗都可以有自己的狀態，而不用依賴全域變數
+所有輸入的回調函式都需要傳入一個 handle 參數（`GLFWwindow*`），代表該事件發生於哪個視窗。 你可以利用 [window user pointer](https://www.glfw.org/docs/3.3/window_guide.html#window_userptr)，從回調函式中存取非全域的結構或物件，這樣每個視窗都可以有自己的狀態，而不用依賴全域變數
 
 舉個例子，你可以使用 `glfwSetWindowUserPointer` 將物件指標與視窗綁定：
 
@@ -61,9 +61,9 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 ## Event processing 事件處理
 
-GLFW 需要向視窗系統(window system) 輪詢事件，以便為應用程式提供輸入，同時向視窗系統證明該應用程式沒有崩潰(lock up)。 事件處理通常發生在每幀的 [buffer swapping](https://www.glfw.org/docs/3.3/window_guide.html#buffer_swap) 之後，但即使沒有開啟任何視窗，仍然需要進行事件輪詢，才能接受顯示器和 joystick 等的連接事件
+GLFW 需要向視窗系統（window system） 輪詢事件，以便為應用程式提供輸入，同時向視窗系統證明該應用程式沒有崩潰（lock up）。 事件處理通常發生在每幀的 [buffer swapping](https://www.glfw.org/docs/3.3/window_guide.html#buffer_swap) 之後，但即使沒有開啟任何視窗，仍然需要進行事件輪詢，才能接受顯示器和 joystick 等的連接事件
 
-`glfwPollEvents` 用來處理那些已經接收到的事件，它會立即返回，這是在連續渲染(rendering) 時的最佳選項，就像大多數遊戲一樣：
+`glfwPollEvents` 用來處理那些已經接收到的事件，它會立即返回，這是在連續渲染（rendering） 時的最佳選項，就像大多數遊戲一樣：
 
 ```cpp
 glfwPollEvents();
@@ -95,13 +95,13 @@ glfwPostEmptyEvent();
 > 
 > 而 Windows 系統本身會自動產生視窗大小變更的事件，然後把這個事件發送給視窗的事件回調函式，換句話說視窗大小變更事件是由系統自動觸發的，GLFW 只是負責處理這些事件<br><br>
 > 
-> 每個視窗在 Windows 中都有一個事件回調函式(例如 `WndProc`)，GLFW 會幫我們實作函式來處理這個視窗事件
+> 每個視窗在 Windows 中都有一個事件回調函式（例如 `WndProc`），GLFW 會幫我們實作函式來處理這個視窗事件
 
-如果你有設定視窗大小回調函式(window size callback)，那麼 GLFW 會在 `glfwSetWindowSize` 返回之前，直接用新的視窗大小來調用你的回調函式
+如果你有設定視窗大小回調函式（window size callback），那麼 GLFW 會在 `glfwSetWindowSize` 返回之前，直接用新的視窗大小來調用你的回調函式
 
 這表示 `glfwSetWindowSize` 不是單純地改變視窗大小，還會同步觸發事件，使你的回調函式立即收到新的大小資訊。 換句話說，你不需要等到 `glfwPollEvents()` 來觸發這個事件，因為它已經在 `glfwSetWindowSize` 執行期間發生了
 
-這代表你的回調函式可能在意想不到的時機被調用(例如在 `glfwSetWindowSize` 內部)，所以在編寫回調函式時，應該考慮到這一點，避免 race condition 或未準備好的狀況
+這代表你的回調函式可能在意想不到的時機被調用（例如在 `glfwSetWindowSize` 內部），所以在編寫回調函式時，應該考慮到這一點，避免 race condition 或未準備好的狀況
 
 看個例子：
 
@@ -130,14 +130,14 @@ int main() {
 這就是因為：
 
 - `glfwSwapBuffers()` 在某些系統上可能會導致視窗系統處理佇列中的事件，並將它們傳遞給 GLFW
-- GLFW 會先調用用戶的回調函式(key_callback) 來處理這些事件，然後才從 `glfwSwapBuffers` 返回
+- GLFW 會先調用用戶的回調函式（key_callback） 來處理這些事件，然後才從 `glfwSwapBuffers` 返回
 
 ## Keyboard input
 
-GLFW 將鍵盤輸入分為兩種類別：鍵事件(key events) 與字符事件(character events)
+GLFW 將鍵盤輸入分為兩種類別：鍵事件（key events） 與字符事件（character events）
 
-- 鍵事件：處理「按鍵是否被按下/釋放」，對應到物理鍵盤上的按鍵(如 `A`、`Enter`)
-- 字符事件：處理「鍵盤按下後產生的輸入內容」，與作業系統的輸入法和鍵盤布局有關(如 `Shift + A` 可能會產生 `A`，但在某些鍵盤配置下可能會產生 `Ä`)
+- 鍵事件：處理「按鍵是否被按下/釋放」，對應到物理鍵盤上的按鍵（如 `A`、`Enter`)
+- 字符事件：處理「鍵盤按下後產生的輸入內容」，與作業系統的輸入法和鍵盤布局有關（如 `Shift + A` 可能會產生 `A`，但在某些鍵盤配置下可能會產生 `Ä`)
 
 按鍵與字符之間並不是一一對應的，一個按鍵可能會產生多個字符，而一個字符也可能需要多個按鍵才能輸入，同時不同使用者之間的鍵盤設定也可能不一樣
 
@@ -151,10 +151,10 @@ glfwSetKeyCallback(window, key_callback);
 
 這會將目標視窗與自定義的回調函式 `key_callback` 綁定。 當鍵盤事件發生時，GLFW 會調用這個回調函式，並傳遞四個參數：
 
-- 鍵盤按鍵(key)：對應 GLFW 定義的按鍵值，例如 `GLFW_KEY_A`
-- 平台相關的掃描碼(scancode)：由作業系統定義的鍵盤掃描碼，與物理鍵盤佈局有關，用來唯一識別按鍵
-- 鍵盤行為(action)：表示鍵盤事件的類型，例如按下 (`GLFW_PRESS`)、釋放 (`GLFW_RELEASE`)、重複 (`GLFW_REPEAT`)
-- 修飾鍵(mods)：表示是否有 `Shift`、`Ctrl`、`Alt` 等輔助按鍵被按下
+- 鍵盤按鍵（key）：對應 GLFW 定義的按鍵值，例如 `GLFW_KEY_A`
+- 平台相關的掃描碼（scancode）：由作業系統定義的鍵盤掃描碼，與物理鍵盤佈局有關，用來唯一識別按鍵
+- 鍵盤行為（action）：表示鍵盤事件的類型，例如按下（`GLFW_PRESS`）、釋放（`GLFW_RELEASE`）、重複（`GLFW_REPEAT`)
+- 修飾鍵（mods）：表示是否有 `Shift`、`Ctrl`、`Alt` 等輔助按鍵被按下
 
 舉個例子：
 
@@ -166,11 +166,11 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 ```
 
-這是一個鍵盤回調函式的範例，它在 `E` 鍵被按下(`GLFW_PRESS`) 時執行 `activate_airship()`，當中 `action` 的值可能是 `GLFW_PRESS`、`GLFW_REPEAT` 或 `GLFW_RELEASE`。 當按下一個鍵時，GLFW 會產生 `GLFW_PRESS` 和 `GLFW_RELEASE` 事件，另外大多數按鍵在長按時也會產生 `GLFW_REPEAT` 事件
+這是一個鍵盤回調函式的範例，它在 `E` 鍵被按下（`GLFW_PRESS`） 時執行 `activate_airship()`，當中 `action` 的值可能是 `GLFW_PRESS`、`GLFW_REPEAT` 或 `GLFW_RELEASE`。 當按下一個鍵時，GLFW 會產生 `GLFW_PRESS` 和 `GLFW_RELEASE` 事件，另外大多數按鍵在長按時也會產生 `GLFW_REPEAT` 事件
 
-按鍵值會是 GLFW 已定義的 key token 之一，如果 GLFW 無法識別該鍵(例如 E-mail 鍵或 Play 鍵)，則會回傳 `GLFW_KEY_UNKNOWN`
+按鍵值會是 GLFW 已定義的 key token 之一，如果 GLFW 無法識別該鍵（例如 E-mail 鍵或 Play 鍵），則會回傳 `GLFW_KEY_UNKNOWN`
 
-許多鍵盤對於同時按下的按鍵數量有檢測限制，這個限制被稱為「按鍵翻轉」(key rollover)。 一些舊鍵盤可能只能偵測 2~3 個鍵 (`2-key rollover`)，而較好的機械鍵盤可能支援 N-key rollover(可以偵測所有按鍵)
+許多鍵盤對於同時按下的按鍵數量有檢測限制，這個限制被稱為「按鍵翻轉」（key rollover）。 一些舊鍵盤可能只能偵測 2~3 個鍵（`2-key rollover`），而較好的機械鍵盤可能支援 N-key rollover（可以偵測所有按鍵）
 
 帶有 `GLFW_REPEAT` 動作的鍵盤事件通常用於文字輸入。 它們的觸發頻率取決於使用者的鍵盤設定。 另外即使同時按住多個鍵，也只會有一個鍵被重複觸發，因此你不應該用 `GLFW_REPEAT` 事件來判斷哪些按鍵被按住，或用來驅動動畫
 
@@ -178,7 +178,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 例如：
 
-1. 用變數紀錄按鍵狀態：  
+1. 用變數紀錄按鍵狀態：
     ```cpp
     bool keyHeld = false;
     void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -195,7 +195,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
     ```
 
-無論目標按鍵是否有對應的 GLFW key token，掃描碼(scancode) 都是唯一的。 掃描碼是平台特定的(不同系統可能不同)，但在同一平台上它基本上是穩定不變的，因此即使不同平台上的按鍵會有不同的掃描碼，但你仍可以將其存起來作為平台特定的值來使用
+無論目標按鍵是否有對應的 GLFW key token，掃描碼（scancode） 都是唯一的。 掃描碼是平台特定的（不同系統可能不同），但在同一平台上它基本上是穩定不變的，因此即使不同平台上的按鍵會有不同的掃描碼，但你仍可以將其存起來作為平台特定的值來使用
 
 你可以使用 `glfwGetKeyScancode` 查詢當前平台支援的任何按鍵標記的掃描碼，下面是個簡單的例子：
 
@@ -216,7 +216,7 @@ if (state == GLFW_PRESS)
 
 `glfwGetKey` 並非直接與硬體通信，而是返回 GLFW 內部緩存的最新狀態，因此它可能不是「即時」的資訊，如果你需要即時回應按鍵輸入，那應該去使用回調函式 `glfwSetKeyCallback`。 另外不像回調函式中的 `GLFW_REPEAT`，`glfwGetKey` 無法告訴你按鍵是否正在重複觸發，只能告訴你按下或釋放
 
-當你利用輪詢來查看鍵盤狀態時，可能會錯過你想要的狀態變化。 例如，如果某個鍵在你查詢之前已經被按下又釋放，那你會完全錯過這個按鍵事件。 建議的解決方案是使用 key callback，但你也可以用相黏鍵模式 (`GLFW_STICKY_KEYS`)：
+當你利用輪詢來查看鍵盤狀態時，可能會錯過你想要的狀態變化。 例如，如果某個鍵在你查詢之前已經被按下又釋放，那你會完全錯過這個按鍵事件。 建議的解決方案是使用 key callback，但你也可以用相黏鍵模式（`GLFW_STICKY_KEYS`)：
 
 ```cpp
 glfwSetInputMode(window, GLFW_STICKY_KEYS, GLFW_TRUE);
@@ -230,7 +230,7 @@ glfwSetInputMode(window, GLFW_STICKY_KEYS, GLFW_TRUE);
 glfwSetInputMode(window, GLFW_LOCK_KEY_MODS, GLFW_TRUE);
 ```
 
-啟用此輸入模式啟用時，任何收到修飾鍵位(modifier bits) 的回調函式，都會在 Caps Lock 開啟時設置 `GLFW_MOD_CAPS_LOCK` 位元，以及在 Num Lock 開啟時設置 `GLFW_MOD_NUM_LOCK` 位元
+啟用此輸入模式啟用時，任何收到修飾鍵位（modifier bits） 的回調函式，都會在 Caps Lock 開啟時設置 `GLFW_MOD_CAPS_LOCK` 位元，以及在 Num Lock 開啟時設置 `GLFW_MOD_NUM_LOCK` 位元
 
 下面是一個在鍵盤回調函式中檢查 Caps Lock 與 Num Lock 狀態的例子：
 
@@ -270,22 +270,22 @@ for (int key = GLFW_KEY_SPACE; key <= GLFW_KEY_LAST; key++)
 
 ### Text input
 
-GLFW 支援文字輸入(text input)，它的形式是一串 Unicode 碼點(code points)，由作業系統的文字輸入系統產生
+GLFW 支援文字輸入（text input），它的形式是一串 Unicode 碼點（code points），由作業系統的文字輸入系統產生
 
-與按鍵輸入(key input) 不同，文字輸入會受到鍵盤布局和修飾鍵的影響，且支援使用死鍵(dead keys) 來組合字符
+與按鍵輸入（key input） 不同，文字輸入會受到鍵盤布局和修飾鍵的影響，且支援使用死鍵（dead keys） 來組合字符
 
 當接收到 Unicode 碼點後，你可以將其編碼為 UTF-8 或任何其他你喜歡的編碼格式
 
-> Unicode 是一種統一的字符編碼標準，每個字符對應一個數值，稱為碼點(code point)，例如：
+> Unicode 是一種統一的字符編碼標準，每個字符對應一個數值，稱為碼點（code point），例如：
 >   - A → U+0041
 >   - € → U+20AC
 >   - 你 → U+4F60
 >
-> GLFW 提供的是 Unicode 碼點(UTF-32)，但大多數應用程式(如 GUI、網頁) 都使用 UTF-8，所以通常需要轉換
+> GLFW 提供的是 Unicode 碼點（UTF-32），但大多數應用程式（如 GUI、網頁） 都使用 UTF-8，所以通常需要轉換
 
-由於在 GLFW 支援的所有平台上，`unsigned int` 都是 32 bits 的，你可以將回調函式的碼點參數(code point argument) 當作原生端序(native endian) 的 UTF-32 來處理
+由於在 GLFW 支援的所有平台上，`unsigned int` 都是 32 bits 的，你可以將回調函式的碼點參數（code point argument） 當作原生端序（native endian） 的 UTF-32 來處理
 
-如果你想要提供一般的文字輸入功能，可以設定字符回調函式(character callback)：
+如果你想要提供一般的文字輸入功能，可以設定字符回調函式（character callback）：
 
 ```cpp
 glfwSetCharCallback(window, character_callback);
@@ -299,7 +299,7 @@ glfwSetCharCallback(window, character_callback);
 void character_callback(GLFWwindow* window, unsigned int codepoint) {}
 ```
 
-`codepoint` 是一個 Unicode 碼點(UTF-32)，代表使用者輸入的文字。 你可以將 `codepoint` 轉換為 UTF-8 並顯示：
+`codepoint` 是一個 Unicode 碼點（UTF-32），代表使用者輸入的文字。 你可以將 `codepoint` 轉換為 UTF-8 並顯示：
 
 ```cpp
 void character_callback(GLFWwindow* window, unsigned int codepoint)
@@ -308,11 +308,11 @@ void character_callback(GLFWwindow* window, unsigned int codepoint)
 }
 ```
 
-當輸入特殊字符(如 `é`, `你`)時，這個函式會正確處理，與鍵盤佈局無關
+當輸入特殊字符（如 `é`, `你`）時，這個函式會正確處理，與鍵盤佈局無關
 
 ### Key names
 
-如果你希望透過按鍵名來使用按鍵，可以使用 `glfwGetKeyName` 來查詢可顯示的按鍵(printable keys) 在當前鍵盤佈局下的名稱：
+如果你希望透過按鍵名來使用按鍵，可以使用 `glfwGetKeyName` 來查詢可顯示的按鍵（printable keys） 在當前鍵盤佈局下的名稱：
 
 ```cpp
 const char* key_name = glfwGetKeyName(GLFW_KEY_W, 0);
@@ -331,23 +331,23 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 ## Mouse input
 
-滑鼠輸入有多種形式，包括滑鼠移動、按鈕按下和滾輪滾動。 鼠標(cursor) 的外觀也可以改變，可以更改為自訂圖像或系統主題的標準鼠標形狀
+滑鼠輸入有多種形式，包括滑鼠移動、按鈕按下和滾輪滾動。 鼠標（cursor） 的外觀也可以改變，可以更改為自訂圖像或系統主題的標準鼠標形狀
 
 ### Cursor position
 
-如果你希望鼠標在視窗內移動時收到通知，可以設定鼠標位置回調函式(cursor position callback)：
+如果你希望鼠標在視窗內移動時收到通知，可以設定鼠標位置回調函式（cursor position callback）：
 
 ```cpp
 glfwSetCursorPosCallback(window, cursor_position_callback);
 ```
 
-這個回調函式會接收到鼠標的位置，該位置是相對於視窗內容區域的左上角測量的。 在支援次像素精度(sub-pixel precision) 的平台上，鼠標的位置會以完整的次像素精度傳遞：
+這個回調函式會接收到鼠標的位置，該位置是相對於視窗內容區域的左上角測量的。 在支援次像素精度（sub-pixel precision） 的平台上，鼠標的位置會以完整的次像素精度傳遞：
 
 ```cpp
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {}
 ```
 
-> 次像素精度：在某些平台上(如高 DPI 螢幕)，鼠標位置可能會有小數點精度，而不是整數像素
+> 次像素精度：在某些平台上（如高 DPI 螢幕），鼠標位置可能會有小數點精度，而不是整數像素
 
 鼠標的位置也會儲存在每個視窗的內部狀態中，可以透過 `glfwGetCursorPos` 來查詢：
 
@@ -358,15 +358,15 @@ glfwGetCursorPos(window, &xpos, &ypos);
 
 ### Cursor mode
 
-`GLFW_CURSOR` 輸入模式提供了幾種特殊的鼠標模式，以應對不同的滑鼠移動需求。 預設情況下，鼠標模式為 `GLFW_CURSOR_NORMAL`，這表示使用一般的箭頭鼠標(arrow cursor)，或透過 `glfwSetCursor` 設定的其他鼠標，並且鼠標的移動不受限制
+`GLFW_CURSOR` 輸入模式提供了幾種特殊的鼠標模式，以應對不同的滑鼠移動需求。 預設情況下，鼠標模式為 `GLFW_CURSOR_NORMAL`，這表示使用一般的箭頭鼠標（arrow cursor），或透過 `glfwSetCursor` 設定的其他鼠標，並且鼠標的移動不受限制
 
-如果你想基於滑鼠移動來實作相機的控制或其他需要無限滑鼠移動(unlimited mouse movement) 的輸入方式，可以將鼠標模式設為 `GLFW_CURSOR_DISABLED`：
+如果你想基於滑鼠移動來實作相機的控制或其他需要無限滑鼠移動（unlimited mouse movement） 的輸入方式，可以將鼠標模式設為 `GLFW_CURSOR_DISABLED`：
 
 ```cpp
 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 ```
 
-這會把鼠標隱藏起來，並將其鎖定在指定的視窗內。 此時 GLFW 會自動處理鼠標重新置中(re-centering) 和偏移量計算，並提供應用程式一個虛擬鼠標位置(virtual cursor position)。 這個虛擬鼠標位置可以透過鼠標位置回調和輪詢取得
+這會把鼠標隱藏起來，並將其鎖定在指定的視窗內。 此時 GLFW 會自動處理鼠標重新置中（re-centering） 和偏移量計算，並提供應用程式一個虛擬鼠標位置（virtual cursor position）。 這個虛擬鼠標位置可以透過鼠標位置回調和輪詢取得
 
 > unlimmited mouse movement 是像 FPS 遊戲那樣，當鼠標移動時，它會重新置中並計算偏移量，這樣即使滑鼠移動超過螢幕邊界，也可以持續接收滑鼠的移動資訊<br><br>
 > 
@@ -378,7 +378,7 @@ glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 ```
 
-要退出這些特殊模式(`GLFW_CURSOR_DISABLED` 或 `GLFW_CURSOR_HIDDEN`)，可以將鼠標模式還原為 `GLFW_CURSOR_NORMAL`：
+要退出這些特殊模式（`GLFW_CURSOR_DISABLED` 或 `GLFW_CURSOR_HIDDEN`），可以將鼠標模式還原為 `GLFW_CURSOR_NORMAL`：
 
 ```cpp
 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -386,9 +386,9 @@ glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
 ### Raw mouse motion
 
-當鼠標被禁用時，如果系統支援，可以啟用原始滑鼠移動(raw mouse motion)，這種輸入方式不會經過系統的縮放和加速處理。 原始滑鼠移動模式更接近滑鼠在表面上移動的實際情況，不會受到作業系統施加的滑鼠移動縮放與加速的影響
+當鼠標被禁用時，如果系統支援，可以啟用原始滑鼠移動（raw mouse motion），這種輸入方式不會經過系統的縮放和加速處理。 原始滑鼠移動模式更接近滑鼠在表面上移動的實際情況，不會受到作業系統施加的滑鼠移動縮放與加速的影響
 
-這種縮放與加速的處理適用於鼠標控制，但在控制 3D 相機等場合則更適合用原始滑鼠移動模式。 因此只有在鼠標被禁用時(`GLFW_CURSOR_DISABLED`)，GLFW 才提供原始滑鼠移動模式
+這種縮放與加速的處理適用於鼠標控制，但在控制 3D 相機等場合則更適合用原始滑鼠移動模式。 因此只有在鼠標被禁用時（`GLFW_CURSOR_DISABLED`），GLFW 才提供原始滑鼠移動模式
 
 你可以利用 `glfwRawMouseMotionSupported` 來檢查當前系統是否支援原始滑鼠移動，如果支援，可以設定 `GLFW_RAW_MOUSE_MOTION` 來啟用它：
 
@@ -401,13 +401,13 @@ if (glfwRawMouseMotionSupported())
 
 ### Cursor objects
 
-GLFW 支援自訂鼠標(custom cursors) 和系統主題鼠標(system theme cursors)，這些鼠標被封裝為 `GLFWcursor` 物件。 你可以使用 `glfwCreateCursor` 或 `glfwCreateStandardCursor` 來建立鼠標，並透過 `glfwDestroyCursor` 銷毀鼠標，或者在 `glfwTerminate` 時，自動銷毀所有剩餘的鼠標
+GLFW 支援自訂鼠標（custom cursors） 和系統主題鼠標（system theme cursors），這些鼠標被封裝為 `GLFWcursor` 物件。 你可以使用 `glfwCreateCursor` 或 `glfwCreateStandardCursor` 來建立鼠標，並透過 `glfwDestroyCursor` 銷毀鼠標，或者在 `glfwTerminate` 時，自動銷毀所有剩餘的鼠標
 
 #### Custom cursor creation
 
 你可以使用 `glfwCreateCursor` 來建立自訂鼠標，這個函式會回傳一個指向鼠標物件的指標，如果鼠標建立失敗，函式會回傳 `NULL`，因此你需要檢查回傳
 
-下面是建立了一個 16×16 的白色方形鼠標，並將熱點(hot-spot) 設置在左上角的例子：
+下面是建立了一個 16×16 的白色方形鼠標，並將熱點（hot-spot） 設置在左上角的例子：
 
 ```cpp
 unsigned char pixels[16 * 16 * 4];
@@ -425,12 +425,12 @@ GLFWcursor* cursor = glfwCreateCursor(&image, 0, 0);
 
 - 圖像數據的格式為：
   - 32 位：每個像素佔 4 byte
-  - 小端序：在多 byte 數據中，低位 byte 在前(適用於大多數現代 CPU，如 x86)
-  - 非預乘(non-premultiplied) RGBA：紅(R)、綠(G)、藍(B)、透明度(A) 各 8 位，且透明度未與 RGB 值預先相乘(即原始值)
-  - 通道順序：R(紅) 第一，然後 G、B、A
+  - 小端序：在多 byte 數據中，低位 byte 在前（適用於大多數現代 CPU，如 x86）
+  - 非預乘（non-premultiplied） RGBA：紅（R）、綠（G）、藍（B）、透明度（A） 各 8 位，且透明度未與 RGB 值預先相乘（即原始值）
+  - 通道順序：R（紅） 第一，然後 G、B、A
 - 像素排列：從左上角開始，按行順序儲存，例如
-  - 第 1 行：像素 (0,0) 到 (15,0)
-  - 第 2 行：像素 (0,1) 到 (15,1)
+  - 第 1 行：像素（0,0） 到（15,0）
+  - 第 2 行：像素（0,1） 到（15,1）
   - 依此類推
 
 因此上例中 `pixels` 內的數據順序是 `[R0, G0, B0, A0, R1, G1, B1, A1, ...]`，表示一連串像素
@@ -481,13 +481,13 @@ glfwSetCursor(window, NULL);
 
 ### Cursor enter/leave events
 
-如果你希望在鼠標進入或離開視窗內容區域時收到通知，可以設定鼠標進入/離開回調函式(cursor enter/leave callback)：
+如果你希望在鼠標進入或離開視窗內容區域時收到通知，可以設定鼠標進入/離開回調函式（cursor enter/leave callback）：
 
 ```cpp
 glfwSetCursorEnterCallback(window, cursor_enter_callback);
 ```
 
-回調函式會收到鼠標的最新狀態(進入或離開)：
+回調函式會收到鼠標的最新狀態（進入或離開）：
 
 ```cpp
 void cursor_enter_callback(GLFWwindow* window, int entered)
@@ -514,13 +514,13 @@ if (glfwGetWindowAttrib(window, GLFW_HOVERED))
 
 ### Mouse button input
 
-如果你希望在滑鼠按鍵被按下或釋放時收到通知，可以設定滑鼠按鍵回調函式(mouse button callback)：
+如果你希望在滑鼠按鍵被按下或釋放時收到通知，可以設定滑鼠按鍵回調函式（mouse button callback）：
 
 ```cpp
 glfwSetMouseButtonCallback(window, mouse_button_callback);
 ```
 
-回調函式會接收滑鼠按鍵編號(button)、按鍵行為(action) 和修飾鍵(modifier bits)：
+回調函式會接收滑鼠按鍵編號（button）、按鍵行為（action） 和修飾鍵（modifier bits）：
 
 ```cpp
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -532,8 +532,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
 其中 `action` 的值可能是：
 
-- `GLFW_PRESS`(按鍵被按下)
-- `GLFW_RELEASE`(按鍵被釋放)
+- `GLFW_PRESS`（按鍵被按下）
+- `GLFW_RELEASE`（按鍵被釋放）
 
 支援的滑鼠按鍵的狀態，會緩存在視窗的內部狀態陣列中，可以使用 `glfwGetMouseButton` 查詢：
 
@@ -557,13 +557,13 @@ glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, GLFW_TRUE);
 
 ### Scroll input
 
-如果你希望在使用者滾動(scroll) 時收到通知，無論是透過滑鼠滾輪(mouse wheel) 或是觸控板手勢(touchpad gesture)，可以設定滾動回調函式(scroll callback)：
+如果你希望在使用者滾動（scroll） 時收到通知，無論是透過滑鼠滾輪（mouse wheel） 或是觸控板手勢（touchpad gesture），可以設定滾動回調函式（scroll callback）：
 
 ```cpp
 glfwSetScrollCallback(window, scroll_callback);
 ```
 
-回調函式會收到二維的滾動偏移量(scroll offsets)：
+回調函式會收到二維的滾動偏移量（scroll offsets）：
 
 ```cpp
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {}
@@ -571,13 +571,13 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {}
 
 ## Time input
 
-GLFW 提供高解析度的時間輸入，單位為秒(seconds)，可以使用 `glfwGetTime` 來獲取當前時間：
+GLFW 提供高解析度的時間輸入，單位為秒（seconds），可以使用 `glfwGetTime` 來獲取當前時間：
 
 ```cpp
 double seconds = glfwGetTime();
 ```
 
-這個函式會回傳自 `glfwInit` 被呼叫後經過的秒數。 計時來源(time sources) 通常具有微秒或奈秒解析度，視平台而定
+這個函式會回傳自 `glfwInit` 被呼叫後經過的秒數。 計時來源（time sources） 通常具有微秒或奈秒解析度，視平台而定
 
 `glfwGetTime` 的時間計算是相對的，你可以使用 `glfwSetTime` 來重置計時器：
 
@@ -593,7 +593,7 @@ glfwSetTime(4.0);
 uint64_t value = glfwGetTimerValue();
 ```
 
-這個數值的單位是 `1/frequency` 秒。 原始計時器的頻率取決於作業系統與硬體。 你可以使用 `glfwGetTimerFrequency` 查詢計時器的頻率(以 Hz 為單位)：
+這個數值的單位是 `1/frequency` 秒。 原始計時器的頻率取決於作業系統與硬體。 你可以使用 `glfwGetTimerFrequency` 查詢計時器的頻率（以 Hz 為單位）：
 
 ```cpp
 uint64_t frequency = glfwGetTimerFrequency();
@@ -601,7 +601,7 @@ uint64_t frequency = glfwGetTimerFrequency();
 
 ## Clipboard input and output
 
-如果系統剪貼簿(clipboard) 內包含一個UTF-8 編碼的字串，或者它可以被轉換為 UTF-8，你可以使用 `glfwGetClipboardString` 來取得該字串。 回傳字串的生命週期請另參閱官方文件
+如果系統剪貼簿（clipboard） 內包含一個UTF-8 編碼的字串，或者它可以被轉換為 UTF-8，你可以使用 `glfwGetClipboardString` 來取得該字串。 回傳字串的生命週期請另參閱官方文件
 
 ```cpp
 const char* text = glfwGetClipboardString(NULL);
@@ -621,7 +621,7 @@ glfwSetClipboardString(NULL, "A string with words in it");
 
 ## Path drop input 拖曳檔案輸入
 
-如果你希望在使用者拖曳檔案或目錄到視窗時收到路徑資訊，可以設定檔案拖曳回調函式(file drop callback)：
+如果你希望在使用者拖曳檔案或目錄到視窗時收到路徑資訊，可以設定檔案拖曳回調函式（file drop callback）：
 
 ```cpp
 glfwSetDropCallback(window, drop_callback);
@@ -640,7 +640,7 @@ void drop_callback(GLFWwindow* window, int count, const char** paths)
 }
 ```
 
-路徑陣列(`paths`) 及其內的字串只在回調函式執行期間有效，因為這些字串可能是臨時生成的，僅適用於當次事件。 如果你需要在回調函式結束後仍然使用這些路徑，你需要另外把它存起來(記得用 deep copy)
+路徑陣列（`paths`） 及其內的字串只在回調函式執行期間有效，因為這些字串可能是臨時生成的，僅適用於當次事件。 如果你需要在回調函式結束後仍然使用這些路徑，你需要另外把它存起來（記得用 deep copy）
 
 ## 後記
 

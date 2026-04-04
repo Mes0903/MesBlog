@@ -213,12 +213,7 @@ The asset contains an animation that interpolates between the different morph ta
 
 這個 asset 包含一個動畫，用來在一個三角形的兩個 morph target 之間做內插變形，結果如下圖 17a 所示：
 
-<div class = "center-column">
-
-![](image/simpleMorph.png)
-(Image 17a: A triangle with two morph targets.)
-
-</div>
+![（Image 17a: A triangle with two morph targets.）](image/simpleMorph.png)
 
 這個 asset 的其他部分在前面章節都介紹過了，它包含一個 `scene`、一個 `node`、一個 `mesh`，還有兩個 `buffer`（一個存幾何資料、一個存動畫資料）與多個 `bufferView` 與 `accessor` 提供資料存取
 

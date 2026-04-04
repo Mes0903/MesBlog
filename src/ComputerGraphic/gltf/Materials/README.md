@@ -37,12 +37,7 @@ glTF 採用這個 metallic-roughness 表示方式作為內建的材質模型其�
 
 下圖展示了不同 metallic 與 roughness 數值所產生的效果：
 
-<div class = "center-column">
-
-![](image/metallicRoughnessSpheres.png)
-(Image 10a: Spheres with different metallic- and roughness values.)
-
-</div>
+![（Image 10a: Spheres with different metallic- and roughness values.）](image/metallicRoughnessSpheres.png)
 
 base color、metallic 和 roughness 這三個屬性可以直接指定單一數值，套用至整個物體。 若希望物體表面的不同部分有不同材質效果，也可以用貼圖（texture）來指定，透過貼圖，可以模擬出更豐富且寫實的真實世界材質
 

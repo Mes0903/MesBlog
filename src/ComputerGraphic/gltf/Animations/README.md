@@ -55,12 +55,7 @@ category: computer-graphic
 
 `samplers` 陣列內包含 [`animation.sampler`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-animation-sampler) 物件，這些物件會定義要如何在關鍵影格（key frames）之間，對 accessor 提供的數值進行插值（interpolation），如下圖 7a 所示：
 
-<div class = "center-column">
-
-![](image/animationSamplers.png)
-(Image 7a: Animation samplers.)
-
-</div>
+![（Image 7a: Animation samplers.）](image/animationSamplers.png)
 
 以下是一個用來計算「目前動畫時間點下的位移（translation）」的演算法流程：
 
@@ -119,7 +114,7 @@ currentTranslation = previousTranslation + interpolationValue * (nextTranslation
                    = (16.0, 2.0, -0.5)
 ```
 
-因此，當時間為 1.2 秒時，節點的 translation 值為 (16.0, 2.0, -0.5)
+因此，當時間為 1.2 秒時，節點的 translation 值為（16.0, 2.0, -0.5）
 
 ## Animation channels
 
@@ -148,12 +143,7 @@ currentTranslation = previousTranslation + interpolationValue * (nextTranslation
 
 因此，所有附加在這個節點上的物件（meshes），都會在動畫中隨著時間被同時平移與旋轉，效果如下圖 7b 所示：
 
-<div class = "center-column">
-
-![](image/animationChannels.png)
-(Image 7b: Animation channels.)
-
-</div>
+![（Image 7b: Animation channels.）](image/animationChannels.png)
 
 ## Interpolation
 

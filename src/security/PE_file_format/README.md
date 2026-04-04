@@ -13,13 +13,7 @@ PE 是 Portable Executable 的縮寫，它是根據 UNIX 系統的 COFF 來設�
 
 PE File 內部的格式是規定好的，也就是所謂的 PE file format，大致可以分為兩部分，Header 與 Section：
 
-<div class = "center-column">
-
-![](image/header_section.png)
-
-(圖片[連結](https://www.researchgate.net/figure/Portable-executable-file-format_fig6_338355873))
-
-</div>
+![（圖源：[researchgate](https://www.researchgate.net/figure/Portable-executable-file-format_fig6_338355873)）](image/header_section.png)
 
 Header 是用來管理 PE file 的，包含了一些執行檔的重要資訊，而 Section 則包含了程式碼、常量、資料和圖片資源等等
 
@@ -66,11 +60,7 @@ start:
 
 我們可以用 PE-bear 這個軟體來看 PE file 的內容，這是我用 PEbear 將 demo.exe 開起來的樣貌：
 
-<div class = "center-column">
-
 ![](image/PE_bear.png)
-
-</div>
 
 可以看見 demo.exe 由 DOS Header, DOS stub, NT Headers, Section Headers 與幾個 Sections 組成，那接下來就會依序介紹這些東西
 
@@ -78,19 +68,11 @@ start:
 
 PE file 最一開始的部分是 Dos Header，PE-bear 可以幫我們把這段 binary：
 
-<div class = "center-column">
-
 ![](image/DOS_header1.png)
-
-</div>
 
 解析為這樣：
 
-<div class = "center-column">
-
 ![](image/DOS_header2.png)
-
-</div>
 
 DOS Header 是 PE File 中的起始位置，以前的功用是用來保持與 DOS 的兼容性與定位 NT Header，而現在的功用只剩下後者
 
@@ -119,7 +101,7 @@ typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header
 } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
 ```
 
-它的大小為 `40h`(h 代表用十六進位表示)，其中 `WORD` 是 2bytes，`LONG` 是 4bytes。 我們關心的只有兩個成員：`e_magic` 與 `e_lfanew`
+它的大小為 `40h`（h 代表用十六進位表示），其中 `WORD` 是 2bytes，`LONG` 是 4bytes。 我們關心的只有兩個成員：`e_magic` 與 `e_lfanew`
 
 `e_magic` 是一個簽名，ASCII 的轉換結果為 `MZ`，所有的 PE file 都要以這個 `MZ` 開頭；而 `e_lfanew` 指向 NT Header 的位址。 其它的元素是在 DOS 環境下要使用的，在 Windows 下就無關
 
@@ -159,13 +141,9 @@ typedef struct _IMAGE_NT_HEADERS {
 可以看見基本上一樣的，差異只在 Optional Header
 
 第一個成員 `Signature` 是 `PE File` 的簽名，簽名為 `PE`，用 PE-bear 可以看見其 binary 為 
-`00 00 45 50`(此 exe 為 little endian)
-
-<div class = "center-column">
+`00 00 45 50`（此 exe 為 little endian）
 
 ![](image/NT_header.png)
-
-</div>
 
 ### FileHeader
 
@@ -222,11 +200,7 @@ typedef struct _IMAGE_FILE_HEADER {
 
 以 demo.exe 來說，其值為 `014c`
 
-<div class = "center-column">
-
 ![](image/File_header1.png)
-
-</div>
 
 這很長一串，用到的時候再查就好
 
@@ -253,13 +227,9 @@ Characteristics 記錄了這個檔案的屬性，會是以下這些值去做 `or
 
 以 demo.exe 來說其值為 `0x010f`，因此是 1, 2, 4, 8, 100 做 `or` 運算
 
-<div class = "center-column">
-
 ![](image/File_header2.png)
 
-</div>
-
-### Optional Header (可選頭)
+### Optional Header（可選頭）
 
 Optional Header 雖然有 `Optional` 這詞在裡面，但它是一定要有的，其定義如下：
 
@@ -308,7 +278,7 @@ typedef struct _IMAGE_OPTIONAL_HEADER {
 } IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;
 ```
 
-## Section Headers (區段頭)
+## Section Headers（區段頭）
 
 Section Header 會記錄每個 Section 的資訊，定義如下：
 
@@ -336,17 +306,11 @@ typedef struct _IMAGE_SECTION_HEADER {
 
 每個 Section Header 會指向對應的 Section，像是這樣
 
-<div class = "center-column">
-
-![](image/Section_header.png)
-
-(圖片[連結](https://tech-zealots.com/malware-analysis/pe-portable-executable-structure-malware-analysis-part-2/))
-
-</div>
+![（圖源：[tech-zealots](https://tech-zealots.com/malware-analysis/pe-portable-executable-structure-malware-analysis-part-2/)）](image/Section_header.png)
 
 Section Header 只負責記錄對應 Section 的重要屬性，像是 Section 的名字，大小，RVA 等等
 
-## Section(區段)
+## Section（區段）
 
 在 Headers 之後接的就是各個 Section，像是大家熟悉的 `.text`、`.data` 等等都是個 Section
 
@@ -360,17 +324,13 @@ Section Header 只負責記錄對應 Section 的重要屬性，像是 Section �
 
 而一個 PE 在硬碟與在記憶體中的偏移量會有所不同，這邊會有三個名詞先介紹一下：
 
-+ VA: 虛擬位址(Virtual Address)，指 PE 檔案載入「記憶體」後的位址
-+ RVA: 相對虛擬位址(Relative Virtual Address)，是 PE 檔案中資料、Section 等在「記憶體」中的偏移量
-+ FOA: 文件偏移位址(File Offset Address)，是 PE 檔案中資料、Section 等在「硬碟」中的偏移量
++ VA：虛擬位址（Virtual Address），指 PE 檔案載入「記憶體」後的位址
++ RVA：相對虛擬位址（Relative Virtual Address），是 PE 檔案中資料、Section 等在「記憶體」中的偏移量
++ FOA：文件偏移位址（File Offset Address），是 PE 檔案中資料、Section 等在「硬碟」中的偏移量
 
 我們看張圖來解釋：
 
-<div class = "center-column">
-
 ![](image/RVA.png)
-
-</div>
 
 這邊假設每個 Section 的大小都小於 Alignment 的大小，所以一個 Section 的大小就是一個 Alignment 的大小。x86 下 FileAlignment 通常是 `0x200`，也就是 512 bytes，這也是一個硬碟扇區的大小。而 x86 下 SectionAlignment 通常是 `0x1000`
 

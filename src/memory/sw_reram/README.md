@@ -7,7 +7,7 @@ category: memory
 
 # ReRAM 與 Smith-Waterman Algorithm 介紹
 
-這學期(大四上) 修了一門課叫新興記憶儲存系統元件設計，主要在講一些現代 Non-volatile memory，如 FRAM 和 ReRAM，還有一些較新的 Disk 的設計，如 Open-channel SSD 和 ZNS 等等的
+這學期（大四上） 修了一門課叫新興記憶儲存系統元件設計，主要在講一些現代 Non-volatile memory，如 FRAM 和 ReRAM，還有一些較新的 Disk 的設計，如 Open-channel SSD 和 ZNS 等等的
 
 而這門課有專題，也就是需要找個題目研讀一下，雖然老師說不需要實作出來，找個還沒被解過的問題，然後試著提解法就好，但我是個喜歡實作的人，沒有實作出來就覺得哪裡怪怪的，所以就希望能找個實作來做，不過到了期末發現真的沒有空XD
 
@@ -44,7 +44,7 @@ Smith-Waterman Algorithm 是一個用在生物工程的演算法，由 Needleman
 
 | DNA突變行為 | 意義                                          |
 | ----------- | --------------------------------------------- |
-| 取代(配錯)  | 把一個字母用另一個字母取代                    | 
+| 取代（配錯）  | 把一個字母用另一個字母取代                    | 
 | 插入        | 在 DNA 序列的某一個位置插入一個字母 |
 | 刪除        | 在 DNA 序列的某一個位置刪除一個字母 |
 
@@ -63,24 +63,24 @@ Smith-Waterman Algorithm 是一個用在生物工程的演算法，由 Needleman
 
 我們可以在兩條序列的任意位置上插入一個或多個空白字，這樣做的目的是讓相同或相似的字母能夠儘量對齊。但要特別注意的是，不能讓兩個插入的空白字對齊在一起，因為這樣對衡量序列之間的相似程度並無幫助
 
-因此字母之間對齊的方式其實就只有2種:
+因此字母之間對齊的方式其實就只有2種：
 
 1. 字母與字母的對齊
 2. 字母與空白字的對齊
 
-## 對齊(Alignment)
+## 對齊（Alignment）
 
 我們可以把 Alignment 的演算法分為 Global 與 Local 兩種
 
 + Global Alignment（全局比對）：
-    + 目標： 在整個序列的整體範圍內找到最佳的對應，強調整個序列的相似性
-    + 特點： 將整個序列進行比對，並試圖找到一個最佳的比對方案，即最大相似性得分。這種比對通常用於比較兩個相對較相似的序列，如同一基因在不同物種中的同源基因
-    + 應用： 常見的全局比對算法包括 Needleman-Wunsch 算法
+    + 目標：在整個序列的整體範圍內找到最佳的對應，強調整個序列的相似性
+    + 特點：將整個序列進行比對，並試圖找到一個最佳的比對方案，即最大相似性得分。這種比對通常用於比較兩個相對較相似的序列，如同一基因在不同物種中的同源基因
+    + 應用：常見的全局比對算法包括 Needleman-Wunsch 算法
     
 + Local Alignment（局部比對）：
-    + 目標： 在序列的某個區域內找到最佳的對應，強調局部相似性
-    + 特點： 局部比對專注於找到序列中的局部相似區域，而不要求整個序列的相似性。這種比對通常用於比較兩個相對較不相似的序列，以尋找局部相似的區域，如同源基因的某一片段
-    + 應用： 常見的局部比對算法包括 Smith-Waterman 算法
+    + 目標：在序列的某個區域內找到最佳的對應，強調局部相似性
+    + 特點：局部比對專注於找到序列中的局部相似區域，而不要求整個序列的相似性。這種比對通常用於比較兩個相對較不相似的序列，以尋找局部相似的區域，如同源基因的某一片段
+    + 應用：常見的局部比對算法包括 Smith-Waterman 算法
 
 ### Needleman-Wunsch
 
@@ -114,12 +114,12 @@ Needleman-Wunsch 的步驟如下
 
 這邊給一個例子，我們考慮兩個 sequence：
 
-```mathematica
+```
 N: ATGCT
 M: AGCT
 ```
 
-然後設定匹配得分(Match) 為 +1，不匹配懲罰分數(Mismatch) 為 -1，插入/刪除的懲罰分數(GAP) 為 -2，因此得分矩陣（Score Matrix）初始化的樣子如下：
+然後設定匹配得分（Match） 為 +1，不匹配懲罰分數（Mismatch） 為 -1，插入/刪除的懲罰分數（GAP） 為 -2，因此得分矩陣（Score Matrix）初始化的樣子如下：
 
 ```css
    -   A   T   G   C   T -- 序列 N
@@ -218,7 +218,7 @@ Score Matrix 填充完畢後，開始從右下角回溯，找到最佳路徑
 因此整體路徑為：$F(5,6) => F(4,5) => F(3,4) => F(3, 3) => F(2, 2)$
 方向的話為：$左上 => 左上 => 左 => 左上$
 
-```mathematica
+```
 N': ATGCT
 M': A-GCT
 ```
@@ -262,12 +262,12 @@ Smith-Waterman 的步驟如下：
 
 這邊我使用一篇 [CSDN](https://blog.csdn.net/yohjob/article/details/89144032) 裡面的例子，我們考慮兩個 sequence：
 
-```mathematica
+```
 N: TGTTACGG
 M: GGTTGACTA
 ```
 
-然後設定匹配得分(Match) 為 +3，不匹配懲罰分數(Mismatch) 為 -3，插入/刪除的懲罰分數(GAP) 為 -2
+然後設定匹配得分（Match） 為 +3，不匹配懲罰分數（Mismatch） 為 -3，插入/刪除的懲罰分數（GAP） 為 -2
 
 首先將得分矩陣（Score Matrix）初始化：
 
@@ -384,17 +384,11 @@ Score Matrix 填充完畢後，開始從最大值的位置回溯，找到最佳�
 
 回溯路徑如下圖：
 
-<div class = "center-column">    
-
-![](image/sw.png)
-
-圖源：[Smith-Waterman算法、Needleman-Wunsch算法的算法原理及算法比较](https://blog.csdn.net/yohjob/article/details/89144032)
-
-</div>
+![（圖源：[Smith-Waterman算法、Needleman-Wunsch算法的算法原理及算法比较](https://blog.csdn.net/yohjob/article/details/89144032)）](image/sw.png)
 
 因此最終得到的序列為
 
-```mathematica
+```
 N': GTT_AC
 M': GTTGAC
 ```
@@ -412,19 +406,13 @@ Systolic Array 是由孔祥重院士提出的，問題的起因是把東西從 c
 
 下圖中的「PE」是運算單元，可以看見其將數據一次性地經過了多個 PE：
 
-<div class = "center-column">
-    
-![](image/systolic1.png)
-
-圖源：[Kung, "Why systolic architectures?," in Computer, vol. 15, no. 1, pp. 37-46, Jan. 1982, doi: 10.1109/MC.1982.1653825.](https://ieeexplore.ieee.org/document/1653825)
-    
-</div>
+![（圖源：[Kung, "Why systolic architectures?," in Computer, vol. 15, no. 1, pp. 37-46, Jan. 1982, doi: 10.1109/MC.1982.1653825.](https://ieeexplore.ieee.org/document/1653825)）](image/systolic1.png)
 
 所以你可以猜到並不是所有的運算都適合利用 systolic array 來運算，因為數據並不一定符合「能一次性地做很多很多的運算」的這個特性
 
 #### 例子 1
 
-那麼有什麼樣的運算符合呢? 在孔祥重院士的論文中舉了一個例子：捲積(Convolution)
+那麼有什麼樣的運算符合呢? 在孔祥重院士的論文中舉了一個例子：捲積（Convolution）
 
 我們先從一維的開始下手，Convolution 是現代很常使用到的計算方法，在 Convolution 的運算中會有兩個輸入序列，這邊假設輸入為 $X$ 與 $w$，其值為：
 
@@ -449,31 +437,17 @@ $$
 
 假設一個開始 `t = 0`，則當 `t = 3` 時整個架構會長得像這樣：
 
-<div class = "center-column">
-
 ![](image/systolic2.png)
-
-</div>
 
 上圖中有三個 PE，每個 PE 內有一個 register 用來存進來的 $X_i$，而每個 PE 的上方會有固定的 $w_i$ 數據傳入，PE 的內部有一個乘法器負責做乘法運算，運算完的結果會傳出來跟其他 PE 的運算結果做加法，整個做完後就是我們要的 $Y_1$ 了
 
 可以再多看一個 $Y_2$ 的樣子：
 
-<div class = "center-column">
-
 ![](image/systolic3.png)
-
-</div>
 
 而還有其他的方法，如孔院士提出的 broadcast inputs, move results, weights stay：
 
-<div class = "center-column">
-    
-![](image/systolic4.png)
-
-圖源：[Kung, "Why systolic architectures?," in Computer, vol. 15, no. 1, pp. 37-46, Jan. 1982, doi: 10.1109/MC.1982.1653825.](https://ieeexplore.ieee.org/document/1653825)
-    
-</div>
+![（圖源：[Kung, "Why systolic architectures?," in Computer, vol. 15, no. 1, pp. 37-46, Jan. 1982, doi: 10.1109/MC.1982.1653825.](https://ieeexplore.ieee.org/document/1653825)）](image/systolic4.png)
 
 在上例中，$w_i$ 會預先存在每一個 PE 裡面，$X_i$ 則從上方平行傳入對應的 PE 中，這被稱為「廣播」，而 $Y_i$ 則向右側依序傳入，這個動作被稱為「脈動」
 
@@ -522,11 +496,7 @@ $$
 
 這個的 Systolic Array 會有四個 PE，整體步驟如下圖所示：
 
-<div class = "center-column">
-
 ![](image/systolic5.png)
-
-</div>
 
 原先的矩陣乘法，一個 $N\times N$ 的矩陣，會需要做 $N\times N\times N$ 次的乘法，透過 Systolic Array，可以將運算降低至 $3N - 1$ 個 cycles
 
@@ -542,13 +512,7 @@ ReRAM 是一種新型的非揮發性記憶體，所謂的「非揮發性」表�
 
 比較特別的地方在於中間那個絕緣材料有可變電阻的特性。當電流通過 ReRAM cell 時，這會導致絕緣材料中的一部分變成導體，改變電阻值。這個改變是可逆的，可以通過反向電流（負極->正極）或其他方法將它恢復
 
-<div class = "center-column">
-
-![](image/reram1.png)
-
-圖源：[R. Liu, D. Mahalanabis, H. J. Barnaby and S. Yu, "Investigation of Single-Bit and Multiple-Bit Upsets in Oxide RRAM-Based 1T1R and Crossbar Memory Arrays," in IEEE Transactions on Nuclear Science, vol. 62, no. 5, pp. 2294-2301, Oct. 2015, doi: 10.1109/TNS.2015.2465164.](https://ieeexplore.ieee.org/document/7274484)
-
-</div>
+![（圖源：[R. Liu, D. Mahalanabis, H. J. Barnaby and S. Yu, "Investigation of Single-Bit and Multiple-Bit Upsets in Oxide RRAM-Based 1T1R and Crossbar Memory Arrays," in IEEE Transactions on Nuclear Science, vol. 62, no. 5, pp. 2294-2301, Oct. 2015, doi: 10.1109/TNS.2015.2465164.](https://ieeexplore.ieee.org/document/7274484)）](image/reram1.png)
 
 當 ReRAM 單元處於高阻態（HRS）時，表示存儲的是數據位「0」；當處於低阻態（LRS）時，表示存儲的是數據位「1」。通過對 ReRAM cell 施加適當的電壓，可以在兩種狀態之間切換
 
@@ -560,11 +524,7 @@ ReRAM 也可以有 Multi-level 的型態，在這種情況寫一個 ReRAM cell �
 
 至於該如何計算，這邊舉個例子，假設我們現在有四個 ReRAM cell：
 
-<div class = "center-column">
-
 ![](image/reram2.png)
-
-</div>
 
 當我們設定 WL 上的電壓 $V_i$ 與對應的可變電阻 $G_i$ 時，BL 會產生對應的電流 $I_i$，以圖中的例子來說，利用歐姆定律，我們可以算出 $I_1 = V_1G_1 + V_2G_2$，$I_2$ 同理
 
@@ -585,11 +545,7 @@ $$
 
 我們就可以將電壓與電阻設為特殊的數值來計算出我們要的結果：
 
-<div class = "center-column">
-
 ![](image/reram3.png)
-
-</div>
 
 如此一來就完成了一個矩陣運算，另外，這種一個 Vector 與 Matrix 的乘法操作有個名字稱為 matrix-vector-multiplication，簡寫為 MVM，常出現在論文裡面
 
@@ -619,11 +575,7 @@ T -8  -5  -2  -3  -1   2
 
 他的 Systolic Array 應該要是以下形式：
 
-<div class = "center-column">
-
 ![](image/imp1.png)
-
-</div>
 
 可以看見他將整個矩陣的運算優化到了 7 個 cycle
 
@@ -631,33 +583,17 @@ T -8  -5  -2  -3  -1   2
 
 而每個 PE 的設計也很簡單：
 
-<div class = "center-column">
-
 ![](image/imp2.png)
-
-</div>
 
 其中，當 `Sequence\#1` 等於 `Sequence\#2` 時，$S_{i,j}$ 為 match score，否則為 mismatch score
 
 而 Comparator 的本體也不難，由於是比較等於，網路上一找馬上就有簡單的實作出來了：
 
-<div class = "center-column">
-
-![](image/imp3.png)
-
-Reference：[8-Bit Identity Comparator](https://www.renesas.com/us/en/products/memory-logic/standard-logic/fast-cmos-ttl-compatible-fct/74fct521t-8-bit-identity-comparator)
-    
-</div>
+![（Reference：[8-Bit Identity Comparator](https://www.renesas.com/us/en/products/memory-logic/standard-logic/fast-cmos-ttl-compatible-fct/74fct521t-8-bit-identity-comparator)）](image/imp3.png)
     
 其中的 XOR 可以用 NOR 實作出來：
 
-<div class = "center-column">
-
-![](image/imp4.png)
-
-Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)
-
-</div>
+![（Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)）](image/imp4.png)
 
 ### NOR gate on ReRAM
 
@@ -672,23 +608,15 @@ Reference：[wiki](https://en.wikipedia.org/wiki/XOR_gate)
 + 用「電阻」儲存變數
 + LRS 對應到 1，HRS 對應到 0；LRS 代表低電阻，HRS 代表高電阻
 + cell 會被初始化為 0，RESET 操作也是將 cell 設為 0
-+ 當目標電流大於限制電流(CC) 時，會進行 SET 操作，將 OUTPUT 設為 1
++ 當目標電流大於限制電流（CC） 時，會進行 SET 操作，將 OUTPUT 設為 1
 
 論文中給出的範例如下，首先有三個 cell：
 
-<div class = "center-column">
-
 ![](image/imp5.png)
-
-</div>
 
 A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給定電壓，讓電流從左邊通過時，其電流如下：
 
-<div class = "center-column">
-
 ![](image/imp6.png)
-
-</div>
 
 首先假設 CC 電流為 1mA：
 
@@ -699,11 +627,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 
 如此一來便完成了 OR gate，接下來的 NOT gate 更簡單了：
 
-<div class = "center-column">
-
 ![](image/imp7.png)
-
-</div>
 
 #### Truth table
 
@@ -715,19 +639,13 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 + 事先利用可變電阻將目標 gate 的真值表存起來
 + 偵測輸入電壓後的目標電流對應的電阻值
 
-<div class = "center-column">
-
-![](image/imp8.png)
-
-(我也不知道為什麼論文內的圖這麼糊)
-
-</div>
+![（我也不知道為什麼論文內的圖這麼糊）](image/imp8.png)
 
 上圖是 NOR gate 的例子，電阻塗黃表示 1，塗白則為 0
 
 我們會將變數的 0、1 分別以低、高電壓表示，至於多低、多高則自己定義，論文內舉了 2V 與 4V 為例子
 
-因此當 2V 與 4V 傳入圖中對應的 WL(直行) 時，等我們傳入 readout 電壓，便只有第三列的電流會小於我們所設定的限制電流，我們就可以讀取對應的電阻值，得到的輸出了
+因此當 2V 與 4V 傳入圖中對應的 WL（直行） 時，等我們傳入 readout 電壓，便只有第三列的電流會小於我們所設定的限制電流，我們就可以讀取對應的電阻值，得到的輸出了
 
 ### 結論
 
@@ -744,7 +662,7 @@ A、B 是我們輸入的兩個變數，而 OUT 是對應的輸出，當我們給
 「對齊」的演算法的加速仍受到現有的硬體架構限制，因其資料量大，register 容量相對來說有限，因此需要頻繁的移動資料，導致計算成本高昂，另外對齊演算法並不是單純的矩陣運算，這也會導致難以優化
 
 + [AligneR: A Process-in-Memory Architecture for Short Read Alignment in ReRAMs](https://ieeexplore.ieee.org/document/8409259)
-    + 提出了一種使用 RRAM 設計的 Hamming Distance Unit，用來加速計算基因序列片段的漢名距離，並透過這個 RHU (ReRAMbased HD unit) 構建了一個完整的 AligneR 管道來最大化讀取對齊的 throughput
+    + 提出了一種使用 RRAM 設計的 Hamming Distance Unit，用來加速計算基因序列片段的漢名距離，並透過這個 RHU（ReRAMbased HD unit） 構建了一個完整的 AligneR 管道來最大化讀取對齊的 throughput
 + [DNA Pattern Matching Acceleration with Analog Resistive CAM](https://arxiv.org/abs/2205.15505)
 + [Enabling Highly-Efficient DNA Sequence Mapping via ReRAM-based TCAM](https://ieeexplore.ieee.org/document/10244730)
 + [FindeR: Accelerating FM-Index-Based Exact Pattern Matching in Genomic Sequences through ReRAM Technology](https://ieeexplore.ieee.org/document/8891663)

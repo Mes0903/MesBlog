@@ -47,11 +47,7 @@ VMS 用兩種方式減輕 page table 對記憶體的壓力。 第一是將 user 
 
 研究 VMS 有個很棒的地方是可以看到一個真實的 address space 是怎麼構成的（Figure 23.1）。 到目前為止，我們假設的 address space 都很簡單，只有 user code、data、heap，但實際上如上所示的 address space 要複雜得多
 
-<div class = "center-column">
-
 ![](image/23-1.png)
-
-</div>
 
 舉例來說，code segment 絕不會從 page 0 開始，因為 page 0 會被標記為不可存取，用來協助偵測 null-pointer 的存取。 因此，在設計 address space 時，一個考量點是要方便除錯，而這個不可用的 zero page 正好提供了某種幫助
 
@@ -78,7 +74,7 @@ VMS 用兩種方式減輕 page table 對記憶體的壓力。 第一是將 user 
 關於這個 address space 的最後一點是保護機制。 顯然 OS 不希望 user app 任意存取 OS 的資料或程式碼，因此，硬體必須支援 page 的不同保護層級來達成這點。 VAX 會透過 page table 中的 protection bits 來指定存取某個 page 所需的 CPU 權限等級。 系統資料與程式碼會設成較高的保護等級，user code 嘗試存取這些內容時會觸發 trap 進入 OS，通常就會終止該 process
 
 ::: info  
-ASIDE: 為什麼 NULL pointer 會造成 seg fault
+ASIDE：為什麼 NULL pointer 會造成 seg fault
 
 你現在應該能理解 null-pointer dereference 到底發生了什麼。 某個 process 產生了 virtual address 0，例如這樣的程式碼：
 
@@ -91,7 +87,7 @@ int *p = NULL; // 設定 p = 0
 :::
 
 ::: info  
-ASIDE: 通用性的詛咒
+ASIDE：通用性的詛咒
 
 作業系統經常面臨所謂通用性的詛咒（curse of generality），也就是它們需要為一大類不同的應用與系統提供一般性支援。 這樣的結果是，OS 不太可能對任何單一環境有最好的支援。 以 VMS 為例，這個詛咒很真實，因為 VAX-11 架構有許多不同的實作。 直到今天這詛咒依然存在，因為我們期望 Linux 同時在你的手機、電視盒、筆電、桌電、甚至在雲端資料中心跑成千上萬個 process 的高階伺服器上都要跑得很好
 :::
@@ -166,17 +162,13 @@ TIP: BE LAZY
 
 Figure 23.2 顯示了一個典型（簡化後）的地址空間示意圖：
 
-<div class = "center-column">
-
 ![](image/23-2.png)
-
-</div>
 
 Linux 中一個稍微有趣的特點是它有兩種不同的 kernel virtual address。 第一種稱為 kernel logical addresses [O16]，這是一般認知的 kernel virtual address space，要取得這種記憶體，kernel code 只需呼叫 kmalloc。 大多數 kernel data structures（像是 page tables、per-process 的 kernel stacks 等）都存放在這裡。 與系統中大多數其他記憶體不同，kernel logical memory 無法被換出到 disk
 
 kernel logical addresses 最有趣的地方在於它們與 physical memory 之間的關聯，具體來說，kernel logical addresses 與 physical memory 的第一段之間有直接映射。 因此，kernel logical address `0xC0000000` 對應到 physical address `0x00000000`，`0xC0000FFF` 對應到 `0x00000FFF`，等等
 
-這種直接對應有兩個用意，第一，kernel logical address 和 physical address 之間的轉換很簡單，因此這些地址常被直接視為 physical address。 第二，如果一段記憶體在 kernel logical address space 中是連續的，那它在 physical memory 中也是連續的，這讓 kernel address space 所配置的記憶體很適合用在需要連續 physical memory 的地方，例如透過 direct memory access (DMA) 與設備之間進行資料傳輸（這部分我們會在本書的第三部分學到）
+這種直接對應有兩個用意，第一，kernel logical address 和 physical address 之間的轉換很簡單，因此這些地址常被直接視為 physical address。 第二，如果一段記憶體在 kernel logical address space 中是連續的，那它在 physical memory 中也是連續的，這讓 kernel address space 所配置的記憶體很適合用在需要連續 physical memory 的地方，例如透過 direct memory access（DMA） 與設備之間進行資料傳輸（這部分我們會在本書的第三部分學到）
 
 另一種 kernel address 是 kernel virtual address。 要取得這種記憶體，kernel code 會呼叫另一個 allocator，也就是 vmalloc，它會回傳一段 virtual 連續的記憶體區塊指標。 不同於 kernel logical memory，kernel virtual memory 通常不是 physical 上連續的，每一個 kernel virtual page 可能對應到的是不連續的 physical pages（因此不適合用於 DMA）。 然而這類記憶體比較容易配置，因此適合用來配置大型 buffer，畢竟要找出一大塊連續 physical memory 是很困難的事
 
@@ -194,11 +186,7 @@ OS 在以下時機會參與其中：建立與刪除 process，以及 context swi
 
 因此，一個 virtual address 可以這麼理解：
 
-<div class = "center-column">
-
 ![](image/page_table_structure.png)
-
-</div>
 
 如圖所示，virtual address 的最高 16 bits 並未使用（因此不參與轉譯），最底下的 12 bits（因為 page 大小為 4 KB）是 offset（因此會直接使用，不需轉譯），中間的 36 bits 則會參與轉譯過程。 P1 部分用來 index 最頂層的 page directory，之後轉譯就一路往下，到最後由 P4 指定的 page table page，找到對應的 page table entry。 隨著系統記憶體變得越來越大，這個龐大的 address space 將會啟用更多範圍，進而使用五層甚至六層的 page-table
 
@@ -364,7 +352,7 @@ Linux 也會用 memory-mapping `/dev/zero` 的方式來做 demand zeroing，並�
 
 - [JS94] “2Q: A Low Overhead High Performance Buffer Management Replacement Algorithm” by T. Johnson, D. Shasha. VLDB ’94, Santiago, Chile. 一個簡單但有效的 page replacement 方法
 
-- [LL82] “Virtual Memory Management in the VAX/VMS Operating System” by H. Levy, P. Lipman. IEEE Computer, Volume 15:3, March 1982. 原始資料幾乎都來自這篇論文。如果你想念研究所，讀論文是基本技能：讀論文、工作、再讀論文、繼續工作、最後寫一篇論文、然後再工作
+- [LL82] “Virtual Memory Management in the VAX/VMS Operating System” by H. Levy, P. Lipman. IEEE Computer, Volume 15：3, March 1982. 原始資料幾乎都來自這篇論文。如果你想念研究所，讀論文是基本技能：讀論文、工作、再讀論文、繼續工作、最後寫一篇論文、然後再工作
 
 - [M04] “Cloud Atlas” by D. Mitchell. Random House, 2004. 要選一本最愛的書真的很難，因為太多了！每一本書都有其獨特的美。不過如果非選不可，作者們可能會選「Cloud Atlas」，這是一部關於人類處境的壯闊史詩，這章最後那句話就引用自它。如果你夠聰明——我們相信你是——就別再讀這些冷門註解了，去讀「Cloud Atlas」吧，你會感謝我們的
 

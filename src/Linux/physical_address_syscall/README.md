@@ -58,8 +58,6 @@ Process type and features -> Linux guest support -> Support for running PVH gues
 
 下面是輸入 `make menuconfig` 後會出現的選單，把上面列出來的選項都勾起來：
 
-<div class = "center-column">
-
 ![](image/build1.png)
 
 ![](image/build2.png)
@@ -67,8 +65,6 @@ Process type and features -> Linux guest support -> Support for running PVH gues
 ![](image/build3.png)
 
 ![](image/build4.png)
-
-</div>
 
 <!--
 Cryptographic API -> Certificates for signature checking
@@ -123,11 +119,7 @@ chmod +x etc/init.d/rcS
 find . | cpio -o --format=newc | gzip > ../../linux-6.6/rootfs.img.gz
 ```
 
-<div class = "center-column">
-
 ![](image/rootfs.png)
-
-</div>
 
 ### Run Kernel
 
@@ -152,11 +144,7 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 454 common  my_get_physical_addresses   sys_my_get_physical_addresses   
 ```
 
-<div class = "center-column">
-
 ![](image/add_system_call1.png)
-
-</div>
 
 這行有四個部分，每項之間由空白或 tab 隔開，它們代表的意義是：
 
@@ -173,31 +161,19 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 檔案位於 `arch/x86/include/generated/asm/syscalls_64.h`：
 
-<div class = "center-column">
-
 ![](image/add_system_call2.png)
-
-</div>
 
 ### 實作自己的 system call
 
 接下來要新增對應的 system call 實作，我們這裡要實作的是回傳 physical address 的 system call，所以先講一下要怎麼做到這件事
 
-在 Linux 內部的記憶體地址映射過程為邏輯地址 –> 線性地址–> 實體地址 (PA)，實體地址最簡單：在匯流排中傳輸的數位信號，而線性地址和邏輯地址所表示的意涵則是種轉換規則，線性地址規則如下：
-
-<div class = "center-column">
+在 Linux 內部的記憶體地址映射過程為邏輯地址 –> 線性地址–> 實體地址（PA），實體地址最簡單：在匯流排中傳輸的數位信號，而線性地址和邏輯地址所表示的意涵則是種轉換規則，線性地址規則如下：
 
 ![](image/imp_system_call1.png)
 
-</div>
-
 這部分由 MMU 完成，其中在 IA32 架構下，涉及到主要的暫存器有 CR0, CR3。機器指令中出現的是邏輯地址，邏輯地址規則如下：
 
-<div class = "center-column">
-
 ![](image/imp_system_call2.png)
-
-</div>
 
 在 Linux 中的邏輯地址對應於線性地址，也就是說 Intel 為了相容過往架構，把硬體設計搞得很複雜，Linux 核心的實作則予以簡化，並且在支援其他處理器架構時，儘量保持該原則
 
@@ -368,20 +344,13 @@ struct 的詳細內容可以看看這篇：[linux内核那些事之struct page](
 
 #### page table in linux
 
-一般來說，x86 的架構使用 2-level 的 page table(10-10-12)，而 x86-64 的架構則使用 4-level(9-9-9-9-12) 或 5-level(`pgd_t` 和 `pud_t` 間多了一層 `p4d_t`) 的 page table，但也有 3-level 的，這可以透過 config 內的 `CONFIG_PGTABLE_LEVELS` 設定，基本上是 base on 處理器架構在設定的
+一般來說，x86 的架構使用 2-level 的 page table（10-10-12），而 x86-64 的架構則使用 4-level（9-9-9-9-12） 或 5-level（`pgd_t` 和 `pud_t` 間多了一層 `p4d_t`） 的 page table，但也有 3-level 的，這可以透過 config 內的 `CONFIG_PGTABLE_LEVELS` 設定，基本上是 base on 處理器架構在設定的
 
 以下是一個 4-level page table 的例子：
 
-<div class = "center-column">
+![（圖源：[關於Linux記憶體尋址與頁表處理的一些細節](https://www.cnblogs.com/QiQi-Robotics/p/15630380.html)，圖很小，可以用新分頁打開來看一下）](image/page_table.png)
 
-![](image/page_table.png)
-
-圖源：[關於Linux記憶體尋址與頁表處理的一些細節](https://www.cnblogs.com/QiQi-Robotics/p/15630380.html)   
-(圖很小，可以用新分頁打開來看一下)
-    
-</div>
-
-每一個 Process 都會有自己的 Page Table，存在它自己的 kernel space，Page table 的 Base address 會被存在 CR3 裡面，這是一個 register，又被稱為 PDBR(page directory base register)，存的是實體位址，但 `task_struct->mm->pgd` 內儲存的則是 Process Global Directory 的虛擬位址
+每一個 Process 都會有自己的 Page Table，存在它自己的 kernel space，Page table 的 Base address 會被存在 CR3 裡面，這是一個 register，又被稱為 PDBR（page directory base register），存的是實體位址，但 `task_struct->mm->pgd` 內儲存的則是 Process Global Directory 的虛擬位址
 
 在 context switch 發生時，CR3 會載入新的 Process 的 Page Table，而將值寫入 CR3 時系統會自動刷新 TLB 的內容
 
@@ -493,16 +462,11 @@ static inline pud_t *pud_offset(p4d_t *p4d, unsigned long address)
 asmlinkage long sys_my_get_physical_addresses(void *);
 ```
 
-<div class = "center-column">
-
 ![](image/imp_system_call3.png)
-
-</div>
 
 新增一個檔案叫 `project1.c`，路徑是 `kernel/project1.c`
 
 <details> <summary><span class = "yellow">範例 code</span></summary>
-
 
 ```c
 #include <linux/syscalls.h>
@@ -605,14 +569,9 @@ obj-y     = fork.o exec_domain.o panic.o \
 
 接下來要寫一個 user program 來使用這個 system call，在 kernel 資料夾的外面新增一個檔案叫 `project1.c`
 
-<div class = "center-column">
-
 ![](image/build_test.png)
 
-</div>
-
 <details> <summary><span class = "yellow">範例 code</span></summary>
-
 
 ```c
 #include <stdio.h>
@@ -751,32 +710,19 @@ cd linux-6.6
 qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "root=/dev/ram rdinit=/sbin/init console=ttyS0"
 ```
 
-<div class = "center-column">
-
 ![](image/run1.png)
-
-</div>
 
 按 enter 可以開始下指令，可以先 `ls` 看看：
 
-<div class = "center-column">
-
 ![](image/run2.png)
-
-</div>
 
 這裡面就有我們編譯好的執行檔了，直接執行它：
 
-<div class = "center-column">
-
 ![](image/run3.png)
-
-</div>
 
 ### 輸出：
 
 <details> <summary><span class = "yellow">輸出</span></summary>
-
 
 ```bash
 [PID 26]: I am thread with ID 26 executing func1().
@@ -841,7 +787,6 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 </details>
 
 <details> <summary><span class = "yellow">將順序手動整理後的版本：</span></summary>
-
 
 ```bash
 [PID 26]: I am thread with ID 26 executing func1().
@@ -939,22 +884,13 @@ qemu-system-x86_64 -kernel vmlinux -nographic -initrd rootfs.img.gz -append "roo
 
 hackmd 的排版讓表格不太好看，所以這邊截一下圖：
 
-<div class = "center-column">
-
 ![](image/out1.png)
-
-</div>
 
 把 memory layout 簡單畫出來：
 
-<div class = "center-column">
-
 ![](image/out2.png)
 
-</div>
-
 字很醜不好意思
-
 
 ## References
 

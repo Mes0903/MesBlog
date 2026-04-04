@@ -14,7 +14,7 @@ category:
 
 專題，預期產出是
 
-- 最低限度在 semu 支援 virtio 2D (with SDL)
+- 最低限度在 semu 支援 virtio 2D（with SDL）
 - 支援 virtio-gpu 及 virtio-input
 - 實作 host-GL accelerated path，讓 virtio-gpu 得以 passthrough
 
@@ -290,7 +290,7 @@ case _(QueueDriverLow):
 
 此時 Guest 說 `QueueDesc = 4`，意思是「queue 在 byte 4 的位置」。 但如果我們直接寫 `ram[4]`，C 語言會跳到第 4 個 `uint32_t`，也就是 byte 16，跳過頭了，所以要做 `4 >> 2 = 1`，用 `ram[1]` 才對得上 byte 4
 
-<span class = "center-column">
+<center-panel natural>
 
 | guest 說的 byte address |   `>> 2` 後 |  `ram[]` index |
 | :---------------------: | :---------: | :-----------: |
@@ -299,7 +299,7 @@ case _(QueueDriverLow):
 |         8               |     2       |    `ram[2]`   |
 |        12               |     3       |    `ram[3]`   |
 
-</span>
+</center-panel>
 
 位址的檢查通過後，`vgpu_preprocess()` 會把這個 byte address 轉成對應的 word index。 因此後面 `QueueDesc`、`QueueAvail`、`QueueUsed` 存下來的都不是 host pointer，而是 semu 之後拿來直接索引 `ram[]` 的位置：
 
@@ -379,7 +379,7 @@ static inline uint32_t vgpu_preprocess(virtio_gpu_state_t *vgpu, uint32_t addr)
    - `vring_create_virtqueue()`
    - 在 guest RAM 中分配 descriptor table, avail ring, used ring
 
-2. Linux 寫入 MMIO registers (通過 `writel`)，見 `vm_setup_vq`：
+2. Linux 寫入 MMIO registers（通過 `writel`），見 `vm_setup_vq`：
    - `writel(addr_low, base + 0x080)`：`QUEUE_DESC_LOW`
    - `writel(addr_high, base + 0x084)`：`QUEUE_DESC_HIGH`
    - `writel(addr_low, base + 0x090)`：`QUEUE_AVAIL_LOW  `
@@ -388,7 +388,7 @@ static inline uint32_t vgpu_preprocess(virtio_gpu_state_t *vgpu, uint32_t addr)
    - `writel(addr_high, base + 0x0a4)`：`QUEUE_USED_HIGH`
    - `writel(1, base + 0x044)`：`QUEUE_READY`
 
-3. SEMU 接收 MMIO write (`virtio_xxx_reg_write`)
+3. SEMU 接收 MMIO write（`virtio_xxx_reg_write`)
    - `case QueueDescLow`：儲存 descriptor table 位址
    - `case QueueDriverLow`：儲存 available ring 位址
    - `case QueueDeviceLow`：儲存 used ring 位址
@@ -5075,7 +5075,6 @@ stride = ((width * bpp + 0x1f) >> 5) * sizeof (uint32_t);
 
 <details> <summary><span class = "yellow"><strong>展開 call graph</strong></span></summary>
 
-
 ```callgraph
 [virtio-gpu.c:242] virtio_gpu_resource_create_2d()
   ↓
@@ -5644,7 +5643,7 @@ Gallium Auxiliary
 這個問題的答案，我並沒有找到，spec 裡面也沒寫，但是就我個人推測，由於 vgpu 2d 是一個相對 legacy 的協議，主要都是在 3D 的部分，因此他們都是直接基於現有的 code 直接假設 guest 使用的是一樣的解讀方式  
 
 ::: tip  
-一開始我以為 qemu 所計算的 stride 是需要跟 kernel 那邊開 buffer 時計算的 stride 相等，因此花了很多時間在翻閱 kernel 建立 buffer 部分的 code，但是花了一段時間後我發現 kernel 只有 dumb buffer 的路徑下才會計算 stride (bpp 綁定 32)，其他路徑都沒有計算 stride，所以卡了很久
+一開始我以為 qemu 所計算的 stride 是需要跟 kernel 那邊開 buffer 時計算的 stride 相等，因此花了很多時間在翻閱 kernel 建立 buffer 部分的 code，但是花了一段時間後我發現 kernel 只有 dumb buffer 的路徑下才會計算 stride（bpp 綁定 32），其他路徑都沒有計算 stride，所以卡了很久
 
 如上所述，這個問題的核心其實是「誰在解讀這塊記憶體的 row layout（stride/pitch）」。 後來我的理解是 guest kernel 不需要解讀 pixel rows，它主要是做：
 
@@ -5799,7 +5798,7 @@ GLAMOR 函式庫使用 OpenGL 實作了大部分的 2D 繪圖操作，用來達�
 
 接下來我們就以這個環境，觀察 2d resource 到底是如何被建立的，還有 guest program 到底是如何計算 stride 的
 
-首先如一開始所述，Resource 一詞代表的是裝置端可引用的一個「resource_id → 物件」映射，本身並不等於記憶體，本質是一個可以被 set_scanout / transfer / flush 指向的 handle。 真正的記憶體被稱為 Backing (storage)，在 2D 的情況下會利用 `VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING` 把一串 guest 的 memory entries（shmem pages 或 dma-buf sgt）與指定的 `resource_id` 綁定，讓裝置端能存取該 resource 的內容
+首先如一開始所述，Resource 一詞代表的是裝置端可引用的一個「resource_id → 物件」映射，本身並不等於記憶體，本質是一個可以被 set_scanout / transfer / flush 指向的 handle。 真正的記憶體被稱為 Backing（storage），在 2D 的情況下會利用 `VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING` 把一串 guest 的 memory entries（shmem pages 或 dma-buf sgt）與指定的 `resource_id` 綁定，讓裝置端能存取該 resource 的內容
 
 在 Linux DRM 角度，attach backing 要的是一個 GEM 物件對應的頁面/sgt（shmem pages 或 dma-buf sgt），kernel driver 會把它轉成 virtio 的 `virtio_gpu_mem_entry[]` 丟給 device
 
@@ -5860,7 +5859,7 @@ if (virtio_has_feature(vgdev->vdev, VIRTIO_GPU_F_RESOURCE_BLOB))
 2. stride 是如何計算的
 3. userspace process 是怎麼使用 ioctl 的
 
-#### 路徑 A: Dumb Buffer (DRM_IOCTL_MODE_CREATE_DUMB)
+#### 路徑 A：Dumb Buffer（DRM_IOCTL_MODE_CREATE_DUMB）
 
 給 KMS clients（modetest、weston、Xorg DDX）用於創建 framebuffer 的傳統 ABI，是 DRM framebuffer 使用的標準路徑：
 
@@ -6194,7 +6193,7 @@ bo->pitch = arg.pitch;      // 直接使用 kernel 回填的值
 
 兩者計算結果相同，皆為 `width * 4`。 至此，我們便可確認 vgpu 2d 最經典的情況下 qemu 的 stride 與 guest 使用的 stride 是一致的了
 
-#### 路徑 B: Resource Create IOCTL (DRM_IOCTL_VIRTGPU_RESOURCE_CREATE)
+#### 路徑 B：Resource Create IOCTL（DRM_IOCTL_VIRTGPU_RESOURCE_CREATE）
 
 較少見，在 userspace program 直接創建 2d resource 的情況下使用：
 
@@ -6255,7 +6254,7 @@ if (!params[param_3d_features].value)
 
 而我也看了一下 Xorg 的 code，也是沒找到有使用這個 ioctl 的地方，因此我認為，雖然 kernel 端的 `virtio_gpu_resource_create_ioctl()` 在 2D 模式下也可以處理此 ioctl（會做額外的限制檢查），但在純 2D 的環境下，此路徑實際上不會被走到（userspace process 自行呼叫除外）
 
-#### 路徑 C: Blob Resource Create IOCTL (DRM_IOCTL_VIRTGPU_RESOURCE_CREATE_BLOB)
+#### 路徑 C：Blob Resource Create IOCTL（DRM_IOCTL_VIRTGPU_RESOURCE_CREATE_BLOB）
 
 較新的 blob 資源創建路徑，由支援 blob 的 userspace process（mesa virgl、crosvm stack）呼叫：
 
@@ -6297,7 +6296,7 @@ Guest Linux Kernel - virtio-gpu driver
 
 與路徑 B 相同，我只有在 virgl winsys 的路徑中有看到使用了此 ioctl。 在 2D 模式下，kms-dri winsys 與 Xorg modesetting 都沒有使用此 ioctl，只用 dumb buffer
 
-#### 路徑 D: DMA-BUF Import (DRM_IOCTL_PRIME_FD_TO_HANDLE)
+#### 路徑 D：DMA-BUF Import（DRM_IOCTL_PRIME_FD_TO_HANDLE）
 
 這是跨設備/跨程序共享 buffer 的路徑：
 
@@ -6393,9 +6392,9 @@ DMA-BUF Import 行為總結：
 
 | 場景 | `virtgpu_gem_prime_import` 行為 |
 |-----|--------------------------------|
-| 純 2D (無 blob) | 退回到 `drm_gem_prime_import()`，**不創建** virtio-gpu resource |
+| 純 2D（無 blob） | 退回到 `drm_gem_prime_import()`，**不創建** virtio-gpu resource |
 | 2D + blob | 調用 `virtio_gpu_cmd_resource_create_blob()`，**會創建** resource |
-| 3D (virgl) | 退回到 `drm_gem_prime_import()`，**不創建** virtio-gpu resource |
+| 3D（virgl） | 退回到 `drm_gem_prime_import()`，**不創建** virtio-gpu resource |
 
 > **注意**：分流條件為 `!vgdev->has_resource_blob || vgdev->has_virgl_3d`。 在某些版本/配置下，import 可能退回到通用 prime import，但在 guest blob 模式下，`virtgpu_dma_buf_init_obj()` 會走 `RESOURCE_CREATE_BLOB`
 
@@ -6515,7 +6514,7 @@ Stride 來源：
 1. 這個 ioctl 只做 fd → handle 轉換，不計算 stride
 2. stride 來自「導出這個 buffer 的那一方」
    - 可能是另一個 GPU driver
-   - 可能是外部 allocator (如 minigbm)
+   - 可能是外部 allocator（如 minigbm）
    - 通過 `winsys_handle` 結構傳遞
 
 #### 小節 & code link
@@ -6553,10 +6552,10 @@ Wayland 我沒有去看，但以目前的實驗環境來說，我認為這個推
 - [virtgpu_plane.c](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_plane.c) - Plane 更新與 scanout 設置
 - [virtgpu_plane.c:232](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_plane.c#L232) - `virtio_gpu_primary_plane_update()`
 - [virtgpu_plane.c:157](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_plane.c#L157) - `virtio_gpu_update_dumb_bo()`
-- [virtgpu_plane.c:198](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_plane.c#L198) - `virtio_gpu_resource_flush()` (plane 層)
+- [virtgpu_plane.c:198](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_plane.c#L198) - `virtio_gpu_resource_flush()` （plane 層）
 - [virtgpu_display.c](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_display.c) - Display/CRTC 管理
 - [virtgpu_display.c:128](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/gpu/drm/virtio/virtgpu_display.c#L128) - `virtio_gpu_crtc_atomic_flush()`
-- [virtio_ring.c:2485](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/virtio/virtio_ring.c#L2485) - `virtqueue_notify()` (通用 virtqueue 操作)
+- [virtio_ring.c:2485](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/virtio/virtio_ring.c#L2485) - `virtqueue_notify()` （通用 virtqueue 操作）
 - [virtio_pci_common.c:51](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/virtio/virtio_pci_common.c#L51) - `vp_notify()` (virtio-pci notify callback)
 - [virtio_mmio.c:264](https://github.com/torvalds/linux/tree/0f61b1860cc3f52aef9036d7235ed1f017632193/drivers/virtio/virtio_mmio.c#L264) - `vm_notify()` (virtio-mmio notify callback)
 
@@ -6616,7 +6615,7 @@ Wayland 我沒有去看，但以目前的實驗環境來說，我認為這個推
 - [u_format.c:48](https://gitlab.freedesktop.org/mesa/mesa/-/tree/f9c646670b9d1f373ec330b9f539f94de7ed31e4/src/gallium/auxiliary/util/u_format.c#L48) - `util_copy_rect()`
 - [u_format.h:990](https://gitlab.freedesktop.org/mesa/mesa/-/tree/f9c646670b9d1f373ec330b9f539f94de7ed31e4/src/gallium/auxiliary/util/u_format.h#L990) - `util_format_get_stride()`
 
-##### Virglrenderer (3D/Virgl 路徑)
+##### Virglrenderer（3D/Virgl 路徑）
 
 - [virglrenderer.c:125](https://gitlab.freedesktop.org/virgl/virglrenderer/-/tree/960bd6674a25a438da2aac8a/src/virglrenderer.c#L125) - `virgl_renderer_resource_create()`
 - [virglrenderer.c:81](https://gitlab.freedesktop.org/virgl/virglrenderer/-/tree/960bd6674a25a438da2aac8a/src/virglrenderer.c#L81) - `virgl_renderer_resource_create_internal()`
@@ -6666,7 +6665,7 @@ Wayland 我沒有去看，但以目前的實驗環境來說，我認為這個推
 
 如上方所述，只有 vgpu DRM ioctl 會進到 QEMU，而 **Softpipe 的 draw call 不會直接產生 virtio-gpu 命令**，只有在 Xorg modesetting 在更新 scanout 時，才會透過 DRM/virtio-gpu 命令與 QEMU 同步：
 
-#### OpenGL (Softpipe) 路徑：完全在 Guest 內處理
+#### OpenGL（Softpipe） 路徑：完全在 Guest 內處理
 
 <details> <summary><span class = "yellow"><strong>展開 call graph</strong></span></summary>
 
@@ -7027,7 +7026,7 @@ Quad Pipeline
 
 Softpipe 創建的 texture/buffer 有兩種：
 
-1. **Display Target** (`PIPE_BIND_DISPLAY_TARGET`)：通過 winsys 創建，最終會觸發顯示更新
+1. **Display Target** (`PIPE_BIND_DISPLAY_TARGET`）：通過 winsys 創建，最終會觸發顯示更新
 2. **普通 Texture**：使用 `align_malloc()` 在 Guest 記憶體中分配，不會進到 QEMU
 
 ```

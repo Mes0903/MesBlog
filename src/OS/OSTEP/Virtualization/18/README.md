@@ -38,11 +38,7 @@ Section 18~20 中縮寫很多，這邊統整一下：
 
 為了讓該方法看起來更清晰，我們用一個簡單例子來說明。 Figure 18.1 展示了一個只有 64 bytes 的位址空間，有 4 個 16 bytes 的 virtual page（0、1、2、3）：
 
-<div class = "center-column">
-
 ![](image/18-1.png)
-
-</div>
 
 真實的位址空間肯定大得多。 通常 32 bits 的系統有 4GB 的位址空間，更不用說現在還有 64 bits 的系統。 在本書中，我們會透過一些例子讓大家更容易理解
 
@@ -84,19 +80,11 @@ movl <virtual address>, %eax
 
 對於這個例子，因為 process 的 virtual address space 是 64 bytes 的，需要 6 個 bit 才能表達（$2^6 = 64$），因此虛擬位址的形式如下：
 
-<div class = "center-column">
-
 ![](image/VPN.png)
-
-</div>
 
 在該圖中，`Va5` 是虛擬位址的最高位，`Va0` 是最低位。 因為我們知道 virtual page 的大小（16 bytes），所以可以進一步劃分虛擬位址：
 
-<div class = "center-column">
-
 ![](image/VPN-2.png)
-
-</div>
 
 此時需要有方法讓我們能表達指定的 virtual page。 位址的前 2 位就是拿來做這件事的。 我們用 2 bits 來表示 VPN，其餘的 bit 用來表示該 page 內的哪個 bytes，在這個例子中其佔 4 bits，我們稱之為偏移量
 
@@ -108,21 +96,13 @@ movl 21, %eax
 
 `21` 的二進制形式是 `010101`，看看它是如何分解成 VPN 與 offset 的：
 
-<div class = "center-column">
-
 ![](image/VPN-3.png)
-
-</div>
 
 因此，虛擬位址 `21` 位於 virtual page 1（`01`）內的第 5 個（`0101`）bytes 處
 
 通過 VPN，我們現在可以透過查找 page table，以得到 virtual page 1 所在的 page frame。 在上面的 page table 中，physical frame number（PFN）是 7（二進制 `111`）。 因此，我們可以通過用 PFN 替換 VPN 來轉譯此虛擬位址，然後將載入操作發送給實體記憶體：
 
-<div class = "center-column">
-
 ![](image/18-3.png)
-
-</div>
 
 ::: info  
 PFN 有時也稱 physical page number，簡記為 PPN
@@ -159,11 +139,7 @@ page table 可以變得非常大，比我們之前討論過的 small segment tab
 
 Figure 18.4 展示了 OS 記憶體中的 page table。 後面我們會看到，很多 OS 記憶體本身都可以虛擬化，因此 page table 可以儲存在 OS 的虛擬記憶體中（甚至可以交換到硬碟上）
 
-<div class = "center-column">
-
 ![](image/18-4.png)
-
-</div>
 
 ## 18.3 What’s Actually In The Page Table?
 
@@ -197,11 +173,7 @@ page table 就是一種資料結構，用於將虛擬位址映射到物理位址
 
 Figure 18.5 是一個來自 x86 架構的 PTE 範例：
 
-<div class = "center-column">
-
 ![](image/18-5.png)
-
-</div>
 
 它包含
 - 一個存在位（P）  
@@ -270,7 +242,7 @@ else
 ```
 
 ::: tip 
-原文中這段 code 是張圖 — Figure 18.6: Accessing Memory With Paging
+原文中這段 code 是張圖 — Figure 18.6：Accessing Memory With Paging
 :::
 
 這些步驟做完後硬體就可以從記憶體中獲取所需的資料，並將其放入暫存器 `eax` 了。 至此 process 便成功從記憶體中載入了一個值
@@ -347,11 +319,7 @@ page table 的確切結構要麽由硬體（舊系統）決定，要麽由 OS（
 
 Figure 18.7 展示了前 5 次循環的過程：
 
-<div class = "center-column">
-
 ![](image/18-7.png)
-
-</div>
 
 - 最下方的圖表用黑色方塊顯示指令記憶體的存取情形。 y 軸表示記憶體位址，其中左側是虛擬位址，右側是物理位址
 - 中間的圖表則用深灰色方塊表示對陣列的存取。 一樣虛擬位址在左側，物理位址在右側
@@ -375,9 +343,9 @@ Figure 18.7 展示了前 5 次循環的過程：
 
 ## References
 
-- [KE+62] One-level Storage System by T. Kilburn, D.B.G. Edwards, M.J. Lanigan, F.H. Sumner. IRE Trans. EC-11, 2, 1962. Reprinted in Bell and Newell, Computer Structures: Readings and Examples. McGraw-Hill, New York, 1971. Atlas 首度提出將記憶體劃分為固定大小 page 的概念，某種意義上來說，它是現代記憶體管理技術的雛形
+- [KE+62] One-level Storage System by T. Kilburn, D.B.G. Edwards, M.J. Lanigan, F.H. Sumner. IRE Trans. EC-11, 2, 1962. Reprinted in Bell and Newell, Computer Structures：Readings and Examples. McGraw-Hill, New York, 1971. Atlas 首度提出將記憶體劃分為固定大小 page 的概念，某種意義上來說，它是現代記憶體管理技術的雛形
 
-- [I09] Intel 64 and IA-32 Architectures Software Developer’s Manuals. Intel, 2009. 網址：http://www.intel.com/products/processor/manuals 特別推薦閱讀 Volume 3A: System Programming Guide Part 1 和 Volume 3B: System Programming Guide Part 2
+- [I09] Intel 64 and IA-32 Architectures Software Developer’s Manuals. Intel, 2009. 網址：http://www.intel.com/products/processor/manuals 特別推薦閱讀 Volume 3A：System Programming Guide Part 1 和 Volume 3B：System Programming Guide Part 2
 
-- [L78] The Manchester Mark I and Atlas: A Historical Perspective by S. H. Lavington. Communications of the ACM, Volume 21:1, January 1978. 本文回顧了幾個重要電腦系統的發展歷史。我們在美國有時會忘記，許多嶄新的概念其實來自海外
+- [L78] The Manchester Mark I and Atlas：A Historical Perspective by S. H. Lavington. Communications of the ACM, Volume 21：1, January 1978. 本文回顧了幾個重要電腦系統的發展歷史。我們在美國有時會忘記，許多嶄新的概念其實來自海外
 

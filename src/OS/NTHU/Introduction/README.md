@@ -14,31 +14,31 @@ order: 1
 
 「作業系統（英語：Operating System，縮寫：OS）是一組主管並控制電腦操作、運用和執行硬體、軟體資源和提供公共服務來組織使用者互動的相互關聯的系統軟體程式」── [wiki](https://zh.wikipedia.org/wiki/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F)
 
-簡單來說就是一個管理電腦的系統程式，是使用者和電腦硬體的介面 (interface)
+簡單來說就是一個管理電腦的系統程式，是使用者和電腦硬體的介面（interface）
 
 ### Computer System
 
 整個電腦系統主要可以分成四個部分：硬體、作業系統、應用程式和使用者，這邊先對它們做個簡單的介紹，但這些不是定義，只是一個描述
 
-+ 使用者(User)
++ 使用者（User）
     
     使用者可以是人、機器或其他的電腦，只要是可以操控這台電腦的都可以算
     
-+ 應用程式(Application)
++ 應用程式（Application）
 
     能幫助使用者解決問題的軟體都可以算，像是 Browser、Compiler 或一般的 Text Editor 都算
     
-+ 硬體(Hardware)
++ 硬體（Hardware）
 
-    能夠拿來給我們操作，做運算的硬體，因此硬體在 OS 這邊我們習慣稱它們回資源 (resources)，我們不在意它是透過哪種硬體提供的，只在意它能夠提供哪種資源，可以怎麼運用它
+    能夠拿來給我們操作，做運算的硬體，因此硬體在 OS 這邊我們習慣稱它們回資源（resources），我們不在意它是透過哪種硬體提供的，只在意它能夠提供哪種資源，可以怎麼運用它
     
-+ 作業系統(Operating System)
++ 作業系統（Operating System）
 
-    能夠幫助我們「控制(control)」和「協調(coordinate)」資源的系統軟體
+    能夠幫助我們「控制（control）」和「協調（coordinate）」資源的系統軟體
     
-    控制(control) 指的大概就是 Device Driver，能夠幫助我們去控制硬體的，重點在協調(coordinate)，怎麼樣去協調使用者，分配資源，是 OS 裡面比較複雜的部份
+    控制（control） 指的大概就是 Device Driver，能夠幫助我們去控制硬體的，重點在協調（coordinate），怎麼樣去協調使用者，分配資源，是 OS 裡面比較複雜的部份
     
-    因此我們也可以說 OS 是幫忙分配資源的軟體(resource allocator)，像是 memory management 會幫忙分配記憶體，file system 會幫忙分配 disk block 等等
+    因此我們也可以說 OS 是幫忙分配資源的軟體（resource allocator），像是 memory management 會幫忙分配記憶體，file system 會幫忙分配 disk block 等等
     
     因此 OS 比較常見的定義是一個 resource allocator 和 control program，我們也稱它為 kernel，是一個在電腦內部隨時都在執行的程式，前面兩個名詞可以不用特定去記，因為只是一個比較常見的定義，但其實沒有很確切的定義 OS 是什麼，<span class="yellow">但 kernel 這個名詞很重要，要記一下</span>
 
@@ -48,11 +48,7 @@ order: 1
 
 我們看一個例子：
 
-<div class = "center-column">
-
 ![](image/1.png)
-
-</div>
 
 最下面是硬體，上面則是我們寫的程式，程式大致上可以分成「和作業系統相關的」與「和作業系統無關的」，也就是圖上的 user mode 與 kernel mode，這在後面的章節會再提更多
 
@@ -96,7 +92,7 @@ OS 主要的考量、需求有二：
 
     如 Android、iOS、Windows10 Mobile、Ubuntu Touch 等等
 
-+ Embedded OS (嵌入式系統)
++ Embedded OS（嵌入式系統）
 
     Embedded 的範圍非常廣泛，像是物聯網上面的 Device 形形色色，因此在上面的 OS 就需要非常有彈性，且能夠調整，但當然也有一些 OS 是綁在那個硬體上的
     
@@ -108,11 +104,7 @@ OS 主要的考量、需求有二：
 
 電腦系統有很多不同的 Hardware，我們需要把它串起來，你把主機打開來可以看見它有 bus、線，而作業系統的目的就是要控制、協調這些硬體的使用，可以看看下面這張圖：
 
-<div class = "center-column">
-
 ![](image/2.png)
-
-</div>
 
 簡單來說就會長上圖最下面那樣，執行程式時 instruction 是 run 在 cpu 上的，需要用到的 data 會在 memory 裡面，最後可能寫到某個 Device 上面，看要儲存還是輸出之類的，這些是 control 的部分
 
@@ -122,15 +114,11 @@ OS 主要的考量、需求有二：
 
 這是一個 OS 基本運作的例子：
 
-<div class = "center-column">
-
 ![](image/3.png)
-
-</div>
 
 這邊 Cpu 想對一個 I/O Device，像是 Disk 做動作，例如讀寫資料
 
-如果 Cpu 想要把資料寫過去，那它會需要一個 Device Controller，這是一個硬體，它是一個最 low-level 能夠控制 Device(例如 Disk 的磁頭轉動) 的硬體，每個 Device Controller 會負責自己特定的 Device
+如果 Cpu 想要把資料寫過去，那它會需要一個 Device Controller，這是一個硬體，它是一個最 low-level 能夠控制 Device（例如 Disk 的磁頭轉動） 的硬體，每個 Device Controller 會負責自己特定的 Device
 
 而因為資料需要在 Device Controller 上流動，因此 Device Controller 一定會有 buffer，資料會先寫到這上面再寫出去，因為 I/O Device 相較於 cpu 很慢，如果沒有這個 Buffer，代表我們要直接把資料從 Device 上 Copy 到 Memory 裡，這個需要很久，因此 cpu 一定會 idle
 
@@ -184,11 +172,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 用這張圖來看：
 
-<div class = "center-column">
-
 ![](image/4.png)
-
-</div>
 
 假設有了 Interrupt，對於 I/O 而言就會像圖上這樣。cpu 在高電位代表他正在做他該做的事，在低電位代表他去處理別的程式的事情；而 I/O 則是反過來的，高電位代表 idle，低電位代表正在傳輸，而且花的時間可能會很長
 
@@ -198,11 +182,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 那我們來看個例子，情境是使用者要執行 `scanf`，而最終當然會到最底層去 call 到 driver：
 
-<div class = "center-column">
-
 ![](image/5.png)
-
-</div>
 
 一開始 cpu 會下指令給 controller，讓它開始搬資料，cpu 可能還會給個 byte 的長度，像是 100 bytes，然後 controller 搬完後再去通知 cpu
 
@@ -230,11 +210,7 @@ while ( peek( OUT_STATUS ) != 0 );    // busy waiting
 
 那我們現在來仔細看一下他的流程，首先是 Signal：
 
-<div class = "center-column">
-
 ![](image/6.png)
-
-</div>
 
 這整條是 memory，下面的是 user 的 Program，上面的是 OS。 
 
@@ -244,7 +220,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 所以當妳在裝 Driver 的時候，妳的 Device 會插到電腦的某個 port，這個 port 是已經燒死的，有一個 Signal number，會對應到某個欄位，而妳把 Driver 裝進去時就會 Override 這個欄位，如此一來妳的 Device 發出 Signal 後就會去執行對應的程式碼了
 
-拿到 function pointer 後，它就可以被重新導向那個 function 裡面去做應該做的事，這個處理 service function call 的流程我們叫它 Interrupt Service Routine (ISR)
+拿到 function pointer 後，它就可以被重新導向那個 function 裡面去做應該做的事，這個處理 service function call 的流程我們叫它 Interrupt Service Routine（ISR）
 
 最後還要 return 回原本正在執行的程式，所以當初發出 Interrupt 時其實會記錄當初 interrupted instruction 的 address，也就是 program counter 的位址，所以他 restore 後就可以知道等等要從哪裡繼續開始
 
@@ -254,11 +230,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 接下來是 Trap，一樣看一下它的流程：
 
-<div class = "center-column">
-
 ![](image/7.png)
-
-</div>
 
 跟前面不一樣的是，Trap 是 Program 主動需要 OS 幫忙的，所以會是一個 program 裡用了某個 system call，或是寫了某些不合法的操作，像是訪問了陣列大小以外的元素，或某個數字除以 0 了，造成 OS 需要來幫你處理後續
 
@@ -282,21 +254,17 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 接下來要講電腦資料讀取的基本方式，大家應該都很熟悉了，電腦資料在儲存其實是一個 Hierarchy 的架構：
 
-<div class = "center-column">
-
 ![](image/8.png)
 
-</div>
+上面三個分別為暫存器、快取、主記憶體，而後面的則統稱為次級儲存裝置（Secondary Storage）。 越上層的速度越快，容量越小，反之越下層的速度越慢，但容量越大，價格也比較便宜
 
-上面三個分別為暫存器、快取、主記憶體，而後面的則統稱為次級儲存裝置 (Secondary Storage)。 越上層的速度越快，容量越小，反之越下層的速度越慢，但容量越大，價格也比較便宜
-
-這些只是傳統上的分類，現在有很多新的裝置會插在中間，但一樣可以用速度、價格、容量、揮發性(Volatility) 來看
+這些只是傳統上的分類，現在有很多新的裝置會插在中間，但一樣可以用速度、價格、容量、揮發性（Volatility） 來看
 
 ### Main memory
 
 儲存這邊最重要的一個分隔點就是主記憶體，主記憶體是 cpu 能直接訪問的最後一層了，它上面可以有很多層，像是 register、cache，看妳怎麼設計，但這些都只是 copy 而已，最後這些資料還是已主記憶體上的資料為主
 
-它主要的技術就是 Random Access Memory(RAM)，可以分為兩種：
+它主要的技術就是 Random Access Memory（RAM），可以分為兩種：
 
 1. DRAM (Dynamic RAM)
     
@@ -338,11 +306,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 這邊看一下 Disk，他不是電子式而是機械式的，它會有讀寫的手臂，手臂上面有很多磁頭可以同時讀寫多個磁盤，磁盤有很多個，可以旋轉：
 
-<div class = "center-column">
-
 ![](image/9.png)
-
-</div>
 
 所以可以看見讀取的速度和資料在哪裡就有關係了，如果資料剛好在磁頭的對面，妳就需要轉半圈才會讀到，這樣就會有多一個 access 的時間
 
@@ -352,11 +316,7 @@ OS 收到的 Signal 會有一個 Signal number，然後 OS 再透過這個 numbe
 
 而電腦的資料通常最終會儲存在最慢的 Device 裡面，因此我們會把資料 copy 到比較快的 Device 上面，用到的頻率越高，我們就會把它存到越上層，所以才會需要有 L1、L2、L3 的 Cache，加速 cpu 的計算：
 
-<div class = "center-column">
-
 ![](image/10.png)
-
-</div>
 
 注意是 copy，不是搬移，如果是搬移，我們不稱它為 Cache。且 Copy 過去的資料是暫時性的資料，我們可以隨時砍掉它且不應該造成儲存資料的遺失
 
@@ -394,13 +354,9 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
     來自於 OS 的 Program，在這個 mode 下執行的程式一定是 OS 的程式碼，但可能是使用者透過 system call 來讓 OS 做的
 
-這兩個 mode 在可能就是一個 bit(0 or 1)，我們前面提過，OS 要做任何事都是透過 system call，而 system call 需要透過 Interrupt
-
-<div class = "center-column">
+這兩個 mode 在可能就是一個 bit（0 or 1），我們前面提過，OS 要做任何事都是透過 system call，而 system call 需要透過 Interrupt
 
 ![](image/11.png)
-
-</div>
 
 平常某個 Program 在執行時是在 User mode 底下，而當它送 Interrupt 出來後那個 bit 就會 flip，進到 kernel mode，因為只要一發 Interrupt 就代表你 call 了 system call，而 system call 就會執行 OS 的程式
 
@@ -432,11 +388,7 @@ Protection 指的不是 Security，而是指很多程式、使用者同時在使
 
 檢查的流程大概就長這樣：
 
-<div class = "center-column">
-
 ![](image/12.png)
-
-</div>
 
 先去檢查存取的 address 有沒有大於 base address，再去看有沒有小於 base address + limit，都通過慈可以存取 memory
 

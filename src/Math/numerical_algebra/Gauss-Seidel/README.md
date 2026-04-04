@@ -12,19 +12,11 @@ order: 2
 
 上次我們用了 Jacobi's method，它操作起來長這樣：
 
-<div class = "center-column">
-
 ![](image/gs1.png)
-
-</div>
 
 然後我們就發現 $\vec x^{(k)}$ 裡的元素 $\vec x_1^{(k)}$, $\vec x_2^{(k)}$, ... , $\vec x_{i-1}^{(k)}$ 都已經被算出來了，那因為 $\vec x_j^{(k)}$ 會比 $\vec x_j^{(k-1)}$ 更準更接近解，所以我們可以把上面的公式換成這樣：
 
-<div class = "center-column">
-
 ![](image/gs2.png)
-
-</div>
 
 可以看見我把公式拆成了兩部分，前面那邊是已經算出來的，後面的是還沒算到的，以上面 $\vec x_3^{(k)}$ 的例子來說，$\vec x_1^{(k)}$、$\vec x_2^{(k)}$ 就是已經算出來的，$\vec x_3^{(k)}$、...、$\vec x_n^{(k)}$ 就是還沒算出來的值
 
@@ -34,23 +26,15 @@ order: 2
 
 上次我們把原本的矩陣分成 D、L、U：
 
-<div class = "center-column">
-
 ![](image/gs3.png)
-
-</div>
 
 那我們做了優化之後，可以把它寫成這樣：
 
-<div class = "center-column">
-
 ![](image/gs4.png)
-
-</div>
 
 那一樣我們要讓電腦去跑，所以寫個 pseudocode
 
-輸入(input)：n、矩陣A、rhs 向量 $\vec b$、初始猜測值(initial guess) $\vec {x_0}$、誤差(tolerance) TOL、最大跌代次數 $N_0$
+輸入（input）：n、矩陣A、rhs 向量 $\vec b$、初始猜測值（initial guess） $\vec {x_0}$、誤差（tolerance） TOL、最大跌代次數 $N_0$
 
 輸出：估計出來的 $\vec x$
 
@@ -66,17 +50,13 @@ $\quad$ $\vec {x_0} = x$
 
 ### Lemma7.18
 
-如果 T 的譜半徑($\rho(T)$) 小於 1，那麼會存在 $(I-T)^{-1} = I + T + T^2 + ... = \Sigma_{j=0}^{\infty}T^j$ 
+如果 T 的譜半徑（$\rho(T)$） 小於 1，那麼會存在 $(I-T)^{-1} = I + T + T^2 + ... = \Sigma_{j=0}^{\infty}T^j$ 
 
 你可以把它想像成一個公比小於 1 的等比數列 $x^j$，那麼它的和就是 $\Sigma_{j=0}^{\infty} x^j = 1 + x + x^2 + ... = \frac{1}{1-x}$
 
 證明：
 
-<div class = "center-column">
-
 ![](image/gs5.png)
-
-</div>
 
 ### Thm 7.19
 
@@ -84,8 +64,4 @@ $\quad$ $\vec {x_0} = x$
 
 證明：
 
-<div class = "center-column">
-
 ![](image/gs6.png)
-
-</div>

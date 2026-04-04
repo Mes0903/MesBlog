@@ -7,19 +7,27 @@ category: ROS1
 
 # ROS1 Tutorial Introduction
 
+<style>
+
+.img-w200px img {
+  width: 200px;
+}
+
+</style>
+
 此篇為中央大學數學系上課所用的 ROS 教材，若非修課生，Demo 部分需要注意一下自己的機器人設定。 若發現教材有誤，歡迎直接修改
 
 主要更新以 hackmd 為主：https://hackmd.io/@Mes/RosTutorial_Intro
 
 ## 什麼是 ROS?
 
-ROS 全名叫 Robot Operating System，但它其實是一種中介軟體(Middleware)，妳也可以說它是一個軟體框架(Software Framework)，所以他是一種抽象化的概念，不是應用程式，也不是作業系統
+ROS 全名叫 Robot Operating System，但它其實是一種中介軟體（Middleware），妳也可以說它是一個軟體框架（Software Framework），所以他是一種抽象化的概念，不是應用程式，也不是作業系統
 
 那它主要會幫我們連結各個軟體和零件之間的溝通，並且會提供一些 logging 的工具，那機器人的中介軟體有很多，像是 ROS、JAUS、Mira 等等
 
-<div class = "center-column">
+<div class="img-w200px">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ROS/ROS_Tutorial_Introduction/image/middleware.png" width="200px">
+![](image/middleware.png)
 
 </div>
 
@@ -31,11 +39,11 @@ ROS 全名叫 Robot Operating System，但它其實是一種中介軟體(Middlew
 
 然而當日子一久，機器人技術的規模和範圍不斷擴大，零件也越來越多，此時前面那位大神的 code 在別人手上可能就跑不起來了，因為零件不同
 
-這會造成一個問題，就算是同樣的功能的 code，由於每個人的零件不同，所以都還要再重寫一次，這就導致了代碼的重用性很低(重造輪子)，而且這類 code 的規模很大，而且還是需要從驅動層級開始寫的，因此非常不方便，且需要非常高的專業能力
+這會造成一個問題，就算是同樣的功能的 code，由於每個人的零件不同，所以都還要再重寫一次，這就導致了代碼的重用性很低（重造輪子），而且這類 code 的規模很大，而且還是需要從驅動層級開始寫的，因此非常不方便，且需要非常高的專業能力
 
 ### 框架
 
-因此就有人提出了框架的想法，什麼是框架? 框架是一種規則(思想)，其實就是某種半成品，框架提供了一個基礎的架構，就好像房子的地基和骨架一樣，必須配合妳自己寫的 code 才能生出一個完整的應用程式
+因此就有人提出了框架的想法，什麼是框架? 框架是一種規則（思想），其實就是某種半成品，框架提供了一個基礎的架構，就好像房子的地基和骨架一樣，必須配合妳自己寫的 code 才能生出一個完整的應用程式
 
 好處就是整個結構可以被<span class ="yellow">重複使用</span>，如果有了框架，那麼做東西就不需要再從頭建造了
 
@@ -47,45 +55,27 @@ ROS 全名叫 Robot Operating System，但它其實是一種中介軟體(Middlew
 
 ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理解一下簡單的主從式架構：
 
-<div class = "center-column">
+![（image source：[wikipedia](https://en.wikipedia.org/wiki/Client%E2%80%93server_model)）](image/p2p1.png)
 
-![](image/p2p1.png)
+客戶端（clients） 會去向伺服器請求資料，這邊這個伺服器裡面有很多資料，像是客戶的帳密、金額，或是你遊戲帳號裡面的寶物有哪些之類的。以早期的線上遊戲來說，每次客戶端有更改資料的動作時都會發送一個請求（request） 給伺服器，假設你打了怪，賺到了 10 元，它就會把這個資訊送到伺服器上，伺服器就會幫你記錄下來
 
-(image source：[wikipedia](https://en.wikipedia.org/wiki/Client%E2%80%93server_model))
-
-</div>
-
-客戶端(clients) 會去向伺服器請求資料，這邊這個伺服器裡面有很多資料，像是客戶的帳密、金額，或是你遊戲帳號裡面的寶物有哪些之類的。以早期的線上遊戲來說，每次客戶端有更改資料的動作時都會發送一個請求(request) 給伺服器，假設你打了怪，賺到了 10 元，它就會把這個資訊送到伺服器上，伺服器就會幫你記錄下來
-
-而如果拿網頁舉例子，像是 FB，妳點了某個人的個人頁面，妳就會向伺服器發送一個請求(request)，伺服器收到這個請求後就會知道妳要進入這個人的個人頁面，因此將妳導向這個人的個人頁面，妳就成功進去了
+而如果拿網頁舉例子，像是 FB，妳點了某個人的個人頁面，妳就會向伺服器發送一個請求（request），伺服器收到這個請求後就會知道妳要進入這個人的個人頁面，因此將妳導向這個人的個人頁面，妳就成功進去了
 
 因此伺服器的權限非常的大，並且可以處理非常多的東西
 
 但這會有一個問題，那就是如果發送請求的人非常多，且請求發送的非常頻繁，那麼伺服器的速度可能就會變得非常慢，甚至當機掛掉，DDoS 的原理就是這樣
 
-那如果 ROS 使用了主從式架構，很有可能也會有類似的問題，因此 ROS 使用的是 Peer-To-Peer (一種分散式系統架構)，Middleware 通常都會是分散式系統架構：
+那如果 ROS 使用了主從式架構，很有可能也會有類似的問題，因此 ROS 使用的是 Peer-To-Peer（一種分散式系統架構），Middleware 通常都會是分散式系統架構：
 
-<div class = "center-column">
+![（image source：[link](https://ithelp.ithome.com.tw/articles/10216158)）](image/p2p2.png)
 
-![](image/p2p2.png)
-
-(image source：[link](https://ithelp.ithome.com.tw/articles/10216158))
-
-</div>
-
-在這種架構下，每台電腦(節點)都同時是客戶端與伺服器端，所有人都負責儲存了全部或部分的所有資料，並且也都會處理收到的請求
+在這種架構下，每台電腦（節點）都同時是客戶端與伺服器端，所有人都負責儲存了全部或部分的所有資料，並且也都會處理收到的請求
 
 這樣做的優點是能夠擁有很好的平行處理能力，效能也會比較好，缺點是如果規模太大整個網路會很亂，且會很吃網路，但因為機器人的網路規模通常很小，所以不太會有這個問題，另一個缺點就是安全性，如果沒有做特別的處理，傳輸的文件可能會被動手腳，或是失真
 
 那 p2p 有一些變型，這邊舉三個例子，看下面這張圖：
 
-<div class = "center-column">
-
-![](image/p2p3.png)
-
-(image source：[link](https://www.researchgate.net/figure/P2P-architectures-at-a-glance-a-Centralized-architecture-b-Pure-P2P-architecture_fig2_332539196))
-
-</div>
+![（image source：[link](https://www.researchgate.net/figure/P2P-architectures-at-a-glance-a-Centralized-architecture-b-Pure-P2P-architecture_fig2_332539196)）](image/p2p3.png)
 
 上面這三個分別為
 
@@ -93,7 +83,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
     英文為 Centralized P2P architecture
         
-    + 有一個中心伺服器來幫忙連結溝通其他節點的訊息資料，並對這些請求做出回應 (但本身並不保存檔案)
+    + 有一個中心伺服器來幫忙連結溝通其他節點的訊息資料，並對這些請求做出回應（但本身並不保存檔案）
     + 節點負責處理、發布訊息資料，讓中心伺服器知道節點需要什麼檔案、資料，讓其他節點下載資源
     + 有 index 可以找到絕對地址
         
@@ -119,13 +109,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 那麼 ROS 的架構是第一種，Centralized P2P：
 
-<div class = "center-column">
-
-![](image/p2p4.png)
-
-(image source：RSL ROS Tutorial)
-
-</div>
+![（image source：RSL ROS Tutorial）](image/p2p4.png)
 
 我們會有一片樹梅派來跑 server 的 code，或是像我們一樣用主機來跑 server 的 code，然後各個零件能夠互相傳遞、存取資料
 
@@ -135,11 +119,11 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 #### Node
 
-在 ROS 裡面，P2P 架構裡面的一個節點我們叫他 Node，Node 是一個你跑起來的程序(Process)，一個完整的系統會有很多個 Node
+在 ROS 裡面，P2P 架構裡面的一個節點我們叫他 Node，Node 是一個你跑起來的程序（Process），一個完整的系統會有很多個 Node
 
-一個 Node 通常會是有單一功能的 Process，當然妳一個 Node 要有很多功能也可以，總之核心概念就是模組化(Modular Design)
+一個 Node 通常會是有單一功能的 Process，當然妳一個 Node 要有很多功能也可以，總之核心概念就是模組化（Modular Design）
 
-舉個例子，一個簡單的導航程式，裡面可能是有一個 Node 是操控雷達，一個 Node 操控馬達、輪子，一個 Node 計算自己的定位(Localization)，一個 Node 來計算路徑規劃，一個 Node 顯示圖形介面，等等
+舉個例子，一個簡單的導航程式，裡面可能是有一個 Node 是操控雷達，一個 Node 操控馬達、輪子，一個 Node 計算自己的定位（Localization），一個 Node 來計算路徑規劃，一個 Node 顯示圖形介面，等等
 
 所以你可以看見它其實就是很多個 Process 組合起來的，那麼這些 code 妳可以用 roscpp 或 rospy 來寫，好像還有其他另外支援的語言套件，但我只熟這兩個了
 
@@ -153,7 +137,7 @@ Master 是一個特殊的 Node，也就是我們前面所說的 Server，Master 
 
 上面有說一個完整的系統會有很多個 Node，那麼 <span class = "yellow">Node 間要傳遞資料需要靠 Messages 來溝通</span>
 
-Message 是一種資料結構，裡面會有 type field，type field 通常指的是一個基類(base class) 裡面的變數，這個變數會拿來當作子類的 type 來使用，舉個例子([來源](https://stackoverflow.com/questions/9147101/what-are-type-fields))：
+Message 是一種資料結構，裡面會有 type field，type field 通常指的是一個基類（base class） 裡面的變數，這個變數會拿來當作子類的 type 來使用，舉個例子（[來源](https://stackoverflow.com/questions/9147101/what-are-type-fields))：
 
 ```cpp
 #include <iostream>
@@ -201,7 +185,7 @@ int main() {
 
 上面的 `Pet::type` 就是一個 type field，在 Dog 這個子類裡面我們用 `type` 來當作了它的型態
 
-Messeage 裡面可以有標準的基本型態，整數、浮點數、布林值之類的，也可以是基本型態的陣列，且 Message 內可以包含巢狀類(nested class)
+Messeage 裡面可以有標準的基本型態，整數、浮點數、布林值之類的，也可以是基本型態的陣列，且 Message 內可以包含巢狀類（nested class）
 
 #### Topic
 
@@ -215,37 +199,21 @@ Message 在發布時我們會給它加上 Topic，妳可以把 Message 想像成
 
 於是在 ROS 裡面，發布 Message 出來的 Node 我們叫它 Publisher，接收 Message 的 Node 我們叫它 Subscriber，看看下面這張圖：
 
-<div class = "center-column">
-
 ![](image/pub_sub1.png)
-
-</div>
 
 Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱，例如規劃路徑的 Node 希望和雷達的 Node 拿掃到的資料，那麼規劃路徑的 Node 就是 Subscriber，雷達的 Node 則是 Publisher
 
 而 Message 裡面可能裝很多個整數的陣列，Topic 可能是「雷達資料」，以上方那個圖來說就是：
 
-<div class = "center-column">
-
 ![](image/pub_sub2.png)
-
-</div>
 
 而同一種 Topic 的 Message 也可以由不同的 Node 發布，也就是有不同的 Publisher 發布同樣 Topic 的 Message； 例如妳雷達有兩顆，而且妳為他們寫了兩個 Node，那麼這兩個 Node 都可以發布「雷達資料」這種 Topic 的 Message：
 
-<div class = "center-column">
-
 ![](image/pub_sub3.png)
-
-</div>
 
 同理，同一種 Topic 的 Message 也可以有不同的 Node 訂閱，有就是有不同的 Subscriber 訂閱同樣 Topic 的 Message； 例如規劃路徑的 Node 需要雷達的資料，建地圖的 Node 也需要雷達的資料，那這兩個 Node 都可以訂閱「雷達資料」這種 Topic 的 Message
 
-<div class = "center-column">
-
 ![](image/pub_sub4.png)
-
-</div>
 
 如果一個 Node 同時在收資料與發資料，那這個 Node 就同時是 Subcriber 與 Publisher
 
@@ -253,21 +221,17 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 實際上在傳遞資訊時還會需要 Master 來幫忙 Node 之間的通訊，那麼 ROS 的訊息傳送時是使用 TCP/IP 協定的連線，且一旦兩個訊息接起來後就不會再經過 Master 了：
 
-<div class = "center-column">
-
 ![](image/pub_sub5.png)
 
-</div>
-
-一開始 Publisher 會先去向 Master 註冊，然後 Publisher 就會開始發布它的訊息(封包)；而當 Subscriber 需要相對應的訊息時就會去詢問 Master，那當它訂閱到那個 Topic 時它們就建立了連線，不再透過 Master 來傳遞資訊
+一開始 Publisher 會先去向 Master 註冊，然後 Publisher 就會開始發布它的訊息（封包）；而當 Subscriber 需要相對應的訊息時就會去詢問 Master，那當它訂閱到那個 Topic 時它們就建立了連線，不再透過 Master 來傳遞資訊
 
 所以 Master 會負責 Node 之間的通訊，他們之間是 TCP/IP 協定的連線
 
-而因為 Middleware 會做序列化(Serialization)，所以你 C\+\+ 寫出來的 Node 和 Python 寫出來的 Node 也可以溝通
+而因為 Middleware 會做序列化（Serialization），所以你 C\+\+ 寫出來的 Node 和 Python 寫出來的 Node 也可以溝通
 
 #### Package
 
-Package 是一個 ROS 軟體的基本單位，Package 會有裡面會有很多個 Node，然後可能會包含有相關的函式庫、資料集(dataset)、配置文件(configuration file)，或其他能幫助你整合、規劃專案的檔案
+Package 是一個 ROS 軟體的基本單位，Package 會有裡面會有很多個 Node，然後可能會包含有相關的函式庫、資料集（dataset）、配置文件（configuration file），或其他能幫助你整合、規劃專案的檔案
 
 換句話說，Package 是妳在建立和發布專案時最基本的單位，因為妳的專案很可能是程式與程式之間在溝通的，妳把那些 Node 整合起來，配合妳自己寫的函式庫，蒐集的資料等等的，整個包裝起來成一個能讓別人使用的程式，這樣的東西就是一個 Package
 
@@ -281,11 +245,7 @@ Ubuntu 是基於 Debian，以桌面應用為主的 Linux 發行版。Ubuntu 有�
 
 ### Terminal & CLI
 
-<div class = "center-column">
-
 ![](image/terminal.png)
-
-</div>
 
 #### linux 基本指令 ：
 
@@ -405,11 +365,7 @@ rosrun turtlesim turtlesim_node
 rosrun turtlesim turtle_teleop_key
 ```
 
-<div class = "center-column">
-
 ![](image/robot.png)
-
-</div>
 
 ### Minibot & Turtlebot
 
@@ -423,21 +379,13 @@ rosrun turtlesim turtle_teleop_key
 gedit ~/.bashrc
 ```
 
-<div class = "center-column">
-
 ![](image/setting1.png)
-
-</div>
 
 ```bash
 source ~/.bashrc
 ```
 
-<div class = "center-column">
-
 ![](image/setting2.png)
-
-</div>
 
 #### 連線
 
@@ -479,16 +427,11 @@ roslaunch teleop teleop_key.launch model:=turtlebot
 gedit ~/.bashrc
 ```
 
-找到以下這兩行(139行以及140行)
+找到以下這兩行（139行以及140行）
 
 可以看到現在預設是使用 minibot，你若是想預設 turtlebot 只要將 139 行反註解、140 行註解掉即可
 
-<div class = "center-column">
-
 ![](image/setting3.png)
-
-</div>
-
 
 <!-- ### minibot
 ```bash
@@ -524,11 +467,7 @@ roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 
 #### 你一定會遇到的問題
 
-<div class = "center-column">
-
 ![](image/setting4.png)
-
-</div>
 
 這代表你電腦中儲存的 Key 跟機器人上的不符合，你就執行他提示的指令
 
@@ -544,7 +483,7 @@ ssh-keygen -f ...
 
 catkin 是一個開發環境整合套件，C\+\+ 中的 make 幫我們做到在編譯這個層級做整合。在不使用 IDE 的情況下，我們如果要編譯一個 c code 或一個 c project 時需要手動透過指令執行，而當這你的 code import 的函式庫很多或你的 project 很大時需要輸入的指令就會變得十分的複雜
 
-此時 make 這個套件就可以讓我們透過設定一個簡單的 makefile 讓編譯器自動地去建構你所撰寫的project。makefile 會將程式分成好幾個模組，根據裡面的目標 (target)、規則 (rule) 和檔案的修改時間進行判斷哪些需要重新編譯，可以省去大量重複編譯的時間，這在大型程式中尤為有用
+此時 make 這個套件就可以讓我們透過設定一個簡單的 makefile 讓編譯器自動地去建構你所撰寫的project。makefile 會將程式分成好幾個模組，根據裡面的目標（target）、規則（rule） 和檔案的修改時間進行判斷哪些需要重新編譯，可以省去大量重複編譯的時間，這在大型程式中尤為有用
 
 而 catkin 這個套件則在 make 的基礎上加入了空間上的整合，讓你整個專案的開發有個統一的格式
 
@@ -558,21 +497,13 @@ catkin 大致上把一個工作區劃分為以下三個區塊
 - devel  
   編譯完的執行檔跟一些環境變數設定檔都會放置在這
 
-<div class = "center-column">
-
 ![](image/catkin1.png)
-
-</div>
 
 後兩個路徑由 catkin 系統自動生成、管理，我們日常的開發一般不會去涉及，而主要用到的是 src 資料夾，我們寫的 ROS 程式、網上下載的 ROS 原始碼包都存放在這裡
 
 在編譯時，catkin 編譯系統會遞迴的查詢和編譯 `src/` 下的每一個原始碼包。因此你也可以把幾個原始碼包放到同一個資料夾下，如下圖所示：
 
-<div class = "center-column">
-
 ![](image/catkin2.png)
-
-</div>
 
 #### package結構
 
@@ -597,12 +528,12 @@ catkin_create_pkg test_pkg roscpp rospy std_msgs
 
 建立一個 package 需要在 `catkin_ws/src` 下，用到 `catkin_create_pkg` 命令，用法是：`catkin_create_pkg package depends`，其中 `package` 是包名，`depends` 是依賴的包名，可以依賴多個軟體包
 
-例如，新建一個 package 叫做 test_pkg，依賴 roscpp、rospy、std_msgs(常用依賴)
+例如，新建一個 package 叫做 test_pkg，依賴 roscpp、rospy、std_msgs（常用依賴）
 新建完後就可在 `src` 中撰寫你的程式碼嘍
 
 #### 編譯package
 
-回到 catkin workspace(catkin_ws) 這層後輸入
+回到 catkin workspace（catkin_ws） 這層後輸入
 
 ```bash
 catkin_make
@@ -610,11 +541,7 @@ catkin_make
 
 他就會自動幫你編譯所有 package
 
-<div class = "center-column">
-
 ![](image/catkin3.png)
-
-</div>
 
 編譯完後記得執行以下指令加入環境變數，不然你在 Terminal 上找不到你要執行的 code 喔
 
@@ -659,7 +586,7 @@ int main(int argc, char** argv){
 ```
 
 cpp 檔不像 python 檔一樣可以直接被執行，需要經過編譯以後才能轉成執行檔，因此我們需要修改 `beginner_tutorial` 內的 CMakeLists.txt ，為其設定好連結的函式庫
-由於他的 CMakeLists.txt 太長了，在此擷取片段做為參考:
+由於他的 CMakeLists.txt 太長了，在此擷取片段做為參考：
 
 ```bash
 cd ~/catkin_ws/src/<your_pkg> # 到你的project中
@@ -680,9 +607,9 @@ target_link_libraries(file_name ${catkin_LIBRARIES})
 //...下略
 ```
 
-修改完 CMakeLists.txt 後，接著須回到工作區的根目錄，也就是 `/catkin_ws` 中再執行一次`catkin_make`，他就會自己幫我們編譯好 `file_name.cpp` 的執行檔(`file_name`)囉!
+修改完 CMakeLists.txt 後，接著須回到工作區的根目錄，也就是 `/catkin_ws` 中再執行一次`catkin_make`，他就會自己幫我們編譯好 `file_name.cpp` 的執行檔（`file_name`）囉!
 
-接下來修改 `file_name.cpp`，一樣新增一個迴圈，讓他在程式執行期間每秒印出一個 hello world出來，程式碼如下:
+接下來修改 `file_name.cpp`，一樣新增一個迴圈，讓他在程式執行期間每秒印出一個 hello world出來，程式碼如下：
 
 ```c
 #include <ros/ros.h>                             // 引用 ros.h 檔

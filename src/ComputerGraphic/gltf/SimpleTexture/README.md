@@ -107,21 +107,11 @@ category: computer-graphic
 
 實際的貼圖圖片是名為 `"testTexture.png"` 的 PNG 圖檔，見下圖 13a：
 
-<div class = "center-column">
-
-![](image/testTexture.png)
-(Image 13a: The image for the simple texture example.)
-
-</div>
+![（Image 13a: The image for the simple texture example.）](image/testTexture.png)
 
 將上述設定整合後進行渲染，畫面效果如下圖 13b 所示：
 
-<div class = "center-column">
-
-![](image/simpleTexture.png)
-(Image 13b: A simple texture on a unit square.)
-
-</div>
+![（Image 13b: A simple texture on a unit square.）](image/simpleTexture.png)
 
 ## The Textured Material Definition
 

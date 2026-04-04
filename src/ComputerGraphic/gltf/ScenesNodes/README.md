@@ -43,12 +43,7 @@ category: computer-graphic
 
 每個 [`node`](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#reference-node) 都可以包含一個名為 `children` 的陣列，裡面存的是它的子節點的索引。 因此，每個 node 都是節點階層結構中的一個元素，這些節點彼此組合起來，就構成了場景的結構，也就是所謂的場景圖（scene graph）
 
-<div class = "center-column">
-
-![](image/sceneGraph.png)
-(Image 4a: The scene graph representation stored in the glTF JSON.)
-
-</div>
+![（Image 4a: The scene graph representation stored in the glTF JSON.）](image/sceneGraph.png)
 
 在 `scene` 中列出的每一個節點，都可以透過走訪的方式，遞迴地拜訪它們的所有子節點，以處理所有附加在這些節點上的元素。 簡化版的走訪流程（pseudocode）可能長這樣：
 

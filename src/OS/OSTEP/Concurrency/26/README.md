@@ -21,11 +21,7 @@ category: OS
 
 然而，在 multi-threaded process 中，每個 thread 會獨立執行，當然也可能呼叫各種函式來完成手上的工作。 因此 address space 不再只有一個 stack，而是每個 thread 各有一個 stack。 假設一個 multi-threaded process 內含兩個 threads，其 address space 佈局就會變得不一樣（見圖 26.1 右側）
 
-<div class = "center-column">
-
 ![（Figure 26-1：Single-Threaded And Multi-Threaded Address Spaces）](image/26-1.png)
-
-</div>
 
 在該圖中，你可以看到兩個 stacks 分散在 process 的 address space 之中。 因此，所有放在 stack 上的變數、參數、回傳值以及其他資料都會被放進所謂的 thread-local storage，也就是對應 thread 的那個 stack
 
@@ -49,7 +45,7 @@ category: OS
 
 讓我們來深入一些細節。 假設我們想要執行一個程式，這個程式會建立兩個 threads，每個 thread 各自做獨立的工作，在這裡分別印出「A」或「B」。 相關程式碼如圖 26.2 所示：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 26.2：Simple Thread Creation Code（`t0.c`））">
 
 ```c
 #include <stdio.h>
@@ -78,37 +74,23 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-（Figure 26.2：Simple Thread Creation Code (`t0.c`)）
+</center-panel>
 
-</div>
+主程式會建立兩個 threads，它們都會執行函式 `mythread()`，但傳入的參數不同（字串 A 或 B）。 thread 一旦建立，可能立刻開始執行（取決於 scheduler 的心情），也有可能被放在「ready」而非「running」狀態，因此尚未執行。 當然，若是在 multiprocessor 上，這些 threads 甚至可能同時執行，但我們暫時先不管這種情況
 
-主程式會建立兩個 threads，它們都會執行函式 mythread()，但傳入的參數不同（字串 A 或 B）。 thread 一旦建立，可能立刻開始執行（取決於 scheduler 的心情），也有可能被放在「ready」而非「running」狀態，因此尚未執行。 當然，若是在 multiprocessor 上，這些 threads 甚至可能同時執行，但我們暫時先不管這種情況
-
-建立完兩個 threads（我們稱它們為 T1 與 T2）之後，main thread 會呼叫 `pthread_join()` 來等待特定 thread 結束。 它會呼叫兩次，藉此確保 T1 與 T2 都已執行並完成，然後才讓 main thread 再次跑起來；當 main thread 執行時，會印出「main: end」並結束。 整個過程中總共使用了三個 threads：main thread、T1 以及 T2
+建立完兩個 threads（我們稱它們為 T1 與 T2）之後，main thread 會呼叫 `pthread_join()` 來等待特定 thread 結束。 它會呼叫兩次，藉此確保 T1 與 T2 都已執行並完成，然後才讓 main thread 再次跑起來；當 main thread 執行時，會印出「main：end」並結束。 整個過程中總共使用了三個 threads：main thread、T1 以及 T2
 
 接下來我們來檢視這個小程式可能的執行順序。 在執行圖（Figure 26.3）中，時間往下增加，每一欄顯示不同 thread（main、Thread 1 或 Thread 2）何時正在執行：
 
-<div class = "center-column">
-
 ![（Figure 26.3：Thread Trace (1)）](image/26-3.png)
-
-</div>
 
 不過，要注意這並不是唯一的執行順序。 事實上，給定同一串指令，仍有相當多種可能，取決於 scheduler 在某個時刻決定執行哪個 thread。 例如，一個 thread 建立後可能立刻開始執行，這就會導致圖 26.4 所示的執行順序：
 
-<div class = "center-column">
-
 ![（Figure 26.4：Thread Trace (2)）](image/26-4.png)
-
-</div>
 
 我們甚至可能先看到印出「B」再看到「A」，舉例來說，即使 Thread 1 較早被建立，scheduler 也有可能先執行 Thread 2，沒有任何理由必須假設先建立的 thread 就會先執行。 圖 26.5 展示了最後這種執行順序，Thread 2 在 Thread 1 之前搶先表現：
 
-<div class = "center-column">
-
 ![（Figure 26.5：Thread Trace (3)）](image/26-5.png)
-
-</div>
 
 你或許已經發現，一種看待 thread 建立的方法是把它想成呼叫函式； 然而，系統並不是先執行該函式再回到呼叫端，而是為被呼叫的 routine 建立一條新的執行緒，該執行緒會獨立於呼叫端運行，有可能在 create 操作返回之前就開始，也可能拖到很久之後才執行。 接下來由哪個 thread 執行取決於 OS 的 scheduler，儘管 scheduler 通常採用合理的演算法，但我們很難預測在任意時刻究竟哪個 thread 會獲得 CPU
 
@@ -118,7 +100,7 @@ int main(int argc, char *argv[]) {
 
 前面那個簡單的 thread 範例說明了如何建立 threads，以及它們如何因 scheduler 的決策而以不同順序執行。 不過，這個範例沒有展示 threads 在存取共享資料時會如何互動。 接下來，假設有兩個 threads 想要更新一個全域共享變數。 我們要研究的程式碼列在圖 26.6，如下是一些程式碼說明
 
-<div class = "center-column">
+<center-panel natural title="（Figure 26.6: Sharing Data: Uh Oh (t1.c)）">
 
 ```c
 #include <stdio.h>
@@ -165,15 +147,13 @@ int main(int argc, char *argv[]) {
 }
 ```
 
-（Figure 26.6: Sharing Data: Uh Oh (t1.c)）
-
-</div>
+</center-panel>
 
 首先，依照 Stevens 的建議 [SR05]，我們把 thread 的建立與 join 的呼叫簡易包了一層封裝，若失敗便直接結束； 像這麼簡單的程式，至少要能偵測到錯誤發生，但不用做太聰明的處理（例如直接離開）。 因此，`Pthread_create()` 只是呼叫 `pthread_create()` 並確認回傳碼為 0； 若不是 0，`Pthread_create()` 就印出訊息並離開
 
 其次，我們沒有為兩個 worker threads 各寫一份函式，而是讓它們共用同一段程式碼，並透過傳入參數（此處是字串）讓每個 thread 在輸出訊息前印出不同的字母
 
-最後也是最重要的一點，現在我們來看每個 worker 要做的事情：把某個數值加到共享變數 counter 上，並在迴圈中重複 1,000 萬 (1e7) 次。 因此預期的最終結果應為 20,000,000
+最後也是最重要的一點，現在我們來看每個 worker 要做的事情：把某個數值加到共享變數 counter 上，並在迴圈中重複 1,000 萬（1e7） 次。 因此預期的最終結果應為 20,000,000
 
 接著我們編譯並執行程式，觀察其行為。 有時候，一切會如預期般運作：
 
@@ -251,11 +231,7 @@ mov %eax, 0x8049a1c
 
 在這些假設下，實際發生的情況如圖 26.7 所示。 假設 counter 初始值為 50，請你仔細追蹤這個範例，確保你理解實際發生了什麼事：
 
-<div class = "center-column">
-
 ![（Figure 26.7: The Problem: Up Close and Personal）](image/26-7.png)
-
-</div>
 
 我們這裡展示的現象被稱為 race condition（更具體地說是 data race）：結果會依程式執行的時機點而有所不同。 如果運氣不好（例如在執行的關鍵時刻發生 context switch），我們就會得到錯誤的結果。 事實上，每次執行可能都會出現不同的結果； 也就是說，原本應該是電腦擅長的 deterministic 計算，卻變成了 indeterminate 的狀況，輸出值難以預測，而且極可能每次都不同
 

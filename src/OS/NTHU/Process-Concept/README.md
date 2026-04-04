@@ -44,11 +44,7 @@ order: 3
 
 所以我們常說一個 Process 在 OS 的世界裡就是一個 memory 的 space，基本長的會像這樣：
 
-<div class = "center-column">
-
 ![](image/1.png)
-
-</div>
 
 但這只是個例子，每個作業系統的管理方式可能會有些不同
 
@@ -66,11 +62,7 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 下圖可以看的更清楚 thread 和 Process 的差異，其實就在於說在同一個 Process 下的所有 thread，它們有些 memory 是共用的，定義上來說，只要是同一個 Process 下的 thread，它的 code section，data section 和 OS resources 是共用的，某一個 thread 開了一個檔案，另一個 thread 可以直接拿這個檔案的 pointer 跟著去做讀寫
 
-<div class = "center-column">
-
 ![](image/2.png)
-
-</div>
 
 但是可以看見 register、stack 等就沒有共用了，因為每一個 thread 執行的位置可以不一樣，甚至可以執行不同的 function call，所以執行的狀態也是獨立的
 
@@ -104,21 +96,13 @@ Thread 有另外一個名字叫 lightweight processs，因為它的管理方式�
 
 可以看下圖，更好記憶：
 
-<div class = "center-column">
-
 ![](image/3.png)
-
-</div>
 
 ## Process Control Block (PCB)
 
 上面的 Process State 是一個管理的邏輯，實現的方式是 OS 會幫 Process 建立一個 table，紀錄剛剛那些 information，這樣 OS 就可以知道誰在 Queue 裡面，誰的 State 是什麼等等：
 
-<div class = "center-column">
-
 ![](image/4.png)
-
-</div>
 
 PCB 是 OS 建立的一個物件，前面提到 Process 會被放到 Queue 裡面，這是一個抽象的概念，實際上是 PCB 被放到 Queue 裡面，實作的方法通常是 linked list，所以 PCB 裡面會有一個 pointer 指向下一個 PCB
 
@@ -138,11 +122,7 @@ Context Switch 完成後就會開始執行 P1，所以會把 program counter 設
 
 下圖裡面 P1 執行完後又做了一次 Context Switch 回 P0，一樣的意思，會 save 和 reload PCB：
 
-<div class = "center-column">
-
 ![](image/5.png)
-
-</div>
 
 簡單來說 Context Switch 就是在做 Process 的 load 和 save，但要注意 Context Switch 的時間是 overhead 的，也就是多餘的時間，上圖可以看見在做 Context Switch 時 P0 和 P1 都是在 idle 的，等於是在浪費 cpu cycle，純粹是為了管理與 sharing
 
@@ -167,21 +147,13 @@ Process 在被 schedule 的過程中會被放在 OS 內部的 qeueu 裡面，他
     + Wait State
     + 放等著做 I/O 或 sleep 等等的 Process
 
-<div class = "center-column">
-
 ![](image/6.png)
-
-</div>
 
 上圖中最上面的是 Ready queue，而 I/O 的 Waiting queue 通常會有很多個，看你是哪個 device 就去那裏排；Ready queue 也不一定只有一個，可能會有 level1、level2、level3 之類的 Ready queue
 
 所以整體流程會類似下圖，最上面有個 ready queue，而下方有四個 Waiting queue：
 
-<div class = "center-column">
-
 ![](image/7.png)
-
-</div>
 
 ## Scheduler
 
@@ -197,9 +169,9 @@ Process 在被 schedule 的過程中會被放在 OS 內部的 qeueu 裡面，他
     + New State \-\> Ready State
     + 決定可以有多少 Process 在 memory 內
         + 太少的話 CPU 會 idle，太多的話 CPU 會有 thrashing 發生
-    + 近代的 OS 可能沒有(由於近代 memory 比以前大很多)
+    + 近代的 OS 可能沒有（由於近代 memory 比以前大很多）
         + ex. UNIX/NT 沒有 long-term scheduler
-        + 一些 long term running machine 可能還有，但我們的電腦一般不是(Process 執行時間很短，或是通常就放著 idle)
+        + 一些 long term running machine 可能還有，但我們的電腦一般不是（Process 執行時間很短，或是通常就放著 idle）
 + Medium-term sheduler
     + 選擇要被 swap 回 Disk，或是要從 Disk swap 回 memory 的 Process
     + Ready State \-\> Wait State
@@ -215,11 +187,7 @@ Process 在 OS 中是一個實體，要找到他 我們就需要給 Process 一�
  
 Process 要產生需要被 Parent create，所以我們一定可以把 Process 畫成一個 Tree：
 
-<div class = "center-column">
-
 ![](image/8.png)
-
-</div>
 
 ## Process Creation
 
@@ -284,11 +252,7 @@ L3  L3  L3  L3  // There will be 4 child processes
 
 現在我們會創建 Process 了，接下來會需要的就是 Process 內的溝通，簡稱為 IPC，之前有講過主要有兩種方式，Shared memory 與 Message Passing
 
-<div class = "center-column">
-
 ![](image/9.png)
-
-</div>
 
 Shared memory 的優點是快，透過 memory address 來 access data，但缺點就是要處理 Synchronization 的問題; Message Passing 就反過來，比較慢，但不用處理 Synchronization，在某些情況下用 Message Passing，因為不用處理 Synchronization，所以反而會比較快
 
@@ -304,7 +268,7 @@ Shared memory 的優點是快，透過 memory address 來 access data，但缺�
 
 Producer 是一個 Process 負責產生 data，而 Consumer 是另一個 Process 負責消耗 data，所以有兩支不同的 Process，並會有一段共用的記憶體空間給這兩個 Process 放 data 與拿 data
 
-考慮一個直觀的寫法(來源：[wiki](https://zh.wikipedia.org/zh-tw/%E7%94%9F%E4%BA%A7%E8%80%85%E6%B6%88%E8%B4%B9%E8%80%85%E9%97%AE%E9%A2%98))
+考慮一個直觀的寫法（來源：[wiki](https://zh.wikipedia.org/zh-tw/%E7%94%9F%E4%BA%A7%E8%80%85%E6%B6%88%E8%B4%B9%E8%80%85%E9%97%AE%E9%A2%98))
 
 ```cpp
 int itemCount = 0;
@@ -351,21 +315,13 @@ procedure consumer() {
 
 因此我們需要特別處理這塊記憶體的使用，假設共用的記憶體空間是一個有 `B` 個元素的 circular array，我們有兩個指標 `in` 與 `out`，`in` 指向放入 data 的位置，`out` 指向拿出 data 的位置：
 
-<div class = "center-column">
-
 ![](image/10.png)
-
-</div>
 
 當 `in` 與 `out` 指向同一個地方的時候代表這個 array 現在是空的，當 `in+1` 模除 array size 指向的地方和 `out` 相同時表示這個 array 是滿的
 
-我們可以簡單看一下 code:
-
-<div class = "center-column">
+我們可以簡單看一下 code：
 
 ![](image/11.png)
-
-</div>
 
 在 Producer 中，當 array 是滿的時候，`while(((in + 1) % BUFFER_SIZE) == out) ;` 這個 while 迴圈會卡在那邊空轉，直到 Consumer 把東西拿走，讓 array 有空間，Producer 才會繼續放東西進去 array，注意這個 while 的後面有一個分號，這是因為 while loop 的後面需要接一個 statement
 

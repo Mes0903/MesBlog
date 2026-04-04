@@ -22,7 +22,7 @@ category: risc-v
     ACLINT 是一組 memory mapped devices，用於在 multi-hart 的 RISC-V 平台上提供
 
     - inter-processor interrupts (IPI)
-    - 定時器功能 (Timer functionalities)
+    - 定時器功能（Timer functionalities）
 
 2. CLINT 的局限性
     <details> <summary>原文</summary>

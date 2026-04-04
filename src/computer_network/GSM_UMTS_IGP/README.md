@@ -7,6 +7,18 @@ category: computer-network
 
 # GSM & UMTS & IGP
 
+<style>
+
+.img-w25 img {
+  width: 25%;
+}
+
+.img-w50 img {
+  width: 50%;
+}
+
+</style>
+
 ## 前言
 
 UMTS 是所謂的 3G 行動網路，它的前身為 GSM 與 GPRS，GSM 為 2G 行動網路，而 GPRS 為 2.5G 行動網路； GSM/GPRS 奠定了現今行動網路的架構基礎，後日 3G、4G 及 5G 的架構中我們都能發現其與 GSM/GPRS 的架構有很多相似之處，因此這裡就先將 GSM 的架構淺談一下
@@ -19,32 +31,29 @@ UMTS 是所謂的 3G 行動網路，它的前身為 GSM 與 GPRS，GSM 為 2G �
 
 要再更細的話可能就要去看 spec 了，可以直接 google 搜，你會找到放在 esti 這個網站內的 pdf 檔，通常 3GPP 的 spec 應該都可以在這裡找到
 
-行動網路與一般網路最大的不同點就是用戶會移動，因此業者會需要追蹤用戶的位置，當用戶移到別的業者地管轄範圍內時，仍然要讓使用者能通過其他業者的網路上網，這樣的動作我們稱其為漫遊 (Roaming)
+行動網路與一般網路最大的不同點就是用戶會移動，因此業者會需要追蹤用戶的位置，當用戶移到別的業者地管轄範圍內時，仍然要讓使用者能通過其他業者的網路上網，這樣的動作我們稱其為漫遊（Roaming）
 
 而 GSM 是行動網路的協定，規定了手機要通話與上網的標準，說是上網，但當時的用處主要是傳簡訊和用手機打電話之類的，要到 GPRS 出來才真的有上網的感覺，開始可以下載一些鈴聲、小遊戲之類的
 
-GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)，另一個是 BSS (Base Station Subsystem)。 NSS 主要負責網路的控制，在 UMTS 中對應到核心網路(Core Network)，而 BSS 則是負責無線訊號的傳輸，在 UMTS 中對應到 RAN (Radio Access Network)
+GSM 主要分為兩個部分，一個是 NSS（Network and Switching Subsystem），另一個是 BSS（Base Station Subsystem）。 NSS 主要負責網路的控制，在 UMTS 中對應到核心網路（Core Network），而 BSS 則是負責無線訊號的傳輸，在 UMTS 中對應到 RAN（Radio Access Network）
 
 ### BSS
 
-在行動網路中，我們會將地圖以蜂窩狀來劃分為區域，因此行動網路又稱為蜂窩式網路。 每個蜂巢都有一個基地台系統，在 GSM 架構中我們將這個系統稱為 BSS (Base Station Subsystem)，而 BSS 又以 BTS (Base Transceiver Station) 和 BSC (Base Station Controller) 兩個部分組成
+在行動網路中，我們會將地圖以蜂窩狀來劃分為區域，因此行動網路又稱為蜂窩式網路。 每個蜂巢都有一個基地台系統，在 GSM 架構中我們將這個系統稱為 BSS（Base Station Subsystem），而 BSS 又以 BTS（Base Transceiver Station） 和 BSC（Base Station Controller） 兩個部分組成
 
 #### BTS
 
-基地台的內部通常會有 Transceiver 負責進行訊號的收發，除此之外還會需要諸如功率放大器、雙工器、合錄器和天線等設備，這些設備在 GSM 中統稱為 BTS (Base Transceiver Station)，BTS 是基地台系統的核心部分，負責將手機的訊號轉換為無線訊號，並將無線訊號轉換為手機的訊號
+基地台的內部通常會有 Transceiver 負責進行訊號的收發，除此之外還會需要諸如功率放大器、雙工器、合錄器和天線等設備，這些設備在 GSM 中統稱為 BTS（Base Transceiver Station），BTS 是基地台系統的核心部分，負責將手機的訊號轉換為無線訊號，並將無線訊號轉換為手機的訊號
 
-<div class = "center-column">
+<div class="img-w25">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/BTS.png" width = "25%">
-
-(典型的 BTS)  
-(img src: [wiki](https://zh.wikipedia.org/zh-tw/%E5%9F%BA%E5%9C%B0%E6%94%B6%E5%8F%91%E6%9C%BA%E7%AB%99))
+![（典型的 BTS，img src：[wikipedia](https://zh.wikipedia.org/zh-tw/%E5%9F%BA%E5%9C%B0%E6%94%B6%E5%8F%91%E6%9C%BA%E7%AB%99)）](image/BTS.png)
 
 </div>
 
 #### BSC
 
-由於 BTS 這樣的設備眾多，我們直接將它的訊號接到數據中心的話難免會有些雜亂，因此我們還需要一個控制器來控制基地台，相當於將 BTS 進行分組，這個控制器稱為 BSC (Base Station Controller)
+由於 BTS 這樣的設備眾多，我們直接將它的訊號接到數據中心的話難免會有些雜亂，因此我們還需要一個控制器來控制基地台，相當於將 BTS 進行分組，這個控制器稱為 BSC（Base Station Controller）
 
 因為是分組的概念，理所當然地一個 BSC 可以控制多個 BTS，是基地台的控制中心，負責處理無線電頻道的分配，接收來自行動電話的測量，並控制從 BTS 到 BTS 的切換等等的功能
 
@@ -54,32 +63,27 @@ GSM 主要分為兩個部分，一個是 NSS (Network and Switching Subsystem)�
 
 #### MSC
 
-然而只有 BSS 是不夠的，我們肯定還會需要路由器和交換機之類的設備，不然上不了網，因此就需要一個地方來解析 BSS 傳來的訊息，在 GSM 架構下稱這個地方為 MSC (Mobile Switching Center)，可以說是 GSM 架構的心臟
+然而只有 BSS 是不夠的，我們肯定還會需要路由器和交換機之類的設備，不然上不了網，因此就需要一個地方來解析 BSS 傳來的訊息，在 GSM 架構下稱這個地方為 MSC（Mobile Switching Center），可以說是 GSM 架構的心臟
 
-<div class = "center-column">
+<div class = "img-w50">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/MSC-server.png" width = "50%">
-
-(Lucent 於 2001~2006 部屬在 Ljubljana 的 MSC 服務器)  
-(img src: [wiki](https://en.wikipedia.org/wiki/Mobile_switching_centre_server#/media/File:Lucent_5ESS_GSM_Mobile_Switching_Centre.jpg))
+![（Lucent 於 2001~2006 部屬在 Ljubljana 的 MSC 服務器，img src：[wikipedia](https://en.wikipedia.org/wiki/Mobile_switching_centre_server#/media/File:Lucent_5ESS_GSM_Mobile_Switching_Centre.jpg)）](image/MSC-server.png)
 
 </div>
 
-在 GSM 架構中，MSC 負責非常多的事項，像是無線頻寬資源的管理(稱為 RRM，Radio Resource Management)，處理語音資料格式的轉換，用戶呼叫的控制，用互更換蜂巢時的控制，用戶的身份認證，用戶的資料管理等等，全都是由 MSC 處理的
+在 GSM 架構中，MSC 負責非常多的事項，像是無線頻寬資源的管理（稱為 RRM，Radio Resource Management），處理語音資料格式的轉換，用戶呼叫的控制，用互更換蜂巢時的控制，用戶的身份認證，用戶的資料管理等等，全都是由 MSC 處理的
 
-<div class = "center-column">
+<div class = "img-w50">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/MSC-black.png" width = "65%">
-
-(MSC 與 BSS 關係示意圖)
+![（MSC 與 BSS 關係示意圖）](image/MSC-black.png)
 
 </div>
 
-而負責擔任 Gateway 的 MSC 被稱為 GMSC，負責處理來自其他 MSC 的資料，並且將資料轉發到其他的 MSC 或是大眾網路(PSTN) 中
+而負責擔任 Gateway 的 MSC 被稱為 GMSC，負責處理來自其他 MSC 的資料，並且將資料轉發到其他的 MSC 或是大眾網路（PSTN） 中
 
 #### HLR & VLR
 
-由於 MSC 還需要處理手機的用戶的資料，如用戶的方案、申請的位置等等，因此會需要有一個資料庫來存放這些資料，這個資料庫在階級上還有分大的和小的，分別為 HLR (Home Location Register) 與 VLR (Visitor Location Register)，都是拿來存放本地用戶的資料的
+由於 MSC 還需要處理手機的用戶的資料，如用戶的方案、申請的位置等等，因此會需要有一個資料庫來存放這些資料，這個資料庫在階級上還有分大的和小的，分別為 HLR（Home Location Register） 與 VLR（Visitor Location Register），都是拿來存放本地用戶的資料的
 
 HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們辦卡時候用的所有資料，像是姓名、地址、電話號碼等等，就都會被存放在台灣的 HLR 中
 
@@ -87,11 +91,9 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 當我今天去了日本，我的手機網路就會跟著連到日本的 MSC，此時它一看見我的 IMSI 碼，就會發現我是台灣來的，因此就會到台灣的 HLR 中查詢我的資料，並且向台灣的 HLR 登記我現在在日本，好讓別人可以找到我； 當然，也要把我的資料複製到日本的 VLR 中，這樣我就可以在日本使用網路了
 
-<div class = "center-column">
+<div class = "img-w50">
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/computer_network/GSM_UMTS_IGP/image/HLR-black.png" width = "55%">
-
-(HLR 與 VLR 示意圖)
+![（HLR 與 VLR 示意圖）](image/HLR-black.png)
 
 </div>
 
@@ -99,75 +101,51 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 ### PSTN
 
-雖然這樣上網是解決了，但是手機還需要能夠打電話，因此在 GSM 中，我們會將 MSR 與 PSTN (Public Switched Telephone Network) 連接起來，PSTN 是電話專用的電路交換網路，這樣就可以讓手機打電話了
+雖然這樣上網是解決了，但是手機還需要能夠打電話，因此在 GSM 中，我們會將 MSR 與 PSTN（Public Switched Telephone Network） 連接起來，PSTN 是電話專用的電路交換網路，這樣就可以讓手機打電話了
 
 ### GSM 架構圖
 
 所以整個 GSM 的網路看起來會長這樣：
 
-<div class = "center-column">
-
 ![](image/GSM-net-black.png)
-
-</div>
 
 #### 同業者網內互打
 
 如果今天是 User B 要打電話給 User E，由於他們處於同一個 PLMN 內，也就是同一個業者的管轄範圍內，所以就不用經過 GMSC，直接由 MSC 轉接就可以了：
 
-<div class = "center-column">
-
 ![](image/same-plmn-black.png)
-
-</div>
 
 #### 不同業者間的通話
 
 如果今天是 User A 要打電話給 User E，由於他們處於不同的 PLMN 內，也就是不同業者的管轄範圍內，所以就需要經過 GMSC，由 GMSC 轉接到 User E 所在的 MSC：
 
-<div class = "center-column">
-
 ![](image/cross-plmn-black.png)
-
-</div>
 
 #### 手機打給家用電話
 
-如果今天是 User A 要打電話給家用電話(User F)，由於家用電話是接在 PSTN 上的，所以就需要經過 GMSC，由 GMSC 轉接到 PSTN：
-
-<div class = "center-column">
+如果今天是 User A 要打電話給家用電話（User F），由於家用電話是接在 PSTN 上的，所以就需要經過 GMSC，由 GMSC 轉接到 PSTN：
 
 ![](image/to-pstn-black.png)
 
-</div>
-
 ## GPRS
 
-GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸出了一個可以處理封包的架構，主要是在核心網路的部分新增了 SGSN (Serving GPRS Support Node) 和 GGSN (Gateway GPRS Support Node) 這兩個節點，好讓網路封包可以透過 GPRS 上網
+GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸出了一個可以處理封包的架構，主要是在核心網路的部分新增了 SGSN（Serving GPRS Support Node） 和 GGSN（Gateway GPRS Support Node） 這兩個節點，好讓網路封包可以透過 GPRS 上網
 
 因此原先的 MSC 就專注在處理語音通話與簡訊方面，而 SGSN 和 GGSN 就專注在處理網路上的封包，架構圖如下：
 
-<div class = "center-column">
-
 ![](image/GPRS-black.png)
-
-</div>
 
 ## UMTS
 
 ### 前言
 
-在 UMTS 中，BTS 被改稱為了 Node B，BSC 被改稱為 RNC (Radio Network Controller)
-
-<div class = "center-column">
+在 UMTS 中，BTS 被改稱為了 Node B，BSC 被改稱為 RNC（Radio Network Controller）
 
 ![](image/UMTS-net-black.png)
 
-</div>
-
 ## IGP Background
 
-後面主要是在介紹 IGP (Interior Gateway Protocol) 會先介紹一些背景知識，再來講解兩者的差異與相關的協定
+後面主要是在介紹 IGP（Interior Gateway Protocol） 會先介紹一些背景知識，再來講解兩者的差異與相關的協定
 
 每個協定的說明會給一個例子，但要注意例子中的封包內容我有做過簡化，只是幫助理解用的，實際的封包內容還要去查協定的規範
 
@@ -233,11 +211,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
   假設有以下拓樸：
 
-  <div class = "center-column">
-
   ![](image/RIP-net-black.png)
-
-  </div>
 
   路徑 1 的總跳數為 3，而路徑 2 的總跳數為 2，因此路由器將選擇路徑 2 作為到達目的地的最佳路由
   
@@ -305,7 +279,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 - 使用場景  
   RIPv2 適用於小型至中型的網絡，特別是在需要支持更靈活的子網配置和簡單路由策略的環境中
 
-- 例子：  
+- 例子：
   RIPv2 在 RIPv1 的基礎上增加了子網掩碼的支持。在同樣的網絡拓撲下，RIPv2 的更新封包將包括子網掩碼和可能的下一跳地址。R1 發送給 R2 的更新可能包含如下信息：
 
   - 網絡 A，子網掩碼 255.255.255.0，跳數 0
@@ -325,7 +299,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
   步驟如下
   
-  1. 計算度量值：  
+  1. 計算度量值：
       路徑成本的度量值計算公式如下：
 
       $$\text{Metric} = 256\times \left( K_1 \times \text{Bandwidth} + \left(\frac{K_2 \times \text{Bandwidth}}{256 - \text{Load}}\right) + K_3 \times \frac{\text{Total Delay}}{10} \right) \times \left( \frac{K_5}{\text{Reliability} + K_4} \right)$$
@@ -340,10 +314,10 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
       而 $K_1, K_2, K_3, K_4, K_5$ 是工程師可調的，Cisco 的預設為 $K_1 = 1、K_2 = 0、K_3 = 1、K_4 = 0、K_5 = 0$，表示默認的度量值只考慮了頻寬和延遲
 
-    2. 路由更新：  
+    2. 路由更新：
       IGRP 使用定期更新的方式，通常每 90 秒發送一次完整的路由表到所有鄰居。這與 RIP 類似，但 IGRP 包含更多的度量信息
 
-    3. 不平衡計時器：  
+    3. 不平衡計時器：
       IGRP 使用一系列計時器來管理路由資訊的有效性和一致性，包括無效計時器、保持計時器、刷新計時器和清除計時器
   
 - 分類  
@@ -357,7 +331,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 - 使用場景  
   - IGRP 適合於中型至大型網絡，特別是在這些網絡中主要使用思科設備的情況下
 
-- 例子：  
+- 例子：
   假設有三個路由器 R1、R2 和 R3 連接成線形拓撲：
 
   - R1 連接到網段 A
@@ -369,9 +343,9 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
   當 R1 計算到網段 C 的路徑時：
 
   1. R1 收到 R2 關於網段 C 的更新
-  2. R1 會綜合考慮到網段 C 的路徑的頻寬和延遲計算度量值：  
-      - 最小頻寬： `min(R1-R2 頻寬, R2-R3 頻寬) = 1 Mbps = 1000 kbps`
-      - 總延遲： `R1 - R2 延遲 (200 ms)` + `R2 - R3 延遲 (100 ms) = 300 ms = 300000 μs`
+  2. R1 會綜合考慮到網段 C 的路徑的頻寬和延遲計算度量值：
+      - 最小頻寬：`min(R1-R2 頻寬, R2-R3 頻寬) = 1 Mbps = 1000 kbps`
+      - 總延遲：`R1 - R2 延遲 (200 ms)` + `R2 - R3 延遲 (100 ms) = 300 ms = 300000 μs`
 
       假設 $K_1 = 1, K_3 = 1$，其他 $K$ 值為 $0$，則頻寬部分：
 
@@ -421,7 +395,6 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
   - Reply 封包：用於回復路由查詢
   - Acknowledgment 封包：用於確認接收到的封包
 
-
   而在 DUAL 的演算法中，有五個主要的知識點：
   
   - **可行距離（Feasible Distance, FD）**：到達目的地的最佳路徑的成本度量
@@ -432,9 +405,9 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
   接下來看 DUAL 演算法的步驟：
 
-  1. 收集路由資訊：  
+  1. 收集路由資訊：
     每隔一段時間會發送 Hello 封包給鄰居，並透過接收到的 Update 封包學習到達各個目的地的路由
-  2. 計算 FD 與 AD：  
+  2. 計算 FD 與 AD：
       路由器接收到來自鄰居的 Update 封包時，它會記錄每個路由的距離（FD/AD）。報告距離是指那條路由到達目的地的度量值，度量值的計算方法與 IGRP 一樣為
 
       $$
@@ -442,21 +415,17 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
       $$
 
       因為上面提過了，所以這邊就不再贅述
-  3. 檢驗可行性條件（FC）：  
+  3. 檢驗可行性條件（FC）：
     對於每條學習到的路由，路由器會檢查是否滿足可行性條件（FC），只要 AD < FD 便滿足，可以設為 FS
-  4. 設定 Successor 與 FS：  
+  4. 設定 Successor 與 FS：
       - 後繼路由（Successor）：這是到達特定目的地的最佳路徑，具有最低的成本度量
       - 可行後繼路由（Feasible Successor）：滿足 FC 的替代路徑，在 Successor 失效時可立即使用
-  5. 處理拓撲變化：  
+  5. 處理拓撲變化：
     當一個路由器檢測到鄰居宣告的某條路由變得不可用或度量變差時，它會檢查是否有可行後繼者可以立即使用。如果沒有，則重新計算到該目的地的路徑
 
   假設有以下拓撲：
 
-  <div class = "center-column">
-
   ![](image/EIGRP-black.png)
-
-  </div>
 
   如果以 R1 為起點， R8 為終點，則各路徑的各數值計算如下：
   
@@ -485,7 +454,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 - 使用場景  
   - EIGRP 適用於從小型到大型的各種網絡環境，尤其是當網絡中存在多種思科設備時，EIGRP 可以提供高效且穩定的路由解決方案
 
-- 例子：  
+- 例子：
   這邊給了三個例子
 
   - 例 1：一般狀況  
@@ -555,7 +524,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 - 使用場景  
   OSPF適合於中到大型網絡，特別是需要高度可控和靈活性的環境，如教育機構、大型企業和政府機構的網絡
 
-- 例子：  
+- 例子：
   在 OSPF 中，路由器通過發送鏈路狀態廣告（LSA）來交換信息。如果 R1 要宣告它到 10.0.0.0/24 的連接，它的 LSA 可能包含以下信息：
 
   - LSA 類型：Router LSA（路由器 LSA）
@@ -587,7 +556,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 - 使用場景
   - IS-IS 適合於大型的網絡環境，尤其是在需要有效管理大量路由信息和支持高速數據傳輸的場合
 
-- 例子：  
+- 例子：
 
   假設我們有三個路由器 R1、R2 和 R3，在 IS-IS 協議下運作。R1 和 R2 處於同一區域（Area 1），而 R3 位於另一區域（Area 2）。R1 和 R2 之間有直接連接，R2 和 R3 之間也有直接連接。R1 要宣告它到自己直連網段 10.0.0.0/24 的路由信息
 

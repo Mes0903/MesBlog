@@ -84,12 +84,7 @@ category: computer-graphic
 }
 ```
 
-<div class = "center-column">
-
-![](image/triangle.png)
-（Image 3a: A single triangle.）
-
-</div>
+![（Image 3a: A single triangle.）](image/triangle.png)
 
 ## The `scene` and `nodes` structure
 

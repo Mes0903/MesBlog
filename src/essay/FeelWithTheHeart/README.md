@@ -7,9 +7,17 @@ category: essay
 
 # 用心感受你的目標
 
-<div class = "center-column">
+<style>
 
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/essay/FeelWithTheHeart/image/image.png" width="50%">
+.img-w50 img {
+  width: 50%;
+}
+
+</style>
+
+<div class="img-w50">
+
+![](image/image.png)
 
 </div><br>
 

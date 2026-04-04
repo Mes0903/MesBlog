@@ -43,12 +43,7 @@ glTF 的核心是一個 JSON 檔案，這個檔案描述了整個 3D 場景的�
 
 下圖（取自 [glTF 概念說明章節](https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#concepts)）概覽了 glTF asset 中 JSON 部分的最上層元素：
 
-<div class = "center-column">
-
-![](image/gltfJsonStructure.png)
-（Image 2a: The glTF JSON structure.）
-
-</div>
+![（Image 2a: The glTF JSON structure.）](image/gltfJsonStructure.png)
 
 ::: tip  
 原文是自己額外畫了一張圖，但我覺得 spec 內的圖比較一目了然，所以還是用 spec 內的圖了  
@@ -70,12 +65,7 @@ glTF 的核心是一個 JSON 檔案，這個檔案描述了整個 3D 場景的�
 
 3D 物件的二進位資料，例如幾何資訊與材質貼圖，通常不會直接儲存在 JSON 檔案內，而是會被存放在專門的外部檔案中，JSON 部分只包含指向這些外部檔案的連結。 這種設計讓二進位資料可以用更緊湊的形式儲存，並能夠高效率地透過網路傳輸。 此外，資料也可以用能夠直接被渲染器（renderer）使用的格式儲存，無需額外解析、解碼或預處理
 
-<div class = "center-column">
-
-![](image/gltfStructure.png)
-（Image 2b: The glTF structure.）
-
-</div>
+![（Image 2b: The glTF structure.）](image/gltfStructure.png)
 
 如上圖所示，glTF 中有兩種類型的物件可能包含指向外部資源的連結，分別是 `buffers` 和 `images`。 這些物件的詳細說明會在後續章節中介紹
 

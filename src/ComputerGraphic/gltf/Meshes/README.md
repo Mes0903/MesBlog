@@ -43,12 +43,7 @@ mesh primitive 會透過 `attributes` 字典來定義幾何資料，這些幾何
 
 這些 accessor 所對應的元素共同定義了每個頂點所擁有的屬性，如下圖 9a 所示：
 
-<div class = "center-column">
-
-![](image/meshPrimitiveAttributes.png)
-(Image 9a: Mesh primitive accessors containing the data of vertices.)
-
-</div>
+![（Image 9a: Mesh primitive accessors containing the data of vertices.）](image/meshPrimitiveAttributes.png)
 
 ### Indexed and non-indexed geometry
 

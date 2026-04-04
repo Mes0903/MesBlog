@@ -45,12 +45,7 @@ category: computer-graphic
 
 下圖 20a 使用描邊方式渲染這個幾何，方便觀察其結構：
 
-<div class = "center-column">
-
-![](image/simpleSkinOutline01.png)
-(Image 20a: The geometry for the skinning example, with outline rendering, in its initial configuration.)
-
-</div>
+![（Image 20a: The geometry for the skinning example, with outline rendering, in its initial configuration.）](image/simpleSkinOutline01.png)
 
 這份幾何資料位於整個場景中唯一的 mesh 所屬的 mesh primitive 中，而該 mesh 又被附加在場景的主要節點（main node）上。 這個 mesh primitive 還包含了額外的 attribute，也就是 `"JOINTS_0"` 和 `"WEIGHTS_0"`，它們在下一段中會說明它們在 skinning 中的功能與意義
 
@@ -101,12 +96,7 @@ $$
 
 這個矩陣將 mesh 沿著 y 軸向下平移 1.0，如下圖 20b 所示：
 
-<div class = "center-column">
-
-![](image/skinInverseBindMatrix.png)
-(Image 20b: The transformation of the geometry with the inverse bind matrix of joint 1.)
-
-</div>
+![（Image 20b: The transformation of the geometry with the inverse bind matrix of joint 1.）](image/skinInverseBindMatrix.png)
 
 這個轉換一開始看起來可能有些違反直覺，但它的目的是要將受綁定頂點的座標轉換到該關節的局部空間中
 
@@ -156,12 +146,7 @@ jointMatrix(j) = globalTransformOfJointNode(j) * inverseBindMatrixForJoint(j);
 
 下圖 20c 顯示了在 Simple Skin 範例中，如何使用 joint 1 的 joint matrix 對 mesh 幾何進行轉換。該圖展示的是動畫執行到中間時的狀態，也就是 joint 1 的 rotation 已被動畫旋轉到 z 軸 45 度的角度
 
-<div class = "center-column">
-
-![](image/skinJointMatrices.png)
-(Image 20c: The transformation of the geometry done for joint 1.)
-
-</div>
+![（Image 20c: The transformation of the geometry done for joint 1.）](image/skinJointMatrices.png)
 
 最右邊的圖顯示了如果 geometry 只套用了 joint 1 的 joint matrix，會呈現什麼樣子。 實際上，這樣的狀態從不會真正顯示出來，vertex shader 會依據每個頂點的 joints 與 weights，將多個 joint 的變形疊加加權起來，計算出最終的頂點位置
 
@@ -238,18 +223,8 @@ void main(void)
 
 下圖 20d 示意了 skin matrix 如何被組合計算：
 
-<div class = "center-column">
-
-![](image/skinSkinMatrix.png)
-(Image 20d: Computation of the skin matrix.)
-
-</div>
+![（Image 20d: Computation of the skin matrix.）](image/skinSkinMatrix.png)
 
 而下圖 20e 則展示了在動畫過程中實際應用 skin matrix 對幾何的變形效果：
 
-<div class = "center-column">
-
-![](image/simpleSkinOutline02.png)
-(Image 20e: The geometry for the skinning example, with outline rendering, during the animation.)
-
-</div>
+![（Image 20e: The geometry for the skinning example, with outline rendering, during the animation.）](image/simpleSkinOutline02.png)

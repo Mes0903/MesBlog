@@ -436,7 +436,7 @@ void *thr_fn1(void *arg) {
 
 下表總結了執行緒函式與行程函式之間在功能上的對應關係
 
-<span class = "center-column">
+<center-panel natural>
 
 | Process primitive | Thread primitive | 說明 |
 | ----------------- | ---------------- | ---- |
@@ -447,7 +447,7 @@ void *thr_fn1(void *arg) {
 | `getpid` | `pthread_self` | 取得控制流程的 ID |
 | `abort` | `pthread_cancel` | 要求控制流程非正常終止 |
 
-</span>
+</center-panel>
 
 ### `pthread_detach` 函式
 
@@ -1212,7 +1212,6 @@ void enqueue_msg(struct msg *mp)
 - 這裡的條件是 work queue 的狀態
 - 我們用 mutex 來保護這個條件，並且在 `while` 迴圈裡檢查條件
 - 當我們把一則訊息放進 work queue 時，必須持有 mutex，但在對等待中的執行緒發出 signal 時，則不需要持有 mutex
-
 
 只要可以接受「在呼叫 `pthread_cond_signal` 之前，某個執行緒就已經先把訊息從佇列裡取走」這種情況，我們就可以在釋放 mutex 之後再發出 signal。 由於我們是在 `while` 迴圈裡檢查條件，因此這不會造成問題，執行緒被喚醒後，如果發現佇列仍然是空的，就會再回去等待
 

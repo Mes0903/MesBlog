@@ -23,7 +23,7 @@ category: OS
 
 semaphore 是一個具有整數值的物件，我們可以透過兩個 routine 來操作它； 在 POSIX 標準中，這兩個 routine 分別是 `sem_wait()` 和 `sem_post()`。 由於 semaphore 的初始值決定其行為，任何與 semaphore 互動的呼叫都必須先進行初始化，正如圖 31.1 中的程式碼所示：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 31.1: Initializing A Semaphore）">
 
 ```c
 #include <semaphore.h>
@@ -31,15 +31,13 @@ sem_t s;
 sem_init(&s, 0, 1);
 ```
 
-（Figure 31.1: Initializing A Semaphore）
-
-</div>
+</center-panel>
 
 在上例中，我們宣告了一個 semaphore `s`，並將其初始化為 1（將 1 作為第三個參數傳入）。 在所有範例中，`sem_init()` 的第二個參數都設為 0，這表示該 semaphore 會在同一程序的各執行緒之間共享。 有關 semaphore 其他用途的詳細說明（例如跨程序同步存取），請參閱 man page，這類用法需為第二參數指定不同的值
 
 在 semaphore 初始化後，我們可以呼叫兩個函式之一來操作它：`sem_wait()` 或 `sem_post()`。 這兩個函式的行為如圖 31.2 所示：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 31.2: Semaphore: Definitions Of Wait And Post）">
 
 ```c
 int sem_wait(sem_t* s) 
@@ -57,9 +55,7 @@ int sem_post(sem_t* s)
 }
 ```
 
-（Figure 31.2: Semaphore: Definitions Of Wait And Post）
-
-</div>
+</center-panel>
 
 目前我們暫且不討論這些 routine 的實作細節，這部分確實需要謹慎處理，因為多個執行緒可能同時呼叫 `sem_wait()` 和 `sem_post()`，顯然必須管理這些 critical section。 但我們先專注於如何使用這些原語，稍後或許再談其底層實作方式
 
@@ -79,7 +75,7 @@ int sem_post(sem_t* s)
 
 我們現在準備使用 semaphore。 首先要做的是我們已熟悉的用法：將 semaphore 作為鎖來使用。 請參見圖 31.3 中的程式片段：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 31.3: A Binary Semaphore (That Is, A Lock)）">
 
 ```c
 sem_t m;
@@ -90,9 +86,7 @@ sem_wait(&m);
 sem_post(&m);
 ```
 
-（Figure 31.3: A Binary Semaphore (That Is, A Lock)）
-
-</div>
+</center-panel>
 
 你會發現我們只需在欲保護的 critical section 前後各加一對 `sem_wait()`/`sem_post()`。 不過，讓此做法正確運作的關鍵在於 semaphore `m` 的初始值（圖中以 `X` 初始化）。 那麼，`X` 應該設定為多少呢？ 回顧前面對 `sem_wait()` 和 `sem_post()` routine 的定義，可以看出初始值應該為 1
 
@@ -100,11 +94,7 @@ sem_post(&m);
 
 Thread 0 現在可以進入 critical section 了。 若在 Thread 0 執行 critical section 期間，沒有其他執行緒嘗試取得鎖，當它呼叫 `sem_post()` 時，就會將 semaphore 的值還原為 1（且不會喚醒任何等待中的執行緒，因為此時沒有人在等待）。 圖 31.4 顯示了此情境的執行追蹤：
 
-<div class = "center-column">
-
 ![（Figure 31.4: Thread Trace: Single Thread Using A Semaphore）](image/31-4.png)
-
-</div>
 
 更有趣的情況是，當 Thread 0 正在「持有鎖」（即已呼叫 `sem_wait()` 但尚未呼叫 `sem_post()`）時，另一個執行緒（Thread 1）呼叫 `sem_wait()` 嘗試進入 critical section。 在此情況下，Thread 1 會將 semaphore 的值減到 –1，然後進入等待（睡眠並讓出處理器）
 
@@ -112,11 +102,7 @@ Thread 0 現在可以進入 critical section 了。 若在 Thread 0 執行 criti
 
 圖 31.5 顯示了此範例的執行過程。 除了各執行緒的動作，圖中還標註了排程器的狀態：Run（正在執行）、Ready（可執行但尚未取得 CPU）和 Sleep（被阻塞）。 注意，當 Thread 1 嘗試取得已被持有的鎖時，會進入 Sleep 狀態； 只有在 Thread 0 再度執行並釋放鎖後，Thread 1 才能被喚醒並有機會再次執行：
 
-<div class = "center-column">
-
 ![（Figure 31.5: Thread Trace: Two Threads Using A Semaphore）](image/31-5.png)
-
-</div>
 
 由此，我們可以將 semaphore 作為鎖來使用。 由於鎖只有兩種狀態（持有或未持有），因此當 semaphore 當作鎖使用時，也常稱為 binary semaphore。 請注意，若你僅將 semaphore 以此 binary 的方式使用，那其實可以比我們此處介紹的 generalized semaphore 實作更為簡易
 
@@ -126,7 +112,7 @@ semaphore 也常用於並行程式中為事件排序。 例如，某執行緒希
 
 一個簡單的例子如下，假設一個執行緒建立了另一個執行緒，然後想等待它完成（圖 31.6）：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 31.6: A Parent Waiting For Its Child）">
 
 ```c
 sem_t s;
@@ -150,9 +136,7 @@ int main(int argc, char* argv[])
 }
 ```
 
-（Figure 31.6: A Parent Waiting For Its Child）
-
-</div>
+</center-panel>
 
 程式執行後，預期的輸出如下：
 
@@ -168,19 +152,11 @@ parent: end
 
 parent 執行，將 semaphore 減 1（變為 –1），然後被阻塞（睡眠）。 當 child 最終執行時，它會呼叫 `sem_post()`，將 semaphore 的值增回 0，並喚醒 parent，parent 隨即從 `sem_wait()` 返回並完成程式
 
-<div class = "center-column">
-
 ![（Figure 31.7: Thread Trace: Parent Waiting For Child (Case 1)）](image/31-7.png)
-
-</div>
 
 第二種情況（圖 31.8）是 child 在 parent 呼叫 `sem_wait()` 之前就已執行完成。 此時，child 首先呼叫 `sem_post()`，將 semaphore 的值從 0 增至 1。 當 parent 得以執行時，它呼叫 `sem_wait()`，發現 semaphore 的值為 1； parent 因此減為 0 並立即從 `sem_wait()` 返回，不會被阻塞，也能達成預期結果
 
-<div class = "center-column">
-
 ![（Figure 31.8: Thread Trace: Parent Waiting For Child (Case 2)）](image/31-8.png)
-
-</div>
 
 ## 31.4 The Producer/Consumer (Bounded Buffer) Problem
 
@@ -198,7 +174,7 @@ Perry Kivolowitz 提出一種簡單思考方式：考慮在初始化後你願意
 
 我們的第一版解法引入了兩個 semaphore：`empty` 和 `full`，用以分別表示緩衝區欄位何時被清空或填滿。 put 和 get 的程式碼見圖 31.9：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 31.9: The Put And Get Routines）">
 
 ```c
 int buffer[MAX];
@@ -219,13 +195,11 @@ int get()
 }
 ```
 
-（Figure 31.9: The Put And Get Routines）
-
-</div>
+</center-panel>
 
 而我們對 producer/consumer 問題的初步嘗試則見圖 31.10：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 31.10: Adding The Full And Empty Conditions）">
 
 ```c
 sem_t empty;
@@ -261,9 +235,7 @@ int main(int argc, char* argv[])
 }
 ```
 
-（Figure 31.10: Adding The Full And Empty Conditions）
-
-</div>
+</center-panel>
 
 在此範例中，producer 會先等待某個緩衝區欄位變空後才放入資料，consumer 則同樣等待某欄位變滿後才取用。 先假設 `MAX=1`（陣列中只有一個欄位），看看此機制是否有效
 
@@ -283,7 +255,7 @@ int main(int argc, char* argv[])
 
 如你所見，此處我們遺漏了互斥。 填寫緩衝區並遞增緩衝區索引本身即為 critical section，必須謹慎保護。 因此，我們採用 binary semaphore 為鎖，進行保護。 圖 31.11 展示了我們的修改：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 31.11: Adding Mutual Exclusion (Incorrectly)）">
 
 ```c
 void* producer(void* arg)
@@ -312,9 +284,7 @@ void* consumer(void* arg)
 }
 ```
 
-（Figure 31.11: Adding Mutual Exclusion (Incorrectly)）
-
-</div>
+</center-panel>
 
 現在我們已在整個 `put()`/`get()` 程式碼區塊周圍加入鎖（對應 `NEW LINE` 標註）。 此舉看似合理，卻依然無法運作。 原因是有 Deadlock，為何會發生 Deadlock？ 請花點時間思考，嘗試找出會造成 Deadlock 的情境，想想要讓程式陷入 deadlock，需要哪些步驟依序發生
 
@@ -330,7 +300,7 @@ void* consumer(void* arg)
 
 為了解決此問題，我們只需縮小鎖的範圍。 圖 31.12 展示了正確的解法：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 31.12: Adding Mutual Exclusion (Correctly)）">
 
 ```c
 void* producer(void* arg)
@@ -359,9 +329,7 @@ void* consumer(void* arg)
 }
 ```
 
-（Figure 31.12: Adding Mutual Exclusion (Correctly)）
-
-</div>
+</center-panel>
 
 如你所見，我們將 mutex 的取得與釋放僅包圍在真正的 critical section 內，而 full 與 empty 的 wait 與 signal 程式碼則置於外部。 最終，我們就得到一個簡潔且可用的有界緩衝區實作，這是多執行緒程式中常見的設計模式
 
@@ -373,7 +341,7 @@ void* consumer(void* arg)
 
 另一個經典問題源於對更靈活的鎖原語的需求 ── 不同的資料結構操作可能需要不同形式的鎖。 例如，我們可能會有多種並行的列表操作，包括 inserts 和簡單的 lookups。 而 inserts 會修改列表狀態（傳統的 critical section），lookups 僅負責讀取資料結構。 此時只要能保證沒有 insert 正在進行，就可以允許多個 lookups 同時執行。 我們現在要介紹的特殊鎖類型稱為 reader-writer lock [CHP71]，其程式碼見圖 31.13：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 31.13: A Simple Reader-Writer Lock）">
 
 ```c
 typedef struct _rwlock_t {
@@ -411,9 +379,7 @@ void rwlock_acquire_writelock(rwlock_t* rw) { sem_wait(&rw->writelock); }
 void rwlock_release_writelock(rwlock_t* rw) { sem_post(&rw->writelock); }
 ```
 
-（Figure 31.13: A Simple Reader-Writer Lock）
-
-</div>
+</center-panel>
 
 程式碼相當簡單。 如果某執行緒想要更新指定的資料結構，應呼叫這對新的同步操作：`rwlock_acquire_writelock()` 以取得 write lock，和 `rwlock_release_writelock()` 以釋放它。 在內部，這兩者只是個 writelock semaphore，確保同一時間只有一位 writer 能取得鎖並進入 critical section 來更新該資料結構
 
@@ -439,11 +405,7 @@ void rwlock_release_writelock(rwlock_t* rw) { sem_post(&rw->writelock); }
 
 問題的基本場景如下（見圖 31.14）：假設有五位「哲學家」圍坐在桌邊，每兩位哲學家之間放一把叉子（共五把）。 哲學家有思考階段，此時不需要叉子，也有進食階段，此時需要同時取得左右兩把叉子。 對這些叉子的爭奪，以及由此產生的同步問題，便是我們在並行程式設計中研究此問題的原因
 
-<div class = "center-column">
-
 ![（Figure 31.14: The Dining Philosophers）](image/31-14.png)
-
-</div>
 
 以下是每位哲學家的基本迴圈，假設每個人都有從 0 到 4（含）的唯一執行緒識別碼 p：
 
@@ -473,7 +435,7 @@ sem_t forks[5];
 
 我們先嘗試第一種解決方案； 假設我們將 `forks` 陣列中每個 semaphore 都初始化為 1，並且假設每位哲學家都知道自己的編號 p。 因此，我們可以撰寫 `get_forks()` 和 `put_forks()`（見圖 31.15）。 這個（有缺陷的）解法背後的直覺很簡單：要取得叉子，就先鎖定左邊的叉子，然後鎖定右邊的叉子。 吃完後，再依序釋放它們
 
-<div class = "center-column">
+<center-panel natural title="（Figure 31.15: The `get forks()` And put `forks()` Routines）">
 
 ```c
 void get_forks(int p)
@@ -489,9 +451,7 @@ void put_forks(int p)
 }
 ```
 
-（Figure 31.15: The `get forks()` And put `forks()` Routines）
-
-</div>
+</center-panel>
 
 很簡單，對吧？ 可惜是錯的，問題在於 Deadlock。 如果每位哲學家都先搶到自己左邊的叉子，而沒有人能取得右邊的叉子，就會各自只持有一把叉子，並永遠等待下一把。 具體而言，哲學家 0 搶到叉子 0、哲學家 1 搶到叉子 1、哲學家 2 搶到叉子 2、哲學家 3 搶到叉子 3、哲學家 4 搶到叉子 4。 此時所有叉子都被拿走了，卻每個人卻都在等待另一把已被他人持有的叉子。 我們稍後會更詳細探討 Deadlock，不過目前可以肯定，這並不是可行的解法
 
@@ -499,7 +459,7 @@ void put_forks(int p)
 
 解決此問題最簡單的方法，是讓至少一位哲學家改變拿叉子的順序，這正是 Dijkstra 本人當年的作法。 具體而言，我們假設哲學家 4（編號最高者）先拿右邊的叉子，再拿左邊的叉子（見圖 31.16），`put_forks()` 的程式保持不變。 由於最後一位哲學家反向拿叉，不會出現每位哲學家各自拿到一把叉子後又互相等待的情況，因此等待循環就被打破了。 好好思考此解法的影響，確定它確實有效
 
-<div class = "center-column">
+<center-panel natural title="（Figure 31.16: Breaking The Dependency In get `forks()`）">
 
 ```c
 void get_forks(int p)
@@ -515,9 +475,7 @@ void get_forks(int p)
 }
 ```
 
-（Figure 31.16: Breaking The Dependency In get `forks()`）
-
-</div>
+</center-panel>
 
 還有許多類似的「經典」問題，例如香菸抽菸者問題或睡覺的理髮師問題。 它們大多是讓人練習思考並行特性的範例，而且名稱往往十分有趣。 如果你有興趣深入了解，或想多練習並行思維，不妨去查查看 [D08]
 
@@ -533,7 +491,7 @@ void get_forks(int p)
 
 最後，我們用底層的同步原語 —— locks 和 condition variables，來自己實作一種 semaphore，稱為 Zemaphores。 如圖 31.17 所示，這項任務相當簡單：
 
-<div class = "center-column">
+<center-panel natural title="（Figure 31.17: Implementing Zemaphores With Locks And CVs）">
 
 ```c
 typedef struct __Zem_t {
@@ -568,9 +526,7 @@ void Zem_post(Zem_t* s)
 }
 ```
 
-（Figure 31.17: Implementing Zemaphores With Locks And CVs）
-
-</div>
+</center-panel>
 
 在上述程式中，我們只用了 1 把 lock、1 個 condition variable，以及一個用來追蹤 semaphore 值的 state 變數。 我們的 Zemaphore 與 Dijkstra 所定義的純粹 semaphore 有一個微妙差異：我們不維護「當 semaphore 值為負時，該絕對值等於等待執行緒數」的約束。 實際上，我們的值永遠不會低於 0。 這種行為更容易實作，也符合當前 Linux 的做法
 

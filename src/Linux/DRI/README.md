@@ -316,7 +316,7 @@ atomic mode-setting 的目的，是在具有多重限制的複雜設定中，透
 
 atomic mode-setting 透過提供 mode 測試的能力，讓我們可以事先得知某個特定的 mode 設定是否合適。 當某個 atomic mode 已經過測試並確認有效後，就可以透過一次不可分割（atomic）的 commit 操作來套用。 測試與 commit 這兩種操作是由同一個新的 `ioctl` 提供，只是使用不同的旗標
 
-另一方面，atomic page flip 則允許在同一個輸出上更新多個 planes（例如 primary plane、cursor plane，以及可能存在的 overlay 或 secondary planes），而且全部都在同一個 VBLANK 區間中同步完成，從而確保顯示正確且不會產生畫面撕裂。 :9,14 這個需求對於行動與嵌入式的顯示控制器特別重要，因為它們往往會使用多個 planes/overlays 來節省電力
+另一方面，atomic page flip 則允許在同一個輸出上更新多個 planes（例如 primary plane、cursor plane，以及可能存在的 overlay 或 secondary planes），而且全部都在同一個 VBLANK 區間中同步完成，從而確保顯示正確且不會產生畫面撕裂。 ：9,14 這個需求對於行動與嵌入式的顯示控制器特別重要，因為它們往往會使用多個 planes/overlays 來節省電力
 
 新的 atomic API 是建立在舊有 KMS API 之上的。 它使用相同的模型與物件（CRTC、encoder、connector、plane 等），但可被修改的物件屬性數量不斷增加
 
@@ -514,7 +514,7 @@ Imagination Technologies 是一家無晶圓廠半導體公司，負責開發與�
 
 另見：Vivante GCxxxx
 
-Vivante Corporation 是一家無晶圓廠半導體公司，授權半導體智慧財產核心並開發 GCxxxx 系列 GPU。 一套 Vivante 專有、封閉原始碼 Linux 驅動程式由 kernel space 與 user space 兩個部分組成。 雖然核心元件是開放原始碼（GPL），但 user space 元件（包含 GLES(2) 實作與 HAL 函式庫）並非開放原始碼，這些部分才是驅動程式邏輯的主要所在
+Vivante Corporation 是一家無晶圓廠半導體公司，授權半導體智慧財產核心並開發 GCxxxx 系列 GPU。 一套 Vivante 專有、封閉原始碼 Linux 驅動程式由 kernel space 與 user space 兩個部分組成。 雖然核心元件是開放原始碼（GPL），但 user space 元件（包含 GLES（2） 實作與 HAL 函式庫）並非開放原始碼，這些部分才是驅動程式邏輯的主要所在
 
 Wladimir J. van der Laan 透過研究這些二進位 blobs 的行為、檢視與修改命令串流 dump，找出並記錄了狀態位元、命令串流以及 shader ISA。 `Etnaviv` `Gallium3D` 驅動程式正是基於這份文件撰寫而成。 Van der Laan 的工作受到 `Lima` 驅動程式的啟發，該專案已產出一個功能可用但尚未最佳化的 `Gallium3D` `LLVM` 驅動程式
 

@@ -11,7 +11,7 @@ category: Linux
 
 Linus Torvalds 在 2016 年的 [TED interview](https://www.ted.com/talks/linus_torvalds_the_mind_behind_linux) 裡談到了他自己的工作模式，性格與 Linux 和 Git 出現時的一些心路歷程
 
-於 14:10 分時他提到了 coding 方面的 「good taste」 是什麼，並舉了一個 singly-linked list 的例子，由於在社團裡看見有人說看不懂，加上自己也想做一下筆記，因此就寫了這篇，並補了一些說明及例子，實作上主要參考了 [felipec](https://github.com/felipec/linked-list-good-taste) 的 github 與 [Jserv 老師的解釋](https://hackmd.io/@sysprog/c-linked-list)
+於 14：10 分時他提到了 coding 方面的 「good taste」 是什麼，並舉了一個 singly-linked list 的例子，由於在社團裡看見有人說看不懂，加上自己也想做一下筆記，因此就寫了這篇，並補了一些說明及例子，實作上主要參考了 [felipec](https://github.com/felipec/linked-list-good-taste) 的 github 與 [Jserv 老師的解釋](https://hackmd.io/@sysprog/c-linked-list)
 
 若文章內容有謬誤，或您有什麼建議，都很歡迎私訊告訴我~
 
@@ -74,7 +74,7 @@ remove_list_entry(entry)
 
 ### 解釋
 
-Linus Torvalds 在 15:25 時說
+Linus Torvalds 在 15：25 時說
 
 >  It does not have the if statement. And it doesn't really matter -- I don't want you understand why it doesn't have the if statement, but I want you to understand that sometimes you can see a problem in a different way and rewrite it so that a special case goes away and becomes the normal case. And that's good code. But this is simple code. This is CS 101. This is not important -- although, details are important. 
 
@@ -84,21 +84,13 @@ Linus Torvalds 在 15:25 時說
 
 然後會有一個 branch 判斷 `prev` 是否為空指標，如果是空指標就代表 target 是 list 的 head，因此需要把 list 的 head 指向下一個元素；若非空就把前一個元素的 next Node 設為目前的下一個 Node：
 
-<div class = "center-column">
-
 ![](image/link_list1.png)
-
-</div>
 
 而 Linus Torvalds 的想法則是拿一個指標指向「Node 裡面指向下一個 Node 的指標」，以「要更新的位址」為思考點來操作
 
 有一個指標的指標 `indirect`，一開始指向 head，之後一樣走訪 list，解指標看是不是我們要的 target，如果 `*indirect` 就是我們要刪除的元素，代表 `indirect` 現在指向前一個 Node 裡面的 next pointer，因此把 `*indirect` 設為 target 的下一個 Node 就完成整個操作了：
 
-<div class = "center-column">
-
 ![](image/link_list2.png)
-
-</div>
 
 ### 簡單的實作
 

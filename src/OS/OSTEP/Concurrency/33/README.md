@@ -71,7 +71,7 @@ int select(int nfds,
 
 為了更具體地說明，我們來檢視如何使用 `select()` 來查看哪些網路 descriptor 上有傳入的訊息。 圖 33.1 是一個簡單的範例
 
-<div class = "center-column">
+<center-panel natural title="（Figure 33.1: Simple Code Using `select()`）">
 
 ```c
 #include <stdio.h>
@@ -108,9 +108,7 @@ int main(void)
 }
 ```
 
-（Figure 33.1: Simple Code Using `select()`）
-
-</div>
+</center-panel>
 
 這段程式碼其實相當容易理解，完成初始化後，伺服器進入一個無限迴圈。 在迴圈內，它先呼叫 `FD_ZERO()` 巨集清除 descriptor 集合，然後再用 `FD_SET()` 將自 `minFD` 到 `maxFD` 的所有 descriptor 加入集合。 這組 descriptor 可能代表像是伺服器正在監控的所有網路 socket。 最後，伺服器呼叫 `select()` 來檢查哪些連線上有可用資料。 接著透過在迴圈中使用 `FD_ISSET()`，事件伺服器即可得知哪些 descriptor 已就緒並處理傳入的資料
 

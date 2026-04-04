@@ -134,12 +134,7 @@ category: computer-graphic
 }
 ```
 
-<div class = "center-column">
-
-<img src = "https://raw.githubusercontent.com/Mes0903/MesBlog/refs/heads/vuepress-theme-hope/src/ComputerGraphic/gltf/SimpleAnimation/image/animatedTriangle.gif?">
-(Image 6a: A single, animated triangle.)
-
-</div>
+![（Image 6a: A single, animated triangle.）](image/animatedTriangle.gif)
 
 ## The `rotation` property of the `node`
 
@@ -225,17 +220,17 @@ category: computer-graphic
 
 上例中由 times accessor 和 rotations accessor 提供的實際資料如下表所示：
 
-<div class = "center-column">
+<center-panel natural>
 
 | *times* accessor | *rotations* accessor | 含義 |
 |:---|:---|:---|
-| 0.0 | (0.0, 0.0, 0.0, 1.0) | 在 0.0 秒時，三角形的旋轉角度是 0 度 |
-| 0.25 | (0.0, 0.0, 0.707, 0.707) | 在 0.25 秒時，三角形繞 z 軸旋轉了 90 度 |
-| 0.5 | (0.0, 0.0, 1.0, 0.0) | 在 0.5 秒時，三角形繞 z 軸旋轉了 180 度 |
-| 0.75 | (0.0, 0.0, 0.707, -0.707) | 在 0.75 秒時，三角形繞 z 軸旋轉了 270 度（= -90 度） |
-| 1.0 | (0.0, 0.0, 0.0, 1.0) | 在 1.0 秒時，三角形繞 z 軸旋轉了 360 度（= 0 度） |
+| 0.0 | （0.0, 0.0, 0.0, 1.0） | 在 0.0 秒時，三角形的旋轉角度是 0 度 |
+| 0.25 | （0.0, 0.0, 0.707, 0.707） | 在 0.25 秒時，三角形繞 z 軸旋轉了 90 度 |
+| 0.5 | （0.0, 0.0, 1.0, 0.0） | 在 0.5 秒時，三角形繞 z 軸旋轉了 180 度 |
+| 0.75 | （0.0, 0.0, 0.707, -0.707） | 在 0.75 秒時，三角形繞 z 軸旋轉了 270 度（= -90 度） |
+| 1.0 | （0.0, 0.0, 0.0, 1.0） | 在 1.0 秒時，三角形繞 z 軸旋轉了 360 度（= 0 度） |
 
-</div>
+</center-panel>
 
 因此這個動畫描述的是在 1 秒內，三角形繞 z 軸旋轉了 360 度
 

@@ -66,7 +66,7 @@ UNIX 系統的早期版本就已開始提供信號，不過像 Version 7 這類�
 
 ### The core file
 
-<span class = "center-column">
+<center-panel natural title="（表 10.1 UNIX 系統信號）">
 
 | Name        | 說明                                            | ISO C | SUS  | FreeBSD | Linux | Mac OS X | Solaris | 預設動作                    |
 |-------------|-------------------------------------------------|-------|------|---------|-------|----------|---------|-----------------------------|
@@ -116,9 +116,7 @@ UNIX 系統的早期版本就已開始提供信號，不過像 Version 7 這類�
 | `SIGXFSZ`   | 超過檔案大小限制（`setrlimit`）                 |       | XSI  | •       | •     | •        | •       | 終止並產生 core/忽略        |
 | `SIGXRES`   | 超過資源控制限制                                |       |      |         |       |          | •       | 忽略                        |
 
-（表 10.1 UNIX 系統信號）
-
-</span>
+</center-panel>
 
 當上面表格中的預設動作標示為 "terminate+core" 時，代表會在該行程當前工作目錄（CWD）中留下名為 `core` 的檔案，其中包含行程的記憶體映象（memory image）。 這個檔案可以搭配大多數 UNIX 系統的偵錯器，用來檢查行程在終止當下的狀態
 
@@ -491,7 +489,7 @@ Single UNIX Specification 指定了哪些函式可以保證在 signal handler �
 
 下表列出了這些 async-signal safe 函式，也就是那些可以在 signal handler 中呼叫的可重入函式：
 
-<span class = "center-column">
+<center-panel natural>
 
 |                 |               |                     |               |                    |
 | --------------- | ------------- | ------------------- | ------------- | ------------------ |
@@ -523,7 +521,7 @@ Single UNIX Specification 指定了哪些函式可以保證在 signal handler �
 | `_Exit`         | `kill`        | `renameat`          | `sockatmark`  | `waitpid`          |
 | `_exit`         | `link`        | `rmdir`             | `socket`      | `write`            |
 
-</span>
+</center-panel>
 
 上表未列入的大多數函式，通常是基於下列原因：
 
@@ -1179,7 +1177,7 @@ struct sigaction {
 
 各信號處理時可設定的選項旗標（`sa_flags`）如下（Table 10.16）：
 
-<span class = "center-column">
+<center-panel natural>
 
 |Option | SUS | FreeBSD | Linux | Mac OS X | Solaris | Description|
 |------ | :-: | :-----: | :---: | :------: | :-----: | -----------|
@@ -1192,7 +1190,7 @@ struct sigaction {
 |`SA_RESTART` | • | • | • | • | • | 被此信號中斷的系統呼叫會被自動重新啟動（詳見[第 10.5 節]()）|
 |`SA_SIGINFO`  | • | • | • | • | • | 這個選項會讓 signal handler 取得額外資訊：一個指向 `siginfo` 結構的指標，與一個用來表示行程內容（process context）的指標|
 
-</span>
+</center-panel>
 
 一般而言，signal handler 的宣告形式為：
 
@@ -2182,7 +2180,7 @@ int sigqueue(pid_t pid, int signo, const union sigval value)
 
 下表總結了不同平台上對信號佇列的支援情形：
 
-<span class = "center-column">
+<center-panel natural>
 
 | 行為 | SUS | FreeBSD | Linux | Mac OS X | Solaris |
 | -------- | --- | ------- | ----- | -------- | ------- |
@@ -2190,13 +2188,13 @@ int sigqueue(pid_t pid, int signo, const union sigval value)
 | 除了 `SIGRTMIN` 到 `SIGRTMAX` 以外也會將其他信號排入佇列 | optional | • | | | • |
 | 即使呼叫端沒有使用 `SA_SIGINFO`，仍會使用信號佇列 | optional | • | • | | |
 
-</span>
+</center-panel>
 
 ## 10.21 工作控制信號（Job-Control Signals）
 
 POSIX.1 認定以下六個信號是工作控制（job control）所用的信號：
 
-<span class = "center-column">
+<center-panel natural>
 
 |  |  |
 | - | - |
@@ -2207,7 +2205,7 @@ POSIX.1 認定以下六個信號是工作控制（job control）所用的信號�
 | `SIGTTIN` | 背景行程群組成員嘗試讀取 controlling terminal 時產生 |
 | `SIGTTOU` | 背景行程群組成員嘗試寫入 controlling terminal 時產生 |
 
-</span>
+</center-panel>
 
 下面這個例子展示了當程式處理工作控制時，常見的一般程式流程
 

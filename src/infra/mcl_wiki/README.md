@@ -19,7 +19,7 @@ category: infra
 2. 可以上傳附件、圖片
    - 最好是可以自己調整 storage directory 的結構，例如在每個主題底下都建一個 image folder，單獨放那個主題的圖片
 3. 可以有個 tag 分類一下文章
-4. 可以串我們自己的 keycloak (SSO)
+4. 可以串我們自己的 keycloak（SSO）
 5. 跨頁文內搜尋
 6. 最好直接上傳整個目錄就能夠把文件 Migrate 進去，不然還要一個一個慢慢複製
 
@@ -30,7 +30,7 @@ category: infra
 1. bookstack 
    - 整體來說都還不錯，但它 latex 的解析賊爛，很多東西跑不出來
 2. wiki.js 
-   - 需求都符合，但介面賊難用。 那個 markdown editor 超難用，我光打一篇簡單的 Intro 就快中風了。 再來上傳檔案的地方還要慢慢選資料夾，資料夾建錯了我還沒辦法砍，它沒有 File manager ==?? (很瞎)
+   - 需求都符合，但介面賊難用。 那個 markdown editor 超難用，我光打一篇簡單的 Intro 就快中風了。 再來上傳檔案的地方還要慢慢選資料夾，資料夾建錯了我還沒辦法砍，它沒有 File manager ==?? （很瞎）
    - 然後寫的時候，圖片不能直接複製貼上真的是大缺點，我從 repo 上搬運過去的時候要一個一個慢慢按上傳 -> 插入。 因為它有自己的 DB 所以我還不能直接整個把我 repo 上的整個 image 目錄複製過去，因為這點所以讓我決定換其他服務用
 3. codimd 
    - 沒辦法上傳附件，也沒有跨頁文內搜。 再來這也不好統整，當初本來就是給個人寫筆記用的，沒有針對分享用途做太多處理
@@ -58,7 +58,7 @@ category: infra
      - 我覺得問題出在他的 Parser 跟一般的 markdown 編輯器長得不一樣，所以它對 `\n` 做了特殊處理，導致了這個 bug
      - 但總之要手動慢慢修
      - 可以先打 `$$`，然後貼上你的 latex plaintext（不含 `$`），再補上 `$$`：
-        <span class = "center-column">![](./image/outline.gif)</span>
+        <center-panel natural>![](./image/outline.gif)</center-panel>
 4. 內建編輯器其實沒很好用
    - 它好像是仿照 notion 在做的？ 我沒用過 notion 所以不確定，但我覺得它沒辦法看到 markdown 的原始碼很不方便（WYSIWYG 風格）
      - 目前就是勉強能用，但還是比 wiki.js 好很多
@@ -98,7 +98,7 @@ category: infra
 
 ## 遇到的其他坑
 
-這次整個搞完發現還是直接架 NAT 比較方便，在串 meilisearch 的時候，它要先爬你整個網站的文章來建 DB，建出來的 DB 會存各個文章的網址與對應的關鍵字(?)，但因為有 oauth2 把網頁的存取擋住了，所以沒有辦法直接爬外網的網址，需要爬內網的網址或是用 docker network（我用後者），導致後面我還要手動弄個 script 把整個 DB 裡面的網址改成外網的，不然搜尋到文章後點下去會跳到一個訪問不了的網址
+這次整個搞完發現還是直接架 NAT 比較方便，在串 meilisearch 的時候，它要先爬你整個網站的文章來建 DB，建出來的 DB 會存各個文章的網址與對應的關鍵字（?），但因為有 oauth2 把網頁的存取擋住了，所以沒有辦法直接爬外網的網址，需要爬內網的網址或是用 docker network（我用後者），導致後面我還要手動弄個 script 把整個 DB 裡面的網址改成外網的，不然搜尋到文章後點下去會跳到一個訪問不了的網址
 
 再來搜尋的請求也是個問題，search 按下去的 request 也要走 oauth2 + nginx，但 meilisearch server 是不同的服務所以有另一個 port，他們又在同一個網域下，我這次是用 custom location 解掉了，途中還踩到一個 [nginx proxy manager 的 bug](https://github.com/NginxProxyManager/nginx-proxy-manager/issues/3474#issuecomment-1902790528)，找了很久才發現這個 issue 裡面提到的解法，只能說這東西還是要固定升版本比較好
 
