@@ -352,7 +352,7 @@ Linux 也會用 memory-mapping `/dev/zero` 的方式來做 demand zeroing，並�
 
 - [JS94] “2Q: A Low Overhead High Performance Buffer Management Replacement Algorithm” by T. Johnson, D. Shasha. VLDB ’94, Santiago, Chile. 一個簡單但有效的 page replacement 方法
 
-- [LL82] “Virtual Memory Management in the VAX/VMS Operating System” by H. Levy, P. Lipman. IEEE Computer, Volume 15：3, March 1982. 原始資料幾乎都來自這篇論文。如果你想念研究所，讀論文是基本技能：讀論文、工作、再讀論文、繼續工作、最後寫一篇論文、然後再工作
+- [LL82] “Virtual Memory Management in the VAX/VMS Operating System” by H. Levy, P. Lipman. IEEE Computer, Volume 15:3, March 1982. 原始資料幾乎都來自這篇論文。如果你想念研究所，讀論文是基本技能：讀論文、工作、再讀論文、繼續工作、最後寫一篇論文、然後再工作
 
 - [M04] “Cloud Atlas” by D. Mitchell. Random House, 2004. 要選一本最愛的書真的很難，因為太多了！每一本書都有其獨特的美。不過如果非選不可，作者們可能會選「Cloud Atlas」，這是一部關於人類處境的壯闊史詩，這章最後那句話就引用自它。如果你夠聰明——我們相信你是——就別再讀這些冷門註解了，去讀「Cloud Atlas」吧，你會感謝我們的
 

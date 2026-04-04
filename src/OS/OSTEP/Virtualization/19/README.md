@@ -355,23 +355,23 @@ TIP：RAM 並不總是 RAM（Culler 定律）
 
 ## References
 
-- [BC91] 「Performance from Architecture：Comparing a RISC and a CISC with Similar Hardware Organization」 by D. Bhandarkar and Douglas W. Clark. Communications of the ACM, September 1991. 一篇針對 RISC 與 CISC 進行公平比較的好文章。結論是 — 在相同硬體條件下，RISC 的效能大約是 CISC 的三倍
+- [BC91] 「Performance from Architecture: Comparing a RISC and a CISC with Similar Hardware Organization」 by D. Bhandarkar and Douglas W. Clark. Communications of the ACM, September 1991. 一篇針對 RISC 與 CISC 進行公平比較的好文章。結論是 — 在相同硬體條件下，RISC 的效能大約是 CISC 的三倍
 
-- [CM00] 「The evolution of RISC technology at IBM」 by John Cocke, V. Markstein. IBM Journal of Research and Development, 44：1/2. 這篇文章概述了 IBM 801 背後的構想與發展，許多人認為它是第一個真正的 RISC 微處理器
+- [CM00] 「The evolution of RISC technology at IBM」 by John Cocke, V. Markstein. IBM Journal of Research and Development, 44:1/2. 這篇文章概述了 IBM 801 背後的構想與發展，許多人認為它是第一個真正的 RISC 微處理器
 
-- [C95] 「The Core of the Black Canyon Computer Corporation」 by John Couleur. IEEE Annals of History of Computing, 17：4, 1995. 在這篇有趣的歷史回顧中，Couleur 討論了他在 GE 任職期間，如何於 1964 年發明 TLB，以及這項發明如何促成了與 MIT Project MAC 團隊的合作
+- [C95] 「The Core of the Black Canyon Computer Corporation」 by John Couleur. IEEE Annals of History of Computing, 17:4, 1995. 在這篇有趣的歷史回顧中，Couleur 討論了他在 GE 任職期間，如何於 1964 年發明 TLB，以及這項發明如何促成了與 MIT Project MAC 團隊的合作
 
 - [CG68] 「Shared-access Data Processing System」 by John F. Couleur, Edward L. Glaser. Patent 3412382, November 1968. 這篇專利介紹了一種用來儲存位址轉譯資訊的關聯式記憶體（associative memory）的構想。據 Couleur 所說，這個想法是在 1964 年產生的
 
-- [CP78] 「The architecture of the IBM System/370」 by R.P. Case, A. Padegs. Communications of the ACM. 21：1, 73-96, January 1978. 可能是第一篇使用 translation lookaside buffer 這個術語的文章。這個名稱來自於 cache 的歷史名稱 lookaside buffer，該名稱是當初參與 Atlas 系統開發的曼徹斯特大學團隊所提出；當這種快取被用來儲存 address translation 時，就被稱作 translation lookaside buffer。即使 lookaside buffer 這個詞後來被淘汰，TLB 這個縮寫卻沿用至今
+- [CP78] 「The architecture of the IBM System/370」 by R.P. Case, A. Padegs. Communications of the ACM. 21:1, 73-96, January 1978. 可能是第一篇使用 translation lookaside buffer 這個術語的文章。這個名稱來自於 cache 的歷史名稱 lookaside buffer，該名稱是當初參與 Atlas 系統開發的曼徹斯特大學團隊所提出；當這種快取被用來儲存 address translation 時，就被稱作 translation lookaside buffer。即使 lookaside buffer 這個詞後來被淘汰，TLB 這個縮寫卻沿用至今
 
 - [H93] 「MIPS R4000 Microprocessor User’s Manual」 by Joe Heinrich. Prentice-Hall, June 1993. 可從 http://cag.csail.mit.edu/raw/ . documents/R4400 Uman book Ed2.pdf 取得。這本手冊出乎意料地好讀（還是說其實沒有？）
 
-- [HP06] 「Computer Architecture：A Quantitative Approach」 by John Hennessy and David Patterson. Morgan-Kaufmann, 2006. 一本關於電腦架構的經典好書。我們特別鍾愛它的第一版
+- [HP06] 「Computer Architecture: A Quantitative Approach」 by John Hennessy and David Patterson. Morgan-Kaufmann, 2006. 一本關於電腦架構的經典好書。我們特別鍾愛它的第一版
 
-- [I09] 「Intel 64 and IA-32 Architectures Software Developer’s Manuals」 by Intel, 2009. Available: http://www.intel.com/products/processor/manuals. 特別注意其中的 Volume 3A：System Programming Guide Part 1 和 Volume 3B：System Programming Guide Part 2
+- [I09] 「Intel 64 and IA-32 Architectures Software Developer’s Manuals」 by Intel, 2009. Available: http://www.intel.com/products/processor/manuals. 特別注意其中的 Volume 3A: System Programming Guide Part 1 和 Volume 3B: System Programming Guide Part 2
 
-- [PS81] 「RISC-I：A Reduced Instruction Set VLSI Computer」 by D.A. Patterson and C.H. Sequin. ISCA ’81, Minneapolis, May 1981. 本文首次提出 RISC 這個術語，並掀起了精簡化電腦架構的研究浪潮
+- [PS81] 「RISC-I: A Reduced Instruction Set VLSI Computer」 by D.A. Patterson and C.H. Sequin. ISCA ’81, Minneapolis, May 1981. 本文首次提出 RISC 這個術語，並掀起了精簡化電腦架構的研究浪潮
 
 - [SB92] 「CPU Performance Evaluation and Execution Time Prediction Using Narrow Spectrum Benchmarking」 by Rafael H. Saavedra-Barrera. EECS Department, University of California, Berkeley. Technical Report No. UCB/CSD-92-684, February 1992. 一本很棒的博士論文，說明如何將應用程式分解為多個部分，並計算每個部分的成本來預測整體執行時間。裡面對 cache hierarchy 的分析工具特別值得一看（在第 5 章有介紹），圖也畫得很漂亮
 
@@ -379,4 +379,3 @@ TIP：RAM 並不總是 RAM（Culler 定律）
 
 - [WG00] 「The SPARC Architecture Manual: Version 9」 by David L. Weaver and Tom Germond. SPARC International, San Jose, California, September 2000.  
   可從 www.sparc.org/standards/SPARCV9.pdf 取得。又是一本手冊。你本來是不是希望最後有一個比較有趣的引用文來結尾
-

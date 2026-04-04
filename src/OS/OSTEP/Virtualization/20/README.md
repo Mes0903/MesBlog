@@ -311,9 +311,9 @@ inverted page table 展示了我們從一開始就在強調的一個觀點 — p
 
 ## References
 
-- [BOH10] 「Computer Systems：A Programmer’s Perspective」 by Randal E. Bryant and David R. O’Hallaron. Addison-Wesley, 2010. 我們至今仍未找到一個合適的入門資料來介紹 multi-level page table，不過 Bryant 和 O’Hallaron 這本書詳細解釋了 x86 架構，而 x86 正是早期採用這種資料結構的系統之一。 這本書本身也非常值得擁有
+- [BOH10] 「Computer Systems: A Programmer’s Perspective」 by Randal E. Bryant and David R. O’Hallaron. Addison-Wesley, 2010. 我們至今仍未找到一個合適的入門資料來介紹 multi-level page table，不過 Bryant 和 O’Hallaron 這本書詳細解釋了 x86 架構，而 x86 正是早期採用這種資料結構的系統之一。 這本書本身也非常值得擁有
 
-- [JM98] 「Virtual Memory：Issues of Implementation」 by Bruce Jacob, Trevor Mudge. IEEE Computer, June 1998. 一篇極好的調查報告，涵蓋了多種系統如何實作虛擬記憶體的方式。 內容包含大量關於 x86、PowerPC、MIPS 等架構的細節
+- [JM98] 「Virtual Memory: Issues of Implementation」 by Bruce Jacob, Trevor Mudge. IEEE Computer, June 1998. 一篇極好的調查報告，涵蓋了多種系統如何實作虛擬記憶體的方式。 內容包含大量關於 x86、PowerPC、MIPS 等架構的細節
 
 - [LL82] 「Virtual Memory Management in the VAX/VMS Operating System」 by Hank Levy, P. Lipman. IEEE Computer, Vol. 15, No. 3, March 1982. 一篇關於 VAX/VMS 作業系統中虛擬記憶體管理的精彩文章。 我們在幾個章節之後會以這篇文章作為案例，回顧我們學到的所有虛擬記憶體知識
 

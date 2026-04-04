@@ -343,9 +343,8 @@ Figure 18.7 展示了前 5 次循環的過程：
 
 ## References
 
-- [KE+62] One-level Storage System by T. Kilburn, D.B.G. Edwards, M.J. Lanigan, F.H. Sumner. IRE Trans. EC-11, 2, 1962. Reprinted in Bell and Newell, Computer Structures：Readings and Examples. McGraw-Hill, New York, 1971. Atlas 首度提出將記憶體劃分為固定大小 page 的概念，某種意義上來說，它是現代記憶體管理技術的雛形
+- [KE+62] One-level Storage System by T. Kilburn, D.B.G. Edwards, M.J. Lanigan, F.H. Sumner. IRE Trans. EC-11, 2, 1962. Reprinted in Bell and Newell, Computer Structures: Readings and Examples. McGraw-Hill, New York, 1971. Atlas 首度提出將記憶體劃分為固定大小 page 的概念，某種意義上來說，它是現代記憶體管理技術的雛形
 
-- [I09] Intel 64 and IA-32 Architectures Software Developer’s Manuals. Intel, 2009. 網址：http://www.intel.com/products/processor/manuals 特別推薦閱讀 Volume 3A：System Programming Guide Part 1 和 Volume 3B：System Programming Guide Part 2
+- [I09] Intel 64 and IA-32 Architectures Software Developer’s Manuals. Intel, 2009. 網址：http://www.intel.com/products/processor/manuals 特別推薦閱讀 Volume 3A: System Programming Guide Part 1 和 Volume 3B: System Programming Guide Part 2
 
-- [L78] The Manchester Mark I and Atlas：A Historical Perspective by S. H. Lavington. Communications of the ACM, Volume 21：1, January 1978. 本文回顧了幾個重要電腦系統的發展歷史。我們在美國有時會忘記，許多嶄新的概念其實來自海外
-
+- [L78] The Manchester Mark I and Atlas: A Historical Perspective by S. H. Lavington. Communications of the ACM, Volume 21:1, January 1978. 本文回顧了幾個重要電腦系統的發展歷史。我們在美國有時會忘記，許多嶄新的概念其實來自海外

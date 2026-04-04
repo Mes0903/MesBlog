@@ -299,11 +299,11 @@ page replacement 並不是 VM 子系統中唯一的策略（雖然可能是最�
 
 ## References
 
-- [AD03] “Run-Time Adaptation in River” by Remzi H. Arpaci-Dusseau. ACM TOCS, 21：1, February 2003. 這篇是作者 Remzi 博士論文工作的摘要，他在 River 系統中發現，與理想模型做比較，是系統設計者的重要技巧
+- [AD03] “Run-Time Adaptation in River” by Remzi H. Arpaci-Dusseau. ACM TOCS, 21:1, February 2003. 這篇是作者 Remzi 博士論文工作的摘要，他在 River 系統中發現，與理想模型做比較，是系統設計者的重要技巧
 
-- [B66] “A Study of Replacement Algorithms for Virtual-Storage Computer” by Laszlo A. Belady. IBM Systems Journal 5（2）：78-101, 1966. 提出 MIN 演算法的經典論文，提供計算最理想策略行為的簡單方法
+- [B66] “A Study of Replacement Algorithms for Virtual-Storage Computer” by Laszlo A. Belady. IBM Systems Journal 5(2): 78-101, 1966. 提出 MIN 演算法的經典論文，提供計算最理想策略行為的簡單方法
 
-- [BNS69] “An Anomaly in Space-time Characteristics of Certain Programs Running in a Paging Machine” by L. A. Belady, R. A. Nelson, G. S. Shedler. Communications of the ACM, 12：6, June 1969. 引入了知名的 Belady’s Anomaly 記憶體存取序列。 我們也很好奇 Nelson 和 Shedler 對這個名字有什麼感想
+- [BNS69] “An Anomaly in Space-time Characteristics of Certain Programs Running in a Paging Machine” by L. A. Belady, R. A. Nelson, G. S. Shedler. Communications of the ACM, 12:6, June 1969. 引入了知名的 Belady’s Anomaly 記憶體存取序列。 我們也很好奇 Nelson 和 Shedler 對這個名字有什麼感想
 
 - [CD85] “An Evaluation of Buffer Management Strategies for Relational Database Systems” by Hong-Tai Chou, David J. DeWitt. VLDB ’85, Stockholm, Sweden, August 1985. 資料庫領域中的知名論文，探討在常見資料庫存取模式下該使用哪些 buffer 管理策略。 更普遍的教訓是 — 如果你知道 workload 的特性，就能設計出比 OS 的通用策略還要更有效的對應策略
 
@@ -311,7 +311,7 @@ page replacement 並不是 VM 子系統中唯一的策略（雖然可能是最�
 
 - [D70] “Virtual Memory” by Peter J. Denning. Computing Surveys, Vol. 2, No. 3, September 1970. Denning 關於 virtual memory 系統的早期經典綜述
 
-- [EF78] “Cold-start vs. Warm-start Miss Ratios” by Malcolm C. Easton, Ronald Fagin. Communications of the ACM, 21：10, October 1978. 討論 cold-start 和 warm-start miss 差異的好文章
+- [EF78] “Cold-start vs. Warm-start Miss Ratios” by Malcolm C. Easton, Ronald Fagin. Communications of the ACM, 21:10, October 1978. 討論 cold-start 和 warm-start miss 差異的好文章
 
 - [FP89] “Electrochemically Induced Nuclear Fusion of Deuterium” by Martin Fleischmann, Stanley Pons. Journal of Electroanalytical Chemistry, Volume 26, Number 2, Part 1, April, 1989. 這篇論文聲稱可以從水和金屬產生近乎無限的能源，原本可能顛覆世界，但結果無法複現，因此作者最後聲名狼藉（也被嘲笑）。 唯一幸運的大概是 Marvin Hawkins，他雖參與研究卻沒被列名，從而避免與這個 20 世紀最大的科學糗事之一有所關聯
 
@@ -319,9 +319,9 @@ page replacement 並不是 VM 子系統中唯一的策略（雖然可能是最�
 
 - [H87] “Aspects of Cache Memory and Instruction Buffer Performance” by Mark D. Hill. Ph.D. Dissertation, U.C. Berkeley, 1987. Mark Hill 在博士論文中提出 Three C’s 概念，後來因為出現在 H&P [HP06] 中而廣為人知。 其中的名言：「我發現將 miss 分成三種型態很有幫助... 根據 miss 的成因來直覺地劃分（第 49 頁）」
 
-- [KE+62] “One-level Storage System” by T. Kilburn, D.B.G. Edwards, M.J. Lanigan, F.H. Sumner. IRE Trans. EC-11：2, 1962. 雖然 Atlas 系統有 use bit，但因為 page 數量少，所以他們沒有處理大記憶體中 use bit 掃描的問題
+- [KE+62] “One-level Storage System” by T. Kilburn, D.B.G. Edwards, M.J. Lanigan, F.H. Sumner. IRE Trans. EC-11:2, 1962. 雖然 Atlas 系統有 use bit，但因為 page 數量少，所以他們沒有處理大記憶體中 use bit 掃描的問題
 
-- [M+70] “Evaluation Techniques for Storage Hierarchies” by R. L. Mattson, J. Gecsei, D. R. Slutz, I. L. Traiger. IBM Systems Journal, Volume 9：2, 1970. 這篇主要討論如何有效模擬 cache 階層，是這方面的經典論文，也深入說明了各種替換策略的特性。 你能想出 stack property 如何幫助模擬不同大小的 cache 嗎？
+- [M+70] “Evaluation Techniques for Storage Hierarchies” by R. L. Mattson, J. Gecsei, D. R. Slutz, I. L. Traiger. IBM Systems Journal, Volume 9:2, 1970. 這篇主要討論如何有效模擬 cache 階層，是這方面的經典論文，也深入說明了各種替換策略的特性。 你能想出 stack property 如何幫助模擬不同大小的 cache 嗎？
 
 - [MM03] “ARC: A Self-Tuning, Low Overhead Replacement Cache” by Nimrod Megiddo and Dharmendra S. Modha. FAST 2003, February 2003, San Jose, California. 這篇現代替換策略的優秀論文提出 ARC 策略，已被一些系統採用。 在 FAST ’14 大會中獲頒 “Test of Time” 獎
 
