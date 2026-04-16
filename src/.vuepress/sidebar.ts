@@ -309,10 +309,18 @@ export default sidebar([
           "Power-Method/",
         ],
       },
+      // {
+      //   text: "機率論",
+      //   collapsible: true,
+      //   children: ["Math/Probability/"],
+      // }
       {
-        text: "機率論",
+        text: "離散數學",
         collapsible: true,
-        children: ["Math/Probability/"],
+        prefix: "Math/discrete/",
+        children: [
+          "ch1-ch3.md"
+        ],
       }
     ]
   },
