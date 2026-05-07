@@ -60,7 +60,7 @@ AI 進步的好快，前陣子版面滑到[一部影片](https://www.facebook.co
 
 現在回頭看，其實這就是前面所說的「堪用」。 這邊有個問題在於我們傳了 2D resource 的指標，它裡面含了很多 SDL 做算繪不需要用到的資料，而當中就有一些成員是與 vGPU 狀態有關的，例如這個 2D resource 實際上存在 guest memory 的哪幾個 page。 因此很顯然地我就覺得這種非必要的資訊不應該給 window 這端拿到，而且這甚至是很重要的資料，因此就開始了第一次重構
 
-![（圖中的 display_info 是 window 端自己儲存的 scanout info）](image/vgpu_resource_2d_display_info.png)
+![（圖中的 `display_info` 是 window 端自己儲存的 scanout info）](image/vgpu_resource_2d_display_info.png)
 
 此時我的想法非常直接，那就搞一個算繪專用的結構，然後 vGPU device 這邊傳的時候先轉成算繪用的結構，再丟過去就好，這樣既不用 lock，又可以避免擁有多於資料的問題。 為了避免 vGPU device 這邊充斥著 SDL 相關的程式碼，我將 SDL 需要的東西整理成了一個 scanout view 的結構，成功將這個問題解掉了，但是此時光是一個 scanout，就有三個對應的結構：device 端、用來轉換的 view、最後 SDL 用的 scanout
 

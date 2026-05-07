@@ -1,5 +1,5 @@
 ---
-title: glTF：A Simple Texture
+title: glTF：Morph Targets
 date: 2025-05-01
 tag: 
   - computer-graphic
