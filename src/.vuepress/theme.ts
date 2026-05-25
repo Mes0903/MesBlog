@@ -24,6 +24,71 @@ const blogMedias = {
   Youtube: "https://www.youtube.com/@mes0903",
 };
 
+const zhTwThemeLocale = {
+  navbarLocales: {
+    langName: "繁體中文",
+    selectLangAriaLabel: "選擇語言",
+  },
+  metaLocales: {
+    author: "作者",
+    date: "寫作日期",
+    origin: "原創",
+    views: "瀏覽量",
+    category: "分類",
+    tag: "標籤",
+    readingTime: "閱讀時間",
+    words: "字數",
+    toc: "此頁內容",
+    prev: "上一頁",
+    next: "下一頁",
+    contributors: "貢獻者",
+    editLink: "編輯此頁",
+    print: "列印",
+  },
+  blogLocales: {
+    article: "文章",
+    articleList: "文章列表",
+    category: "分類",
+    tag: "標籤",
+    timeline: "時間軸",
+    timelineTitle: "昨日不再",
+    all: "全部",
+    intro: "個人介紹",
+    star: "星標",
+    empty: "$text 為空",
+  },
+  paginationLocales: {
+    prev: "上一頁",
+    next: "下一頁",
+    navigate: "跳轉到",
+    action: "前往",
+    errorText: "請輸入 1 到 $page 之間的頁碼！",
+  },
+  outlookLocales: {
+    themeColor: "主題色",
+    darkmode: "主題模式",
+    fullscreen: "全螢幕",
+  },
+  encryptLocales: {
+    iconLabel: "頁面已加密",
+    placeholder: "輸入密碼",
+    remember: "記住密碼",
+    errorHint: "請輸入正確密碼",
+  },
+  routerLocales: {
+    skipToContent: "跳至主要內容",
+    notFoundTitle: "頁面不存在",
+    notFoundMsg: [
+      "這裡什麼也沒有",
+      "我們是怎麼來到這裡的？",
+      "這是 404",
+      "看起來你造訪了一個失效的連結",
+    ],
+    back: "返回上一頁",
+    home: "帶我回家",
+  },
+};
+
 export default hopeTheme({
   hostname: "https://mes0903.github.io",
   contributors: false,
@@ -45,14 +110,17 @@ export default hopeTheme({
 
   locales: {
     "/": {
+      lang: "zh-TW",
       sidebar: zhSidebar,
       footer,
+      ...zhTwThemeLocale,
       blog: {
         description: "OS & CG dev",
         medias: blogMedias,
       },
     },
     "/en/": {
+      lang: "en-US",
       sidebar: enSidebar,
       footer,
       blog: {
@@ -61,6 +129,7 @@ export default hopeTheme({
       },
     },
     "/ja/": {
+      lang: "ja-JP",
       sidebar: jaSidebar,
       footer,
       blog: {
