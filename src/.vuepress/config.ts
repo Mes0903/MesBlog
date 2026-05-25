@@ -5,9 +5,23 @@ import theme from "./theme.js";
 export default defineUserConfig({
   base: "/",
 
-  lang: "en-US",
-  title: "Mes's Blog",
-  description: "Being  Towards  Death",
+  locales: {
+    "/": {
+      lang: "zh-TW",
+      title: "Mes's Blog",
+      description: "Being Towards Death",
+    },
+    "/en/": {
+      lang: "en-US",
+      title: "Mes's Blog",
+      description: "Being Towards Death",
+    },
+    "/ja/": {
+      lang: "ja-JP",
+      title: "Mes's Blog",
+      description: "Being Towards Death",
+    },
+  },
 
   theme,
 

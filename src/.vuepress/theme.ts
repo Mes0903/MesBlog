@@ -1,5 +1,7 @@
 import { hopeTheme } from "vuepress-theme-hope";
-import sidebar from "./sidebar.js";
+import zhSidebar from "./sidebars/zh.js";
+import enSidebar from "./sidebars/en.js";
+import jaSidebar from "./sidebars/ja.js";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -8,6 +10,19 @@ const callgraph = JSON.parse(
 );
 callgraph.name ??= "callgraph";
 callgraph.scopeName ??= "source.callgraph";
+
+const footer =
+  "The content on this site is all CC-BY-SA, or MIT/GPLv3+ dual license for code.";
+
+const blogMedias = {
+  Discord: "https://discordapp.com/users/411596393074130944",
+  Email: "mes900903@gmail.com",
+  Facebook: "https://www.facebook.com/Mes0903/",
+  GitHub: "https://github.com/Mes0903",
+  Instagram: "https://www.instagram.com/mes_0903/",
+  Twitter: "https://x.com/Mes_0903",
+  Youtube: "https://www.youtube.com/@mes0903",
+};
 
 export default hopeTheme({
   hostname: "https://mes0903.github.io",
@@ -26,22 +41,32 @@ export default hopeTheme({
 
   docsDir: "src",
 
-  sidebar,
-
-  footer: "The content on this site is all CC-BY-SA, or MIT/GPLv3+ dual license for code.",
-
   displayFooter: true,
 
-  blog: {
-    description: "OS & CG dev",
-    medias: {
-      Discord: "https://discordapp.com/users/411596393074130944",
-      Email: "mes900903@gmail.com",
-      Facebook: "https://www.facebook.com/Mes0903/",
-      GitHub: "https://github.com/Mes0903",
-      Instagram: "https://www.instagram.com/mes_0903/",
-      Twitter: "https://x.com/Mes_0903",
-      Youtube: "https://www.youtube.com/@mes0903",
+  locales: {
+    "/": {
+      sidebar: zhSidebar,
+      footer,
+      blog: {
+        description: "OS & CG dev",
+        medias: blogMedias,
+      },
+    },
+    "/en/": {
+      sidebar: enSidebar,
+      footer,
+      blog: {
+        description: "OS & CG dev",
+        medias: blogMedias,
+      },
+    },
+    "/ja/": {
+      sidebar: jaSidebar,
+      footer,
+      blog: {
+        description: "OS & CG dev",
+        medias: blogMedias,
+      },
     },
   },
 
