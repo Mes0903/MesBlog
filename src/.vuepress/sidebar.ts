@@ -334,7 +334,8 @@ export default sidebar([
       "ShionGraduate/",
       "FeelWithTheHeart/",
       "AboutTranslation/",
-      "TheStubborn/"
+      "TheStubborn/",
+      "MesBlog/src/essay/2026-OSS-NA"
     ],
   },
 ]);
