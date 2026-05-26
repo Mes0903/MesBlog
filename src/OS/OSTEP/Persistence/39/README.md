@@ -31,7 +31,7 @@ category: OS
 
 目錄階層從根目錄開始（在 UNIX 系統中，根目錄簡稱為 `/`），並使用某種分隔符號來為後續的子目錄命名，直到指定到目標檔案或目錄。 例如，如果使用者在根目錄 `/` 中建立了一個名為 `foo` 的目錄，然後在 `foo` 內建立了一個名為 `bar.txt` 的檔案，我們就可以透過其絕對路徑名來參考該檔案，在此情況下就是 `/foo/bar.txt`。 請參考圖 39.1 了解更複雜的目錄樹； 範例中有效的目錄有 `/`、`/foo`、`/bar`、`/bar/bar`、`/bar/foo`； 有效的檔案有 `/foo/bar.txt` 和 `/bar/foo/bar.txt`
 
-![（Figure 39.1: An Example Directory Tree）](image/39-1.png)
+![（Figure 39.1: An Example Directory Tree）](./image/39-1.png)
 
 只要位於檔案系統樹的不同位置，目錄與檔案可以使用相同的名稱（例如，圖中有兩個名為 `bar.txt` 的檔案，分別是 `/foo/bar.txt` 和 `/bar/foo/bar.txt`）
 
@@ -187,19 +187,19 @@ struct {
 
 讓我們透過幾個範例來澄清這個概念。 首先，假設有個 process 打開了一個大小為 300 位元組的檔案，並透過重複呼叫 `read()` 系統呼叫來讀取檔案，每次讀取 100 位元組。 底下列出相關系統呼叫的追蹤結果，以及每個系統呼叫回傳的值，還有針對該檔案存取在已開啟檔案表中的目前偏移值：
 
-![](image/t1.png)
+![](./image/t1.png)
 
 從追蹤結果中可以注意到幾項重點。 首先，你可以看到當檔案被開啟時，目前偏移會初始化為零。 接著，你會看到隨著 process 每次呼叫 `read()`，該偏移會遞增； 這讓 process 只要一直呼叫 `read()` 就能輕鬆取得下一段檔案內容。 最後，你可以看到當嘗試在檔案結尾之後執行 `read()` 時會回傳零，藉此告知 process 已經完整地讀取了整個檔案
 
 接下來，我們假設有個 process 先後兩次打開了相同的檔案，並對它們各自執行讀取的情況：
 
-![](image/t2.png)
+![](./image/t2.png)
 
 在此範例中，會分別配置兩個 file descriptor（3 和 4），它們各自對應到已開啟檔案表中的不同條目（此例中是條目 10 和 11，如表格標題所示； OFT 代表 Open File Table）。 如果你仔細追蹤，就會看到每個目前偏移都是獨立更新的
 
 在最後一個範例中，process 在讀取之前先使用 `lseek()` 重新設定目前偏移； 在這種情況下，只需要單一的已開啟檔案表條目（就如第一個範例一樣）。 此處，首先呼叫 `lseek()` 將目前偏移設為 200。 隨後的 `read()` 就會讀取接下來的 50 位元組，並相應地更新目前偏移
 
-![](image/t3.png)
+![](./image/t3.png)
 
 :::info  
 呼叫 `lseek()` 並不會執行硬碟搜尋
@@ -248,7 +248,7 @@ prompt>
 
 圖 39.3 顯示了將每個 process 的私有 descriptor 陣列、共享的開啟檔案表條目，以及該條目對底層檔案系統 inode 之參照連結起來的關係。 請注意，我們在此終於實際使用了參考計數。 當某個檔案表條目被共享時，其參考計數會遞增； 只有當兩個 process 都關閉該檔案（或結束）時，該條目才會被移除
 
-![（Figure 39.3: Processes Sharing An Open File Table Entry）](image/39-3.png)
+![（Figure 39.3: Processes Sharing An Open File Table Entry）](./image/39-3.png)
 
 在父 process 與子 process 之間共享開啟檔案表條目有時相當有用。 例如，若你建立多個共同協作處理某項任務的 process，它們可以寫入同一個輸出檔案而不需額外協調。 如要進一步了解在呼叫 `fork()` 時 processes 之間會共享什麼，請參閱 man page
 

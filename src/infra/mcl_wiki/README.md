@@ -108,9 +108,9 @@ category: infra
 
 最後附一下目前 Nginx Proxy Manager 的設定，但因為我不是這方面的專家，所以設的可能有點怪怪的就是了，總之它能動：
 
-![（服務的設定）](image/proxy_host.png)
+![（服務的設定）](./image/proxy_host.png)
 
-![（custom location 的設定）](image/custom_location.png)
+![（custom location 的設定）](./image/custom_location.png)
 
 其中 custom location 的展開部分為：
 

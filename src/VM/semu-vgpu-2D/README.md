@@ -69,9 +69,9 @@ category:
 
 以 [Collabora](https://www.collabora.com/news-and-blog/blog/2025/01/15/the-state-of-gfx-virtualization-using-virglrenderer/) 的這兩張圖來看，VirGL 是適用於 virtio-gpu 的 guest OpenGL 驅動，Venus 是 virtio-gpu 的 guest Vulkan 驅動，這兩者都實作在 Mesa 中：
 
-![](image/virgl.png)
+![](./image/virgl.png)
 
-![](image/venus.png)
+![](./image/venus.png)
 
 但因為 virtio-gpu 只定義了要有哪些行為，例如建立 context、建立 BLOB 資源或提交 3D 指令之類的，所以實際填入 virtqueue 的資料內容（payload）是由實作方決定的
 
@@ -168,7 +168,7 @@ typedef struct {
 7. `vgpu-display.c` 把 display 命令推進 SPSC 顯示佇列
 8. `window-sw.c` 在 SDL 主迴圈取出命令，更新 SDL 紋理並算繪
 
-![（semu 的 virtio-gpu 架構關係圖，圖很大你可能要點開來看）](image/semu-virtio-gpu-2D.png)
+![（semu 的 virtio-gpu 架構關係圖，圖很大你可能要點開來看）](./image/semu-virtio-gpu-2D.png)
 
 第二條是 host 將輸入事件送進 guest：
 
@@ -181,7 +181,7 @@ typedef struct {
 7. virtio-input 更新 used ring 與 `InterruptStatus`
 8. `main.c` 把 virtio-input 中斷狀態同步到 PLIC 啟用位元
 
-![（以鍵盤為例的架構關係圖）](image/virtio_input_state_t.png)
+![（以鍵盤為例的架構關係圖）](./image/virtio_input_state_t.png)
 
 這兩條路徑都會經過 host-side SPSC 佇列，但它們不是 VirtIO virtqueue。 VirtIO virtqueue 是 guest 和裝置模型之間的資料結構。 SPSC 顯示佇列與 SPSC 輸入佇列則是 semu host 端的兩個執行緒（SDL 執行緒與虛擬機器執行緒）之間的橋接
 
@@ -253,7 +253,7 @@ static bool vgpu_display_pop_queued_cmd(struct vgpu_display_cmd *cmd)
 
 顯示佇列是 lossy 的。 如果 `next == tail`，`vgpu_display_push_cmd()` 會釋放這次命令並直接返回，避免 SDL 後端落後時阻塞虛擬機器執行緒
 
-![SPSC 顯示佇列的同步邊界](image/spsc-vgpu-sync.png)
+![SPSC 顯示佇列的同步邊界](./image/spsc-vgpu-sync.png)
 
 #### vinput 輸入佇列
 
@@ -304,7 +304,7 @@ bool vinput_pop_cmd(int dev_id, struct vinput_cmd *event)
 
 輸入佇列也是 lossy 的。 如果 `next == tail`，`vinput_push_cmd()` 會直接回傳 `false`，代表丟棄了該 SDL 事件
 
-![SPSC 輸入佇列的同步邊界](image/spsc-vinput-sync.png)
+![SPSC 輸入佇列的同步邊界](./image/spsc-vinput-sync.png)
 
 ### 編譯期開關與 MMIO map
 
@@ -466,7 +466,7 @@ case _(QueueDriverLow):
 
 舉例來說，假設記憶體實際長這樣：
 
-![](image/ram_index.png)
+![](./image/ram_index.png)
 
 此時 guest 說 `QueueDesc = 4`，意思是「virtqueue 在第 4 個位元組的位置」。 但如果我們直接寫 `ram[4]`，C 語言會跳到第 4 個 `uint32_t`，也就是第 16 個位元組，跳過頭了，所以要做 `4 >> 2 = 1`，用 `ram[1]` 才對得上 4 位元組的單位
 
@@ -915,7 +915,7 @@ void virtio_input_read(hart_t *vm,
 
 #### `virtio_gpu_state_t` 與 `virtio_gpu_queue_t`
 
-![（架構示意圖，注意 `vgpu_sw_resource_2d` 不在此圖內，因為它由軟體後端自行維護，不直接與 `emu_state_t` 有關）](image/virtio_gpu_state_t.png)
+![（架構示意圖，注意 `vgpu_sw_resource_2d` 不在此圖內，因為它由軟體後端自行維護，不直接與 `emu_state_t` 有關）](./image/virtio_gpu_state_t.png)
 
 對應的結構定義如下（`device.h`）：
 
@@ -1230,7 +1230,7 @@ static void virtio_gpu_queue_notify_handler(virtio_gpu_state_t *vgpu, int index)
 
 #### `vgpu_sw_resource_2d` 與 SPSC 顯示佇列的 payload
 
-![（架構示意圖：上方是裝置端 `vgpu_sw_resource_2d` 本體，下方是送進 SPSC 顯示佇列的 `vgpu_display_payload` 快照）](image/vgpu_sw_resource_2d_spsc.png)
+![（架構示意圖：上方是裝置端 `vgpu_sw_resource_2d` 本體，下方是送進 SPSC 顯示佇列的 `vgpu_display_payload` 快照）](./image/vgpu_sw_resource_2d_spsc.png)
 
 ##### `vgpu_sw_resource_2d`
 
@@ -1459,7 +1459,7 @@ if (res_2d->stride == row_bytes) {
 
 畫面輸出的流程有很明確的主軸：guest 先透過 controlq 建立 `resource_id`，再用 `RESOURCE_ATTACH_BACKING` 把 guest 實際承載像素資料的 backing pages 掛到這個資源上，接著用 `TRANSFER_TO_HOST_2D` 把像素搬進 host 的 `vgpu_sw_resource_2d.image`。 最後再藉由 `SET_SCANOUT` 與 `RESOURCE_FLUSH` 建立 `vgpu_display_payload` 快照，並透過 SPSC 顯示佇列把它交給 SDL 後端
 
-![（semu 的 virtio-gpu 整體架構與流程圖，圖很大你可能要點開來看）](image/semu-virtio-gpu-2D.png)
+![（semu 的 virtio-gpu 整體架構與流程圖，圖很大你可能要點開來看）](./image/semu-virtio-gpu-2D.png)
 
 ##### controlq 入口：`QueueNotify` 到 `virtio_gpu_desc_handler()`
 
@@ -2024,7 +2024,7 @@ static size_t vgpu_sw_iov_to_buf(const struct iovec *iov,
 
 可以搭配以下示意圖一起看：
 
-![（`iov_to_buf` 示意圖）](image/iov_to_buf.png)
+![（`iov_to_buf` 示意圖）](./image/iov_to_buf.png)
 
 ##### `SET_SCANOUT` 與 `RESOURCE_FLUSH`：從 2D 資源走到 display bridge
 
@@ -2634,7 +2634,7 @@ SDL 執行緒
 
 #### `virtio_input_state_t`、`struct vinput_data` 與 `virtio_input_config`
 
-![（以鍵盤為例的架構關係圖）](image/virtio_input_state_t.png)
+![（以鍵盤為例的架構關係圖）](./image/virtio_input_state_t.png)
 
 virtio-input 與 virtio-gpu 差不多，也是把 MMIO 的可見狀態、virtqueue 的狀態與 host 私有資料拆開來放，主要差別在於：
 
@@ -2846,7 +2846,7 @@ guest 的 virtio-input 驅動初始化裝置時，會用 `struct virtio_input_co
 
 ### VirtIO-Input：host 輸入事件送入 guest 的流程
 
-![（以鍵盤為例的架構關係圖）](image/virtio_input_state_t.png)
+![（以鍵盤為例的架構關係圖）](./image/virtio_input_state_t.png)
 
 現在我們來看一下 virtio-input 被用到的地方，還有它的執行流程。 與 virtio-gpu 不同，virtio-gpu 的 controlq / cursorq 是用來傳送命令的 virtqueue，顯示資訊、EDID、資源操作與鼠標更新大多會透過這兩條 virtqueue 送命令進來。 而 virtio-input 的運作方式則不一樣：
 
@@ -4774,11 +4774,11 @@ SDL 執行緒掌管 SDL 視窗生命週期，虛擬機器執行緒負責 `semu_r
 
 示意圖如下：
 
-![](image/stride.png)
+![](./image/stride.png)
 
 因此在記憶體中的佈局通常如下：
 
-![](image/image_layout.png)
+![](./image/image_layout.png)
 
 但 vgpu 2D 有個限制在於 2D 的協定本身沒有欄位讓 guest 傳遞 `stride` 給 host（3D 路徑另有資料結構），所以 host 無法直接從 2D 命令得知 guest 的 `stride` 數值。 接下來先以 [QEMU](https://gitlab.com/qemu-project/qemu/-/tree/770f50c14f098717fd40ae6e826a495681152447) 與 [ACRN](https://github.com/projectacrn/acrn-hypervisor/tree/37b1c13f95696ddf543d6d77e4aed5641692672e) 這兩個虛擬機器為例，說明為什麼要關心 stride 的計算
 
@@ -5613,7 +5613,7 @@ KMS client 是「直接使用 DRM/KMS 介面控制顯示輸出」的 user-space 
 
 後面的程式碼追蹤以 [PR#133](https://github.com/sysprog21/semu/pull/133) 對應的實驗環境為基準。 這個環境的 `glxinfo` 結果如下：
 
-![](image/glxinfo.png)
+![](./image/glxinfo.png)
 
 重點在於：
 
@@ -8309,7 +8309,7 @@ static bool sdl_plane_info_get_sdl_format(
 
 若直接使用轉換後的 `SDL_PIXELFORMAT_XRGB8888` 建立鼠標平面紋理，螢幕上的鼠標會變成不透明黑色方塊：
 
-![](image/cursor_alpha.png)
+![](./image/cursor_alpha.png)
 
 因此視窗後端把「資源格式的通道佈局」和「鼠標平面需要 alpha」分開處理：`sdl_plane_info_get_sdl_format()` 會先把 virtio-gpu 格式轉成對應的 SDL 格式，若目前的平面是鼠標平面且轉出來的是 XRGB/XBGR/BGRX/RGBX，就切到相同位元組佈局的支援 alpha 的 SDL 格式
 

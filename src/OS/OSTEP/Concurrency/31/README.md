@@ -94,7 +94,7 @@ sem_post(&m);
 
 Thread 0 現在可以進入 critical section 了。 若在 Thread 0 執行 critical section 期間，沒有其他執行緒嘗試取得鎖，當它呼叫 `sem_post()` 時，就會將 semaphore 的值還原為 1（且不會喚醒任何等待中的執行緒，因為此時沒有人在等待）。 圖 31.4 顯示了此情境的執行追蹤：
 
-![（Figure 31.4: Thread Trace: Single Thread Using A Semaphore）](image/31-4.png)
+![（Figure 31.4: Thread Trace: Single Thread Using A Semaphore）](./image/31-4.png)
 
 更有趣的情況是，當 Thread 0 正在「持有鎖」（即已呼叫 `sem_wait()` 但尚未呼叫 `sem_post()`）時，另一個執行緒（Thread 1）呼叫 `sem_wait()` 嘗試進入 critical section。 在此情況下，Thread 1 會將 semaphore 的值減到 –1，然後進入等待（睡眠並讓出處理器）
 
@@ -102,7 +102,7 @@ Thread 0 現在可以進入 critical section 了。 若在 Thread 0 執行 criti
 
 圖 31.5 顯示了此範例的執行過程。 除了各執行緒的動作，圖中還標註了排程器的狀態：Run（正在執行）、Ready（可執行但尚未取得 CPU）和 Sleep（被阻塞）。 注意，當 Thread 1 嘗試取得已被持有的鎖時，會進入 Sleep 狀態； 只有在 Thread 0 再度執行並釋放鎖後，Thread 1 才能被喚醒並有機會再次執行：
 
-![（Figure 31.5: Thread Trace: Two Threads Using A Semaphore）](image/31-5.png)
+![（Figure 31.5: Thread Trace: Two Threads Using A Semaphore）](./image/31-5.png)
 
 由此，我們可以將 semaphore 作為鎖來使用。 由於鎖只有兩種狀態（持有或未持有），因此當 semaphore 當作鎖使用時，也常稱為 binary semaphore。 請注意，若你僅將 semaphore 以此 binary 的方式使用，那其實可以比我們此處介紹的 generalized semaphore 實作更為簡易
 
@@ -152,11 +152,11 @@ parent: end
 
 parent 執行，將 semaphore 減 1（變為 –1），然後被阻塞（睡眠）。 當 child 最終執行時，它會呼叫 `sem_post()`，將 semaphore 的值增回 0，並喚醒 parent，parent 隨即從 `sem_wait()` 返回並完成程式
 
-![（Figure 31.7: Thread Trace: Parent Waiting For Child (Case 1)）](image/31-7.png)
+![（Figure 31.7: Thread Trace: Parent Waiting For Child (Case 1)）](./image/31-7.png)
 
 第二種情況（圖 31.8）是 child 在 parent 呼叫 `sem_wait()` 之前就已執行完成。 此時，child 首先呼叫 `sem_post()`，將 semaphore 的值從 0 增至 1。 當 parent 得以執行時，它呼叫 `sem_wait()`，發現 semaphore 的值為 1； parent 因此減為 0 並立即從 `sem_wait()` 返回，不會被阻塞，也能達成預期結果
 
-![（Figure 31.8: Thread Trace: Parent Waiting For Child (Case 2)）](image/31-8.png)
+![（Figure 31.8: Thread Trace: Parent Waiting For Child (Case 2)）](./image/31-8.png)
 
 ## 31.4 The Producer/Consumer (Bounded Buffer) Problem
 
@@ -405,7 +405,7 @@ void rwlock_release_writelock(rwlock_t* rw) { sem_post(&rw->writelock); }
 
 問題的基本場景如下（見圖 31.14）：假設有五位「哲學家」圍坐在桌邊，每兩位哲學家之間放一把叉子（共五把）。 哲學家有思考階段，此時不需要叉子，也有進食階段，此時需要同時取得左右兩把叉子。 對這些叉子的爭奪，以及由此產生的同步問題，便是我們在並行程式設計中研究此問題的原因
 
-![（Figure 31.14: The Dining Philosophers）](image/31-14.png)
+![（Figure 31.14: The Dining Philosophers）](./image/31-14.png)
 
 以下是每位哲學家的基本迴圈，假設每個人都有從 0 到 4（含）的唯一執行緒識別碼 p：
 

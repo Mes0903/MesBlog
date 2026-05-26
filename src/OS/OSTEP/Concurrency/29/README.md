@@ -102,7 +102,7 @@ int get(counter_t* c)
 
 為了瞭解這種簡單方法的效能代價，我們執行了一個基準測試，讓每個 thread 更新同一個共享計數器固定次數； 接著我們改變 thread 的數量。 圖 29.5 顯示了從一個到四個 thread 同時執行時所需的總時間，每個 thread 各更新計數器一百萬次。 這個實驗在一台搭載四顆 Intel 2.7 GHz i5 CPU 的 iMac 上進行； 我們預期隨著更多 CPU 同時運作，每單位時間內應要完成更多工作：
 
-![（Figure 29.5: Performance of Traditional vs. Approximate Counters）](image/29-5.png)
+![（Figure 29.5: Performance of Traditional vs. Approximate Counters）](./image/29-5.png)
 
 從圖中的最上方曲線（標示為 "Precise"）可以看到同步計數器的效能擴展性很差。 單一 thread 完成百萬次計數更新大約只需極短時間（約 0.03 秒），但若讓兩個 thread 同時各更新百萬次，卻會造成極大延遲（超過 5 秒！） 隨著 thread 數量增加，情況只會更糟
 
@@ -124,7 +124,7 @@ local-to-global 轉移的頻率由閾值 S 決定。 S 越小，counter 就越�
 
 為了說明這一點，我們來看一個例子（圖 29.3）：
 
-![（Figure 29.3: Tracing the Approximate Counters）](image/29-3.png)
+![（Figure 29.3: Tracing the Approximate Counters）](./image/29-3.png)
 
 在這個例子中，閾值 S 設為 5，並且在四個 CPU 上各有一個 thread 更新其 local counters L1 ~ L4。 trace 中也顯示了 global counter 的值（G），時間由上向下推移。 在每個時間點，都可能對某個 local counter 進行遞增操作； 一旦 local counter 的值達到閾值 S，就會將其累積值轉移到 global counter，然後將 local counter 重置
 
@@ -132,7 +132,7 @@ local-to-global 轉移的頻率由閾值 S 決定。 S 越小，counter 就越�
 
 圖 29.6 顯示了閾值 S 的重要性：在四個 CPU 上有四個 threads 各自執行一百萬次遞增操作。 如果 S 設得很低，效能會很差（但 global count 始終相當準確）； 如果 S 設得很高，效能會非常好，但 global count 會有所滯後（最多延遲 CPU 數量乘以 S）。 這種精確度與效能之間的取捨正是 approximate counter 所能實現的
 
-![（Figure 29.6: Scaling Approximate Counters）](image/29-6.png)
+![（Figure 29.6: Scaling Approximate Counters）](./image/29-6.png)
 
 在圖 29.4 中可以看到 approximate counter 的一個簡化版本。 建議你閱讀程式碼，或更好地，親自執行一些實驗，以更清楚地理解其運作原理：
 
@@ -425,7 +425,7 @@ int Hash_Lookup(hash_t* H, int key)
 
 圖 29.11 展示了在同一台搭載四顆 CPU 的 iMac 上，四個 threads 分別執行 10,000 到 50,000 次 concurrent updates 時，hash table 的效能表現。 圖中並同時繪製了僅使用單鎖的 linked list 作為比較。 從曲線可以看出，這個簡易的並行 hash table 擴展性極佳； 相較之下，linked list 卻無法有效擴展
 
-![（Figure 29.11: Scaling Hash Tables）](image/29-7.png)
+![（Figure 29.11: Scaling Hash Tables）](./image/29-7.png)
 
 ## 29.5 Summary
 

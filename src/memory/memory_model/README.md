@@ -19,7 +19,7 @@ category: memory
 
 <div class="img-w70">
 
-![詩音畢業了嗚嗚嗚，鹽寶...... 我的鹽寶......（[圖片取自鹽寶的 Twitter](https://x.com/murasakishionch/status/1916085213568110734/photo/1)）](image/shion.png)
+![詩音畢業了嗚嗚嗚，鹽寶...... 我的鹽寶......（[圖片取自鹽寶的 Twitter](https://x.com/murasakishionch/status/1916085213568110734/photo/1)）](./image/shion.png)
 
 </div>
 
@@ -88,13 +88,13 @@ y = 1                 r2 = x
 
 如果這個試金石測試的執行是順序一致的，那麼就只會有六種可能的交錯執行（interleaving）的方式：
 
-![](image/mem-litmus.png)
+![](./image/mem-litmus.png)
 
 你可以看到，沒有任何一種交錯執行會導致 `r1 = 1, r2 = 0` 的結果，因此不會出現這個結果，也就是說，在順序一致性的硬體上，對這個試金石測試 — 「這個程式有可能出現 `r1 = 1, r2 = 0` 嗎?」的答案是「不可能」
 
 對於順序一致的模型，你可以想像所有處理器都直接連接到同一塊共享記憶體，而這塊記憶體每次只能服務一個執行緒的讀或寫請求，且這裡<span class = "yellow">沒有快取（cache）</span>的存在。 因此每當處理器需要讀取或寫入記憶體時，該請求就會直接送往共享記憶體。 這種「一次只能被一人使用」的共享記憶體，自然會對所有記憶體的存取操作強加了一個執行順序，這就是順序一致性：
 
-![](image/mem-sc.png)
+![](./image/mem-sc.png)
 
 ::: info  
 本篇文章中的三張記憶體模型硬體示意圖，改編自 Maranget 等人的[〈A Tutorial Introduction to the ARM and POWER Relaxed Memory Models〉](https://www.cl.cam.ac.uk/~pes20/ppc-supplemental/test7.pdf)  
@@ -108,7 +108,7 @@ y = 1                 r2 = x
 
 下圖這種硬體架構模型對應到現代 x86 系統的記憶體模型：
 
-![](image/mem-tso.png)
+![](./image/mem-tso.png)
 
 所有處理器仍然連接到同一塊共享記憶體，但每個處理器都有一個 local 的寫入佇列（write queue），將寫入操作先暫存在這裡，處理器可以在寫入尚未完成時繼續執行新的指令，而這些寫入會逐步傳送到共享記憶體中。 當某個處理器進行記憶體讀取時，會先查詢自己 local 的寫入佇列，然後才查詢主記憶體，但它無法看到其他處理器的寫入佇列
 
@@ -249,7 +249,7 @@ On x86 TSO model: no. (Example from x86-TSO paper.)
 
 現在我們來看看一個更加鬆散的記憶體模型，也就是 ARM 與 POWER 處理器所採用的模型。 在實作層面上，這兩個系統之間有很多差異，但它們所保證的記憶體一致性模型大致相似，而且比 x86-TSO，甚至比 x86-TLO+CC 都要弱不少。 對於 ARM 與 POWER 系統來說，其想法是，每個處理器會對自己擁有的完整記憶體副本進行讀寫，而每次寫入都會獨立地傳播到其他處理器，在這個傳播過程中，允許重新排序（reordering）：
 
-![](image/mem-weak.png)
+![](./image/mem-weak.png)
 
 在這裡，不存在全域寫入順序（total store order）。 雖然圖中沒有畫出來，但每個處理器也被允許延後讀取操作，直到真的需要該結果為止，也就是說，某次讀取可以被延後到「後面的某次寫入之後」才執行。 在這種鬆散的模型中，我們之前看過的所有試金石測試，其答案在這裡都是「Yes」
 
@@ -377,31 +377,31 @@ Sarita Adve 和 Mark Hill 在他們的研究中正是提出了這種方法，發
 
 讓我們來看幾個範例，這些例子取自 Adve 與 Hill 的論文（為了簡報而重新繪製），這是一個單一執行緒的範例，其先寫入變數 `x`，再讀取相同的變數 `x`：
 
-![](image/mem-adve-1.png)
+![](./image/mem-adve-1.png)
 
 圖中的垂直箭頭表示單一執行緒中的執行順序，先執行寫入，接著執行讀取。 這個程式中不存在 data race，因為所有操作都發生在同一個執行緒內，相比之下，在以下這個雙執行緒的程式中就出現了 data race：
 
-![](image/mem-adve-2.png)
+![](./image/mem-adve-2.png)
 
 在這裡，如果 Thread 2 在沒有與 Thread 1 協調的情況下寫入變數 `x`，「Thread 2 的寫入」就會與「Thread 1 的寫入與讀取」產生 race； 如果 Thread 2 不是寫入 `x`，而是讀取 `x`，則這個程式只會有一個 race，發生於「Thread 1 的寫入」與「Thread 2 的讀取」之間。 要注意的是，每個 race 都至少會涉及到一次的「寫入」操作，兩個沒有同步機制的「讀取」行為並不會產生 race
 
 為了避免 race，我們必須加入同步操作（synchronization operations），這些操作會強制規範不同執行緒對共享同步變數的操作順序。 如果我們使用同步操作 `S(a)`（針對變數 `a` 的同步，下圖以虛線箭頭標示），強制讓「Thread 2 的寫入」發生在「Thread 1 完成」之後，那麼這個 race 就會被消除掉：
 
-![](image/mem-adve-3.png)
+![](./image/mem-adve-3.png)
 
 如此一來，「Thread 2 的寫入」便不會與 Thread 1 的操作同時發生了
 
 如果 Thread 2 只是讀取，那就只需要與「Thread 1 的寫入」同步即可，兩次的讀取操作仍然可以同時進行：
 
-![](image/mem-adve-4.png)
+![](./image/mem-adve-4.png)
 
 執行緒之間可以透過一連串的同步操作來建立順序，甚至可以藉由中介的執行緒來達成這種順序，如下所示，這個例子中不存在 data race：
 
-![](image/mem-adve-5.png)
+![](./image/mem-adve-5.png)
 
 另一方面，如果僅僅是使用同步變數本身，並不保證能消除 data race，因為同步變數可能會被錯用，下例中存在 data race：
 
-![](image/mem-adve-6.png)
+![](./image/mem-adve-6.png)
 
 上例中 Thread 2 的讀取操作雖然有正確地與其他執行緒的寫入進行同步（它發生在兩個寫入之後），但這兩個寫入之間並沒有被同步，所以這個例子中仍存在 data race（not DRF）
 
@@ -607,7 +607,7 @@ int k = p.x;
 ::: tip  
 所謂的 happens-beffore，代表前一個操作的結果對後續的操作是可見的，如前面的這個例子：
 
-![](image/mem-adve-4.png)
+![](./image/mem-adve-4.png)
 
 Thread 1 和 Thread 2 會執行同步指令 `S(a)`，這兩個 `S(a)` 會建立一個從 Thread 1 到 Thread 2 的 happens-before 關係，因此 Thread 1 中 `W(x)` 的結果能夠被 Thread 2 中的 `R(x)` 看見  
 :::

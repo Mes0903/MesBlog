@@ -136,7 +136,7 @@ void unlock(lock_t *mutex) {
 
 正確性上的問題在你習慣 concurrent 程式設計思維之後會很容易看出來。 請想像如下交錯執行的情境（見 Figure 28.2），假設一開始 flag = 0：
 
-![（Figure 28.2: Trace: No Mutual Exclusion）](image/28-2.png)
+![（Figure 28.2: Trace: No Mutual Exclusion）](./image/28-2.png)
 
 從這種交錯中你可以看出，只要中斷發生得剛剛好（或說剛剛不好），我們就能輕易出現這種情況：兩個 thread 都設了 `flag = 1`，然後都進入了 critical section。 這種行為在業界的術語裡叫作「災難性錯誤」—— 我們顯然無法保證 mutual exclusion，連最基本的目標都沒達成
 

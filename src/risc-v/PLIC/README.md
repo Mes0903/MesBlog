@@ -64,9 +64,9 @@ PLIC 產生的中斷通知（Interrupt notifications）會分別出現在 M/S mo
 
 PLIC 會獨立處理每個中斷目標，不會考慮不同中斷目標的元件內所使用的任何中斷優先級（interrupt prioritization）。 因此 PLIC 不提供中斷搶占或嵌套（nesting）的概念，這要由承載多個中斷目標的處理器核心來處理
 
-![（Figure 1. RISC-V PLIC Interrupt Architecture Block Diagram）](image/1.png)
+![（Figure 1. RISC-V PLIC Interrupt Architecture Block Diagram）](./image/1.png)
 
-![（img src：[Tuesday @ 0900 RISC V Interrupts Krste Asanović, UC Berkeley & SiFive Inc](https://www.youtube.com/watch?v=iPbaG_wnNJY)）](image/2.png)
+![（img src：[Tuesday @ 0900 RISC V Interrupts Krste Asanović, UC Berkeley & SiFive Inc](https://www.youtube.com/watch?v=iPbaG_wnNJY)）](./image/2.png)
 
 ### 2. Interrupt Gateways（中斷閘道）
 
@@ -178,7 +178,7 @@ PLIC 硬體僅支援中斷的多播（multicasting），即所有啟用的目標
 - 在目標處理完該中斷後，會向相關的中斷閘道發送中斷完成消息
 - 之後中斷閘道便可以再為相同的來源向 PLIC 轉發另一個中斷請求了
 
-![（Figure 2. PLIC Interrupt Flow）](image/3.png)
+![（Figure 2. PLIC Interrupt Flow）](./image/3.png)
 
 ## Details
 

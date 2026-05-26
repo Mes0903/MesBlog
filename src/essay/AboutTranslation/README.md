@@ -7,7 +7,7 @@ category: essay
 
 # 有關翻譯的小心得
 
-![（鹽寶的會員好像要關了，紀錄一下，可惜沒滿 4 年）](image/image.png)
+![（鹽寶的會員好像要關了，紀錄一下，可惜沒滿 4 年）](./image/image.png)
 
 前陣子由於 jserv 老師那邊要我協助做 code review（結果過了一個半月我還沒開始==），因此開始閱讀 [linmo](https://github.com/sysprog21/linmo) 的 codebase，但 pull 下來後發現我對 RISC-V 的 ISA 還不夠熟，離上次刻 OS 也有點久遠了，所以在閱讀 codebase 前想先回去閱讀一下文件和教材
 

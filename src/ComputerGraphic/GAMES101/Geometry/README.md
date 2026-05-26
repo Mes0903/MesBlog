@@ -11,11 +11,11 @@ category: computer-graphic
 
 這章我們要來看一些具體的幾何的例子，和一些不同的幾何表示方法，像是下圖玻璃的杯子，上面有各種不同的曲線，這些曲線該如何被描述呢？
 
-![](image/example_of_geometry.png)
+![](./image/example_of_geometry.png)
 
 再來是像下面這台車，在車頭的曲面上我們可看不到任何三角形，他是一個非常光滑的曲面，不管我們離多近，都看不到離散的三角形，這在圖學裡面又該如何被描述呢？
 
-![（img src：https://www.netcarshow.com/）](image/example_of_geometry2.png)
+![（img src：https://www.netcarshow.com/）](./image/example_of_geometry2.png)
 
 ## Ways to Represent Geometry
 
@@ -25,7 +25,7 @@ category: computer-graphic
 
 隱式幾何的壞處在於，當今天給我們一個式子，我們難以看出他表示的是什麼形狀，例如下圖是一個圓環，但單看式子我們其實很難看出來他是一個圓環
 
-![](image/implicit_surface.png)
+![](./image/implicit_surface.png)
 
 而隱式幾何的優點在於，我們很容易地可以判斷一個點在不在幾何的面上，因為只需要把我們的座標帶入函數就可以算出來了，通常為 0 就代表在表面上，如果是個負數就代表在幾何內部，反之如果是個正數就代表在幾何外面。 當然，這還是要看你的式子怎麼定義的，但通常我們會設 $f(x,y,z) = 0$
 
@@ -33,13 +33,13 @@ category: computer-graphic
 
 顯式的幾何是比較典型的表示方法，我們之前用的三角形面就是顯式的表示方法，真的給我們一些點，組成三角形，進而將模型表現出來。 但還有另一種顯式的方法，稱為參數映射，以下圖為例，你可以看到我們定義了要如何將給定的 $(u,v)$ 座標，映射到空間中的某一個點：
 
-![](image/parameter_mapping.png)
+![](./image/parameter_mapping.png)
 
 也就是說，我們可以定義一個函數，輸入是 $u$ 和 $v$，而輸出是 $x$、$y$ 與 $z$。 因此如果我們把所有的 $u$、$v$ 都走一遍，就可以找到它對應的所有 $x$、$y$ 與 $z$
 
 再看一次圓環的例子：
 
-![](image/parameter_mapping2.png)
+![](./image/parameter_mapping2.png)
 
 這邊我們把 $u$、$v$ 這兩個參數映射成了空間中的實際一個點，具體來說：
 
@@ -55,7 +55,7 @@ category: computer-graphic
 
 現在我們再來多介紹一些隱式的幾何，如剛剛所講的，隱式的問題在於不直觀，例如下圖：
 
-![](image/implicit.png)
+![](./image/implicit.png)
 
 球面的公式我們可能可以看出來，而圓環的公式就已經有點勉強了，再到更右邊的心型就更難看了。 如果我們想要直接找到一個公式能代表上圖中的乳牛，那更是不可能
 
@@ -65,7 +65,7 @@ category: computer-graphic
 
 首先要介紹的方法叫做 Constructive Solid Geometry，簡稱為 CSG。 他做的事是透過一系列基本的幾何運算，來組合出一個新的幾何，見下圖：
 
-![](image/CSG.png)
+![](./image/CSG.png)
 
 圖中的 A、B 為一個圓柱和一顆球，他們的參數式很好求，而我們這邊透過布林運算將他們組合到了一起。 這邊的布林運算就與集合論裡面的操作是一樣的，做 intersection 就是取他們交集的部分，取 union 就是兩者的並集，而差集也可以定義，只要從 A 中間減去 B 所佔據的 A 的部分即可，反之同理
 
@@ -77,13 +77,13 @@ category: computer-graphic
 
 看個例子：
 
-![](image/distance_function.png)
+![](./image/distance_function.png)
 
 這裡你可以看到有兩個球，當他們逐漸靠近的時候，拓樸結構上會發生一些變化，最後融合起來。 這件事情就是通過對幾何的距離函數做 Blend（混合）達成的
 
 再來看個比較具體的例子：
 
-![](image/SDF.png)
+![](./image/SDF.png)
 
 這邊用的距離函數被稱為 Signed Distance Function（SDF）。 我們的目的是要將 A 與 B 這兩個不同的方塊混合，他們各自擁有一部分的黑色區域與一部分的空白區域。 如果我們直接做線性的混合，那他會變成一個黑⭢灰⭢白的方塊，因為重疊的部分肯定最黑，而中間部分只有 B 有塗色，所以是灰的，而最右邊都沒塗色，所以是白的
 
@@ -91,7 +91,7 @@ category: computer-graphic
 
 知道原理後再看這個例子，就可以知道為什麼會有這樣的結果了：
 
-![](image/SDF2.png)
+![](./image/SDF2.png)
 
 這個結果是分別求出兩個物體在這個平面空間內的距離函數，然後做 Blend，再恢復成面的結果，邊框處就是 SDF 的值是 0 的點
 
@@ -101,19 +101,19 @@ category: computer-graphic
 
 在這邊我們介紹一種方法，叫做 level-set method，他的想法和距離函數一模一樣，只是他是將函數的結果寫在一個個的格子上的：
 
-![](image/level-set.png)
+![](./image/level-set.png)
 
 你可以看到函數在不同的地方有不同的值，接著我們只需要將值為 0 的地方連起來，就可以把整個物體的表面給表述出來了。 這個概念在地理上已經用了很久，就是所謂的等高線
 
 我們也不一定得定義在二維的格子上，也可以在三維的格子上，結合紋理使用，就可以如下圖這樣描述出人體不同位置的密度訊息：
 
-![](image/level-set2.png)
+![](./image/level-set2.png)
 
 ### Fractals
 
 最後，還有一種有名且特殊的隱式方法，就是分形。 分形指的是幾何的子集與和它的整體長得非常像，與我們學的遞迴是同一個道理。 例如說雪花，如果你有看過一些科普文章，就知道如果把雪花放大來看，它每一條邊上其實又都有一些小六邊形，而這些小六邊形的邊上又有更小的六邊性，就這麼不斷重複
 
-![](image/fractals.png)
+![](./image/fractals.png)
 
 分形比較麻煩的是在渲染的時候會引起強烈的走樣，因為它的變化頻率實在是太高了，其渲染是一個挑戰
 
@@ -135,7 +135,7 @@ category: computer-graphic
 
 而一個點自然以空間中的 $x$、$y$、$z$ 就能夠表示了，因此它就是一個 $x$、$y$、$z$ 的列表，非常簡單，看個例子：
 
-![](image/point_cloud.png)
+![](./image/point_cloud.png)
 
 以右邊的雕像來說，你可以看到它上半部分的點雲密度非常大，因此我們可以很清楚的看到物體的表面。 接著慢慢往雕像的下半部分看，你可以看到面中間已經開始有些縫隙了，點雲的密度慢慢變得稀疏了。 到了最下面，你已經看不出面的存在了。 由此可見，要用點雲表示出一個複雜的模型，會需要非常非常多的點，也因此人們通常不會直接使用點雲
 
@@ -145,11 +145,11 @@ category: computer-graphic
 
 圖學中用得最多的是多邊形面，尤其是三角形或四邊形的面，通常我們會把任何的面都拆成各種小的三角形，以下圖為例，你可以看到球冠的部分用了許多的小三角形，而中間的部分則用了一些細長的三角形：
 
-![](image/polygon_mesh.png)
+![](./image/polygon_mesh.png)
 
 要用三角形去描述各種各樣的物體，最主要的問題就是三角形的連接關係，通常我們會用一些特定的文件格式來描述它，像是 wavefront object file，一般簡稱為 object file，後綴為 .obj，它是一個文本文件，裡面會把空間中的一堆點、法線和紋理座標分開來表示，然後再將它們組織起來，形成一個模型，看下面的例子：
 
-![](image/object_file.png)
+![](./image/object_file.png)
 
 這個例子描述的是一個立方體，我們知道一個立方體共有八個空間中的點，我們用 `v` 來表示它，後面接對應的 x, y, z 座標。 而立方體有六個面，換句話說立方體有六個不同的法線，文件中以 `vn` 來表示，這邊會有 8 行是因為這個是自動建模生出的文件，所以會有一些冗餘。 `vt` 表示紋理座標，而 `f` 用來表示哪三個點會形成一個三角形。 具體的格式可以去看 wavefront object file format 的 spec
 
@@ -161,7 +161,7 @@ category: computer-graphic
 
 貝塞爾曲線會利用一系列的控制點去定義一條曲線，並用這些控制點去定義一條曲線的性質。 比如下面這個例子，曲線會從 p<sub>0</sub> 開始，沿著 p<sub>0</sub> 到 p<sub>1</sub> 的方向出發，並在點 p<sub>3</sub>，沿著 p<sub>2</sub> 到 p<sub>3</sub> 的方向結束：
 
-![](image/bezier_curve.png)
+![](./image/bezier_curve.png)
 
 上圖中的參數式內有個係數「3」，這表示它對切線的長度也有定義，等等會再詳細解釋。 通過這四個控制點，我們可以定義這條曲線它的起始點和終點，一定得在 p<sub>0</sub> 和 p<sub>3</sub> 上，並且也有辦法定義這兩點的切線方向，如此一來我們便可以得到一條唯一的曲線了。 要注意它並不要求曲線本身要經過控制點
 
@@ -169,7 +169,7 @@ category: computer-graphic
 
 現在就來看貝塞爾曲線要怎麼畫，其名稱為 de Casteljau Algorithm。 剛剛的圖裡面有四個控制點，但其實控制點的數可以自己定義，現在假設我們只有三個控制點，如下圖：
 
-![](image/deCasteljau.png)
+![](./image/deCasteljau.png)
 
 用三個控制點生成的貝塞爾曲線是有名字的，叫做二次貝塞爾曲線（Quadratic Bezier）。 從上圖你可以猜到，我們的曲線要從 b<sub>0</sub> 開始，在 b<sub>2</sub> 結束，而 b<sub>1</sub> 則決定它要往哪個方向彎
 
@@ -177,23 +177,23 @@ category: computer-graphic
 
 de Casteljau 會在每條邊上用線性插值找出一個點，目前我們有給定的時間 $t$，首先我們要在 $b_0 b_1$ 這條邊上，我們認為 $t$ 為 0 時該邊上的插值點位於 $b_0$，$t$ 為 1 時該邊上的插值點位於 $b_1$。 假設 $t$ 現在大概為 $\frac{1}{3}$，那插值點就會在該邊上從 $b_0$ 出發大概 $\frac{1}{3}$ 的位置：
 
-![](image/deCasteljau1.png)
+![](./image/deCasteljau1.png)
 
 接著對另一個邊 $b_1 b_2$ 也做一樣的事情，這邊要注意我們是照著 $b_n$ 的順序來做插值的要注意，所以第二個邊上的插值點會比較靠近 $b_1$，而不是 $b_2$：
 
-![](image/deCasteljau2.png)
+![](./image/deCasteljau2.png)
 
 接下來，把這兩個新得到的點連起來，再做一次插值：
 
-![](image/deCasteljau3.png)
+![](./image/deCasteljau3.png)
 
 而因為不可能再有更多的線段了（剩一個點），因此這個點就是我們的輸出點了，這條貝塞爾曲線在時間 $t$ 的時候，就是在這個位置。 若要畫出完整的曲線，只需要把所有時間 $t$ 所對應的位置都畫出來就可以了：
 
-![](image/deCasteljau4.png)
+![](./image/deCasteljau4.png)
 
 接下來看個四個控制點的例子：
 
-![](image/deCasteljau5.png)
+![](./image/deCasteljau5.png)
 
 與三個控制點的步驟一樣，找到每個邊上的插值點，並依序將其連起來形成一個個的邊，因此四條線段會先變成三個線段，接著就和前面三個控制點的例子一樣了，等到最後只剩一個插值點，就是該貝塞爾曲線在時間 $t$ 的輸出了
 
@@ -201,21 +201,21 @@ de Casteljau 會在每條邊上用線性插值找出一個點，目前我們有�
 
 前面有提到貝塞爾曲線是顯示的表示法，所以接下來就講一下它的代數形式。 由於貝塞爾曲線會由控制點，決定時間 $t$ 時的點在哪裡，因此一定有一個代數的表示方法，讓我們給定任意一個時間 $t$，就能得到對應點的位置。 假設仍然是 $b_0$、$b_2$、$b_3$ 與 $b_4$ 這四個控制點，由於是做線性插值，因此在 $b_0 b_1$ 上的插值點就為 $tb_0 + (1 - t)b_1$，標記為 $b_0^1$，其中上標代表層數。 接著依此類推，就能找到最後的點了：
 
-![](image/bezier_formula1.png)
+![](./image/bezier_formula1.png)
 
 讓我們再用一個三個控制點的貝塞爾曲線來幫助理解：
 
-![](image/bezier_formula2.png)
+![](./image/bezier_formula2.png)
 
 依序把每一層的插值點給組合起來，你就可以最終輸出點的參數式了。 這邊你會看到它的係數其實是伯恩施坦多項式，上例的係數是 $((1-t) + t)^2$ 的展開
 
 下圖列出了有 $n + 1$ 個控制點的貝塞爾曲線的參數式，其中 $B^n_i(t)$ 為對應的係數：
 
-![](image/bezier_formula3.png)
+![](./image/bezier_formula3.png)
 
 由於它良好的性質，我們其實也不用限定控制點要在一個平面上，下圖舉了一個在三維空間中的例子：
 
-![](image/bezier_formula4.png)
+![](./image/bezier_formula4.png)
 
 貝塞爾有一些不錯的性質，以四個控制點的曲線為例：
 
@@ -233,11 +233,11 @@ de Casteljau 會在每條邊上用線性插值找出一個點，目前我們有�
 
 雖然前面已經說了可以有任意多的控制點，但當控制點的數量上升時，畫出來的曲線並不直觀。 另外當控制點的數量一多，你就沒辦法那麼方便地操作控制點來得到想要的曲線了（單個控制點的影響會變小）。 底下是一個有十個控制點的貝塞爾曲線：
 
-![](image/piecewise_bezier1.png)
+![](./image/piecewise_bezier1.png)
 
 你可以看到它變得十分平滑，不利於使用控制點來取得你想要的形狀。 為了更好的操控貝塞爾曲線，人們就使用了逐段（piecewise）的方法，利用多個使用三、四個控制點的貝塞爾曲線來組合出一個想要的曲線：
 
-![（David Eck, http://math.hws.edu/eck/cs424/notes2013/canvas/bezier.html）](image/piecewise_bezier2.png)
+![（David Eck, http://math.hws.edu/eck/cs424/notes2013/canvas/bezier.html）](./image/piecewise_bezier2.png)
 
 你會在連接處可能會有轉折，如果要保持曲線的光滑，由於前面提到的貝塞爾切線的特性，你需要讓連接處的三個控制點共線，且和兩段的控制線段的長度是一樣的，這樣才能有 C<sup>1</sup>連續
 
@@ -259,17 +259,17 @@ B-splines 類似於對貝塞爾曲線的擴展，他的能力比貝塞爾曲線�
 
 貝塞爾曲面的概念與貝塞爾曲線類似，一樣會有一系列的控制點，如下圖有 16 個控制點：
 
-![](image/beizer_surface.png)
+![](./image/beizer_surface.png)
 
 做法也非常簡單，類似之前我們對於雙線性插值的作法，在兩個方向分別用上貝塞爾曲線的方法就可以了，以下圖來說，$x$、$y$ 軸上各有四個控制點，從而組成了 16 個控制點。 接著先將 $x$ 軸上的四個控制點所組成的貝塞爾曲線算出來，由於 $y$ 方向有四個控制點，因此會算出四條貝塞爾曲線，也就是下圖灰色部分的曲線
 
 而藍色部分的點就是為四條貝塞爾曲線上同一 $x$ 值的各個控制點，此時再將不同 $x$ 位置處，這四個控制點形成的貝塞爾曲線算出來，就可以形成一個曲面了：
 
-![](image/beizer_surface1.png)
+![](./image/beizer_surface1.png)
 
 老師的上課錄影中有個 demo 影片，但我找不到下載的網址，[具體來說可以看這段影片](https://youtu.be/Zkx1aKv2z8o?t=1114)，看完影片應該會比較好理解。 另外由於有兩個方向，因此也需要有兩個 $t$ 參數，講義上將他們計作 $u$ 與 $v$，透過時間 $u$ 算出 $x$ 方向的曲線，並透過 $v$ 算出 $y$ 方向的曲線：
 
-![](image/beizer_surface2.png)
+![](./image/beizer_surface2.png)
 
 ### Mesh Operations: Geometry Processing
 

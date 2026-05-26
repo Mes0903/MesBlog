@@ -87,7 +87,7 @@ category:
 
 應用程式以 4×4 矩陣描述各種變換（例如定位或縮放），演算法會在算繪過程中套用這些矩陣。 此例中，該變換節點會將其所有子節點等比例縮放為 0.5 倍，因此算繪「Rectangle 2」與「Rectangle 3」時，大小會呈現為原來的一半，位置分別調整為 $(10, 10)$ 與 $(15, 15)$。 這兩個矩形使用了不同的紋理：分別為 2 與 3
 
-![](image/scenegraph.png)
+![](./image/scenegraph.png)
 
 為了簡化算繪並利用硬體加速，大多數應用程式會使用標準 API，例如 [OpenGL](https://opengl.org/) 或 [Vulkan](https://vulkan.org/)。 不同 API 的細節各有差異，但它們都會提供介面來管理圖形記憶體、把資料寫入其中，並算繪已保存的資訊。 最終會得到一張影像，應用程式可以直接顯示，或再把它當成輸入做後續處理
 
@@ -344,7 +344,7 @@ plane 可視為可定位/縮放/（必要時）混合的圖層。 CRTC 依 plane
 典型的配置包含：主 framebuffer/plane（桌面內容）、cursor plane（硬體指標，低延遲且不需重複重繪整個畫面）、CRTC（時序/掃描）、encoder（轉為 VGA/HDMI/DP 等訊號）與 connector（實體埠）。 scanout buffer 指的是被掃描輸出單元直接讀取的像素緩衝，圖示強調了資料沿著 KMS 管線的方向性與分工  
 :::
 
-![](image/kms-pipeline.png)
+![](./image/kms-pipeline.png)
 
 ### Pipeline setup
 

@@ -16,7 +16,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 這樣的話 least square error，或一開始的 LDA 的 error 就會長 $f(x) - Pn(x)$，那一樣，我們要找到 $a_0,a_1,\ ...\ ,a_n$ 來最小化 $E$：
 
-![](image/1.png)
+![](./image/1.png)
 
 ### 推導
 
@@ -24,7 +24,7 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 那我們就可以開始推了：
 
-![](image/2.png)
+![](./image/2.png)
 
 因為 A 是個 ill-condition 且稠密的矩陣，如果要解這個線性系統會很麻煩，非常沒有效率，因此我們就要換個建構多項式的方法，其中一種方法就是利用線性獨立來操作
 
@@ -34,22 +34,22 @@ $Pn(x) = a_0 + a_1x^1 +\ ...\ + a_kx^k = \Sigma_{k=0}^n a_kx^k$
 
 所以現在 $Pn(x) = \Sigma_{k=0}^{n} a_k\phi_k(x)$，那一樣我們要找 $a_0$、$a_1...$ 等係數來最小化 $E$：
 
-![](image/3.png)
+![](./image/3.png)
 
 然後一樣找 gradient E = 0：
 
-![](image/4.png)
+![](./image/4.png)
 
 ### 例子
 
 #### Example 1. 勒壤得多項式 Legendre Function
 
-![](image/5.png)
+![](./image/5.png)
 
 那個 $L_0$、$L_1$... 是我們取的 $\phi$
 
 #### Example 2. 柴比雪夫多項式 Chebyshev polynomials
 
-![](image/6.png)
+![](./image/6.png)
 
 那個 $T_0$、$T_1$... 是我們取的 $\phi$

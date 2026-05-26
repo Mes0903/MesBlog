@@ -19,7 +19,7 @@ category: risc-v
 
 `misa` 這個 CSR 是一個 WARL 類型的可讀寫暫存器，用來回報該 hart 所支援的 ISA。 實作必須保證這個暫存器可以被讀取。 如果其回傳 0，代表 `misa` 暫存器未被實作，這種情況下需要透過額外的非標準機制來判斷 CPU 的能力。 misa CSR 的寬度為 MXLEN 位元（見下一段）
 
-![（Figure 2. Machine ISA register (misa)）](image/misa.png)
+![（Figure 2. Machine ISA register (misa)）](./image/misa.png)
 
 `MXL`（Machine XLEN）欄位會編碼這顆 hart 所使用的基礎整數指令集（base integer ISA）的寬度，如表 9 所示。 `MXL` 是唯讀欄位。 若 `misa` 的值不為 0，則 `MXL` 欄位代表 M-mode 下的有效 XLEN，這個常數值被稱為 MXLEN。 XLEN 永遠不會大於 MXLEN，但在較低權限的模式中，XLEN 可能小於 MXLEN
 
@@ -138,7 +138,7 @@ C extension 代表壓縮指令（16-bit），打開 C 時 IALIGN = 16，關掉 C
 
 `mvendorid` 是一個 32 位元的唯讀 CSR，用來提供這顆核心供應商的 JEDEC 製造商代碼。 實作必須確保這個暫存器可以被讀取。 如果其回傳 0，表示該欄位未被實作，或是這是一個非商業用途的實作
 
-![（Figure 3. Vendor ID register (`mvendorid`)）](image/mvendorid.png)
+![（Figure 3. Vendor ID register (`mvendorid`)）](./image/mvendorid.png)
 
 JEDEC 製造商 ID 通常會被編碼成一串 1-byte 的 continuation code（`0x7f`），並以一個不等於 `0x7f` 的 1-byte ID 作結尾，每個 byte 的最高位會帶有奇數的 parity bit。 `mvendorid` 中的 `Bank` 欄位會記錄 continuation code 的個數，Offset 欄位則記錄結尾的那個 byte，並捨棄 parity bit。 例如，JEDEC 的 ID 若是 `0x7f` `0x7f` ...（12 次）... `0x8a`（也就是 12 個 `0x7f` 再接一個 `0x8a`），則會被編碼成 `0x60a` 寫入 `mvendorid` CSR
 
@@ -165,7 +165,7 @@ JEDEC 製造商 ID 通常會被編碼成一串 1-byte 的 continuation code（`0
 
 `marchid` 是一個 MXLEN 位元寬的唯讀 CSR，用來編碼該 hart 所使用的基本微架構。 實作必須確保這個暫存器能被讀取。 如果其回傳 0，表示該欄位未實作。 透過 `mvendorid` 與 `marchid` 的組合應能唯一地識別該 hart 所實作的微架構類型
 
-![（Figure 4. Machine Architecture ID (`marchid`) register）](image/marchid.png)
+![（Figure 4. Machine Architecture ID (`marchid`) register）](./image/marchid.png)
 
 開源專案的微架構 ID 是由 RISC-V International 全球分配的，其值為非零，且最高位元（MSB）為 0。 商業微架構 ID 則由各商業供應商自行分配，但其最高位元必須為 1，且其餘 MXLEN-1 個位元中不得包含 0
 
@@ -179,7 +179,7 @@ JEDEC 製造商 ID 通常會被編碼成一串 1-byte 的 continuation code（`0
 
 `mimpid` CSR 提供一個用來編碼該處理器實作版本的唯一值。 實作必須保證能讀取這個暫存器。 如果其回傳 0，表示該欄位未被實作。 Implementation 的值應該反映的是 RISC-V 處理器本身的設計版本，而非其周邊相關的系統
 
-![（Figure 5. Machine Implementation ID (`mimpid`) register）](image/mimpid.png)
+![（Figure 5. Machine Implementation ID (`mimpid`) register）](./image/mimpid.png)
 
 ::: info  
 這個欄位的格式由微架構原始碼提供者自行決定，但標準工具通常會將其以十六進位字串顯示，且不會有前導或尾端的 0，因此 Implementation 的值可以採用左對齊（也就是從最高有效位的 nibble 開始填入），並將各個子欄位對齊至 nibble 的邊界，以便於閱讀  
@@ -203,7 +203,7 @@ mimpid = 0x12345678
 
 `mhartid` 是一個 MXLEN 位元寬的唯讀 CSR，裡面存放的是正在執行該程式碼的 hart 的整數 ID。 實作必須能讀取這個暫存器。 在多核心系統中，hart ID 不一定是連號的，但至少必須有一個 hart 的 ID 是 0。 hart ID 在整個執行環境中必須是唯一的
 
-![（Figure 6. Hart ID (`mhartid`) register）](image/mhartid.png)
+![（Figure 6. Hart ID (`mhartid`) register）](./image/mhartid.png)
 
 ::: info  
 在某些情況下，我們必須保證只有一個 hart 執行特定程式碼（例如在重置時），因此才要求至少要有一個 hart 的 ID 是 0。 為了效能考量，系統實作者應該盡量減少系統中所使用的最大 hart ID 數值大小  
@@ -213,13 +213,13 @@ mimpid = 0x12345678
 
 `mstatus` 是一個 MXLEN 位元寬的可讀寫暫存器，其格式在 RV32 中如圖 7 所示，在 RV64 中如圖 8 所示。 `mstatus` 用來記錄並控制該 hart 當前的作業狀態。 在 S-level ISA 中，`mstatus` 的受限版本被稱為 `sstatus` 暫存器
 
-![（Figure 7. M-mode status (`mstatus`) register for RV32）](image/mstatus-32.png)
+![（Figure 7. M-mode status (`mstatus`) register for RV32）](./image/mstatus-32.png)
 
-![（Figure 8. M-mode status (`mstatus`) register for RV64）](image/mstatus-64.png)
+![（Figure 8. M-mode status (`mstatus`) register for RV64）](./image/mstatus-64.png)
 
 在 RV32 的情況下，`mstatush` 是一個 32 位元的可讀寫暫存器，其格式如圖 9 所示。 `mstatush` 的第 4~30 位通常對應到 RV64 中 `mstatus` 的第 36~62 位所包含的欄位。 欄位 `SD`、`SXL` 和 `UXL` 在 `mstatush` 中並不存在
 
-![（Figure 9. Additional M-mode status (`mstatush`) register for RV32.）](image/mstatush.png)
+![（Figure 9. Additional M-mode status (`mstatush`) register for RV32.）](./image/mstatush.png)
 
 #### 3.1.6.1. Privilege and Global Interrupt-Enable Stack in `mstatus` register
 
@@ -767,7 +767,7 @@ Zicfilp extension 新增了 `SPELP` 和 `MPELP` 欄位，這兩個欄位會記�
 
 `mtvec` 暫存器是一個 MXLEN-bit 的 WARL 類型可讀寫暫存器，用來儲存 trap vector 的設定，包含一個向量基底位址（`BASE`）以及向量模式（`MODE`）
 
-![](image/mtvec.png)
+![](./image/mtvec.png)
 
 `mtvec` 暫存器必須被實作，但其內容可以被設為唯讀的。 若該暫存器可寫，其可接受的值範圍會依照實作而有所不同。 `BASE` 欄位的值必須對齊至 4-byte 邊界，而 `MODE` 的設定可能會對 `BASE` 的對齊提出更嚴格的限制。 請注意，CSR 中只包含 `BASE` 位址的第 `2` 到 `XLEN-1` 位元。 實際作為位址使用時，最低的兩個位元會自動補 0，以形成一個符合 4-byte 對齊要求的 XLEN-bit 位址
 
@@ -855,11 +855,11 @@ trap delegation 只能從 M-mode 向下轉交下層權限的 trap，但不能逆
 這裡說明 delegation 的副作用：一旦將某中斷委託給 S-mode，M-mode 就再也不會接收到這個中斷了。 這是一種設計保證，避免不同層級重複處理同一個 trap。 所以若你將 `mideleg[5]` 設為 1，表示 STI 被委託給 S-mode，那麼即使當下是 M-mode，也會忽略這個中斷  
 :::
 
-![（Figure 11. Machine Exception Delegation (`medeleg`) register.）](image/medeleg.png)
+![（Figure 11. Machine Exception Delegation (`medeleg`) register.）](./image/medeleg.png)
 
 每一種同步例外都對應到 `medeleg` 中的一個位元位置（如表 14 所示），這個位元的位置與 `mcause` 暫存器回傳的值相同（例如設定第 8 位元，就代表允許將 U-mode 的環境呼叫交給較低權限的 trap handler 處理）。 當 `XLEN=32` 時，`medelegh` 是一個 32-bit 的可讀寫暫存器，對應到 `medeleg` 的第 32 到 63 位元。 當 `XLEN=64` 時，`medelegh` 不存在
 
-![（Figure 12. Machine Interrupt Delegation (`mideleg`) Register.）](image/mideleg.png)
+![（Figure 12. Machine Interrupt Delegation (`mideleg`) Register.）](./image/mideleg.png)
 
 `mideleg` 儲存的是各個中斷類型的委託設定位元，其位元排列方式與 mip 暫存器相同（例如 STIP 中斷的委託控制位元位於第 5 位）。 對於不可能在低權限模式發生的例外，其對應的 `medeleg` 位元應為唯讀的 0。 特別是 `medeleg[11]` 要是唯讀的 0； `medeleg[16]` 也要是唯讀的 0，因為 double trap 是不可委託的
 
@@ -875,9 +875,9 @@ trap delegation 只能從 M-mode 向下轉交下層權限的 trap，但不能逆
 保留給平台使用的中斷可以由平台自行定義用途，也可以指定為自訂用途  
 :::
 
-![（Figure 13. Machine Interrupt-Pending (`mip`) register.）](image/mip.png)
+![（Figure 13. Machine Interrupt-Pending (`mip`) register.）](./image/mip.png)
 
-![（Figure 14. Machine Interrupt-Enable (`mie`) register）](image/mie.png)
+![（Figure 14. Machine Interrupt-Enable (`mie`) register）](./image/mie.png)
 
 一個會讓處理器陷入 M-mode（也就是切換到 M-mode 處理）的中斷 `i` 需滿足下列所有條件：
 - 當前權限模式是 M 且 `mstatus` 中的 `MIE` 位元為 1，或當前處於比 M-mode 更低的權限層級
@@ -902,9 +902,9 @@ trap delegation 只能從 M-mode 向下轉交下層權限的 trap，但不能逆
 
 只要某個中斷可能會進入掛起狀態，那麼其對應的 `mie` 位元就必須是可寫的。 那些不可寫的 `mie` 位元必須是唯讀的 0，表示永遠不能啟用該中斷。 `mip` 與 `mie` 暫存器中標準定義的部分（第 0 到 15 位元）格式如圖 15 與圖 16 所示
 
-![（Figure 15. Standard portion (bits 15:0) of `mip`.）](image/mip_portion.png)
+![（Figure 15. Standard portion (bits 15:0) of `mip`.）](./image/mip_portion.png)
 
-![（Figure 16. Standard portion (bits 15:0) of `mie`.）](image/mie_portion.png)
+![（Figure 16. Standard portion (bits 15:0) of `mie`.）](./image/mie_portion.png)
 
 :::: info  
 machine-level 的中斷暫存器負責處理少數幾個核心中斷來源，這些來源被指派了固定的服務優先順序以簡化設計。 而外部中斷控制器則可以實作更複雜的優先排序機制，對大量中斷來源進行管理，最後再將它們多工輸入到 machine-level 的中斷來源中
@@ -976,7 +976,7 @@ M-mode 提供了一組基本的硬體效能監控功能。 `mcycle` CSR 用來�
 
 硬體效能監控系統還包含額外的 29 個 64-bit 的事件計數器，分別為 `mhpmcounter3` ~ `mhpmcounter31`。 每個計數器都對應一個事件選擇器 CSR，稱為 `mhpmevent3` ~ `mhpmevent31`，這些都是 64-bit 的 WARL 暫存器，用來控制該計數器會對哪一種事件進行計數。 事件的意義由平台定義，但事件編號 0 被定義為「不計數」。 所有計數器原則上都應被實作，但實作可以透過讓該計數器與對應的事件選擇器都固定為唯讀的 0 以符合合法的定義
 
-![（Figure 17. Hardware performance monitor counters.）](image/h_monitor_counter.png)
+![（Figure 17. Hardware performance monitor counters.）](./image/h_monitor_counter.png)
 
 `mhpmcounter` 系列是 WARL 類型的暫存器，在 RV32 與 RV64 架構下皆支援最多 64-bit 的精度
 
@@ -1001,7 +1001,7 @@ M-mode 提供了一組基本的硬體效能監控功能。 `mcycle` CSR 用來�
 `mcounteren`（machine counter enable）只存在於 M-mode 中，它的目的是讓 M-mode 軟體（如 hypervisor 或 kernel）決定是否讓 S-mode 或 U-mode 讀到計數器的值。 即使你禁止 U-mode 或 S-mode 存取 `cycle`、`instret` 等，它們仍會在背景中遞增  
 :::
 
-![（Figure 18. Counter-enable (`mcounteren`) register.）](image/mcounteren.png)
+![（Figure 18. Counter-enable (`mcounteren`) register.）](./image/mcounteren.png)
 
 當 `mcounteren` 中的 `CY`、`TM`、`IR` 或 `HPMn` 位元為 0 時，在 S-mode 或 U-mode 中讀取 `cycle`、`time`、`instret` 或 `hpmcountern` 時會觸發 illegal-instruction 例外。 若這些位元為 1，則對應的暫存器在下一層實作的權限模式中是可讀的（若有實作 S-mode，則為 S-mode，否則為 U-mode）
 
@@ -1028,7 +1028,7 @@ M-mode 提供了一組基本的硬體效能監控功能。 `mcycle` CSR 用來�
 
 ### 3.1.12. Machine Counter-Inhibit (`mcountinhibit`) Register
 
-![（Figure 19. Counter-inhibit `mcountinhibit` register）](image/mcountinhibit.png)
+![（Figure 19. Counter-inhibit `mcountinhibit` register）](./image/mcountinhibit.png)
 
 `mcountinhibit` 是一個 32-bit 的 WARL 暫存器，用來控制哪些硬體效能監控計數器會遞增。 這個暫存器的設定只影響計數器是否遞增，不會影響它們的可存取性。 當 `mcountinhibit` 中的 `CY`、`IR` 或 `HPMn` 位元為 0 時，`mcycle`、`minstret` 或 `mhpmcountern` 會照常遞增。 當這些位元為 1 時，對應的計數器將停止遞增
 
@@ -1052,7 +1052,7 @@ M-mode 提供了一組基本的硬體效能監控功能。 `mcycle` CSR 用來�
 上方講的「使用者暫存器（user register）」是指在 U-mode 下可使用的一般暫存器（general-purpose registers），也就是我們常見的那些 x0-x31  
 :::
 
-![（Figure 20. M-mode scratch register.）](image/mscratch.png)
+![（Figure 20. M-mode scratch register.）](./image/mscratch.png)
 
 ::: info  
 MIPS ISA 為作業系統保留了兩個使用者暫存器（`k0`/`k1`）。 雖然這種方式實作起來快速簡單，但也會減少使用者可用的暫存器，且不容易擴充到更多權限層級或處理巢狀 trap。 此外，在回到使用者模式前，還可能需要清除這兩個暫存器，才能避免潛在的安全漏洞並提供可預期的除錯行為
@@ -1062,7 +1062,7 @@ RISC-V 的使用者 ISA 被設計來支援多種不同的特權系統環境，�
 
 ### 3.1.14. Machine Exception Program Counter (`mepc`) Register
 
-![（Figure 21. Machine exception program counter register.）](image/mepc.png)
+![（Figure 21. Machine exception program counter register.）](./image/mepc.png)
 
 `mepc` 是一個 MXLEN 位元的可讀寫暫存器，其格式如圖 21 所示。 `mepc` 的最低位元（`mepc[0]`）總是為 0。 若實作僅支援 `IALIGN=32`，則最低兩個位元（`mepc[1:0]`）總是為 0
 
@@ -1097,7 +1097,7 @@ RISC-V 的使用者 ISA 被設計來支援多種不同的特權系統環境，�
 
 `mcause` 是一個 MXLEN 位元的可讀寫暫存器，其格式如圖 22 所示。 當 trap 發生並進入 M-mode 時，`mcause` 會被寫入一個表示該 trap 事件原因的代碼。 除此之外，實作不會主動寫入 `mcause`，但軟體可以自行顯式地寫入它
 
-![（Figure 22. Machine Cause (`mcause`) register.）](image/mcause.png)
+![（Figure 22. Machine Cause (`mcause`) register.）](./image/mcause.png)
 
 如果 trap 是由中斷所引起的，則 `mcause` 暫存器中的 Interrupt 位元會被設為 1。 `Exception Code` 欄位則包含一個代碼，用以標示最近一次的例外或中斷。 表 14 列出了所有可能的 machine-level 例外代碼。 `Exception Code` 是一個 WLRL 欄位，因此它只保證能正確儲存被支援的例外代碼
 
@@ -1194,7 +1194,7 @@ hardware-error exception 是一種同步例外，當指令（無論是顯式或�
 
 `mtval` 是一個 MXLEN 位元的可讀寫暫存器，其格式如圖 23 所示。 當 trap 發生並進入 M-mode 時，`mtval` 會被設為 0，或是被寫入某些與例外相關的資訊，協助軟體處理該 trap。 除此之外，實作本身不會寫入 `mtval`，但軟體可以自行寫入。 哪些例外需要將 `mtval` 寫入具意義的資訊、哪些必須無條件設為 0、哪些兩者皆可，會由硬體平台規範決定。 如果硬體平台規定所有例外都不會讓 `mtval` 寫入非零值，則 `mtval` 是唯讀的 0
 
-![（Figure 23. Machine Trap Value (`mtval`) register.）](image/mtval.png)
+![（Figure 23. Machine Trap Value (`mtval`) register.）](./image/mtval.png)
 
 如果在指令擷取（fetch）、load 或 store 時發生了 breakpoint、位址未對齊、access fault 或 page fault 等例外，且 `mtval` 被寫入了非零值，那麼 `mtval` 會記錄觸發例外的虛擬位址。 當啟用 page-based 的虛擬記憶體時，即使是物理記憶體的 access-fault 例外，也會將觸發錯誤的虛擬位址寫入 `mtval`。 這樣的設計可以降低多數實作（尤其是有硬體 page-table walker 的）資料路徑成本
 
@@ -1253,7 +1253,7 @@ software-check exception 是軟體保護機制（如 CFI、shadow stack）檢查
 
 `mconfigptr` 是一個 MXLEN 位元寬的唯讀 CSR，如圖 24 所示，其內容為某個「設定資料結構（configuration data structure）」的物理位址。 軟體可以透過這個資料結構來取得 hart、平台以及相關設定的資訊。 `mconfigptr` 必須要被實作，但其值可以為 0，表示設定資料結構不存在，或是必須透過其他機制來取得該資料結構的位置
 
-![（Figure 24. Machine Configuration Pointer (`mconfigptr`) register.）](image/mconfigptr.png)
+![（Figure 24. Machine Configuration Pointer (`mconfigptr`) register.）](./image/mconfigptr.png)
 
 這個指標的位元對齊程度不能少於 MXLEN。 也就是說，如果 MXLEN 是 8n，則 `mconfigptr` 的第 0 至（log<sub>2</sub>n） – 1 位元必須為 0
 
@@ -1265,7 +1265,7 @@ software-check exception 是軟體保護機制（如 CFI、shadow stack）檢查
 
 `menvcfg` 是一個 64-bit 的可讀寫 CSR，如圖 25 所示，用來控制低於 M-mode（如 S-mode 或 U-mode）所處的執行環境的某些特性
 
-![（Figure 25. Machine environment configuration (`menvcfg`) register.）](image/menvcfg.png)
+![（Figure 25. Machine environment configuration (`menvcfg`) register.）](./image/menvcfg.png)
 
 如果 `menvcfg` 中的 `FIOM`（Fence of I/O implies Memory）位元被設為 1，那麼在低於 M-mode 的模式下執行 FENCE 指令時，原本「只針對 device I/O」的存取順序要求會同時套用到主記憶體的存取順序上，加強順序的約束。 表 16 詳細說明了在 `FIOM=1` 的情況下，FENCE 指令中 `PI`、`PO`、`SI`、`SO` 這些欄位在低權限模式下的改變
 
@@ -1359,7 +1359,7 @@ Ssdbltrp 擴充在 `menvcfg` 中新增了 double-trap-enable（`DTE`）欄位。
 
 `mseccfg` 是一個選用的 64 位元讀寫暫存器，其格式如圖 26 所示，用於控制安全性功能
 
-![（Figure 26. Machine security configuration (`mseccfg`) register.）](image/mseccfg.png)
+![（Figure 26. Machine security configuration (`mseccfg`) register.）](./image/mseccfg.png)
 
 - `SSEED` 與 `USEED` 欄位的定義由 entropy-source 擴充 Zkr 提供
 - `RLB`、`MMWP`、與 `MML` 欄位的定義由 PMP-enhancement 擴充 Smepmp 提供
@@ -1384,9 +1384,9 @@ Zicfilp 擴充在 `mseccfg` 中新增了 `MLPE` 欄位。 當 `MLPE` 欄位為 1
 
 在 RV32 與 RV64 的系統上，`mtime` 暫存器的寬度都為 64-bit。 平台也會提供一個 64-bit 的、以記憶體映射方式實作的 M-mode 計時比較暫存器 `mtimecmp`。 當 `mtime` 的值大於或等於 `mtimecmp` 時（以無號整數來比較），就會有一個 machine timer interrupt 被掛起（pending）。 這個中斷會持續維持掛起狀態，直到 `mtimecmp` 的值大於 `mtime`（通常是因為寫入 `mtimecmp` 而造成的）。 只有在啟用中斷且 `mie` 暫存器中的 `MTIE` 位元為 1 時，這個中斷才會真正地被處理（taken）
 
-![（Figure 27. Machine time register (memory-mapped control register).）](image/mtime.png)
+![（Figure 27. Machine time register (memory-mapped control register).）](./image/mtime.png)
 
-![（Figure 28. Machine time compare register (memory-mapped control register).）](image/mtimecmp.png)
+![（Figure 28. Machine time compare register (memory-mapped control register).）](./image/mtimecmp.png)
 
 ::: info  
 這套 timer 的機制使用的是 wall-clock time，而不是 cycle counter，目的是支援現代處理器應用動態電壓與頻率調整（DVFS），透過時脈頻率高度變動的情況來節省能源
@@ -1436,7 +1436,7 @@ sw a0, 0(t1)     # New value.
 
 ### 3.3.1. Environment Call and Breakpoint
 
-![](image/3_3_1.png)
+![](./image/3_3_1.png)
 
 `ECALL` 指令用來向支援的執行環境提出請求。當它在 U-mode、S-mode 或 M-mode 中執行時，分別會觸發 `environment-call-from-U-mode`、`environment-call-from-S-mode` 或 `environment-call-from-M-mode` 的例外，指令本身不會執行任何其他操作
 
@@ -1454,7 +1454,7 @@ sw a0, 0(t1)     # New value.
 
 ### 3.3.2. Trap-Return Instructions
 
-![](image/3_3_2.png)
+![](./image/3_3_2.png)
 
 用來從 trap 返回的指令都被編碼在 `PRIV` 這個次分類的指令編碼範圍（minor opcode）
 
@@ -1488,7 +1488,7 @@ sw a0, 0(t1)     # New value.
 
 ### 3.3.3. Wait for Interrupt
 
-![](image/3_3_3.png)
+![](./image/3_3_3.png)
 
 `WFI`（Wait for Interrupt）指令會通知硬體實作，目前這個 hart 可以暫停執行，直到有中斷可能需要被處理再回來繼續。 執行 `WFI` 也可以讓硬體平台知道，應優先將合適的中斷導向這個 hart。 `WFI` 可以在所有的特權模式中使用，也可以選擇性地開放給 U-mode 使用。 當 `mstatus` 中的 `TW` 位元為 1 時，執行這條指令可能會觸發 illegal-instruction 例外，如第 3.1.6.6 節所述
 
@@ -1563,7 +1563,7 @@ sw a0, 0(t1)     # New value.
 
 ### 3.3.4. Custom SYSTEM Instructions
 
-![（Figure 29. SYSTEM instruction encodings designated for custom use.）](image/3_3_4.png)
+![（Figure 29. SYSTEM instruction encodings designated for custom use.）](./image/3_3_4.png)
 
 如圖 29 所示，`SYSTEM` 的 major opcode 的某個子區段被保留作為自訂用途。 標準建議這些自訂指令也使用第 28、29 位來指定所需的最低特權模式，就像其他 `SYSTEM` 指令一樣
 
@@ -2054,9 +2054,9 @@ PMP 檢查適用於所有「有效特權模式」為 S 或 U 的存取，例如�
 在 RV64 中，項目 `8` ~ `15` 的組態存放於 `pmpcfg2`（而不是 `pmpcfg1`）。 這樣的設計可降低同時支援不同 MXLEN（32 與 64 位元）時的成本，因為在 RV32 與 RV64 裡，項目 `8` ~ `11` 的設定都位於 `pmpcfg2` 的低 32 位元（bits 31：0）  
 :::
 
-![（Figure 30. RV32 PMP configuration CSR layout.）](image/rv32_pmp.png)
+![（Figure 30. RV32 PMP configuration CSR layout.）](./image/rv32_pmp.png)
 
-![（Figure 31. RV64 PMP configuration CSR layout.）](image/rv64_pmp.png)
+![（Figure 31. RV64 PMP configuration CSR layout.）](./image/rv64_pmp.png)
 
 PMP 位址暫存器為 CSR，名稱為 `pmpaddr0` ~ `pmpaddr63`：
 
@@ -2073,9 +2073,9 @@ PMP 位址暫存器為 CSR，名稱為 `pmpaddr0` ~ `pmpaddr63`：
 第 12.3 節介紹的 Sv32 page base 虛擬記憶體方案在 RV32 上支援 34 位元的物理位址，因此 PMP 也必須支援超過 XLEN 位元的位址寬度。 第 12.4 與 12.5 節介紹的 Sv39 與 Sv48 則支援 56 位元物理位址，因此 RV64 的 PMP 位址暫存器亦以 56 位元為上限  
 :::
 
-![（Figure 32. PMP address register format, RV32.）](image/rv32_pmpADR.png)
+![（Figure 32. PMP address register format, RV32.）](./image/rv32_pmpADR.png)
 
-![（Figure 33. PMP address register format, RV64.）](image/rv64_pmpADR.png)
+![（Figure 33. PMP address register format, RV64.）](./image/rv64_pmpADR.png)
 
 圖 34 顯示了 PMP 組態暫存器的格式：
 
@@ -2085,7 +2085,7 @@ PMP 位址暫存器為 CSR，名稱為 `pmpaddr0` ~ `pmpaddr63`：
 
 另外兩個欄位 `A` 與 `L` 會在後續小節說明
 
-![（Figure 34. PMP configuration register format.）](image/pmp_cfg.png)
+![（Figure 34. PMP configuration register format.）](./image/pmp_cfg.png)
 
 - 若嘗試從未獲得執行權限的 PMP 區域抓取指令，處理器會拋出 instruction access-fault 例外
 - 若執行 load 或 load-reserved 指令去存取一個無讀取權限的 PMP 區域，會拋出 load access-fault 例外

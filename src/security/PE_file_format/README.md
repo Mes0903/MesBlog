@@ -13,7 +13,7 @@ PE 是 Portable Executable 的縮寫，它是根據 UNIX 系統的 COFF 來設�
 
 PE File 內部的格式是規定好的，也就是所謂的 PE file format，大致可以分為兩部分，Header 與 Section：
 
-![（圖源：[researchgate](https://www.researchgate.net/figure/Portable-executable-file-format_fig6_338355873)）](image/header_section.png)
+![（圖源：[researchgate](https://www.researchgate.net/figure/Portable-executable-file-format_fig6_338355873)）](./image/header_section.png)
 
 Header 是用來管理 PE file 的，包含了一些執行檔的重要資訊，而 Section 則包含了程式碼、常量、資料和圖片資源等等
 
@@ -60,7 +60,7 @@ start:
 
 我們可以用 PE-bear 這個軟體來看 PE file 的內容，這是我用 PEbear 將 demo.exe 開起來的樣貌：
 
-![](image/PE_bear.png)
+![](./image/PE_bear.png)
 
 可以看見 demo.exe 由 DOS Header, DOS stub, NT Headers, Section Headers 與幾個 Sections 組成，那接下來就會依序介紹這些東西
 
@@ -68,11 +68,11 @@ start:
 
 PE file 最一開始的部分是 Dos Header，PE-bear 可以幫我們把這段 binary：
 
-![](image/DOS_header1.png)
+![](./image/DOS_header1.png)
 
 解析為這樣：
 
-![](image/DOS_header2.png)
+![](./image/DOS_header2.png)
 
 DOS Header 是 PE File 中的起始位置，以前的功用是用來保持與 DOS 的兼容性與定位 NT Header，而現在的功用只剩下後者
 
@@ -143,7 +143,7 @@ typedef struct _IMAGE_NT_HEADERS {
 第一個成員 `Signature` 是 `PE File` 的簽名，簽名為 `PE`，用 PE-bear 可以看見其 binary 為 
 `00 00 45 50`（此 exe 為 little endian）
 
-![](image/NT_header.png)
+![](./image/NT_header.png)
 
 ### FileHeader
 
@@ -200,7 +200,7 @@ typedef struct _IMAGE_FILE_HEADER {
 
 以 demo.exe 來說，其值為 `014c`
 
-![](image/File_header1.png)
+![](./image/File_header1.png)
 
 這很長一串，用到的時候再查就好
 
@@ -227,7 +227,7 @@ Characteristics 記錄了這個檔案的屬性，會是以下這些值去做 `or
 
 以 demo.exe 來說其值為 `0x010f`，因此是 1, 2, 4, 8, 100 做 `or` 運算
 
-![](image/File_header2.png)
+![](./image/File_header2.png)
 
 ### Optional Header（可選頭）
 
@@ -306,7 +306,7 @@ typedef struct _IMAGE_SECTION_HEADER {
 
 每個 Section Header 會指向對應的 Section，像是這樣
 
-![（圖源：[tech-zealots](https://tech-zealots.com/malware-analysis/pe-portable-executable-structure-malware-analysis-part-2/)）](image/Section_header.png)
+![（圖源：[tech-zealots](https://tech-zealots.com/malware-analysis/pe-portable-executable-structure-malware-analysis-part-2/)）](./image/Section_header.png)
 
 Section Header 只負責記錄對應 Section 的重要屬性，像是 Section 的名字，大小，RVA 等等
 
@@ -330,7 +330,7 @@ Section Header 只負責記錄對應 Section 的重要屬性，像是 Section �
 
 我們看張圖來解釋：
 
-![](image/RVA.png)
+![](./image/RVA.png)
 
 這邊假設每個 Section 的大小都小於 Alignment 的大小，所以一個 Section 的大小就是一個 Alignment 的大小。x86 下 FileAlignment 通常是 `0x200`，也就是 512 bytes，這也是一個硬碟扇區的大小。而 x86 下 SectionAlignment 通常是 `0x1000`
 

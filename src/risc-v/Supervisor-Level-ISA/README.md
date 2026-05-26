@@ -21,11 +21,11 @@ S-mode 無法窺探或取得任何來自更高 privilege mode（如 M-mode）的
 
 當 `SXLEN` 為 32 時，格式如下圖：
 
-![](image/sstatus1.png)
+![](./image/sstatus1.png)
 
 當 `SXLEN` 為 64 時格式如下圖：
 
-![](image/sstatus2.png)
+![](./image/sstatus2.png)
 
 - `SPP` 
   - `SPP` 位元表示 hart 在進入 S-mode 之前執行的特權等級
@@ -136,7 +136,7 @@ HINT 指令是沒有實際運算效果，但可能被用來提供某些優化或
 
 page table entry 可以參考下圖（Sv32 page table entry）
 
-![](image/sv32_page_table_entry.png)
+![](./image/sv32_page_table_entry.png)
 
 `SUM` 的機制可以防止 S-mode 下的軟體意外存取 user memory，作業系統可以在 `SUM=0` 的情況下執行大部分的程式碼，並在少數需要訪問 user memory 的情況下再暫時設定 `SUM`
 
@@ -210,7 +210,7 @@ SSE（Supervisor Software Events） 是 SBI（Supervisor Binary Interface） 的
 
 決定進入 S-mode 下的異常（Exception） 和中斷（Interrupt） 後 PC 該跳轉到哪裡，配置方式如下圖：
 
-![](image/stvec.png)
+![](./image/stvec.png)
 
 `BASE` 欄位可以存放任何有效的虛擬位址或實體位址，但需符合以下對齊限制：
 - 該位址必須以 4-byte 對齊（最低兩個位元為 0）
@@ -243,7 +243,7 @@ SSE（Supervisor Software Events） 是 SBI（Supervisor Binary Interface） 的
 
 位元 0~15（bits 15：0） 保留給標準中斷原因（例如軟體中斷、計時器中斷等），16 以上的位元則留給平台自行使用
 
-![](image/sipsie.png)
+![](./image/sipsie.png)
 
 一個編號為 `i` 的中斷，只有在以下兩個條件都成立時，才會陷入到 S-mode 進行處理：
 
@@ -267,7 +267,7 @@ SSE（Supervisor Software Events） 是 SBI（Supervisor Binary Interface） 的
 
 `sip` 與 `sie` 的 標準部分（bits 15：0），格式如下圖所示：
 
-![](image/sipsie2.png)
+![](./image/sipsie2.png)
 
 `sip.SEIP` 與 `sie.SEIE` 對應到 S-mode 外部中斷（supervisor-level external interrupts） 的「等待（pending）」與「啟用（enable）」位。 若實作了此功能，則 `sip` 中的 `SEIP` 是唯讀的，它的設置和清除由執行環境（通常透過平台特定的中斷控制器）來完成
 
@@ -313,7 +313,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制（hardware performance
 
 ### 12.1.5. Counter-Enable (`scounteren`) Register
 
-![](image/scounteren.png)
+![](./image/scounteren.png)
 
 `scounteren` 是一個 32 位元 的 CSR，控制 U-mode 是否能存取硬體效能監控計數器（hardware performance monitoring counters）
 
@@ -338,7 +338,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制（hardware performance
 
 `sepc` 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
 
-![](image/sepc.png)
+![](./image/sepc.png)
 
 `sepc` 的最低位元（`sepc[0]`） 永遠為 0。 如果某個處理器實作只支援 `IALIGN=32` （指令對齊為 32 位元），那麼 `sepc` 的最低兩個位元（`sepc[1:0]`） 都會是 0
 
@@ -352,7 +352,7 @@ S-mode 和 U-mode 使用相同的硬體效能監控機制（hardware performance
 
 `scause`（Supervisor Cause） 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
 
-![](image/scause.png)
+![](./image/scause.png)
 
 當透過 trap 進入 S-mode 時，硬體會將造成 trap 的事件代碼（code） 寫入 `scause`。 除此之外，硬體不會自行改寫 `scause`，但軟體可以顯式地對它寫入
 
@@ -435,7 +435,7 @@ Synchronous exception 是指那些由當前指令本身引起的例外狀況，�
 
 `stval` 是一個 SXLEN 位元的可讀寫 CSR，其格式如下圖所示：
 
-![](image/stval.png)
+![](./image/stval.png)
 
 當透過 trap 進入 S-mode 時，硬體會將與該異常（exception） 相關的特定資訊寫入 `stval`，以協助軟體處理該 trap。 在其他情況下，硬體不會對 `stval` 做任何寫入，不過軟體可以顯式地寫入它
 
@@ -476,7 +476,7 @@ Synchronous exception 是指那些由當前指令本身引起的例外狀況，�
 
 `senvcfg` 是一個 SXLEN 位元的可讀寫 CSR，用來控制 U-mode 執行環境的某些特性，它的格式如下圖所示：
 
-![](image/senvcfg.png)
+![](./image/senvcfg.png)
 
 如果在 `senvcfg` 中的 FIOM（Fence of I/O implies Memory） 位元被設為 1，則在 U-mode 執行的 FENCE 指令會被修改，原先只在對裝置 I/O 要求順序（order） 保證的地方，現在也同時要求主記憶體的順序保證
 
@@ -556,7 +556,7 @@ spec 的第 21 章為「Hypervisor extension（H-extension）」，當環境中�
 
 `satp` 是一個 SXLEN 位元的可讀寫 CSR，根據 SXLEN 的不同有不同格式，如下圖：
 
-![](image/satp.png)
+![](./image/satp.png)
 
 `satp` 用來控制 S-mode 的位址轉換與保護（address translation and protection），當中存著
 
@@ -655,7 +655,7 @@ RISC-V 設計上把寫入 `satp` 與 TLB flush / page table fence 分離，讓�
 
 ### 12.2.1. Supervisor Memory-Management Fence Instruction
 
-![](image/sfence.png)
+![](./image/sfence.png)
 
 ::: tip  
 這邊翻的有點難懂，主要記得這兩個專有名詞：
@@ -839,7 +839,7 @@ RISC-V 初期的 page-base 虛擬記憶體架構是以簡單直接的方式設�
 
 Sv32 的實作支援一個 32-bit 的虛擬位址空間，並以 page 進行劃分。 一個 Sv32 的虛擬位址會被分割為一個 virtual page number（VPN）與 page offset，如下圖所示：
 
-![](image/sv32_virtual_address.png)
+![](./image/sv32_virtual_address.png)
 
 當 `satp` 暫存器中的 `MODE` 欄位被設為 Sv32 時，supervisor 的虛擬位址會透過一個兩層的 page table 轉換為 supervisor 的實體位址。 這個 20-bit 的 VPN 會轉換為一個 22-bit 的 physical page number（PPN），而 12-bit 的 page offset 則不參與轉換
 
@@ -864,7 +864,7 @@ Sv32 的 page table 包含 $2^{10}$ 個 page-table entries（PTEs），每個 en
 
 Sv32 的 PTE 格式如下圖所示：
 
-![](image/sv32_PTE.png)
+![](./image/sv32_PTE.png)
 
 V bit 表示此 PTE 是否為有效，若為 0，則 PTE 中的所有其他位元均可被忽略，並可供軟體自由使用。 權限位元 R、W 與 X 分別表示此 page 是否可讀、可寫、可執行，當這三個位元皆為 0 時，表示該 PTE 指向下一層 page table 的指標；若有任一位元為 1，則該 PTE 為一個 leaf PTE。 可寫的 page 必須同時標記為可讀（W 被設為 1 時 R 也一定要被設為 1），相反的組合保留做未來用途
 
@@ -1138,7 +1138,7 @@ RISC-V 允許多個地址轉譯快取映射到同一個地址上。 在傳統的
 
 Sv39 的實作支援一個被劃分為多個 pages 的 39-bit 虛擬位址空間。 一個 Sv39 的位址如下圖所示地被劃分：
 
-![](image/sv39_va.png)
+![](./image/sv39_va.png)
 
 指令擷取位址與 load/store 的有效位址都是 64-bit，但其 bit 63~39 的值必須與 bit 38 相等，否則就會觸發 page-fault 例外。 這個 27-bit 的 VPN 會經由三層 page table 被轉譯為 44-bit 的 PPN，而 12-bit 的 page offset 則不參與轉譯
 
@@ -1152,7 +1152,7 @@ Sv39 的 page table 包含 512（$2^9$） 個 PTE，每個佔 8 bytes。 一個 
 
 Sv39 的 PTE 格式如下圖所示：
 
-![](image/sv39_PTE.png)
+![](./image/sv39_PTE.png)
 
 bit 9 到 0 的意義與 Sv32 相同。 bit 63 保留給第 13 章的 Svnapot extension 使用。 如果未實作 Svnapot，bit 63 必須保留並由軟體清為 0，以確保未來相容性，否則會觸發 page-fault 例外
 
@@ -1180,13 +1180,13 @@ Sv39 中任何層級的 PTE 都可以是 leaf PTE，因此除了 4 KiB 的 page 
 
 Sv48 的實作支援一個 48-bit 的虛擬位址空間，並將其劃分為多個 pages。 Sv48 的位址分割如下圖所示：
 
-![](image/sv48_va.png)
+![](./image/sv48_va.png)
 
 用於指令擷取以及載入與儲存（load 與 store）的有效位址是 64-bit，但其 bit 63 至 48 必須全部等於 bit 47，否則會觸發 page-fault 例外。 這個 36-bit 的 VPN 會透過四層 page table 轉譯為 44-bit 的 PPN，而 12-bit 的 page offset 則不參與轉譯
 
 Sv48 的 PTE 格式如下圖所示：
 
-![](image/sv48_PTE.png)
+![](./image/sv48_PTE.png)
 
 位元 63–54 與 9–0 的意義與 Sv39 相同。 Sv48 中的任意層級的 PTE 都可以是 leaf PTE，因此除了標準的 pages 外，Sv48 還支援 megapages、gigapages 與 terapages。 每一種大小的 page 都必須在虛擬與實體位址空間上對齊至與其大小相等的邊界，如果實體位址的對齊不足，將會觸發 page-fault 例外
 
@@ -1202,13 +1202,13 @@ Sv48 的 PTE 格式如下圖所示：
 
 Sv57 的實作支援一個 57-bit 的虛擬位址空間，並將其劃分為多個 pages。 Sv57 的位址分割如下圖所示：
 
-![](image/sv57_va.png)
+![](./image/sv57_va.png)
 
 用於指令擷取（instruction fetch）以及載入與儲存（load 與 store）的有效位址是 64-bit，但其位元 63–57 必須全部等於位元 56，否則將觸發 page-fault 例外。 這個 45-bit 的 VPN 會透過五層 page table 轉譯為 44-bit 的 PPN，而 12-bit 的 page offset 則不參與轉譯
 
 Sv57 的 PTE 格式如下圖所示：
 
-![](image/sv57_PTE.png)
+![](./image/sv57_PTE.png)
 
 位元 63–54 與 9–0 的意義與 Sv39 相同。 Sv57 中的任意層級的 PTE 都可以是 leaf PTE，因此除了 pages 外，Sv57 還支援 megapages、gigapages、terapages 與 petapages。 每種大小的 page 都必須在虛擬與實體位址空間上對齊至與其大小相等的邊界，如果實體位址的對齊不足，將觸發 page-fault 例外
 

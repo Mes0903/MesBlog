@@ -25,7 +25,7 @@ category: OS
 
 圖 32.1 彙整了 Lu 等人研究的錯誤統計。 從圖中可見，總共分析了 105 個錯誤，其中大多數（74 個）並非 deadlock，剩下 31 個為 deadlock 錯誤。 此外，圖中還顯示了各應用程式中錯誤的數量； OpenOffice 僅有 8 件並行錯誤，而 Mozilla 則接近 60 件
 
-![（Figure 32.1: Bugs In Modern Applications）](image/32-1.png)
+![（Figure 32.1: Bugs In Modern Applications）](./image/32-1.png)
 
 接下來，我們將更深入探討這兩類錯誤（非 deadlock 與 deadlock）。 對於第一類非 deadlock 錯誤，我們將使用該研究中的實例來展開討論； 至於第二類 deadlock 錯誤，則會介紹過去為預防、避免或處理 deadlock 所做的大量工作
 
@@ -177,7 +177,7 @@ pthread_mutex_lock(L2);    pthread_mutex_lock(L1);
 
 請注意，程式執行時不一定會發生 deadlock； 但若 Thread 1 先取得鎖 L1，接著切換到 Thread 2 執行，Thread 2 再取得 L2 並嘗試取得 L1，便會陷入 deadlock，因為兩者互相等待而無法繼續執行。 圖 32.7 以圖形方式示意此情況：圖中出現的環路即代表 deadlock。 上述說明應該足以讓問題變得清晰。 那麼，程式設計師應如何撰寫程式，才能以某種方式處理 deadlock 呢？
 
-![（Figure 32.7: The Deadlock Dependency Graph）](image/32-7.png)
+![（Figure 32.7: The Deadlock Dependency Graph）](./image/32-7.png)
 
 :::info  
 如何處理 deadlock？
@@ -382,7 +382,7 @@ void insert(int value) {
 
 聰明的排程器便可計算：只要 T1 和 T2 永不同時執行，就不會有 deadlock。 下列即為一種可行排程：
 
-![](image/schedule1.png)
+![](./image/schedule1.png)
 
 請注意，（T3 與 T1） 或（T3 與 T2） 同時執行是沒問題的。 儘管 T3 會取得 `L2`，但它僅持有一把鎖，無法與其他執行緒並行時引發 deadlock
 
@@ -399,7 +399,7 @@ void insert(int value) {
 
 具體而言，T1、T2、T3 都會在執行期間取得 `L1` 與 `L2`。 下方是一種可保證永不 deadlock 的排程：
 
-![](image/schedule2.png)
+![](./image/schedule2.png)
 
 如你所見，靜態排程採取保守策略，將 T1、T2、T3 全部分配到同一處理器，導致整體執行時間大幅增加。 雖然可以考慮同時執行這些工作，但因為怕 deadlock，所以不敢，代價便是效能下降
 

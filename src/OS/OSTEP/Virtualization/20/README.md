@@ -45,7 +45,7 @@ category: OS
 
 我們可以從一個典型的 linear page table 的細節來理解這點。 假設我們的 address space 中，heap 和 stack 使用的部分都很小。 在這個例子中，我們使用一個只有 16KB 的位址空間，每個 page 大小是 1KB（如 Figure 20.1 所示），這樣的 page table 如 Figure 20.2 所示
 
-![](image/20-1-2.png)
+![](./image/20-1-2.png)
 
 上例假設 code page 0（VPN 0）對應到 page frame 10，heap page 4（VPN 4）對應到 page frame 23，而 stack 的兩個 page（VPN 14 和 15）則對應到 page frame 28 和 4。 你從圖中可以看到，這個 page table 大部分都是空閒 page，充滿了無效的 entry。 這還只是小小的 16KB 位址空間。 如果是 32-bit 的 address space，那 page table 裡面可能又會浪費更多空間
 
@@ -59,7 +59,7 @@ category: OS
 
 此時虛擬位址會長這樣：
 
-![](image/VA.png)
+![](./image/VA.png)
 
 在硬體上，會有三組 base/bounds register，分別對應 code、heap、stack。 當一個 process 在執行時，每個 segment 的 base register 會包含該 segment page table 的物理位址。 也就是說，每個 process 現在有三張 page table。 當發生 context switch 時，這些 register 會被更新成新 process 的 page table 位址
 
@@ -109,7 +109,7 @@ SPT 並不是一個通用的術語，只是為了這篇文而使用的，一般�
 
 Figure 20.3 的左邊是經典的 linear page table，即使中間那段 address space 完全沒有被用到，我們還是得為這些區段配置 page table 空間（也就是 page table 的中間兩個 SPT）。 而右邊則是 multi-level page table，當中 page directory 僅標記第一個 SPT 與最後一個 SPT 有效，因此只有這兩個 SPT 實際存在於記憶體中
 
-![](image/20-3.png)
+![](./image/20-3.png)
 
 你可以這樣想像 multi-level page table 的作用 — 它讓 linear page table 的一部分「消失」，從而釋放對應的 page frame 給其他用途，並透過 page directory 來追蹤 page table 中有哪些 SPT 被配置了
 
@@ -153,7 +153,7 @@ multi-level page table 是一個很好的時間與空間之間的取捨例子，
 
 Figure 20.4 展示了一個這樣的位址空間例子：
 
-![](image/20-4.png)
+![](./image/20-4.png)
 
 在這個例子中，virtual page 0 和 1 被用作 code，virtual page 4 和 5 被用作 heap，virtual page 254 和 255 則是 stack；其餘的 virtual page 都未被使用
 
@@ -163,7 +163,7 @@ Figure 20.4 展示了一個這樣的位址空間例子：
 
 首先要從 VPN 中取出作為 page directory 的 index 部分，由於 page table 有 256 個 entry，分布在 16 個 SPT 中，因此每個 page directory 會有 16 個 entry，因此 VPN 的前 4 個 bit 為 page directory 的 index：
 
-![](image/PDIndex.png)
+![](./image/PDIndex.png)
 
 一旦取得 page-directory index（簡稱 PDIndex），我們就可以用簡單的公式找到 PDE 的位置：
 
@@ -173,7 +173,7 @@ PDEAddr = PageDirBase + (PDIndex * sizeof(PDE))
 
 這樣就可以得到目標 PDE，接著繼續做 address translation。 如果這個 PDE 是 invalid 的，那我們就知道這個 access 是無效的，因此會 raise 一個 exception。 如果 PDE 是 valid 的，我們就要從 PDE 所指向的 SPT 中找到對應的 PTE，因此我們把 VPN 剩下的 bit 作為 index 來訪問 SPT：
 
-![](image/PDIndex2.png)
+![](./image/PDIndex2.png)
 
 這個 page-table index（簡稱 PTIndex）可作為 SPT 的 index，讓我們得到目標 PTE 的位址：
 
@@ -237,13 +237,13 @@ PhysAddr = (PTE.PFN << SHIFT) + offset = 00 1101 1100 0000 = 0x0DC0
 
 為了決定 multi-level table 需要幾層，我們要先知道一個 page 裡面可以放幾個 PTE。 由於一個 page 的大小為 512 bytes，一個 PTE 為 4 bytes，所以一個 page 可以放 128 個 PTE。 因此我們取 VPN 的最低 7 位（$2^7=128$）當作 index 以找到目標 SPT：
 
-![](image/VA2.png)
+![](./image/VA2.png)
 
 剩下的 14 bits 我們用來作為 page directory 的 index，如果 page directory 有 $2^{14}$ 個 entry（每個 PDE 也是 4 bytes），那麼它會佔用 128 個 page（一個 page 可以放 128 個 PDE，因此佔 $\frac{2^{14}}{2^{7}}$ 個 page），這樣我們原本希望 page directory 能放進一個 page 的目標就失敗了
 
 為了解決這個問題，我們要再加一層樹的結構，將 page directory 自己也拆成多個小 page directory，然後再加一個更上層的 page directory，來指向那些小 page directory，此時虛擬位址會長得像這樣：
 
-![](image/VA3.png)
+![](./image/VA3.png)
 
 在查找最上層 page directory 時，我們將虛擬位址的最高幾個 bit（圖中的 PD Index 0）當作 index，其可以讓我們從 top-level page directory 中取出對應的 PDE。 如果這個 entry 是有效的，就會使用其中的 PFN，搭配 VPN 的下一段（PD Index 1），去查詢第二層 page directory。 最後，如果這一層也有效，就能用第二層 PDE 提供的位址，加上 page-table index，構造出我們要的 PTE 的位址
 

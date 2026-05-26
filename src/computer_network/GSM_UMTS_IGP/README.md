@@ -47,7 +47,7 @@ GSM 主要分為兩個部分，一個是 NSS（Network and Switching Subsystem�
 
 <div class="img-w25">
 
-![（典型的 BTS，img src：[wikipedia](https://zh.wikipedia.org/zh-tw/%E5%9F%BA%E5%9C%B0%E6%94%B6%E5%8F%91%E6%9C%BA%E7%AB%99)）](image/BTS.png)
+![（典型的 BTS，img src：[wikipedia](https://zh.wikipedia.org/zh-tw/%E5%9F%BA%E5%9C%B0%E6%94%B6%E5%8F%91%E6%9C%BA%E7%AB%99)）](./image/BTS.png)
 
 </div>
 
@@ -67,7 +67,7 @@ GSM 主要分為兩個部分，一個是 NSS（Network and Switching Subsystem�
 
 <div class = "img-w50">
 
-![（Lucent 於 2001~2006 部屬在 Ljubljana 的 MSC 服務器，img src：[wikipedia](https://en.wikipedia.org/wiki/Mobile_switching_centre_server#/media/File:Lucent_5ESS_GSM_Mobile_Switching_Centre.jpg)）](image/MSC-server.png)
+![（Lucent 於 2001~2006 部屬在 Ljubljana 的 MSC 服務器，img src：[wikipedia](https://en.wikipedia.org/wiki/Mobile_switching_centre_server#/media/File:Lucent_5ESS_GSM_Mobile_Switching_Centre.jpg)）](./image/MSC-server.png)
 
 </div>
 
@@ -75,7 +75,7 @@ GSM 主要分為兩個部分，一個是 NSS（Network and Switching Subsystem�
 
 <div class = "img-w50">
 
-![（MSC 與 BSS 關係示意圖）](image/MSC-black.png)
+![（MSC 與 BSS 關係示意圖）](./image/MSC-black.png)
 
 </div>
 
@@ -93,7 +93,7 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 <div class = "img-w50">
 
-![（HLR 與 VLR 示意圖）](image/HLR-black.png)
+![（HLR 與 VLR 示意圖）](./image/HLR-black.png)
 
 </div>
 
@@ -107,25 +107,25 @@ HLR 是中心資料庫，假設我們的 sim 卡是在台灣辦的，那我們�
 
 所以整個 GSM 的網路看起來會長這樣：
 
-![](image/GSM-net-black.png)
+![](./image/GSM-net-black.png)
 
 #### 同業者網內互打
 
 如果今天是 User B 要打電話給 User E，由於他們處於同一個 PLMN 內，也就是同一個業者的管轄範圍內，所以就不用經過 GMSC，直接由 MSC 轉接就可以了：
 
-![](image/same-plmn-black.png)
+![](./image/same-plmn-black.png)
 
 #### 不同業者間的通話
 
 如果今天是 User A 要打電話給 User E，由於他們處於不同的 PLMN 內，也就是不同業者的管轄範圍內，所以就需要經過 GMSC，由 GMSC 轉接到 User E 所在的 MSC：
 
-![](image/cross-plmn-black.png)
+![](./image/cross-plmn-black.png)
 
 #### 手機打給家用電話
 
 如果今天是 User A 要打電話給家用電話（User F），由於家用電話是接在 PSTN 上的，所以就需要經過 GMSC，由 GMSC 轉接到 PSTN：
 
-![](image/to-pstn-black.png)
+![](./image/to-pstn-black.png)
 
 ## GPRS
 
@@ -133,7 +133,7 @@ GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸�
 
 因此原先的 MSC 就專注在處理語音通話與簡訊方面，而 SGSN 和 GGSN 就專注在處理網路上的封包，架構圖如下：
 
-![](image/GPRS-black.png)
+![](./image/GPRS-black.png)
 
 ## UMTS
 
@@ -141,7 +141,7 @@ GPRS 是 GSM 的延伸，是 2.5G 行動網路，其在 GSM 的基礎上延伸�
 
 在 UMTS 中，BTS 被改稱為了 Node B，BSC 被改稱為 RNC（Radio Network Controller）
 
-![](image/UMTS-net-black.png)
+![](./image/UMTS-net-black.png)
 
 ## IGP Background
 
@@ -211,7 +211,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
   假設有以下拓樸：
 
-  ![](image/RIP-net-black.png)
+  ![](./image/RIP-net-black.png)
 
   路徑 1 的總跳數為 3，而路徑 2 的總跳數為 2，因此路由器將選擇路徑 2 作為到達目的地的最佳路由
   
@@ -425,7 +425,7 @@ CIDR 通過表示法「IP 地址/前綴長度」來指示網絡部分和主機�
 
   假設有以下拓撲：
 
-  ![](image/EIGRP-black.png)
+  ![](./image/EIGRP-black.png)
 
   如果以 R1 為起點， R8 為終點，則各路徑的各數值計算如下：
   

@@ -152,13 +152,13 @@ core 檔案的權限（假設檔案尚不存在）通常是使用者可讀與使
 - `SIGHUP`：當終端機介面偵測到控制終端機發生連線中斷時，這個信號會送給和該控制終端機有關的 controlling 行程（session leader）
   - 只有在沒有設置終端機的 `CLOCAL` 旗標時，才會針對這個狀況產生這個信號。 終端機的 `CLOCAL` 旗標若被設為開啟，就代表連接的終端機是本地端。 這個旗標會告訴終端機驅動程式忽略所有數據機狀態線
     - 註：終端機驅動程式會透過讀取 status lines 來判斷「遠端連線是否還在」，如果偵測到掛線，就依設定決定要不要產生 `SIGHUP`
-  - 收到這個信號的 session leader 可能在背景中（[Figure 9.7](image/9.7.png)）。 這與一般終端機產生的信號（中斷、離開與暫停）不同，那些信號一律只送給前景行程群組
+  - 收到這個信號的 session leader 可能在背景中（[Figure 9.7](./image/9.7.png)）。 這與一般終端機產生的信號（中斷、離開與暫停）不同，那些信號一律只送給前景行程群組
   - 當 session leader 終止時，也會產生這個信號。 在這種情況下，信號會送給前景行程群組中的每個行程
   - 這個信號常被用來通知 daemon 行程（[第 13 章]()）重新讀取它們的組態檔。 之所以選擇 `SIGHUP` 來做這件事，是因為 daemon 不應該有控制終端機（controlling terminal），因此一般情況下幾乎不會收到這個信號
 - `SIGILL`：表示行程執行了非法的硬體指令
   - 4.3BSD 會從 `abort` 函式產生這個信號。 現在則改用 `SIGABRT` 來達成這個用途
-- `SIGINFO`：這個 BSD 信號是在我們按下狀態鍵（通常是 Control-T）時由終端機驅動程式產生的，其會送給前景行程群組中的所有行程（[Figure 9.9](image/9.9.png)），通常用來將前景行程群組中的各個行程的狀態資訊顯示在終端機上。 Linux 並不支援 `SIGINFO`
-- `SIGINT`：當我們按下中斷鍵（通常是 DELETE 或 Control-C）時，由終端機驅動程式產生。 這個信號會送給前景行程群組中的所有行程（[Figure 9.9](image/9.9.png)）。 這個信號經常被用來終止失控程式，特別是在程式在螢幕上產生大量不想要的輸出時
+- `SIGINFO`：這個 BSD 信號是在我們按下狀態鍵（通常是 Control-T）時由終端機驅動程式產生的，其會送給前景行程群組中的所有行程（[Figure 9.9](./image/9.9.png)），通常用來將前景行程群組中的各個行程的狀態資訊顯示在終端機上。 Linux 並不支援 `SIGINFO`
+- `SIGINT`：當我們按下中斷鍵（通常是 DELETE 或 Control-C）時，由終端機驅動程式產生。 這個信號會送給前景行程群組中的所有行程（[Figure 9.9](./image/9.9.png)）。 這個信號經常被用來終止失控程式，特別是在程式在螢幕上產生大量不想要的輸出時
 - `SIGIO`：表示某個非同步 I/O 事件
 - `SIGIOT`：表示某個實作定義的硬體錯誤。 現在改用 `SIGABRT` 來達成這個用途。 在 FreeBSD 8.0、Linux 3.2.0、Mac OS X 10.6.8 與 Solaris 10 上，`SIGIOT` 與 `SIGABRT` 被定義成了相同的數值
 - `SIGJVM1` 與 `SIGJVM2`：保留給 Solaris 上的 Java 虛擬機器使用
@@ -171,7 +171,7 @@ core 檔案的權限（假設檔案尚不存在）通常是使用者可讀與使
   - 如果電力中斷，UPS 會接手，而軟體通常可以獲得通知。 這個時間點不需要做任何事，因為系統仍在電池電力下運作。 但如果電池電量變低，軟體通常會再度被通知，此時系統最好把所有東西都關閉。 收到低電量狀態通知的行程會將 `SIGPWR` 信號送給 `init` 行程，而 `init` 會負責處理系統關機
   - Solaris 10 與某些 Linux 發行版在 `inittab` 檔中有專門用於這個目的的項目：`powerfail` 與 `powerwait`（或 `powerokwait`）
   - `SIGPWR` 的預設動作視系統而定，可能是 "terminate" 或 "ignore"。 在 Linux 上預設是終止行程。 在 Solaris 上，預設會忽略這個信號
-- `SIGQUIT`：當我們按下終端機的 quit 鍵（通常是 Control-backslash）時，由終端機驅動程式產生。 這個信號會送給前景行程群組中的所有行程（[Figure 9.9](image/9.9.png)）。 這個信號不僅會像 `SIGINT` 一樣終止前景行程群組，還會產生一個 `core` 檔案
+- `SIGQUIT`：當我們按下終端機的 quit 鍵（通常是 Control-backslash）時，由終端機驅動程式產生。 這個信號會送給前景行程群組中的所有行程（[Figure 9.9](./image/9.9.png)）。 這個信號不僅會像 `SIGINT` 一樣終止前景行程群組，還會產生一個 `core` 檔案
 - `SIGSEGV`：表示行程做出了無效的記憶體參照（這通常代表程式有 bug，例如解參考未初始化的指標）。 名稱 SEGV 代表 "segmentation violation"
 - `SIGSTKFLT`：這個信號只在 Linux 上定義。 它出現在最早期的 Linux 版本中，當時打算用於數學協同處理器所產生的 stack faults。 現在，核心已不會產生這個信號了，但其仍被保留下來以維持向後相容性
 - `SIGSTOP`：這個工作控制信號會停止某個行程。 它與互動式的停止信號（`SIGTSTP`）類似，但 `SIGSTOP` 無法被捕捉或忽略
@@ -180,7 +180,7 @@ core 檔案的權限（假設檔案尚不存在）通常是使用者可讀與使
 - `SIGTHAW`：只在 Solaris 上定義，用來通知那些在系統從暫停狀態恢復運作後需要做特殊處理的行程
 - `SIGTHR`：保留給 FreeBSD 上的 thread 函式庫使用。 它被定義為與 `SIGLWP` 相同的數值
 - `SIGTRAP`：表示某個實作定義的硬體錯誤。 這個信號名稱來自 PDP-11 的 TRAP 指令。 實作通常會在執行 breakpoint 指令時使用這個信號，以把控制權轉交給偵錯器
-- `SIGTSTP`：這個互動式停止信號是在我們按下終端機 suspend 鍵（通常是 Control-Z）時由終端機驅動程式產生的。 這個信號會送給前景行程群組中的所有行程（[Figure 9.9](image/9.9.png)）
+- `SIGTSTP`：這個互動式停止信號是在我們按下終端機 suspend 鍵（通常是 Control-Z）時由終端機驅動程式產生的。 這個信號會送給前景行程群組中的所有行程（[Figure 9.9](./image/9.9.png)）
 - `SIGTTIN`：當背景行程群組中的某個行程試圖從它的控制終端機讀取資料時，由終端機驅動程式產生。 如果發生下列任一情況，就不會產生這個信號，取而代之的是讀取作業失敗，並且把 errno 設為 `EIO`：
   - 執行讀取的行程正在忽略或封鎖這個信號
   - 執行讀取的行程所屬的行程群組是孤立的（orphaned process group）
@@ -468,7 +468,7 @@ POSIX.1 要求實作在中斷信號的 `SA_RESTART` 旗標為開啟狀態時，�
 
 下圖整理了各實作提供的信號函式及其語意
 
-![（Figure 10.3 Features provided by various signal implementations）](image/10.3.png)
+![（Figure 10.3 Features provided by various signal implementations）](./image/10.3.png)
 
 在本章稍後，我們會提供自己的 `signal` 函式版本，它會自動嘗試重新啟動被中斷的系統呼叫（`SIGALRM` 信號除外），以及 `signal_intr`，它則會盡量避免重新啟動系統呼叫
 
@@ -612,7 +612,7 @@ BSD 的 `SIGCHLD` 信號語意比較「正常」，而且它的語意與其他�
 
   系統會在信號「遞送」的那一刻，而不是「產生」的那一刻，決定要如何處理被封鎖的信號。 這樣一來，行程就能在信號被遞送之前，先改變該信號的動作。 行程可以呼叫 `sigpending` 函式（見[第 10.13 節]()）來查詢有哪些信號目前既被封鎖又處於 pending 狀態
 
-![（img src [link](https://medium.com/@leesu0816/apue-09-signals-and-setjmp-longjmp-bea241eef114)）](image/terminology.png)
+![（img src [link](https://medium.com/@leesu0816/apue-09-signals-and-setjmp-longjmp-bea241eef114)）](./image/terminology.png)
 
 如果在行程解除封鎖某個信號之前，同一個被封鎖的信號被產生了好幾次，POSIX.1 允許系統只遞送一次，也可以遞送多次。 如果系統會遞送多次，我們就說這些信號被「排入佇列（queued）」。 然而通常 UNIX 核心只會遞送一次該信號，大多數 UNIX 系統並不會將信號排入佇列，除非它們支援 POSIX.1 的 real-time 擴充
 
@@ -1233,7 +1233,7 @@ void *sival_ptr;
 
 下圖顯示 Single UNIX Specification 所定義、對於不同信號而言 `si_code` 可能具有的值：
 
-![](image/10.17.png)
+![](./image/10.17.png)
 
 傳入 signal handler 的 `context` 參數則是一個無型別指標，可以轉型為 `ucontext_t` 結構，用來表示信號遞送當下的行程內容（process context）。 這個結構至少會包含下列欄位：
 
@@ -1405,7 +1405,7 @@ static void sig_alrm(int signo) { pr_mask("in sig_alrm: "); }
 
 當行程在左半部執行時，它的信號遮罩為 0（沒有封鎖任何信號）。 在中間部分執行時，信號遮罩為 `SIGUSR1`。 在右半部執行時，信號遮罩為 `SIGUSR1`|`SIGALRM`
 
-![](image/10.21.png)
+![](./image/10.21.png)
 
 程式的輸出如下：
 
@@ -1853,7 +1853,7 @@ caught SIGCHLD
 
 如同在[第 9.6 節]()所述，輸入 interrupt 字元會讓 interrupt 信號傳送給前景行程群組中的所有行程。 下圖顯示 editor 執行時，各行程的關係
 
-![](image/10.27.png)
+![](./image/10.27.png)
 
 在這個例子中 `SIGINT` 會被送給三個前景行程（shell 忽略它），而 `a.out` 行程與 editor 都會捕捉到該信號。 當使用 `system` 來執行另一個程式時，我們不應該讓父行程與子行程同時捕捉端末產生的兩個信號：interrupt 與 quit。 相反地，這兩個信號應該只送給正在執行的那個程式（子行程）
 

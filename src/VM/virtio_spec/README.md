@@ -2213,7 +2213,7 @@ PCI Capability 是 PCIe spec 裡面定義的名詞，用來識別 PCIe 裝置的
 
 Vendor-Specific Capability 的結構如下（取自 PCIe spec）：
 
-![（Figure 7-194 Vendor-Specific Capability）](image/PCIeVendor-SpecificCapability.png)
+![（Figure 7-194 Vendor-Specific Capability）](./image/PCIeVendor-SpecificCapability.png)
 :::
 
 依 `cfg_type` 的不同，該結構之後可以接額外資料。 `virtio_pci_cap` 內各欄位的意義如下：

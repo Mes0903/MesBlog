@@ -327,7 +327,7 @@ void* consumer(void* arg)
 
 問題就發生在這裡：另一個消費者 $T_{c2}$ 偷跑進來，消費掉緩衝區中僅有的一筆資料（執行 c1, c2, c4, c5, c6，略過 c3 的 wait，因為緩衝區是滿的）。 現在假設 $T_{c1}$ 開始執行，剛從 wait 返回前，它重新獲取鎖，然後返回。 接著它呼叫 `get()`（c4），卻發現沒有任何資料可供消費，因此觸發了 `assert`，程式並未達到預期效果。 很顯然，我們應該要避免 $T_{c1}$ 嘗試消費，因為 $T_{c2}$ 已經先行消耗了那筆資料。 圖 30.9 顯示了各執行緒的動作，以及隨時間變化的排程器狀態（Ready、Running 或 Sleeping）
 
-![（Figure 30.9: Thread Trace: Broken Solution (v1)）](image/30-9.png)
+![（Figure 30.9: Thread Trace: Broken Solution (v1)）](./image/30-9.png)
 
 這個問題產生的原因很簡單：在生產者將 $T_{c1}$ 喚醒之後，但在 $T_{c1}$ 開始執行前，有界緩衝區的狀態已被 $T_{c2}$ 改變。 而 `signal()` 只負責喚醒執行緒，暗示程式狀態已改變（本例中指資料已被放入緩衝區），卻不保證被喚醒的執行緒執行時狀態仍符合預期
 
@@ -382,7 +382,7 @@ void* consumer(void* arg)
 
 具體而言，$T_{c2}$ 被喚醒後，檢查到 buffer 為空（c2），又重新睡去（c3）。 而有待放資料的生產者 $T_p$ 卻仍在睡眠，剛消費完資料的消費者 $T_{c1}$ 也再度睡去。 三個執行緒全部睡死，明顯是個錯誤，詳細步驟請參見圖 30.11
 
-![（Figure 30.11: Thread Trace: Broken Solution (v2)）](image/30-11.png)
+![（Figure 30.11: Thread Trace: Broken Solution (v2)）](./image/30-11.png)
 
 顯然我們需要 signal 機制，但必須更具指向性。 消費者不應喚醒其他消費者，只應喚醒生產者；反之亦然
 

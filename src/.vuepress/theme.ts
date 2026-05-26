@@ -4,6 +4,28 @@ import enSidebar from "./sidebars/en.js";
 import fs from "node:fs";
 import path from "node:path";
 
+// Work around MathJax 4 / @mdit/plugin-mathjax-slim noise.
+// The plugin loads the bboldx TeX package by default, so normal \mathbb
+// formulas can be routed through the -bboldx variant. The current NewCM
+// output font does not define that variant, which makes MathJax warn even
+// for valid formulas. Keep MathJax enabled and suppress only this known line.
+type ConsoleWithMathjaxWarningFilter = Console & {
+  __mesMathjaxBboldxWarningFiltered?: boolean;
+};
+
+const nodeConsole = console as ConsoleWithMathjaxWarningFilter;
+if (!nodeConsole.__mesMathjaxBboldxWarningFiltered) {
+  const warn = nodeConsole.warn.bind(nodeConsole);
+
+  nodeConsole.warn = (...args: unknown[]) => {
+    if (args.length === 1 && args[0] === "Invalid variant: -bboldx") return;
+
+    warn(...args);
+  };
+
+  nodeConsole.__mesMathjaxBboldxWarningFiltered = true;
+}
+
 const callgraph = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, "./shiki/callgraph.tmLanguage.json"), "utf-8")
 );
@@ -170,9 +192,9 @@ export default hopeTheme({
 
     // uncomment these if you need TeX support
     math: {
-    //   // install katex before enabling it
-    //   type: "katex",
-    //   // or install mathjax-full before enabling it
+      // install katex before enabling it
+      // type: "katex",
+      // or install @mathjax/src before enabling it
       type: "mathjax",
     },
 

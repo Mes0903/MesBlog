@@ -12,17 +12,17 @@ order: 5
 
 給定一個 $\mathbb{R}^{n\times n}$ 裡的 symmetric postive matrix $A$，當我們想解 $A\vec x = \vec b$ 的 $\vec x$ 時，等價於找到能 minimizes $\Phi(\vec y) = \frac{1}{2}<A\vec y, \vec y> - <\vec b, \vec y>$ 的 $\vec x$
 
-![](image/1.png)
+![](./image/1.png)
 
 而怎麼去找 $\Phi$ 的最小值的方法就叫 Gradient Method
 
 證明：
 
-![](image/2.png)
+![](./image/2.png)
 
 而我們利用這個方法去找到每次的 $x^{(k)}$：
 
-![](image/3.png)
+![](./image/3.png)
 
 也就是用上一步的 $x^{(k-1)}$，加上某一個純量（scalar） $\alpha_{k-1}$ 乘上更新的方向 $\vec p^{(k-1)}$
 
@@ -32,7 +32,7 @@ order: 5
 
 因為之前有說過如果一個函數可微的話，那麼這個函數的負的 gradient 方向就會指出它最大的遞減方向
 
-![](image/4.png)
+![](./image/4.png)
 
 所以 $\vec p^{(k-1)} = -\nabla\Phi(\vec x^{(k-1)})$ 就會是 $\vec x^{(k-1)}$ 那點的最大遞減方向，那麼 $\vec x^{(k-1)}$ 加上 $-\alpha_{k-1}\nabla\Phi(\vec x^{(k-1)})$ 就可以保證越來越小
 
@@ -44,14 +44,14 @@ order: 5
 
 接下來要來決定 $\alpha_{k-1}$，推導：
 
-![](image/5.png)
+![](./image/5.png)
 
 那我們可以做個簡單的操作來得到 residual vector 的 equation：
 
-![](image/6.png)
+![](./image/6.png)
 
 #### Pseudo Code
 
-![](image/7.png)
+![](./image/7.png)
 
-![](image/8.png)
+![](./image/8.png)

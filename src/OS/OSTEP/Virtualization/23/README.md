@@ -47,7 +47,7 @@ VMS 用兩種方式減輕 page table 對記憶體的壓力。 第一是將 user 
 
 研究 VMS 有個很棒的地方是可以看到一個真實的 address space 是怎麼構成的（Figure 23.1）。 到目前為止，我們假設的 address space 都很簡單，只有 user code、data、heap，但實際上如上所示的 address space 要複雜得多
 
-![](image/23-1.png)
+![](./image/23-1.png)
 
 舉例來說，code segment 絕不會從 page 0 開始，因為 page 0 會被標記為不可存取，用來協助偵測 null-pointer 的存取。 因此，在設計 address space 時，一個考量點是要方便除錯，而這個不可用的 zero page 正好提供了某種幫助
 
@@ -162,7 +162,7 @@ TIP: BE LAZY
 
 Figure 23.2 顯示了一個典型（簡化後）的地址空間示意圖：
 
-![](image/23-2.png)
+![](./image/23-2.png)
 
 Linux 中一個稍微有趣的特點是它有兩種不同的 kernel virtual address。 第一種稱為 kernel logical addresses [O16]，這是一般認知的 kernel virtual address space，要取得這種記憶體，kernel code 只需呼叫 kmalloc。 大多數 kernel data structures（像是 page tables、per-process 的 kernel stacks 等）都存放在這裡。 與系統中大多數其他記憶體不同，kernel logical memory 無法被換出到 disk
 
@@ -186,7 +186,7 @@ OS 在以下時機會參與其中：建立與刪除 process，以及 context swi
 
 因此，一個 virtual address 可以這麼理解：
 
-![](image/page_table_structure.png)
+![](./image/page_table_structure.png)
 
 如圖所示，virtual address 的最高 16 bits 並未使用（因此不參與轉譯），最底下的 12 bits（因為 page 大小為 4 KB）是 offset（因此會直接使用，不需轉譯），中間的 36 bits 則會參與轉譯過程。 P1 部分用來 index 最頂層的 page directory，之後轉譯就一路往下，到最後由 P4 指定的 page table page，找到對應的 page table entry。 隨著系統記憶體變得越來越大，這個龐大的 address space 將會啟用更多範圍，進而使用五層甚至六層的 page-table
 

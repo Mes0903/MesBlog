@@ -24,7 +24,7 @@ rv32emu 是針對 32 bit [RISC-V processor model](https://riscv.org/technical/sp
 
 下圖為 rv32emu 的架構圖：
 
-![](image/1.png)
+![](./image/1.png)
 
 為了模擬硬體，模擬器主要的邏輯為
 
@@ -259,13 +259,13 @@ static inline void set_dest(hart_t *vm, uint32_t insn, uint32_t x)
 
 RISC-V 內將 Trap 分為 Exception 與 Interrupt，而 Interrupt 有三種，分別為 software interrupt、timer interrupt 與 external interrupt。 而 PLIC 全名為 Platform Level Interrupt Controller，是一個 memory mapped device，如上述所說的用來處理 external interrupt，也就是下圖左邊的部分：
 
-![（img src：[Tuesday @ 0900 RISC V Interrupts Krste Asanović, UC Berkeley & SiFive Inc](https://www.youtube.com/watch?v=iPbaG_wnNJY)）](image/2.png)
+![（img src：[Tuesday @ 0900 RISC V Interrupts Krste Asanović, UC Berkeley & SiFive Inc](https://www.youtube.com/watch?v=iPbaG_wnNJY)）](./image/2.png)
 
 PLIC 內主要分為 PLIC Gateway 與 PLIC Core，當中斷源（Interrupt Source）發起中斷時，其訊號會到達 Gateway，Gateway 再根據規定將這個中斷轉發給 PLIC Core，而 PLIC Core 再根據規定，利用 multicasting 的方式尋找可以處理這個中斷的 hart
 
 下圖是更具體的流程：
 
-![（Figure 2. PLIC Interrupt Flow）](image/3.png)
+![（Figure 2. PLIC Interrupt Flow）](./image/3.png)
 
 步驟如下：
 
@@ -370,7 +370,7 @@ SBI 是 RISC-V 定義的一個位於 OS 和 Firmware 之間的介面，用來提
 
 這樣的設計上底下的 SEE 可以抽換成不同的實作，上層的 OS 也可以正常的運作，也因此 rv32emu 實作在 S mode 下，在 linux 中可以定義不同的 interrupt controller，實作在 S mode 就可以避免每更新 interrupt controller 就需要修改 linux guest 的情況
 
-![](image/4.png)
+![](./image/4.png)
 
 #### SBI HSM Extension
 

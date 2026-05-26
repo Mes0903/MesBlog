@@ -81,7 +81,7 @@ TLB 和所有快取一樣，建立在一個基本假設上 — 大部分情況�
 
 因此一個虛擬位址會被劃分成兩個部分 — 4 bits 的 VPN（總共 16 個 virtual page）以及 4 bits 的 offset（每個 page 有 16 bytes）
 
-![](image/19-2.png)
+![](./image/19-2.png)
 
 圖 19.2 顯示了這個陣列在系統中的 16 個 16-byte page 上的分布情形。 可以看到陣列的第一個元素 `a[0]` 從 **VPN=06**、**offset=04** 開始；只有三個 4-byte 整數可以放在這個 page 上。 陣列接著延伸到下一個 page（**VPN=07**），其中存放了接下來四個元素（`a[3]` 到 `a[6]`）。 最後三個元素（`a[7]` 到 `a[9]`）則位於 **VPN=08** 的 page 上
 
@@ -296,7 +296,7 @@ $$
 
 最後我們來快速看看一個真實世界中的 TLB。 這個例子來自 MIPS R4000 [H93]，這是一個使用 software-managed TLB 的現代系統。 圖 19.4 展示了一個簡化版的 MIPS TLB entry：
 
-![](image/19-4.png)
+![](./image/19-4.png)
 
 MIPS R4000 支援一個 32-bit 的位址空間，每個 page 大小為 4KB。 因此，一個典型的虛擬位址應該會有 20-bit 的 VPN 與 12-bit 的 offset。 然而如圖所示，TLB 中只有 19-bit 的 VPN。 這是因為 user address 只使用一半的位址空間（另一半保留給 kernel），所以只需要 19-bit 的 VPN 
 

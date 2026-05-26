@@ -17,7 +17,7 @@ category: essay
 
 <div class="img-w50">
 
-![](image/image.png)
+![](./image/image.png)
 
 </div><br>
 

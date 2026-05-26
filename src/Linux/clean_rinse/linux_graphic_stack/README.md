@@ -205,11 +205,11 @@ XRender 處理的是對齊好的梯形，也就是左右邊緣可以有斜率的
 
 下面我們簡單畫了一個紅色的圓形。 它會被分解成兩組梯形，一組用來畫外框，一組用來填色
 
-![](image/traps2.png)
+![](./image/traps2.png)
 
 由於 `show-traps` 預設給出的圖示不太好理解，我稍微修改了這個工具，讓每個梯形都有不同的顏色。 這裡是用來畫黑色外框的那一組梯形
 
-![](image/traps2decomp2.png)
+![](./image/traps2decomp2.png)
 
 ## pixman
 
@@ -348,11 +348,11 @@ X11 一開始刻意「不管視窗政策」，它只提供「畫視窗、收輸�
 
 假設有一組像這樣排列的視窗：
 
-![](image/Diagram1.png)
+![](./image/Diagram1.png)
 
 現在假設使用者把 GIMP 拖開，深灰色的區域就是被揭開出來的部分：
 
-![](image/Diagram2.png)
+![](./image/Diagram2.png)
 
 此時擁有這個視窗的程式會收到一個 ExposeEvent，然後它必須重新繪製內容。 這也是為什麼在某些版本的 Windows 或 Linux 裡，如果某個程式當機，當你拖動其他視窗經過時，它就會一片空白。 再想想在 Windows 當中，桌面本身其實也只是沒有任何特權的另一個程式，同樣可能像其他程式一樣當機，這時你就會得到一份相當棘手的 [bug report](http://mrdoob.com/lab/javascript/effects/ie6/)
 

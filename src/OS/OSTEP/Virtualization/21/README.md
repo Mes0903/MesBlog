@@ -47,7 +47,7 @@ swap space 的大小很重要，因為它最終決定了系統在某一時間點
 
 看個例子：
 
-![](image/21-1.png)
+![](./image/21-1.png)
 
 在這個例子中（Figure 21.1），你可以看到一個只有 4 個 page 大小的 physical memory ，另外還有一個 8 個 page 的 swap space。 在這個例子裡，三個 process（Proc 0、Proc 1 和 Proc 2）正在共享 physical memory；然而，它們每個 process 只有一部分有效的 page 在記憶體裡，其餘的則在硬碟的 swap space 中
 

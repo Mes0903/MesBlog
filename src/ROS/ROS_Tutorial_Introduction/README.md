@@ -27,7 +27,7 @@ ROS 全名叫 Robot Operating System，但它其實是一種中介軟體（Middl
 
 <div class="img-w200px">
 
-![](image/middleware.png)
+![](./image/middleware.png)
 
 </div>
 
@@ -55,7 +55,7 @@ ROS 全名叫 Robot Operating System，但它其實是一種中介軟體（Middl
 
 ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理解一下簡單的主從式架構：
 
-![（image source：[wikipedia](https://en.wikipedia.org/wiki/Client%E2%80%93server_model)）](image/p2p1.png)
+![（image source：[wikipedia](https://en.wikipedia.org/wiki/Client%E2%80%93server_model)）](./image/p2p1.png)
 
 客戶端（clients） 會去向伺服器請求資料，這邊這個伺服器裡面有很多資料，像是客戶的帳密、金額，或是你遊戲帳號裡面的寶物有哪些之類的。以早期的線上遊戲來說，每次客戶端有更改資料的動作時都會發送一個請求（request） 給伺服器，假設你打了怪，賺到了 10 元，它就會把這個資訊送到伺服器上，伺服器就會幫你記錄下來
 
@@ -67,7 +67,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 那如果 ROS 使用了主從式架構，很有可能也會有類似的問題，因此 ROS 使用的是 Peer-To-Peer（一種分散式系統架構），Middleware 通常都會是分散式系統架構：
 
-![（image source：[link](https://ithelp.ithome.com.tw/articles/10216158)）](image/p2p2.png)
+![（image source：[link](https://ithelp.ithome.com.tw/articles/10216158)）](./image/p2p2.png)
 
 在這種架構下，每台電腦（節點）都同時是客戶端與伺服器端，所有人都負責儲存了全部或部分的所有資料，並且也都會處理收到的請求
 
@@ -75,7 +75,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 那 p2p 有一些變型，這邊舉三個例子，看下面這張圖：
 
-![（image source：[link](https://www.researchgate.net/figure/P2P-architectures-at-a-glance-a-Centralized-architecture-b-Pure-P2P-architecture_fig2_332539196)）](image/p2p3.png)
+![（image source：[link](https://www.researchgate.net/figure/P2P-architectures-at-a-glance-a-Centralized-architecture-b-Pure-P2P-architecture_fig2_332539196)）](./image/p2p3.png)
 
 上面這三個分別為
 
@@ -109,7 +109,7 @@ ROS 主要是依靠 P2P 架構實作的，講這個之前先讓大家稍微理�
 
 那麼 ROS 的架構是第一種，Centralized P2P：
 
-![（image source：RSL ROS Tutorial）](image/p2p4.png)
+![（image source：RSL ROS Tutorial）](./image/p2p4.png)
 
 我們會有一片樹梅派來跑 server 的 code，或是像我們一樣用主機來跑 server 的 code，然後各個零件能夠互相傳遞、存取資料
 
@@ -199,21 +199,21 @@ Message 在發布時我們會給它加上 Topic，妳可以把 Message 想像成
 
 於是在 ROS 裡面，發布 Message 出來的 Node 我們叫它 Publisher，接收 Message 的 Node 我們叫它 Subscriber，看看下面這張圖：
 
-![](image/pub_sub1.png)
+![](./image/pub_sub1.png)
 
 Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱，例如規劃路徑的 Node 希望和雷達的 Node 拿掃到的資料，那麼規劃路徑的 Node 就是 Subscriber，雷達的 Node 則是 Publisher
 
 而 Message 裡面可能裝很多個整數的陣列，Topic 可能是「雷達資料」，以上方那個圖來說就是：
 
-![](image/pub_sub2.png)
+![](./image/pub_sub2.png)
 
 而同一種 Topic 的 Message 也可以由不同的 Node 發布，也就是有不同的 Publisher 發布同樣 Topic 的 Message； 例如妳雷達有兩顆，而且妳為他們寫了兩個 Node，那麼這兩個 Node 都可以發布「雷達資料」這種 Topic 的 Message：
 
-![](image/pub_sub3.png)
+![](./image/pub_sub3.png)
 
 同理，同一種 Topic 的 Message 也可以有不同的 Node 訂閱，有就是有不同的 Subscriber 訂閱同樣 Topic 的 Message； 例如規劃路徑的 Node 需要雷達的資料，建地圖的 Node 也需要雷達的資料，那這兩個 Node 都可以訂閱「雷達資料」這種 Topic 的 Message
 
-![](image/pub_sub4.png)
+![](./image/pub_sub4.png)
 
 如果一個 Node 同時在收資料與發資料，那這個 Node 就同時是 Subcriber 與 Publisher
 
@@ -221,7 +221,7 @@ Node 會通過 Topic 來找要接收它需要的訊息，我們稱之為訂閱�
 
 實際上在傳遞資訊時還會需要 Master 來幫忙 Node 之間的通訊，那麼 ROS 的訊息傳送時是使用 TCP/IP 協定的連線，且一旦兩個訊息接起來後就不會再經過 Master 了：
 
-![](image/pub_sub5.png)
+![](./image/pub_sub5.png)
 
 一開始 Publisher 會先去向 Master 註冊，然後 Publisher 就會開始發布它的訊息（封包）；而當 Subscriber 需要相對應的訊息時就會去詢問 Master，那當它訂閱到那個 Topic 時它們就建立了連線，不再透過 Master 來傳遞資訊
 
@@ -245,7 +245,7 @@ Ubuntu 是基於 Debian，以桌面應用為主的 Linux 發行版。Ubuntu 有�
 
 ### Terminal & CLI
 
-![](image/terminal.png)
+![](./image/terminal.png)
 
 #### linux 基本指令 ：
 
@@ -365,7 +365,7 @@ rosrun turtlesim turtlesim_node
 rosrun turtlesim turtle_teleop_key
 ```
 
-![](image/robot.png)
+![](./image/robot.png)
 
 ### Minibot & Turtlebot
 
@@ -379,13 +379,13 @@ rosrun turtlesim turtle_teleop_key
 gedit ~/.bashrc
 ```
 
-![](image/setting1.png)
+![](./image/setting1.png)
 
 ```bash
 source ~/.bashrc
 ```
 
-![](image/setting2.png)
+![](./image/setting2.png)
 
 #### 連線
 
@@ -431,7 +431,7 @@ gedit ~/.bashrc
 
 可以看到現在預設是使用 minibot，你若是想預設 turtlebot 只要將 139 行反註解、140 行註解掉即可
 
-![](image/setting3.png)
+![](./image/setting3.png)
 
 <!-- ### minibot
 ```bash
@@ -467,7 +467,7 @@ roslaunch turtlebot3_teleop turtlebot3_teleop_key.launch
 
 #### 你一定會遇到的問題
 
-![](image/setting4.png)
+![](./image/setting4.png)
 
 這代表你電腦中儲存的 Key 跟機器人上的不符合，你就執行他提示的指令
 
@@ -497,13 +497,13 @@ catkin 大致上把一個工作區劃分為以下三個區塊
 - devel  
   編譯完的執行檔跟一些環境變數設定檔都會放置在這
 
-![](image/catkin1.png)
+![](./image/catkin1.png)
 
 後兩個路徑由 catkin 系統自動生成、管理，我們日常的開發一般不會去涉及，而主要用到的是 src 資料夾，我們寫的 ROS 程式、網上下載的 ROS 原始碼包都存放在這裡
 
 在編譯時，catkin 編譯系統會遞迴的查詢和編譯 `src/` 下的每一個原始碼包。因此你也可以把幾個原始碼包放到同一個資料夾下，如下圖所示：
 
-![](image/catkin2.png)
+![](./image/catkin2.png)
 
 #### package結構
 
@@ -541,7 +541,7 @@ catkin_make
 
 他就會自動幫你編譯所有 package
 
-![](image/catkin3.png)
+![](./image/catkin3.png)
 
 編譯完後記得執行以下指令加入環境變數，不然你在 Terminal 上找不到你要執行的 code 喔
 

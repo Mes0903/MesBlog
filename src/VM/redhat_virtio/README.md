@@ -90,7 +90,7 @@ virtio 驅動程式是在虛擬環境中，依據 virtio 規格的相關部分�
 
 請注意 virtio ring 的共享記憶體觀念所隱含的意義：驅動程式與裝置所存取的是 RAM 裡面的同一個 page，而不是兩塊需要靠某種協定彼此同步的獨立區域
 
-![（Figure 1：QEMU 模擬裝置元件圖）](image/2020-06-18-virtio-fig1.png)
+![（Figure 1：QEMU 模擬裝置元件圖）](./image/2020-06-18-virtio-fig1.png)
 
 由於通知現在需要從 guest（KVM）傳遞到 QEMU，再到 kernel，才能由後者轉送網路封包，因此我們可以在 kernel 中建立一個 thread，讓它能存取 guest 的共享記憶體映射，並直接處理 virtio 資料平面
 
@@ -100,21 +100,21 @@ virtio 驅動程式是在虛擬環境中，依據 virtio 規格的相關部分�
 控制面（裝置啟動）仍由 QEMU 發動，但資料面（封包處理與 virtqueue 消費）交給 kernel 的 vhost-net。 KVM 以 eventfd 作為通知橋樑：一個負責把裝置側事件（device interrupts/kicks）送入 KVM，另一個讓 KVM 向對方發送 vCPU 相關的事件  
 :::
 
-![（Figure 2：Virtio-net 元件示意圖）](image/2020-06-18-virtio-fig2.png)
+![（Figure 2：Virtio-net 元件示意圖）](./image/2020-06-18-virtio-fig2.png)
 
 接著，我們把 virtio 裝置從 kernel 移到 host 上的一個 user space 行程（相關內容見〈[A journey to the vhost-users realm](https://www.redhat.com/en/blog/journey-vhost-users-realm)〉），讓它能執行像 DPDK 這樣的封包轉發框架。 用來完成這整套設定的協定被稱為 virtio-user
 
-![（Figure 3：Virtio-user 元件示意圖）](image/2020-06-18-virtio-fig3.png)
+![（Figure 3：Virtio-user 元件示意圖）](./image/2020-06-18-virtio-fig3.png)
 
 它甚至允許 guest 在其 user space 中執行 virtio 驅動程式，而不是在 kernel 中！ 在這種情況下，virtio 所稱的 driver 其實指的是那個負責管理記憶體與 virtqueue 的行程，而不是執行於 guest 內的 kernel 程式碼
 
-![（Figure 4：在 guest userland 執行驅動程式的 Virtio-user）](image/2020-06-18-virtio-fig4.png)
+![（Figure 4：在 guest userland 執行驅動程式的 Virtio-user）](./image/2020-06-18-virtio-fig4.png)
 
 最後，只要硬體允許，我們可以直接進行 virtio 裝置直通（passthrough）。 如果該 NIC 支援 virtio 資料平面，就能透過適合的硬體（如 IOMMU 裝置，能在 guest 與裝置的實體位址之間做轉譯）與軟體（如 VFIO Linux driver，讓 host 能把某個 PCI 裝置的控制權直接交給 guest）配合下，將它直接曝露給 guest。 此時裝置會使用典型的硬體訊號作為通知基礎設施，例如 PCI 與 CPU 的中斷（IRQ）
 
 若某張實體 NIC 想採用這種方式，最簡便的做法是把它的驅動程式建立在 [vDPA](https://www.redhat.com/en/blog/achieving-network-wirespeed-open-standard-manner-introducing-vdpa) 之上，這點在本系列先前的文章中也解釋過
 
-![（Figure 5：Virtio 硬體直通元件示意圖）](image/2020-06-18-virtio-fig5.png)
+![（Figure 5：Virtio 硬體直通元件示意圖）](./image/2020-06-18-virtio-fig5.png)
 
 接下來的章節中，我們會說明資料平面通訊內部實際發生的事情
 
@@ -160,7 +160,7 @@ split 版的 virtqueue 把結構分成三個區域，而且每個區域只允許
 - 實體 NIC／加速卡要能直接存取 guest RAM，需要安全且正確的 DMA 位址轉換。 其中 IOMMU 扮演了關鍵角色：它把 guest 的 I/O 虛擬位址（IOVA）轉成主機實體位址，並施加存取控制，避免裝置任意 DMA 至不該觸及的記憶體。 這樣 device 便能以 DMA 方式讀寫 vring 與 buffers，同時維持隔離與安全性  
 :::
 
-![（Shared memory with split ring elements）](image/2020-07-08-virtio-fig1.png)
+![（Shared memory with split ring elements）](./image/2020-07-08-virtio-fig1.png)
 
 #### Descriptor ring：我的資料在哪裡？
 
@@ -195,15 +195,15 @@ struct virtq_avail {
 
 Figure 1 顯示了一張描述符表，其中有一個起始位址為 `0x8000`，長度為 2000 位元組的 buffer，而此時的 avail ring 內尚未有任何項目。 完成所有步驟後，會有一張元件示意圖強調 descriptor area 的更新。 對 driver 而言，第一步需要配置並填入該 buffer（這是下圖〈Process to make a buffer available〉中的步驟 1），接著需要在 descriptor area 中把它標記為 available（步驟 2）
 
-![（Figure 1: Driver writes a buffer in descriptor ring）](image/2020-07-08-virtio-fig2.png)
+![（Figure 1: Driver writes a buffer in descriptor ring）](./image/2020-07-08-virtio-fig2.png)
 
 在填好描述符之後，driver 會透過 avail ring 進行告知：它把描述符索引 `#0` 寫入 avail ring 的第一個項目，並相應地更新 `idx`，其結果如 Figure 2 所示。 若提交的是「串接的 buffers」，則只需要把「鏈的頭節點」的描述符索引加入 avail ring，`idx` 也只會增加 1，這對應到圖中的步驟 3
 
-![（Figure 2: Driver offers the buffer with avail ring）](image/2020-07-08-virtio-fig3.png)
+![（Figure 2: Driver offers the buffer with avail ring）](./image/2020-07-08-virtio-fig3.png)
 
 從這一刻起，driver 就不能再修改這個已宣告為 available 的描述符或其對應的 buffer 了：它已經交由 device 控制了。 接著，如果此時 device 有啟用通知，driver 需要對 device 發出通知（關於 device 如何管理通知，稍後會再說明）。 這是圖中的最後一步（步驟 4）
 
-![（Diagram: Process to make a buffer available）](image/2020-07-08-virtio-fig4.png)
+![（Diagram: Process to make a buffer available）](./image/2020-07-08-virtio-fig4.png)
 
 avail ring 的容量必須能容納與 descriptor area 相同數量的項目，而 descriptor area 的大小必須是 2 的冪，這樣 `idx` 會在某個點自然循環回來。 舉例來說，若 ring 的大小是 256 個項目，則 `idx` 為 1、257、513... 的項目都會對應到同一個槽位。 此外，`idx` 也會在 16 位元的邊界上循環，如此一來，雙方都不必擔心某個 `idx` 是無效的，它們在環狀結構中皆為有效值
 
@@ -219,7 +219,7 @@ driver 也可以藉由描述符的成員 `next` 把多個描述符串接起來�
 
 例如，若 driver 在第一次操作就將描述符表索引 0 與 1 串成一條鏈並送出，device 端所看到的情況會如 Figure 3，而流程會再次回到步驟 2
 
-![（Figure 3: Device sees chained buffers）](image/2020-07-08-virtio-fig5.png)
+![（Figure 3: Device sees chained buffers）](./image/2020-07-08-virtio-fig5.png)
 
 #### Used ring：當裝置處理完資料之後
 
@@ -244,13 +244,13 @@ struct virtq_used_elem {
 
 如果回報的是一條描述符鏈，device 只會回傳該鏈的「頭節點」索引 `id`，以及整條鏈（如果有寫入）累計的總寫入長度（在讀取資料時，不會增加這個數值）。 描述符表本身不會被修改，對 device 而言它是唯讀的，這對應到下圖〈Process to make a buffer as used〉內的步驟 5。 假如 device 使用的是〈Chained descriptors〉一節所示的那條鏈，則：
 
-![（Figure 4: Device returns buffer chain）](image/2020-07-08-virtio-fig6.png)
+![（Figure 4: Device returns buffer chain）](./image/2020-07-08-virtio-fig6.png)
 
 ::: tip  
 上圖的 `0x3000` 是 used ring 裡 `virtq_used_elem.len` 的值，代表總共寫入了 `0x3000` 位元組，不過總共有 `0x2000` 的 buffer，可見它沒有寫滿  
 :::
 
-![（Diagram: Process to mark a buffer as used）](image/2020-07-08-virtio-fig7.png)
+![（Diagram: Process to mark a buffer as used）](./image/2020-07-08-virtio-fig7.png)
 
 最後，device 會檢查 used queue 的旗標，若發現 driver 希望被通知，便會通知 driver（步驟 6）
 
@@ -282,11 +282,11 @@ struct virtq_used_elem {
 
 之後的步驟就與一般描述符相同：driver 把該帶有該旗標的描述符索引（本例為 `#0`）寫入 avail ring（圖中的步驟 4），並照常通知 device（步驟 5）
 
-![（Diagram: Driver make available indirect descriptors）](image/2020-07-08-virtio-fig8.png)
+![（Diagram: Driver make available indirect descriptors）](./image/2020-07-08-virtio-fig8.png)
 
 為了讓裝置使用其資料，裝置會用相同的記憶體位址回傳總計 `0x3000` bytes（亦即 `0x8000–0x9FFF` 與 `0xD000–0xDFFF` 全部，對應步驟 6 與 7，與一般描述符的流程相同）。 一旦裝置使用完畢，驅動程式就可以釋放該間接表用到的記憶體，或像對待一般 buffer 那樣任意處置
 
-![（Diagram: Device mark the indirect descriptor as used）](image/2020-07-08-virtio-fig9.png)
+![（Diagram: Device mark the indirect descriptor as used）](./image/2020-07-08-virtio-fig9.png)
 
 帶有 `INDIRECT` 旗標的描述符不能同時設定 `NEXT` 或 `WRITE` 旗標，所以你不能在主描述符表中把「間接描述符」再鏈接起來（不能表 A 串表 B）。 此外，間接表所能包含的描述符數量，最多與主描述符表相同
 
@@ -378,7 +378,7 @@ wrap 計數器用來解決「同一槽位被循環重用」時，如何區分「
 
 接下來是常見的更新流程圖。 請留意，這裡已經沒有 avail 與 used 這兩個 ring 了，現在只需要描述符表即可：
 
-![（Diagram: Driver makes available a descriptor using a packed queue）](image/2020-07-15-vdpa-1.png)
+![（Diagram: Driver makes available a descriptor using a packed queue）](./image/2020-07-15-vdpa-1.png)
 
 #### 回填 used 描述符：裝置如何填滿「已完成」清單
 
@@ -397,7 +397,7 @@ wrap 計數器用來解決「同一槽位被循環重用」時，如何區分「
 
 </center-panel>
 
-![（Diagram: Device marks a descriptor as used using a packed queue）](image/2020-07-15-vdpa-2.png)
+![（Diagram: Device marks a descriptor as used using a packed queue）](./image/2020-07-15-vdpa-2.png)
 
 #### Wrapping the descriptor ring：如何維持各通道的分離？
 
@@ -543,7 +543,7 @@ Descriptor table 並不是用來記錄「所有描述符的狀態」的，它只
 
 在 packed 佈局中，間接表裡的 buffers 必須依順序排列，且 ID 欄位會完全被忽略。 此外，對間接表項目而言，唯一有效的旗標是 `VIRTQ_DESC_F_WRITE`，其他旗標都是保留的，裝置會忽略。 照慣例，若滿足通知條件，driver 會發出通知（步驟 4）
 
-![（Diagram: Driver makes available a descriptor using a packed queue）](image/2020-07-15-vdpa-3.png)
+![（Diagram: Driver makes available a descriptor using a packed queue）](./image/2020-07-15-vdpa-3.png)
 
 例如，如果要建立一張包含 3 個描述符的間接表，driver 需要配置一張 48 bytes 的表：
 

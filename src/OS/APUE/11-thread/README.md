@@ -81,7 +81,7 @@ pthread_t pthread_self(void);
 
 其中 master 執行緒不該讓每個 worker 執行緒任意處理佇列前端的元素，而是應該要在每個工作結構中標記應處理該工作的執行緒 ID。 如此一來，每個 worker 執行緒就只會取出帶有自己執行緒 ID 的工作。 下圖示意了這種情況：
 
-![（Figure 11.1：Work queue example）](image/11.1.png)
+![（Figure 11.1：Work queue example）](./image/11.1.png)
 
 ## 11.4 建立執行緒
 
@@ -472,11 +472,11 @@ int pthread_detach(pthread_t tid);
 
 在下圖 11.7 中，執行緒 A 先讀取這個變數，然後寫入新值，但這次寫入需要兩個記憶體週期。 如果執行緒 B 在這兩個寫入週期之間讀取了同一個變數，就會看到不一致的值：
 
-![（Figure 11.7：Interleaved memory cycles with two threads）](image/11.7.png)
+![（Figure 11.7：Interleaved memory cycles with two threads）](./image/11.7.png)
 
 為了避免這個問題，執行緒必須使用一把鎖，讓每次只有一個執行緒可以存取這個變數，如下圖 11.8 所示：
 
-![（Figure 11.8：Two threads synchronizing memory access）](image/11.8.png)
+![（Figure 11.8：Two threads synchronizing memory access）](./image/11.8.png)
 
 - 如果執行緒 B 想要讀取這個變數，就得先取得一把鎖
 - 當執行緒 A 更新這個變數時，也得取得同一把鎖。 這樣一來，在執行緒 A 釋放鎖之前，執行緒 B 就無法讀取這個變數
@@ -489,7 +489,7 @@ int pthread_detach(pthread_t tid);
 2. 在暫存器裡把這個值加一
 3. 將新的值寫回記憶體位置
 
-![（Figure 11.9：Two unsynchronized threads incrementing the same variable）](image/11.9.png)
+![（Figure 11.9：Two unsynchronized threads incrementing the same variable）](./image/11.9.png)
 
 如果兩個執行緒在幾乎同一時間對同一個變數做遞增運算，卻沒有彼此同步，則結果可能會不一致
 

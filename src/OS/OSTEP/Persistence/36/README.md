@@ -17,13 +17,13 @@ category: OS
 
 在開始討論之前，讓我們先看一張典型系統的「經典」示意圖（圖 36.1）。 此圖顯示單顆 CPU 透過某種記憶體匯流排（bus）或互聯（interconnect）連接到系統的主記憶體。 有些裝置則透過通用 I/O 匯流排連到系統，在許多現代系統中這通常是 PCI（或其多種衍生版本）； 在此位置可能會找到顯示卡及其他較高效能的 I/O 裝置。 最後，還有更低階的所謂週邊匯流排，例如 SCSI、SATA 或 USB。 這些匯流排用來連接較慢的裝置到系統，包括硬碟、滑鼠與鍵盤
 
-![（Figure 36.1: Prototypical System Architecture）](image/36-1.png)
+![（Figure 36.1: Prototypical System Architecture）](./image/36-1.png)
 
 你可能會問：為何需要這樣的階層式結構？ 這主要是物理與成本的考量。 匯流排速度越快，其長度就必須越短； 因此，高效能的記憶體匯流排沒有太多空間可以插接裝置等。 此外，設計高效能匯流排成本相當高昂。 因此，系統設計人員採用了這種階層式方法，將需要高效能的元件（例如顯示卡）放在較貼近 CPU 的位置，效能較低的元件則放得較遠。 將硬碟與其他較慢的裝置放在週邊匯流排上的好處多不勝數，尤其是可放置大量裝置這點
 
 當然，現代系統越來越多地使用專用晶片組與更快速的點對點互聯來提升效能。 圖 36.2 大致展示了 Intel Z270 晶片組的架構 [H17]。 在最上方，CPU 與記憶體系統之間的連線最為緊密，並且還有一條高效能連接提供給顯示卡（以及顯示器），以支援遊戲和其他圖形密集型應用
 
-![（Figure 36.2: Modern System Architecture）](image/36-2.png)
+![（Figure 36.2: Modern System Architecture）](./image/36-2.png)
 
 CPU 透過 Intel 專有的 DMI（Direct Media Interface）連接到一顆 I/O 晶片，其餘裝置則通過多種不同互聯方式連到這顆晶片。 在右方，一顆或多顆硬碟透過 eSATA 介面連接到系統； 過去幾十年儲存介面的也演進了許多，從一開始的 ATA（AT Attachment，指為 IBM PC AT 提供連接）、到後來的 SATA（Serial ATA），再到現在的 eSATA（external SATA），每一次推進都提升了效能以跟上現代儲存裝置的需求
 
@@ -37,7 +37,7 @@ CPU 透過 Intel 專有的 DMI（Direct Media Interface）連接到一顆 I/O �
 
 任何裝置的第二部分是其內部結構。 這部分的裝置實作細節具有特定性，並負責實現該裝置向系統呈現的抽象。 非常簡單的裝置會有一個或少數硬體晶片來實作其功能； 更複雜的裝置則會包含一顆簡易 CPU、一些通用記憶體，以及其他裝置專用晶片以完成其工作。 例如，現代 RAID 控制器可能包含數十萬行韌體（即嵌入在硬體裝置內的軟體）來實作其功能
 
-![（Figure 36.3: A Canonical Device）](image/36-3.png)
+![（Figure 36.3: A Canonical Device）](./image/36-3.png)
 
 ## 36.3 The Canonical Protocol
 
@@ -75,11 +75,11 @@ While (STATUS == BUSY)
 
 該處理程式就如前面章節所述，是一段作業系統程式碼，用來完成請求（例如從裝置讀取資料以及可能的錯誤代碼），並喚醒正在等待 I/O 的 process，使其如預期繼續執行。 中斷因此允許 computation 與 I/O 重疊運作，這對提升利用率至關重要。 以下時間軸用來展示我們的問題：
 
-![](image/i_timeline1.png)
+![](./image/i_timeline1.png)
 
 在圖中，Process 1 在 CPU 上執行一段時間（在 CPU 線上以重複的 "1" 表示），然後向硬碟提出 I/O 請求以讀取一些資料。 如果不使用中斷，系統會一直自旋，反覆輪詢裝置狀態，直到 I/O 完成（以 "p" 表示）。 硬碟處理該請求後，Process 1 最終可以再次執行。 如果改為使用中斷並允許重疊，OS 就可以在等待硬碟期間執行其他工作：
 
-![](image/i_timeline2.png)
+![](./image/i_timeline2.png)
 
 此時 OS 在硬碟服務 Process 1 的請求時，便能於 CPU 上執行 Process 2。 當硬碟請求完成時，就會發生中斷，OS 隨即喚醒 Process 1 並重新執行。 因此，在中間那段時間內，CPU 和硬碟都能被妥善利用。 請注意，使用中斷並不總是最佳解決方案。 例如，假設某個裝置執行任務非常快速：第一次輪詢就會發現裝置已完成。 在這種情況下使用中斷反而會降低系統效能：切換到另一個 process、處理中斷，然後再切回發出請求的 process 都會產生開銷
 
@@ -99,7 +99,7 @@ While (STATUS == BUSY)
 
 不幸地，我們的經典協議還有另一個面向需要關注。 特別是當使用 programmed I/O（PIO） 將大量資料傳送到裝置時， CPU 又一次被繁瑣的工作所壓垮，因此浪費了大量本可用於執行其他 Process 的時間與精力。 下列時間軸說明了這個問題：
 
-![](image/i_timeline3.png)
+![](./image/i_timeline3.png)
 
 在時間軸中，Process 1 正在執行，並希望將一些資料寫入硬碟。 接著它啟動 I/O，必須一次一個 word 地從記憶體將資料複製到裝置（在圖中標示為 `c`）。 當複製完成後，I/O 即在硬碟上開始作業，而 CPU 才能最終用於其他事情
 
@@ -107,7 +107,7 @@ While (STATUS == BUSY)
 
 DMA 的運作如下。 例如要將資料傳送到裝置時，OS 會將指令寫入 DMA engine，告訴它資料在記憶體中的位置、要複製多少資料，以及要傳送到哪個裝置。 在那之後，OS 就完成了此次傳輸，能夠繼續執行其他工作。 當 DMA 完成時，DMA controller 會引發 interrupt，OS 因此知道傳輸已結束。 下方為修正後的時間軸：
 
-![](image/i_timeline4.png)
+![](./image/i_timeline4.png)
 
 從時間軸可以看出，資料複製現由 DMA controller 處理。 由於在那段時間內 CPU 處於閒置狀態，OS 可以執行其他工作，此處選擇執行 Process 2。 Process 2 因此能在 Process 1 再度執行之前多使用一些 CPU 時間
 
@@ -149,7 +149,7 @@ DMA 的運作如下。 例如要將資料傳送到裝置時，OS 會將指令寫
 
 這個問題是透過抽象化來解決的，在最底層，OS 中的一段軟體必須詳細瞭解目標裝置的運作方式。 我們稱這段軟體為裝置驅動程式，所有與裝置互動的具體細節都被封裝在其中。 讓我們透過觀察 Linux 檔案系統的 software stack，來看看這種抽象如何有助於 OS 的設計與實作。 Figure 36.4 是 Linux software organization 給出的大致而粗略地概念圖：
 
-![（Figure 36.4: The File System Stack）](image/36-4.png)
+![（Figure 36.4: The File System Stack）](./image/36-4.png)
 
 從圖中可以看出，檔案系統（當然還有上層的應用程式）完全不需瞭解它正在使用哪種類別的硬碟細節； 它只要向通用區塊層發出區塊讀取與寫入請求，該層再將請求導向適當的裝置驅動程式，由驅動程式處理發出具體請求的細節。 雖然圖示經過簡化，卻展示了如何將此類細節隱藏於大多數 OS 組件之外
 

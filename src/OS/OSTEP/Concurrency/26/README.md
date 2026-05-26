@@ -21,7 +21,7 @@ category: OS
 
 然而，在 multi-threaded process 中，每個 thread 會獨立執行，當然也可能呼叫各種函式來完成手上的工作。 因此 address space 不再只有一個 stack，而是每個 thread 各有一個 stack。 假設一個 multi-threaded process 內含兩個 threads，其 address space 佈局就會變得不一樣（見圖 26.1 右側）
 
-![（Figure 26-1：Single-Threaded And Multi-Threaded Address Spaces）](image/26-1.png)
+![（Figure 26-1：Single-Threaded And Multi-Threaded Address Spaces）](./image/26-1.png)
 
 在該圖中，你可以看到兩個 stacks 分散在 process 的 address space 之中。 因此，所有放在 stack 上的變數、參數、回傳值以及其他資料都會被放進所謂的 thread-local storage，也就是對應 thread 的那個 stack
 
@@ -82,15 +82,15 @@ int main(int argc, char *argv[]) {
 
 接下來我們來檢視這個小程式可能的執行順序。 在執行圖（Figure 26.3）中，時間往下增加，每一欄顯示不同 thread（main、Thread 1 或 Thread 2）何時正在執行：
 
-![（Figure 26.3：Thread Trace (1)）](image/26-3.png)
+![（Figure 26.3：Thread Trace (1)）](./image/26-3.png)
 
 不過，要注意這並不是唯一的執行順序。 事實上，給定同一串指令，仍有相當多種可能，取決於 scheduler 在某個時刻決定執行哪個 thread。 例如，一個 thread 建立後可能立刻開始執行，這就會導致圖 26.4 所示的執行順序：
 
-![（Figure 26.4：Thread Trace (2)）](image/26-4.png)
+![（Figure 26.4：Thread Trace (2)）](./image/26-4.png)
 
 我們甚至可能先看到印出「B」再看到「A」，舉例來說，即使 Thread 1 較早被建立，scheduler 也有可能先執行 Thread 2，沒有任何理由必須假設先建立的 thread 就會先執行。 圖 26.5 展示了最後這種執行順序，Thread 2 在 Thread 1 之前搶先表現：
 
-![（Figure 26.5：Thread Trace (3)）](image/26-5.png)
+![（Figure 26.5：Thread Trace (3)）](./image/26-5.png)
 
 你或許已經發現，一種看待 thread 建立的方法是把它想成呼叫函式； 然而，系統並不是先執行該函式再回到呼叫端，而是為被呼叫的 routine 建立一條新的執行緒，該執行緒會獨立於呼叫端運行，有可能在 create 操作返回之前就開始，也可能拖到很久之後才執行。 接下來由哪個 thread 執行取決於 OS 的 scheduler，儘管 scheduler 通常採用合理的演算法，但我們很難預測在任意時刻究竟哪個 thread 會獲得 CPU
 
@@ -231,7 +231,7 @@ mov %eax, 0x8049a1c
 
 在這些假設下，實際發生的情況如圖 26.7 所示。 假設 counter 初始值為 50，請你仔細追蹤這個範例，確保你理解實際發生了什麼事：
 
-![（Figure 26.7: The Problem: Up Close and Personal）](image/26-7.png)
+![（Figure 26.7: The Problem: Up Close and Personal）](./image/26-7.png)
 
 我們這裡展示的現象被稱為 race condition（更具體地說是 data race）：結果會依程式執行的時機點而有所不同。 如果運氣不好（例如在執行的關鍵時刻發生 context switch），我們就會得到錯誤的結果。 事實上，每次執行可能都會出現不同的結果； 也就是說，原本應該是電腦擅長的 deterministic 計算，卻變成了 indeterminate 的狀況，輸出值難以預測，而且極可能每次都不同
 
