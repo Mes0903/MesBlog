@@ -16,11 +16,6 @@ export default defineUserConfig({
       title: "Mes's Blog",
       description: "Being Towards Death",
     },
-    "/ja/": {
-      lang: "ja-JP",
-      title: "Mes's Blog",
-      description: "Being Towards Death",
-    },
   },
 
   theme,

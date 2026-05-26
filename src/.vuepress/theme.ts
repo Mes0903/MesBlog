@@ -1,7 +1,6 @@
 import { hopeTheme } from "vuepress-theme-hope";
 import zhSidebar from "./sidebars/zh.js";
 import enSidebar from "./sidebars/en.js";
-import jaSidebar from "./sidebars/ja.js";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -115,6 +114,7 @@ export default hopeTheme({
       footer,
       ...zhTwThemeLocale,
       blog: {
+        intro: "/about/",
         description: "OS & CG dev",
         medias: blogMedias,
       },
@@ -124,15 +124,7 @@ export default hopeTheme({
       sidebar: enSidebar,
       footer,
       blog: {
-        description: "OS & CG dev",
-        medias: blogMedias,
-      },
-    },
-    "/ja/": {
-      lang: "ja-JP",
-      sidebar: jaSidebar,
-      footer,
-      blog: {
+        intro: "/en/about/",
         description: "OS & CG dev",
         medias: blogMedias,
       },

@@ -58,7 +58,11 @@ category: infra
      - 我覺得問題出在他的 Parser 跟一般的 markdown 編輯器長得不一樣，所以它對 `\n` 做了特殊處理，導致了這個 bug
      - 但總之要手動慢慢修
      - 可以先打 `$$`，然後貼上你的 latex plaintext（不含 `$`），再補上 `$$`：
-        <center-panel natural>![](./image/outline.gif)</center-panel>
+        <center-panel natural>
+        
+        ![](./image/outline.gif)
+        
+        </center-panel>
 4. 內建編輯器其實沒很好用
    - 它好像是仿照 notion 在做的？ 我沒用過 notion 所以不確定，但我覺得它沒辦法看到 markdown 的原始碼很不方便（WYSIWYG 風格）
      - 目前就是勉強能用，但還是比 wiki.js 好很多

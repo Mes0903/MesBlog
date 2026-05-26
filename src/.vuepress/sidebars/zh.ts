@@ -2,6 +2,7 @@ import { sidebar } from "vuepress-theme-hope";
 
 export default sidebar([
   "/",
+  "/about/",
   {
     text: "雜項",
     collapsible: true,
@@ -254,7 +255,7 @@ export default sidebar([
       {
         text: "Gltf Tutorial",
         collapsible: true,
-        prefix: "/ComputerGraphic/gltf/",
+        prefix: "/ComputerGraphic/glTF-Tutorials-zh-TW/",
         children: [
           "",
           "Introduction/",
