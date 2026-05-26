@@ -78,7 +78,9 @@ A little after 8, there was a drone show, but it was already drizzling by then. 
 
 ![(The drone show)](../../../essay/2026-OSS-NA/image/drone-show.jpg)
 
-That night, Jserv also helped me write an email to Mr. Hiroyuki Ishii to see if there might be a chance to follow up further, but I haven't heard back yet.
+~~That night, Jserv also helped me write an email to Mr. Hiroyuki Ishii to see if there might be a chance to follow up further, but I haven't heard back yet.~~
+
+> Turns out we probably wrote the email address wrong. Capital I and lowercase l looked a bit too similar, so we'll try sending it again later on.
 
 ## May 19 (Tuesday)
 
@@ -144,7 +146,7 @@ After going back to the hotel, I worked on projects as usual. Sheng-Wen and the 
 
 The whole day was open. We headed to MOA first and had a pretty good breakfast — I ordered eggs Benedict, toast, stewed beef, and hash browns. It felt like a standard American breakfast. I really love this kind of American breakfast platter.
 
-Everyone else ordered burgers, and they were huge. I definitely wouldn't have been able to finish one, so it's a good thing I didn't follow their lead. After eating, we called a car to the sculpture garden — a large park with a huge cherry sculpture in the middle and smaller sculptures scattered around. Then we headed to MIA, the art museum. At the entrance we ran into Mr. Hiroyuki Ishii again. Hope he gets back to me eventually.
+Everyone else ordered burgers, and they were huge. I definitely wouldn't have been able to finish one, so it's a good thing I didn't follow their lead. After eating, we called a car to the sculpture garden — a large park with a huge cherry sculpture in the middle and smaller sculptures scattered around. Then we headed to MIA, the art museum. At the entrance we ran into Mr. Hiroyuki Ishii again XD
 
 The museum was pretty big. The second floor had a lot of old pottery, porcelain, sculptures, and the like, while the third floor was dedicated to oil paintings. Looking at oil paintings, as always, put me in a good mood. After the museum, we went to a national park to see a waterfall and walked around. The river there seemed to be the Mississippi — I'd only heard of it in geography textbooks before, and now I was finally seeing it in person. While walking, there was also a warning sign at one entrance that seemed to mention wolves, which was a little scary.
 
