@@ -66,7 +66,13 @@ After the talk it was almost lunchtime, so we headed to the main hall to grab lu
 
 ![(The lunch venue)](../../../essay/2026-OSS-NA/image/lunch-hall.png)
 
-After that, we caught some other talks. Over the three days, I mostly heard about new things without fully understanding how they were actually built — though Sheng-Wen would explain them to me. I also realized I have a really hard time keeping up with some speakers' English accents, so I decided I'd go back later and watch the recordings with subtitles. There was also a talk by one of Jserv's friends about multikernel during this stretch. The speaker was Cong Wang, and he radiated kernel-expert energy from head to toe. After his talk, we chatted with him briefly and then headed to the next session.
+After that, we caught some other talks. Over the three days, I mostly heard about new things without fully understanding how they were actually built — though Sheng-Wen would explain them to me. I also realized I have a really hard time keeping up with some speakers' English accents, so I decided I'd go back later and watch the recordings with subtitles.
+
+One talk during this stretch [left a strong impression on me](https://osselcna2026.sched.com/event/2JQqp/kernelscript-unifying-ebpf-userspace-and-kernel-extensions-in-one-language-cong-wang-multikernel-technologies) — partly because I could discuss it with the speaker in Chinese afterward XD. The speaker was Cong Wang, a friend of Jserv's, and the topic was [KernelScript](https://github.com/multikernel/kernelscript). The rough idea is to tie eBPF, userspace, and kernel extensions together with one language. The problem it tries to address is that eBPF projects are split across many layers: a complete eBPF project usually does not just contain a BPF program running on the kernel side, but also involves a userspace loader, map management, BTF / kfunc, and sometimes even a kernel module. Today, these pieces often have to be connected through different files and toolchains. Once the project grows, this creates a lot of boilerplate and lifecycle management problems.
+
+KernelScript puts the logic for userspace, eBPF, and kernel modules in the same source file, then uses attributes to mark which target each function or block should be compiled for. The compiler is responsible for generating the corresponding userspace program, eBPF code, and kernel module code, while wrapping cross-boundary pieces such as maps, load / attach, kfunc, and BTF into a more consistent language model. This way, the glue that would originally be scattered across libbpf, kernel modules, and loaders can be handled inside the language and toolchain instead.
+
+If this model works, KernelScript can help solve the high surrounding engineering cost of using eBPF as a kernel customization interface. It lets developers describe the relationship between userspace, eBPF, and kernel extensions in one language, then leaves the toolchain to decide how the actual artifacts should be split and assembled. After his talk, we chatted with him briefly and then headed to the next session.
 
 Sometime after 5, there was a reception, but by then I was already about to fall asleep XD. When we got to the hall, most people were standing — there didn't seem to be many seats. The middle of the venue had a spread of different foods you could help yourself to, buffet-style. The lines for meat and rice were pretty long. After grabbing a bit of each, I found a corner seat and sat down. Once I'd eaten, I pulled out my laptop to organize my schedule and work on a side project for a bit, then went outside with Sheng-Wen to walk around and take in the scenery.
 
@@ -78,10 +84,6 @@ A little after 8, there was a drone show, but it was already drizzling by then. 
 
 ![(The drone show)](../../../essay/2026-OSS-NA/image/drone-show.jpg)
 
-~~That night, Jserv also helped me write an email to Mr. Hiroyuki Ishii to see if there might be a chance to follow up further, but I haven't heard back yet.~~
-
-> Turns out we probably wrote the email address wrong. Capital I and lowercase l looked a bit too similar, so we'll try sending it again later on.
-
 ## May 19 (Tuesday)
 
 Waking up that day felt great — finally a day where I'd actually had enough sleep. For the previous few weeks back in Taipei I'd also been cramming on the script and felt constantly sleep-deprived. At last, I got some proper sleep here XD
@@ -90,7 +92,13 @@ The schedule was roughly the same. We headed to the venue first for breakfast �
 
 That day I caught a talk about debugging the kernel with LLMs. The speaker was from Cloudflare. Internally, they use a tool called kdoc that can help analyze the causes of kernel panics and even automatically fix them and prepare patches. I thought it was amazing, but I couldn't find anything about it on my phone afterward. Turns out they hadn't released it yet and were still going through internal processes. Pain.
 
-Cong Wang also had a talk that day, also LLM-related. He'd designed a file system for LLMs called [branchfs](https://github.com/multikernel/branchfs), which lets agents work on multiple patches at the same time and then use a commit-like operation to bring those changes back onto the main files. It looks like it's still being prepared for upstreaming. Since it's also relevant to my own use case, I went over to chat with him for a bit.
+Cong Wang also had another talk that day, titled [Fork, Explore, Commit: Linux Primitives for AI Agents Exploration](https://osselcna2026.sched.com/event/2JQuV/fork-explore-commit-linux-primitives-for-ai-agents-exploration-cong-wang-multikernel-technologies-yusheng-zheng-eunomia-bpf), which was also about system design for LLM agents. They built a file system for agents called [branchfs](https://github.com/multikernel/branchfs). The core idea is that the state changes produced while an agent explores different solutions can be organized into a few operations: fork, explore, and commit / abort.
+
+Modern coding agents often try multiple fixes at the same time, but each path may modify files, run tests, create temporary state, or even start new processes. If you only use git branches or worktrees, you can handle part of the file state, but the semantics around processes, temporary files, and commit / rollback are not as complete.
+
+branchfs instead provides a copy-on-write workspace where different branches can explore independently. In the end, only the successful branch commits back to the parent, while the sibling branches become invalid. This first-commit-wins model is pretty close to how agents expand multiple reasoning paths at the same time.
+
+This talk left a strong impression on me because it lines up with how I use Codex. Right now, I am developing different semu features in parallel, so I create a separate directory for each branch. But since I need to build and test them, compiling an Image in every directory would eat up too much disk space. Some of those Images also use exactly the same config, so at the moment I solve this with symlinks. After the talk, I went to chat with him for a bit. Maybe this can be applied to my workflow later on.
 
 Jserv and Rota also gave talks that day. After their sessions, Cong Wang invited us and Mark, another speaker from China, out to dinner. We picked a Chinese restaurant, and it was pretty tasty — and there was white rice. I didn't expect to be this moved by eating white rice abroad. Finally, no more cold sandwiches. Unexpectedly, the Chinese food I had in the U.S. was all pretty good, though very salty.
 

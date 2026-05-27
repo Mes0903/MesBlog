@@ -64,7 +64,13 @@ category: essay
 
 ![（吃午餐的會場）](./image/lunch-hall.png)
 
-接著就聽一些別人的演講，三天下來主要都是聽到了一些新東西，但實際怎麼做的我都沒聽很懂（不過學長會跟我解釋），另外還發現我真的很難跟上某些講者的英文口音，所以後來就決定回去再開影片配字幕來看 XD 不過期間有一場老師朋友的演講，在講 multikernel 的，講者叫做王聰，渾身上下都散發著 kernel 強者的氣息。 聽完他的演講後我們也跟他簡單聊了一下，然後就去下一場了
+接著就聽一些別人的演講，三天下來主要都是聽到了一些新東西，但實際怎麼做的我都沒聽很懂（不過學長會跟我解釋），另外還發現我真的很難跟上某些講者的英文口音，所以後來就決定回去再開影片配字幕來看 XD
+
+不過期間[有一場演講讓我印象很深](https://osselcna2026.sched.com/event/2JQqp/kernelscript-unifying-ebpf-userspace-and-kernel-extensions-in-one-language-cong-wang-multikernel-technologies)（因為後面還可以跟他用中文討論 XD），講者是 Jserv 的朋友王聰，講的是 [KernelScript](https://github.com/multikernel/kernelscript)，想法大概就是把 eBPF、userspace 和 kernel extension 用同一套語言串起來。 它想處理的是 eBPF 專案被切成很多層的問題：一個完整的 eBPF 專案通常不只包含跑在 kernel side 的 BPF program，還會牽涉 userspace loader、map 管理、BTF / kfunc 與 kernel module。 這些部分現在往往要靠不同檔案與工具鏈串起來，專案一變大就會出現大量樣板程式和生命週期管理問題
+
+KernelScript 會將 userspace、eBPF 與 kernel module 的邏輯放在同一份程式碼裡，再用 attribute 標出每個函式或區塊要編譯到哪個目標。 編譯器會負責產生對應的 userspace 程式、eBPF 程式碼與 kernel module 程式碼，並將 map、load / attach、kfunc / BTF 這些跨邊界的部分包成比較一致的語言模型。 這樣一來就能把原本分散在 libbpf、kernel module 與 loader 裡的 glue，集中到語言和工具鏈裡處理
+
+如果這個模型能成立，KernelScript 就能解決 eBPF 作為 kernel customization 介面時，周邊工程成本太高的問題。 它試著讓開發者用同一套語言描述 userspace、eBPF 與 kernel extension 之間的關係，再由工具鏈去處理實際產物要怎麼切分和組裝。 聽完他的演講後我們也跟他簡單聊了一下，然後就去下一場了
 
 大概到五點多後有晚宴，但此時我其實已經快睡著了 XD 到了大廳發現大部分人是站著的，座位好像不多，會場中央有不同的食物可以自己去拿，像是 buffet 那樣，肉類和飯類的隊伍排得還挺長的，各夾了一點後我就找了個角落的座位坐下，吃飽後筆電拿出來整理一下 schedule，順便弄一下 side project，然後跟學長出去逛了一圈看了一下風景
 
@@ -76,10 +82,6 @@ category: essay
 
 ![（無人機秀）](./image/drone-show.jpg)
 
-~~晚上老師也幫我寫信給了 Hiroyuki Ishii 先生，看看有沒有什麼交流機會，但目前是還沒有收到回覆~~
-
-> 結果好像是我們 email 填錯了，I 跟 l 看起來有點像，之後補寄看看
-
 ## 5/19（星期二）
 
 這天起床就舒服了，終於有一天是睡飽的，前幾週在臺北也是都在趕稿，一直覺得沒睡飽，終於在此時獲得了正常的睡眠 XD
@@ -88,7 +90,13 @@ category: essay
 
 這天有聽到一場在講 debug kernel with LLM 的，講者是 Cloudflare 的人，他們內部用了一個叫做 kdoc 的 skill，可以幫忙分析 kernel panic 的成因之類的，還可以自動修完準備好 patch。 聽完後我覺得太厲害了，結果用手機完全查不到，後來才發現他們還沒公開，還在跑內部流程，吐了
 
-這天也有王聰的演講，講的也是與 LLM 有關的，他設計了一個給 LLM 使用的 file system 叫做 [branchfs](https://github.com/multikernel/branchfs)，用來讓 agent 可以同時進行多個 patch，最後利用類似 commit 的操作讓這些改動回到主檔案上。 看起來還在準備 upstream 中，因為與我自己的使用情境也有關，所以也找他聊了一下
+這天也有王聰的另一場演講，題目是 [Fork, Explore, Commit: Linux Primitives for AI Agents Exploration](https://osselcna2026.sched.com/event/2JQuV/fork-explore-commit-linux-primitives-for-ai-agents-exploration-cong-wang-multikernel-technologies-yusheng-zheng-eunomia-bpf)，講的也是與 LLM agent 有關的系統設計。 他們做了一個給 agent 使用的 file system 叫做 [branchfs](https://github.com/multikernel/branchfs)，核心概念大概是：agent 探索不同解法時產生的狀態變化，可以整理成 fork、explore 與 commit / abort 這幾個操作
+
+現在 coding agent 常常會同時嘗試不同修法，但每條路徑都可能會改檔案、跑測試、產生暫存狀態，甚至啟動新的 process。 如果只是用 git branch 或 worktree，檔案狀態可以處理一部分，但 process、暫存檔和 commit/rollback 的語意就沒有那麼完整
+
+branchfs 的方向則是提供一個 copy-on-write 的 workspace，讓不同 branch 可以各自探索，最後只有成功的 branch commit 回 parent，其他 sibling branch 則失效。 這種 first-commit-wins 的模型和 agent 同時展開多條推理路徑的行為蠻貼近的
+
+我對這場很有印象，是因為它剛好和我平常用 Codex 的情境有關，我現在同時在開發 semu 的不同 feature，所以會為每個 branch 都開一個資料夾放對應的程式碼，但因為要編譯測試，如果所有資料夾內都各自編一個 Image 出來，會吃我太多硬碟空間，而且有些 Image 基本上 config 是完全一樣的，所以我現在是靠 softlink 來解決這件事。 後來我也找他聊了一下，也許之後可以套用到我這邊的 workflow 上
 
 這天老師和麒升也有演講，聽完之後王聰先生約了我們和 Mark（另一位來自中國的講者）吃晚飯，選了一間中國菜，還蠻好吃的，而且是白飯，實在沒想到在外面吃到白飯會這麼感動，終於不是冰冷的三明治了。 很意外在美國吃到的中國菜都還蠻好吃的，但很鹹就是了
 
