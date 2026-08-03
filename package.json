@@ -11,7 +11,8 @@
     "dev:vite-clean": "vuepress-vite dev src --clean-cache",
     "dev:webpack": "vuepress-webpack dev src",
     "dev:webpack-clean": "vuepress-webpack dev src --clean-cache",
-    "deploy": "pnpm run build:vite && gh-pages -d ./src/.vuepress/dist -r git@github.com:Mes0903/Mes0903.github.io.git"
+    "deploy": "pnpm run build:vite && gh-pages -d ./src/.vuepress/dist -r git@github.com:Mes0903/Mes0903.github.io.git",
+    "test:callgraph": "node --test tests/callgraph-grammar.test.mjs"
   },
   "dependencies": {
     "@mathjax/src": "4.1.2",

@@ -4,7 +4,7 @@
   "patterns": [
     {
       "name": "meta.callgraph.entry",
-      "match": "\\[([^\\]:]+\\.[^\\]:]+):(\\d+)(?:-(\\d+))?\\]\\s+([A-Za-z_][A-Za-z0-9_]*)",
+      "match": "\\[((?:[^:\\[\\]\\r\\n]+:\\s+)?[^:\\[\\]\\r\\n]+\\.[^:\\[\\]\\r\\n]+):(\\d+)(?:-(\\d+))?\\]\\s+([A-Za-z_][A-Za-z0-9_]*)",
       "captures": {
         "1": { "name": "string.other.link" },
         "2": { "name": "constant.numeric.integer" },
