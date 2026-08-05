@@ -911,7 +911,7 @@ display controller 週期性讀取 pixels
 使用者看見齒輪轉到下一個角度
 ```
 
-::: tip  
+:::tip
 所謂的 OpenGL vendor 實作，是 OpenGL API calls 的 userspace implementation。 本文使用 Mesa，其他 vendor 也可以提供自己的 OpenGL implementation  
 :::
 
@@ -1389,8 +1389,6 @@ Root Window／WindowRec
 
 從 `firstChild` 沿著 `nextSib` 會依 stacking order 由上往下走訪同一個 parent 的直屬 children，從 `lastChild` 沿著 `prevSib` 則會由下往上走訪
 
-當 application 建立 application Window，`twm` 接著建立 frame Window 與 title Window，再把 application Window 移到 frame Window 底下時，這三個 X11 Windows 在 Xorg 中各自也都由一個獨立的 `WindowRec` 來保存狀態
-
 Xorg 會使用一個全域的 `ScreenInfo screenInfo` 來登記 server 內的所有 X Screens。 `numScreens` 用來記錄已建立的數量，`screens[i]` 則指向表示 X Screen `i` 的 `ScreenRec`。 以下程式碼來自 [`Xorg: include/scrnintstr.h:717`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/scrnintstr.h#L717-L734) 與 [`Xorg: dix/globals.c:65`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/globals.c#L65)：
 
 ```c
@@ -1408,13 +1406,87 @@ extern ScreenInfo screenInfo;
 ScreenInfo screenInfo;
 ```
 
-由於本文只建立一個 X Screen，所以完成初始化後，`screenInfo.numScreens` 是 1，`screenInfo.screens[0]` 會指向 X Screen 0 的 `ScreenRec`。 後面的 X Screen 像素儲存區初始化、Root Window 建立與 connection setup reply，都會從這筆 server-side record 取出所需資料
+由於本文只建立一個 X Screen，所以完成初始化後，`screenInfo.numScreens` 是 1，`screenInfo.screens[0]` 會指向 X Screen 0 的 `ScreenRec`。 後面在初始化 X Screen 像素儲存區、建立 Root Window 與 connection setup reply 的時候，都會從這筆 server-side record 取出所需資料
 
-到這裡，我們已經看見 Xorg 用來保存 X Screen 與 Window tree 的主要 object model。 Xorg 中定義並管理這套共用 object model 的部分稱為 DIX（Device Independent X）。 DIX 會解析與分派 X11 requests，保存 XID 與 server-side object 的對應關係，並管理 `ScreenRec`、`WindowRec`、Window tree、geometry、stacking 與 clipping state
+##### Xorg 如何管理共用 objects，並接上實際顯示裝置
 
-Xorg 此刻仍在顯示初始化階段。 `screenInfo` 這個 global object 已經存在，但 `screenInfo.numScreens` 仍是 0。 後面的 `AddScreen()` 才會配置第一筆 `ScreenRec`。 Xorg 接著會透過 `CreateScreenResources` callback 準備 X Screen 的像素儲存區與其他 resources，再建立 Root Window 與其下方的 Window tree
+我們已經知道第一個 X Screen 完成初始化後，Xorg 會用 `ScreenRec` 保存它的狀態，再以 Root Window 為起點管理整棵 Window tree。 現在回到 Xorg 子行程目前所在的顯示初始化階段，此時我們已經有 `screenInfo` 這個 global object 了，但 `screenInfo.numScreens` 仍是 0，需要等到 `AddScreen()` 的時候才會配置第一筆 `ScreenRec`
 
-我們可以先用日後建立 Window 時會執行的 `dixCreateWindow()`，確認 DIX 與 `ScreenRec` callback 的分工。 以下片段來自 [`Xorg: dix/window.c:738`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/window.c#L738-L900)，保留配置 `WindowRec` 與呼叫 callback 的部分：
+而如前所述，要讓這筆 `ScreenRec` 成為可供 clients 使用的 X Screen，Xorg 需要同時處理兩類工作：
+
+- X11 requests 的解析與分派方式、XID 與 server-side object 的對應關係，以及 `ScreenRec`、`WindowRec`、Window tree、geometry、stacking 與 clipping 的操作規則不會隨顯示裝置改變
+- X Screen 的尺寸、depths、visuals 與可用 display modes 必須配合實際顯示裝置。 一個 display mode 描述一組解析度與掃描時序。 另外，Xorg 也要準備操作 Window、Pixmap 與 pixel storage 的具體 callback implementations
+
+Xorg 將第一類共用工作交給了 DIX（Device Independent X）。 DIX 負責定義並管理 X server 共用的 X11 objects 與操作規則，這包括前面看到的 `ScreenRec`、`WindowRec` 與 Window tree。 第二類工作則由 DDX（Device Dependent X）接手。 DDX 會連接平台與顯示裝置，取得裝置能提供的 modes 與 pixel formats，再為 DIX 管理的 objects 準備裝置相依的組態與 callbacks
+
+`ScreenRec` 是兩層交接時共同使用的 object。 DIX 會配置、登記並管理它的共用執行期狀態，DDX initialization path 則會填入裝置相關的尺寸、depths、visuals 與 callback implementations
+
+本文的 Xorg 使用 `hw/xfree86/` 裡的 XFree86 DDX framework。 `xf86` 這個名稱源自 XFree86，現在仍保留在目錄、API 與 C identifiers 中。 這層 framework 會安排裝置探測與 display driver 初始化，再將結果接到 DIX 管理的 `ScreenRec`
+
+由於本文選用了 `Driver "modesetting"` 組態，因此交給 XFree86 DDX 的裝置查詢會使用 Xorg 的 modesetting display driver 來進行。 這個 driver 執行在 Xorg 行程中。 初始化顯示裝置時，它會先取得一個對應 Linux DRM device 的 file descriptor（fd），再以該 fd 呼叫 libdrm 提供的 `drmMode*()` KMS API，查詢顯示輸出、display modes 與 pixel formats
+
+:::tip
+`modesetting` 在這裡是這個 Xorg display driver 的名稱。 同一個詞也會出現在 Linux kernel 的 mode setting 功能中，兩者位於不同的軟體層次：
+
+- Xorg 的 `modesetting`
+  - 是 userspace display driver 的名稱
+  - 由 `Driver "modesetting"` 選取
+  - 位於 Xorg 的 `hw/xfree86/drivers/video/modesetting/`
+  - 負責把 Xorg 的顯示需求轉成 libdrm／KMS API calls
+- Linux kernel 的 mode setting
+  - 指 DRM 子系統中的 KMS（Kernel Mode Setting）功能
+  - 管理 framebuffer、plane、CRTC、encoder、connector 與 display mode
+  - 實際操作由 `virtio_gpu`、`amdgpu`、`i915` 等 DRM device driver 實作
+  - `drm_kms_helper` 則是供這些 drivers 共用的 kernel helper
+
+因此，`Driver "modesetting"` 中的 `modesetting` 是 Xorg driver 的專有名稱。 kernel 裡的 modesetting 通常是泛指 KMS 所提供的顯示模式設定功能。 這兩者位於不同 process／privilege layer，Xorg 的 modesetting driver 正是透過 libdrm 來使用 kernel KMS 的
+:::
+
+libdrm 是 userspace 函式庫，負責將函式參數填入 Linux DRM UAPI 定義的 ioctl argument structures，再向 kernel 發出對應的 ioctl。 Kernel 回傳資料後，libdrm 會把它整理成 Xorg 使用的 structures
+
+當 ioctl 進入 Linux kernel 後，mode setting 的工作會由 DRM subsystem 的 KMS（Kernel Mode Setting）接手。 DRM core 會依 ioctl 編號選擇 handler，並檢查 arguments 與呼叫權限
+
+查詢顯示組態時，DRM core 會讀取 `virtio_gpu` 這類裝置專屬的 DRM driver 所建立並登記的 KMS objects 與目前狀態。 更新顯示狀態時，它則會經由 driver 提供的 callbacks 將要求交給裝置。 查詢結果會沿著 ioctl、libdrm 與 Xorg modesetting driver 回傳，成為 XFree86 DDX 後續選擇 X Screen 組態的輸入
+
+```callgraph
+DIX 定義並負責管理 X server 共用的 object model
+  │
+  ├─ ScreenInfo／ScreenRec 的資料結構與操作入口
+  ├─ WindowRec／Window tree 的資料結構與操作入口
+  └─ ScreenRec callback slots
+       │
+       │  還需要建立 X Screen 的顯示組態與具體 callback implementations
+       ↓
+XFree86 DDX framework
+  │
+  │  選擇 display driver，安排裝置初始化
+  ↓
+Xorg modesetting display driver
+  │
+  │  呼叫 libdrm 提供的 KMS API
+  ↓
+libdrm
+  │
+  │  將 KMS API calls 包裝成 DRM ioctls
+  ↓
+Linux DRM core
+  │
+  │  驗證並分派 ioctl
+  ↓
+virtio_gpu DRM driver 與其建立的 KMS objects
+  │
+  │  提供顯示輸出、modes、formats 與更新 display state 的 callbacks
+  ↓
+DRM core／libdrm 將查詢結果交回 Xorg
+  ↓
+XFree86 DDX、modesetting 與共用 screen initialization code
+  │
+  │  建立 X11 depths／visuals，並填入 ScreenRec callbacks
+  ↓
+DIX 使用完成初始化的 ScreenRec 管理 X Screen
+```
+
+這組分工也會反映在 DIX 操作 `ScreenRec` 與 `WindowRec` 的方式上。 日後有 client 建立 Window 時，`dixCreateWindow()` 會配置並填入 DIX 管理的 `WindowRec`，再透過 `ScreenRec::CreateWindow` 進入目前 X Screen 安裝的 Window implementation。 以下片段來自 [`Xorg: dix/window.c:738`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/window.c#L738-L900)，保留配置 `WindowRec`、接入 Window tree 與呼叫 callback 的部分：
 
 ```c
 // [Xorg: dix/window.c:738-900]
@@ -1466,7 +1538,9 @@ dixCreateWindow(Window wid, WindowPtr pParent, int x, int y, unsigned w,
 
 `dixAllocateScreenObjectWithPrivates()` 配置 DIX 管理的 `WindowRec`，其餘 DIX 程式碼會填入共用狀態，並將它接進 Window tree。 最後的 `pScreen->CreateWindow(pWin)` 則經由 `ScreenRec` 進入顯示初始化期間安裝的 Window implementation
 
-本文的組態會在這個欄位安裝 `fbCreateWindow()`。 這個函式來自 X server 的 fb layer，也就是使用 pixel storage 實作共用 Window 與 Pixmap operations 的程式碼。 完整的 `CreateWindow` request path 會在 `glxgears` 建立 application Window 時再展開
+本文的 `fbScreenInit()` 會先把 `fbCreateWindow()` 安裝進這個欄位。 這個函式來自 X server 的 fb layer，也就是使用 pixel storage 實作共用 Window 與 Pixmap operations 的程式碼。 Xorg 初始化 Composite extension 時，[`compScreenInit()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/composite/compinit.c#L309-L351) 會把既有的 `fbCreateWindow()` 保存到 `CompScreenRec::CreateWindow`，再以 `compCreateWindow()` 包住 `ScreenRec::CreateWindow`
+
+本文沒有啟動 compositing manager，也沒有 client 要求 redirect Window drawing。 [`compCreateWindow()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/composite/compwindow.c#L558-L583) 仍會先呼叫保存的 `fbCreateWindow()`，再檢查新 Window 是否需要建立 Composite redirect。 完整的 `CreateWindow` request path 會在 `glxgears` 建立 application Window 時再展開
 
 ```callgraph
 [Xorg: dix/window.c:738] dixCreateWindow(...)
@@ -1478,66 +1552,38 @@ dixCreateWindow(Window wid, WindowPtr pParent, int x, int y, unsigned w,
   │
   └─ pScreen->CreateWindow(pWin)
        │
-       │  經由 ScreenRec callback 進入這個 X Screen 的 Window implementation
+       │  Xorg 初始化 Composite extension 後，
+       │  ScreenRec::CreateWindow 指向 compCreateWindow
        ↓
-     [Xorg: fb/fbwindow.c:30] fbCreateWindow(...)
+     [Xorg: composite/compwindow.c:558]
+     Bool compCreateWindow(WindowPtr pWin)
        │
-       │  callback 會在 modesetting ScreenInit() 呼叫 fb layer 時安裝
+       │  pScreen->CreateWindow = cs->CreateWindow;
+       │  ret = (*pScreen->CreateWindow)(pWin);
+       │  // cs->CreateWindow 保存被包住的 callback
        ↓
-     完成 framebuffer layer 為這個 Window 保存的初始化狀態
+     [Xorg: fb/fbwindow.c:30]
+     Bool fbCreateWindow(WindowPtr pWin)
+       │
+       │  完成 framebuffer layer 為這個 Window 保存的初始化狀態
+       ↓
+     [Xorg: composite/compwindow.c:566]
+     compCreateWindow(...) 繼續檢查 Composite redirect
+       │
+       ├─ Window Pixmap 與 parent Pixmap 不同
+       │    └─ SetWindowPixmap(pWin, parent_pixmap)
+       ├─ parent 已有 client 登記 subwindow redirect
+       │    └─ compRedirectWindow(...)
+       ├─ Window 符合 implicit redirect 條件
+       │    └─ compRedirectWindow(...)
+       └─ cs->CreateWindow = pScreen->CreateWindow;
+          pScreen->CreateWindow = compCreateWindow;
+          return ret;
 ```
 
-這段程式碼把 DIX 與前面的資料結構連了起來。 DIX 負責共用 object state 與操作規則，`ScreenRec` callbacks 則讓相同的 DIX 程式碼使用目前 X Screen 安裝的實作
+這段程式碼把剛才的分層落到一個具體操作上。 DIX 配置並管理共用的 `WindowRec` 與 Window tree，`ScreenRec` callback 則讓相同的 DIX 程式碼進入目前 X Screen 安裝的實作
 
-##### DDX 如何把顯示裝置接進 DIX 管理的 X Screen
-
-DIX 已經提供 X Screen 與 Window 的共用資料結構、操作規則及 callback 入口。 Xorg 接著要從實際顯示裝置取得建立 X Screen 所需的組態，再為後續配置的 `ScreenRec` 準備具體實作。 這個階段要完成三類工作：
-
-- 從顯示裝置取得可用的顯示端點、display modes 與 pixel format capabilities。 一個 display mode 描述一組解析度與掃描時序
-- 選擇 X Screen 的尺寸、depth 與 pixel format，再建立 X11 使用的 depths 與 visuals
-- 為 `ScreenRec` 安裝操作 Window、Pixmap 與 pixel storage 的 callbacks
-
-Xorg 中負責接上平台及裝置的部分稱為 DDX（Device Dependent X）。 DDX 會取得顯示與輸入裝置的資訊，選擇適合的裝置組態，再為 DIX 管理的 objects 提供裝置相依實作
-
-`ScreenRec` 因此也是兩層交接時共同使用的 object。 DIX 負責配置、登記並管理它的共用執行期狀態，DDX initialization path 則會填入裝置相關的尺寸、depths、visuals 與 callback implementations
-
-本文的 Xorg 使用 `hw/xfree86/` 裡的 XFree86 DDX framework。 `xf86` 這個名稱源自 XFree86，現在仍保留在目錄、API 與 C identifiers 中。 XFree86 DDX 會載入 display driver，安排裝置初始化，再將結果接到 DIX 管理的 `ScreenRec`
-
-前文的 `Driver "modesetting"` 組態會選到 modesetting display driver。 modesetting 位於 Xorg 行程中，會呼叫 libdrm 提供的 KMS API 取得顯示裝置資訊。 libdrm 是 userspace 函式庫，負責將這些 API calls 包裝成 DRM ioctls。 Linux kernel 內的 DRM subsystem 接收 ioctls，其中的 KMS（Kernel Mode Setting）負責管理 display modes 與顯示輸出。 modesetting 再配合 XFree86 DDX，將查詢結果轉成 X Screen 的裝置組態
-
-```callgraph
-DIX 定義並負責管理 X server 共用的 object model
-  │
-  ├─ ScreenInfo／ScreenRec 的資料結構與操作入口
-  ├─ WindowRec／Window tree 的資料結構與操作入口
-  └─ ScreenRec callback slots
-       │
-       │  還需要建立 X Screen 的顯示組態與具體 callback implementations
-       ↓
-XFree86 DDX framework
-  │
-  │  選擇 display driver，安排裝置初始化
-  ↓
-Xorg modesetting display driver
-  │
-  │  呼叫 libdrm 提供的 KMS API
-  ↓
-libdrm
-  │
-  │  將 KMS API calls 包裝成 DRM ioctls
-  ↓
-Linux DRM／KMS driver
-  │
-  │  回傳顯示裝置可用的 objects、modes 與 formats
-  ↓
-XFree86 DDX、modesetting 與共用 screen initialization code
-  │
-  │  建立 X11 depths／visuals，並填入 ScreenRec callbacks
-  ↓
-DIX 使用完成初始化的 ScreenRec 管理 X Screen
-```
-
-現在分層已經接回前面的資料結構。 下一步要回答的是：在 DIX 配置 `ScreenRec` 以前，XFree86 DDX 使用哪個 object 保存顯示組態的查詢與選擇結果
+現在，DIX、DDX 與 `ScreenRec` callback 的分工已經建立。 下一步要回答的是：在 DIX 配置 `ScreenRec` 以前，XFree86 DDX 會用哪個 object 保存 modesetting driver 查詢並選定的顯示組態
 
 ##### XFree86 DDX 先用 `ScrnInfoRec` 保存顯示組態
 
@@ -1720,7 +1766,7 @@ ms_platform_probe(DriverPtr driver, int entity_num, int flags,
 
 探測階段建立 `ScrnInfoRec` 並登記 callbacks 後，XFree86 DDX 會呼叫 modesetting 的 `PreInit()`。 這個函式會取得並持有可用的 DRM device fd，再從 kernel 查詢 X Screen 可以使用的顯示資源，最後將選定的尺寸與 display mode 存回 `ScrnInfoRec`
 
-這裡進入的 KMS（Kernel Mode Setting）是 Linux DRM subsystem 中負責 display 的部分。 KMS 會從保存 pixels 的 kernel buffer object 開始，逐層描述這份 storage 要由哪條顯示 pipeline 輸出。 我們先沿 scanout 的引用與輸出關係，將本節會用到的 KMS objects 排在一起：
+`PreInit()` 此時要透過 KMS 找出 kernel 已建立的顯示輸出，以及每個輸出可以使用的 modes。 後續建立的 pixel storage 會再透過 KMS framebuffer 接到同一條 display pipeline。 為了看清楚目前查詢的 objects 與稍後建立的 objects 分別位於哪裡，我們先沿 scanout 的引用與輸出關係將它們排在一起：
 
 ```callgraph
 保存 pixels 的 buffer object
@@ -2251,9 +2297,11 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
 ##### 第一階段：建立 front BO
 
+Xorg 將 DRM fd 交給 `gbm_create_device()` 後，GBM 會先選出一個 backend，讓後續的 `gbm_bo_create()` 能把尺寸、pixel format 與 usage flags 轉成實際的 buffer allocation。 本文固定追蹤第一個 `gbm_create_device()` 選到 Mesa DRI backend 的分支
+
 DRI 的全名是 Direct Rendering Infrastructure，是一組銜接 Mesa loader、rendering driver 與視窗系統的介面。 `libgbm` 的 DRI backend 位於 `src/gbm/backends/dri/`，負責將單次 GBM buffer 建立要求交給可用的 driver 路徑。 本節選定的 `GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT` 會讓 DRI backend 進入 `create_dumb()`，向 DRM 建立基礎線性 buffer
 
-本文的 source trace 固定在第一個 `gbm_create_device()` 取得 DRI backend 的分支。 如果第一個 device 建立失敗，Xorg 才會呼叫 `gbm_create_device_by_name(ms->drmmode.fd, "dumb")`。 這個 helper 會暫時將 `GBM_BACKEND` 設為 `dumb`，再重新呼叫 `gbm_create_device()`，形成另一個 fallback attempt
+如果這次 device 建立失敗，Xorg 才會呼叫 `gbm_create_device_by_name(ms->drmmode.fd, "dumb")`。 這個 helper 會暫時將 `GBM_BACKEND` 設為 `dumb`，再重新呼叫 `gbm_create_device()`，形成另一個 fallback attempt
 
 DRM 的 dumb-buffer API 用來配置 layout 簡單、可供 CPU mapping 的線性 buffer，成功後會回傳 handle、pitch 與 size。 Kernel driver 會以 GEM buffer object 保存這份 storage。 GEM 的全名是 Graphics Execution Manager，是 DRM subsystem 用來表示與管理 buffer objects 的共用框架
 
@@ -2362,7 +2410,7 @@ create_dumb(struct gbm_device *gbm,
   │
   ├─ drmIoctl(dri->base.v0.fd,
   │             DRM_IOCTL_MODE_CREATE_DUMB, &create_arg)
-  │      // fd 對應 Xorg 開啟的 DRM primary node
+  │      // fd 對應 Xorg 開啟的 DRM device
   │
   ├─ bo->base.v0.stride = create_arg.pitch
   ├─ bo->base.v0.handle.u32 = create_arg.handle
@@ -3520,6 +3568,8 @@ glxgears application Window／WindowRec
 
 `twm` 會建立一個 frame Window，作為包住 application Window 的外層矩形。 Frame 裡的 title Window 負責顯示標題列，原本的 application Window 則繼續保存齒輪內容
 
+`twm` 建立的 frame Window、title Window 與原本的 application Window 都是獨立的 X11 Window resources，Xorg 會分別以一筆 `WindowRec` 保存它們的狀態
+
 `XMapWindow()` 是非同步的 Xlib API。 它將 `MapWindow` request 排入 `glxgears` 的 X11 connection 後便能返回，application 隨即可以執行下一行 `glXMakeCurrent()`。 以下先暫停 application 這條執行路徑，沿著 request 進入 Xorg 與 `twm`，看清楚 Window 最後如何取得外框並進入可見狀態。 這段展開的是 request 的處理結果，不是 `XMapWindow()` 在 `glxgears` 行程中同步呼叫的函式鏈
 
 這個 application Window 的 `override_redirect` 是 `False`。 Xorg 在 [`Xorg: dix/window.c:2631`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/window.c#L2631-L2694) 看見 parent Root Window 已有 `twm` 選取 redirect mask 後，不會立刻設定 `mapped`，而是把 `MapRequest` event 傳到 `twm` 的 connection
@@ -4000,7 +4050,9 @@ Rendering 路徑最後會透過 `XPutImage()` 或 `XShmPutImage()`，把完成�
 
 #### Xorg 處理 `PutImage`／`ShmPutImage` request
 
-Xorg 的 event loop 稍後從 connection 取出 request。 本文的完整 pixel 交付會讓 core `PutImage` 與 MIT-SHM `ShmPutImage` 分支匯合到 GC 的 `PutImage` operation，再經 Damage wrapper 與 framebuffer 實作寫入 X Screen 像素儲存區：
+完整一幀的 pixels 可以直接放進 core `PutImage` request，也可以先放在 client 與 X server 共用的 shared-memory segment，再讓 request 指出 pixels 所在的位置。 後一種方法由 MIT-SHM（MIT Shared Memory）extension 提供，對應的 request 是 `ShmPutImage`
+
+兩種 requests 抵達 Xorg 後，最後都要改寫同一個 X11 drawable。 Xorg 也要同時記住這次修改涵蓋哪些區域，稍後才能把這些座標交給 `DIRTYFB`。 因此，core `PutImage` 與 MIT-SHM `ShmPutImage` 會匯合到 GC 的 `PutImage` operation，再由 Damage wrapper 記錄變動範圍，最後交給 framebuffer 實作寫入 X Screen 像素儲存區：
 
 ![Window update 套用 origin 與 composite clip，更新 screen Pixmap／front BO](./image/glx-action-stage-3-window-server-update.png)
 
@@ -4055,7 +4107,7 @@ Xorg 會以 Window origin 將 Window-local 座標轉成 X Screen 座標，套用
 
 此時 Xorg 已經持有 front BO，對應的既有 KMS framebuffer 也正綁在 active primary plane 上。 本節從這組持續使用中的 display state 開始，追蹤 Xorg 如何以 `DIRTYFB` 將 runtime damage 交給 kernel display 路徑
 
-Xorg 處理 pixel 交付產生的 `PutImage` request、改寫 screen Pixmap 後，Damage tracking 會記錄需要發布的變動範圍。 `damagePutImage()` 先以 GC composite clip 的 extents 縮小 PutImage bounding box，再把結果併入 Damage Region。 Damage Region 因此是 Xorg 必須通知 display 路徑的保守範圍，不是 application Window `clipList` 中每個可見矩形的一對一副本
+前一節的 Damage wrapper 會在 Xorg 改寫 screen Pixmap 時記錄需要發布的變動範圍。 `damagePutImage()` 先以 GC composite clip 的 extents 縮小 PutImage bounding box，再把結果併入 Damage Region。 Damage Region 因此是 Xorg 必須通知 display 路徑的保守範圍，不是 application Window `clipList` 中每個可見矩形的一對一副本
 
 Dirty tracking 啟用時，`msBlockHandler()` 會呼叫 `dispatch_dirty()`。 後面的 `dispatch_damages()` 會先將 Damage Region 轉成目前 CRTC 可使用的 clip rectangles，只有至少留下一個 rectangle 時才呼叫 `drmModeDirtyFB()`
 
@@ -4704,7 +4756,12 @@ Mesa 呼叫 `XPutImage()` 或 `XShmPutImage()` 時，已經把 color buffer 交�
 
 ### Mesa 建置後產生哪些執行期產物
 
-在 `glXChooseVisual()` 開始執行以前，application 尚未進入任何 Mesa 函式。 呼叫開始後，libGLX／GLVND 會依 vendor mapping 載入 Mesa vendor 函式庫，再由 ELF dynamic loader 依 soname 解析該 shared object 與相依函式庫
+Application 呼叫 `glXChooseVisual()` 時，函式名稱本身不會告訴我們哪一個已安裝的 shared object 會先取得控制權，也看不出 DRI 實作已經連進該 shared object，還是要等後面的 loader 依 driver name 另外載入。 在追蹤函式呼叫以前，我們要先回答兩個問題：
+
+1. GLVND 選到 Mesa vendor 後，會先載入哪一個 Mesa shared object
+2. 這個 shared object 會透過什麼方式取得建立 DRI screen 與 context 所需的程式碼
+
+`glXChooseVisual()` 開始執行後，libGLX／GLVND 會依 vendor mapping 載入 Mesa vendor 函式庫，再由 ELF dynamic loader 依 soname 解析該 shared object 與相依函式庫
 
 同一份 Mesa 安裝目錄還可能有 Gallium DRI megadriver、`dril_dri` 與 driver-name symlinks。 要判斷下一節的 vendor 入口是否已連入 DRI 實作，必須同時讀 Meson 的輸出名稱與 `link_with`／`link_whole`
 
@@ -14459,7 +14516,9 @@ State Tracker 會把已填入 commands 的 `gfx_cs` 與 flush flags 交給 winsy
 
 ### DRI extension 是具版本協商機制的雙向 ABI
 
-GLX loader 現在要把 X11 drawable 交給一個可替換的 DRI driver，雙方可能來自不同的 Mesa 建置。 DRI extension 以名稱、版本、callback 方向與私有 object 固定這條 ABI，screen 建立時再依雙方提供的 extension 交集選出可用 callback。 以下從共同 header 與兩類 loader extension 展開，再收於 extension 繫結
+在本文的軟體路徑中，`drisw` 需要向 GLX loader 查詢 drawable 的位置與尺寸。 一幀完成後，它又要反過來呼叫 loader 提供的 `putImage` callbacks，把 pixels 交回 X11 drawable。 GLX loader 與 DRI frontend／driver 各自保存私有 objects，不能直接讀取對方的 C struct
+
+Mesa 因此以 DRI extensions 提供雙向 callback tables。 每一張 table 都帶有名稱與版本，讓 loader 與 driver 在建立 screen 時找出雙方都支援的介面，再依 callback 方向交換 drawable information、buffers 與完成的 pixels。 這套具版本協商機制的介面就是兩側共同遵循的 ABI。 以下從共同 header 與兩類 loader extension 展開，再收於 extension 繫結
 
 #### 共同 extension header
 
@@ -16587,7 +16646,9 @@ VirGL 則在 rendering 階段產生 encoded renderer work、resource references 
 
 ### DRI 如何選擇 driver 並建立 VirGL screen
 
-DRI frontend 取得 DRM driver 名稱後，會透過 Gallium driver descriptor 找到 `create_screen` callback。 對 virtio-gpu 而言，這個 callback 串起 `virgl_drm_screen_create()`、DRM winsys 與 `virgl_create_screen()`，最後仍回傳標準 `pipe_screen`。 這條建立鏈會決定成功時由哪個 screen 接手 winsys 與複製的 DRM fd，也會把失敗時的清理責任固定在對應的建立函式
+State Tracker 只會透過標準 `pipe_screen` 使用底下的 driver，不會直接呼叫 `virgl_create_screen()`。 當 DRI frontend 從 DRM fd 取得 `virtio_gpu` 這個 kernel driver 名稱後，Mesa 因此還要把這個名稱對應到 VirGL 的 screen 建立函式
+
+Gallium driver descriptor 提供了這層 name-to-callback mapping。 DRI frontend 會用 driver name 找到 `create_screen` callback。 對 virtio-gpu 而言，這個 callback 串起 `virgl_drm_screen_create()`、DRM winsys 與 `virgl_create_screen()`，最後仍回傳標準 `pipe_screen`。 這條建立鏈會決定成功時由哪個 screen 接手 winsys 與複製的 DRM fd，也會把失敗時的清理責任固定在對應的建立函式
 
 #### Driver descriptor 入口
 
@@ -16823,7 +16884,11 @@ Mesa Gallium pipe-loader
 
 ### Context 與 capset
 
-VirGL screen 建立期間會先處理 DRM file context 與 renderer capset，application 建立 OpenGL context 時才會再要求 Gallium `pipe_context`。 前者決定這份 DRM file 使用哪個 capset，後者保存每個 rendering context 的 command buffer、state 與 callbacks。 Capset 結果會限制後續 resource 與 transfer 功能，context 銷毀流程則必須釋放 command buffer、transfer queue 與各項由 context 持有的 references
+VirGL guest driver 在編碼第一批 commands 前，必須先知道 host renderer 支援哪些 formats、shader stages 與 protocol features。 這些能力會決定 guest 可以建立哪些 resources、使用哪些 shader 功能，以及用哪一版 VirGL protocol 描述工作。 VirGL 將這組 renderer capabilities 稱為 capset（capability set）
+
+建立 screen／winsys 時，Mesa 會先初始化這份 DRM file 對應的 kernel context，並選定要使用的 capset。 Application 之後建立 OpenGL context 時，State Tracker 才會要求 VirGL 建立 Gallium `pipe_context`，用來保存該 rendering context 的 command buffer、state 與 callbacks。 這裡因此存在兩種層次不同的 context：DRM file context 負責 kernel 與 renderer protocol 的初始化，`pipe_context` 則承接每個 OpenGL context 的 rendering state 與 commands
+
+Capset 結果會限制後續 resource 與 transfer 功能，context 銷毀流程則必須釋放 command buffer、transfer queue 與各項由 context 持有的 references
 
 #### DRM file context／capset 初始化
 
