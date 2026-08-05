@@ -43,7 +43,7 @@ Mesa 位在這段路徑的 userspace。 本文選擇 OpenGL 與 X11 作為具體
 
 ![](./image/glxgears.png)
 
-這個畫面需由一個 X server 與多個 X11 clients 共同完成，兩者之間由 X11 協定（X11 protocol）規定雙方交換 requests、replies 與 events 的格式。 本文的 X server 是 Xorg 行程，它集中保存了 clients 建立的視窗、顯示相關狀態與輸入狀態，並同時處理多條 client connections。 `glxgears`、`xterm`、`xclock` 與 `twm` 則是彼此獨立的 clients，各自擁有一條 connection
+這個畫面需由一個 X server 與多個 X11 clients 共同完成，兩者之間由 X11 協定（X11 protocol）規定雙方交換 requests、replies 與 events 的格式。 本文的環境中由 Xorg 行程擔任 X server，它集中保存了 clients 建立的視窗、顯示相關狀態與輸入狀態，並同時處理著多條 client connections。 `glxgears`、`xterm`、`xclock` 與 `twm` 則是彼此獨立的 clients，各自擁有一條 connection
 
 libX11 位在每個 client 行程內。 它能接收 `XOpenDisplay()`、`XCreateWindow()` 等 Xlib API 呼叫，並把輸入參數編碼成 X11 協定 requests，再將 Xorg 傳回的 replies 與 events 整理成 client-side objects。 `twm` 同樣是獨立的 X11 client，之後會擔任 window manager，成為視窗管理政策的 controller
 
@@ -65,7 +65,7 @@ Xorg（本例唯一的 X server 行程）
   └─ 將 replies 與 events 傳回對應的 client
 ```
 
-凡是透過 X11 協定向 X server 傳送 requests、接收 replies 與 events 的程式，本文都將其稱為 X11 application。 上圖中的 `glxgears`、`xterm` 與 `xclock` 都是 X11 applications：它們會要求建立視窗、接收輸入事件並更新視窗內容。 齒輪、終端機文字與時鐘指針由各 application 產生。 視窗外圍的青色標題列、視窗位置與 stacking，也就是視窗的前後順序，則由 `twm` 這個 window manager 負責協調
+凡是透過 X11 協定向 X server 傳送 requests、接收 replies 與 events 的程式，都是 X11 clients。 上圖中的 `glxgears`、`xterm` 與 `xclock` 是 application clients，它們會要求建立視窗、接收輸入事件並更新視窗內容。 `twm` 則是擔任 window manager 的 client。 齒輪、終端機文字與時鐘指針由各 application 產生。 視窗外圍的青色標題列、視窗位置與 stacking（視窗的前後順序），則由 `twm` 負責協調
 
 對使用者而言，啟動齒輪只需要一條命令。 但對圖形堆疊而言，每轉動一小段角度，都代表 application 要產生下一幀 pixels，視窗系統要把這些 pixels 放進桌面的正確位置，顯示裝置還要在正確的時間讀到更新後的畫面
 
@@ -866,9 +866,9 @@ main(int argc, char *argv[])
 
 #### 齒輪轉動一格，需要 rendering 與 display 兩條路徑
 
-首先我們需要把 rendering 與 display 區分開來。 application 準備 rendering 時，會透過 OpenGL 提供幾何資料、顏色與 rendering state。 rendering 路徑負責把這些 OpenGL operations 轉成可執行的工作，再由 CPU 或 GPU 算出 pixels。 display 路徑則由視窗系統與 Linux display subsystem 選出目前要顯示的 buffer，決定畫面位於桌面的哪裡，再讓 display controller 持續讀取該 buffer
+首先我們需要把 rendering 與 display 區分開來。 application 準備開始算繪時，會透過 OpenGL 提供幾何資料、顏色與 rendering state。 rendering 路徑負責把這些 OpenGL operations 轉成可執行的工作，再由 CPU 或 GPU 算出 pixels。 display 路徑則由視窗系統與 Linux display subsystem 選出目前要顯示的 buffer，決定畫面位於桌面的哪裡，再讓 display controller 持續讀取該 buffer
 
-而在本文討論的情境中，我們可以將 GPU driver 堆疊分成 userspace 與 kernel 兩個部分。 以 AMD GPU 為例：
+在本文討論的情境中，我們可以將 GPU driver 堆疊分成 userspace 與 kernel 兩個部分。 以 AMD GPU 為例：
 
 - userspace 部分會以共享函式庫的形式載入至 application 行程。 以 Mesa 的 AMD 路徑為例，OpenGL frontend 會先接收並驗證 API operations，接著 State Tracker 再把 OpenGL state 轉成 driver 可以處理的形式，最後由 radeonsi 建立 AMD GPU commands。 這一側會透過 DRM ioctl 將 resource-management 與 command 提交 requests 送進 kernel
 - kernel 部分由 Linux 的 DRM driver 實作。 在這個例子中，`amdgpu` 負責管理 GEM／buffer object、GPU 虛擬位址、command 提交、排程、同步、interrupt 與 reset
@@ -911,21 +911,60 @@ display controller 週期性讀取 pixels
 使用者看見齒輪轉到下一個角度
 ```
 
-儘管 application 可以先在 off-screen color buffer 完成 rendering，準備好 pixels，但是否能進入桌面的最終畫面需由視窗系統決定。 X11 的視窗管理流程在啟動圖形桌面時會先將視窗的位置、父子關係、stacking 與可見範圍建立好。 最後在 `glXSwapBuffers()` 時，Display 與 Rendering 兩條路徑才會在這個交付畫面的邊界會合
+::: tip  
+所謂的 OpenGL vendor 實作，是 OpenGL API calls 的 userspace implementation。 本文使用 Mesa，其他 vendor 也可以提供自己的 OpenGL implementation  
+:::
 
-### 使用者執行 `startx` 後，Xorg 如何準備好顯示環境
+### 本文 Big picture 固定追蹤的圖形組態
+
+前面已經把齒輪轉動一格拆成 Rendering 與 Display 兩條路徑。 接下來我們要沿原始程式碼走過這兩條路徑，因此我們先把同一個齒輪視窗放進一組固定的測試環境
+
+rendering 這一側我們會用到 GLX、Gallium、softpipe 與 `drisw`。 GLX 負責連接 OpenGL 與 X11 Window，讓 Mesa 知道算好的畫面要交給哪一個視窗。 Gallium 是 Mesa frontend 與 rendering drivers 之間共用的介面。 本文選擇的 softpipe 會用 guest CPU 算出 pixels，`drisw` 則負責在 swap 時把 pixels 交給 X server
+
+這個範例固定使用下列目標組態：
+
+- 使用者以 `startx`／`xinit` 啟動 Xorg、`twm`、`xclock` 與 `xterm`。 `twm` 擔任 window manager。 這組桌面程式中不啟動負責合成各視窗內容的 compositor
+- OpenGL 使用 Mesa 的 direct software GLX 路徑，Gallium 軟體 driver 固定為 softpipe。 rendering work 留在 application 行程，由 guest CPU 執行
+- Xorg 使用 modesetting driver 管理顯示裝置。 各視窗不會被重新導向各自的 off-screen storage，可見 pixels 會直接寫進 Xorg 管理的 X Screen 像素儲存區
+- Xorg 透過 Mesa `libgbm` 配置一份可由 CPU 寫入、也能供 KMS scanout 的整桌 buffer。 本文固定追蹤 `GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT` candidate，沿著它進入 `DRM_IOCTL_MODE_CREATE_DUMB`。 這是 DRM／KMS 提供的基礎線性 buffer 建立介面
+- Guest 顯示裝置使用 virtio-gpu 2D。 `VIRTIO_GPU_F_VIRGL` 與 `VIRTIO_GPU_F_RESOURCE_BLOB` 均未協商，因此 kernel 會以 `RESOURCE_CREATE_2D` 建立傳統的 2D resource，再用 `RESOURCE_ATTACH_BACKING` 接上 guest 記憶體
+- Host emulator 使用 SDL2 display backend。 後文將這個終點稱為「本例的 SDL window」
+
+Xorg 的裝置設定如下：
+
+```conf
+Section "Device"
+    Identifier "virtio-gpu"
+    Driver "modesetting"
+    Option "AccelMethod" "none"
+    Option "ShadowFB" "off"
+EndSection
+```
+
+Application 啟動時固定設定：
+
+```bash
+export LIBGL_ALWAYS_SOFTWARE=true
+export GALLIUM_DRIVER=softpipe
+```
+
+這組條件會把 application 的 OpenGL work 留在 guest CPU 上執行，算好的 pixels 再經 X server、DRM／KMS 與 virtio-gpu 走到本例的 SDL window
+
+## Display：從 `startx` 建立 X Screen 到 scanout 更新
 
 使用者必須先啟動圖形桌面，齒輪程式才有辦法連線到 X server。 本節我們會從使用者執行 `startx` 開始，看它如何啟動 Xorg，再沿著 Xorg 內部的共用核心、裝置相依框架與顯示 driver，走到 Linux DRM／KMS 準備的 display 路徑
 
-#### 使用者啟動圖形桌面：`startx` 呼叫 `xinit`
+### 使用者執行 `startx`：由 `xinit` 啟動 Xorg
 
 在我們的例子中，當 Linux 開機並進入文字終端機後，若使用者想啟動圖形桌面，需要手動執行 `startx` 命令，開始建立圖形工作環境。 啟動完成後，螢幕上會出現由 `twm` 管理的 `xclock` 與 `xterm` 視窗，使用者接著便能從 `xterm` 開啟 `glxgears`
 
 本文把從 Xorg 啟動、桌面程式陸續連入並持續運作，到使用者離開桌面為止的完整圖形工作階段稱為 X11 session。 本文會使用三個元件來啟動這個 session：
 
 - `startx` 是使用者執行的 shell script。 它負責選出要交給 `xinit` 的 X server 與 client，並整理兩者各自需要的參數
-- `xinit` 是由 C 原始程式碼編譯出的可執行檔。 它會先啟動 Xorg，接著等到 X server 可以接受 connection 後，再啟動 `startx` 選出的 client
-- 本文選到的 client 是系統的 `xinitrc`。 這是一份 shell script，用來啟動 `twm`、`xclock` 與 `xterm` 等 X11 clients
+- `xinit` 是由 C 原始程式碼編譯出的可執行檔。 在它的命令列語意中，client 位置表示 X server 就緒後要啟動的程式或 script。 `xinit` 會先啟動 Xorg 並等待 server 就緒，再執行這個位置指定的內容
+- 本文在 client 位置指定系統的 `xinitrc`。 這份 shell script 會啟動 `twm`、`xclock` 與 `xterm`，它們才是接著連到 Xorg 的 X11 clients
+
+#### `startx` 選出 Xorg 與系統的 `xinitrc`
 
 這套啟動路徑需要 Xorg、libX11、`twm`、`xclock`、`xinit` 與 `xterm`。 以下設定來自 [`semu: configs/x11.config:17`](https://github.com/sysprog21/semu/blob/fd0812970c3c934b46e4897284894e9705355b50/configs/x11.config#L17-L26)，用來確認 Buildroot 會把這些彼此獨立的 X11 元件放進 guest root filesystem：
 
@@ -944,7 +983,7 @@ BR2_PACKAGE_XAPP_XINIT=y
 BR2_PACKAGE_XTERM=y
 ```
 
-這些元件進入 guest root filesystem 後，使用者接著輸入的命令只有 `startx` 本身。 這時，client 與 client 參數都是空的，因此 `startx` 必須自行選出要交給 `xinit` 的 client
+這些元件進入 guest root filesystem 後，使用者接著只會輸入 `startx`。 由於命令列沒有指定 Xorg 就緒後要執行的程式及其參數，`startx` 會選用系統的 `xinitrc`，再把它交給 `xinit` 執行
 
 `startx.cpp` 是 `startx` shell script 的原始模板。 這裡的 `.cpp` 是 xinit 專案用來標記 C preprocessor 輸入檔的副檔名，與 C++ 無關。 以下建置規則取自 [`xinit: cpprules.in:15`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/cpprules.in#L15-18)：
 
@@ -1004,7 +1043,9 @@ fi
 XINIT "$client" $clientargs -- "$server" $display $serverargs
 ```
 
-建置完成時，`XINIT` 會展開成 `xinit`。 此時 `client` 指向系統的 `xinitrc`，`server` 則指向 Xorg 可執行檔。 `startx` 到這裡已經把兩側的命令整理完成，接下來由 `xinit` 控制它們的啟動順序
+建置完成時，`XINIT` 會展開成 `xinit`。 此時 `client` 指向系統的 `xinitrc`，`server` 則指向 Xorg 可執行檔。 `startx` 到這裡便把兩側的命令整理完成了，接下來由 `xinit` 控制它們的啟動順序
+
+### `xinit` 父行程：`startServer()` 建立 Xorg 子行程
 
 以下程式碼來自 [`xinit: xinit.c:146`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinit.c#L146-155) 與 [`xinit: xinit.c:294`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinit.c#L294-301) 的 `main()`，用來確認 X server 與 client 的啟動順序：
 
@@ -1026,58 +1067,165 @@ main(int argc, char *argv[])
 }
 ```
 
-其會先確認 `&&` 左側的 `startServer(server) > 0`。 `startServer()` 成功回傳後，才會繼續呼叫 `startClient(client)`。 此時 `client` 指向的是系統的 `xinitrc`，因此新的子行程會執行這份 shell script。 我們先停在左側的 `startServer()`，看 Xorg 如何完成顯示環境與 connection setup，等它可以接受 connection 後再回到 `startClient()`
+由於 C 的 `&&` 會由左往右判斷，`main()` 會先呼叫 `startServer(server)`。 傳入的 `server[0]` 是 Xorg 可執行檔，`startServer()` 會建立 Xorg 子行程，並在父行程中確認這個 X server 已能接受 connection。 只有 `startServer()` 回傳正值後，`main()` 才會去判斷右側的 `startClient(client) > 0`
 
-```callgraph
-使用者執行 startx
-  │
-  ↓
-[xinit: startx.cpp:50] 建置後的 startx shell script
-  │
-  ├─ userclientrc=$HOME/.xinitrc
-  ├─ 若 XINITRC 指向有效檔案：userclientrc=$XINITRC
-  ├─ sysclientrc=XINITDIR/xinitrc
-  │
-  ↓
-[xinit: startx.cpp:182] 建置後的 startx shell script
-  │
-  ├─ startx 沒有收到 client 與 client 參數
-  ├─ client = defaultclient，clientargs 為空
-  ├─ $HOME/.xinitrc 不存在
-  ├─ XINITRC 沒有指向有效檔案
-  │    // userclientrc 沒有指向可執行的自訂 xinitrc
-  ├─ 系統的 xinitrc 存在：client = sysclientrc
-  │
-  ↓
-[xinit: startx.cpp:310] 建置後的 startx shell script
-  │
-  │  XINIT "$client" $clientargs -- "$server" $display $serverargs
-  │  // client 指向系統的 xinitrc，server 指向 Xorg 可執行檔
-  ↓
-[xinit: xinit.c:146] int main(int argc, char *argv[])
-  │
-  │  [xinit: xinit.c:294]
-  │  先判斷 startServer(server) > 0
-  ↓
-[xinit: xinit.c:394]
-static pid_t startServer(char *server_argv[])
-  │
-  ├─ 啟動 Xorg 的子行程：Execute(server_argv)
-  │    └─ 啟動 Xorg
-  │
-  └─ xinit 父行程：
-       ├─ alarm(15)
-       └─ sigsuspend(&old)
-            // 等 Xorg 的 SIGUSR1，或在 15 秒後醒來
+接著我們看一下 `startServer()` 是如何把這條執行路徑分成父、子兩個行程的。 以下程式碼來自 [`xinit: xinit.c:393`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinit.c#L393-476)：
+
+```c
+// [xinit: xinit.c:393-476]
+static pid_t
+startServer(char *server_argv[])
+{
+    sigset_t mask, old;
+    ...
+
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGUSR1);
+    sigprocmask(SIG_BLOCK, &mask, &old);
+
+    serverpid = fork();
+
+    switch(serverpid) {
+    case 0:
+        // Xorg 子行程：恢復原本的訊號遮罩，再忽略 SIGUSR1
+        sigprocmask(SIG_SETMASK, &old, NULL);
+        ...
+        signal(SIGUSR1, SIG_IGN);
+        ...
+        setpgid(0,getpid());
+        Execute(server_argv);
+
+        ...
+        exit(EXIT_FAILURE);
+        break;
+
+    case -1:
+        break;
+
+    default:
+        // xinit 父行程：等待 Xorg 通知，再嘗試建立 connection
+        ...
+        alarm(15);
+        sigsuspend(&old);
+        alarm(0);
+        sigprocmask(SIG_SETMASK, &old, NULL);
+
+        if (waitforserver() == 0) {
+            ...
+            shutdown();
+            serverpid = -1;
+        }
+        break;
+    }
+
+    return(serverpid);
+}
 ```
 
-`startServer()` 呼叫 `fork()` 後，子行程會透過 `Execute(server_argv)` 啟動 Xorg，`xinit` 父行程則會設定 15 秒的 alarm，接著停在 `sigsuspend()`。 兩條執行路徑從這裡分開：Xorg 子行程繼續初始化顯示裝置，`xinit` 父行程則等待 Xorg 的通知。 接下來我們先沿 Xorg 子行程往下看，等它送出 SIGUSR1 後，再回到父行程的 `waitforserver()`
+`switch(serverpid)` 直接分開兩條路徑。 `case 0` 是即將進入 Xorg 的子行程，`default` 則是繼續留在 `xinit` 裡的父行程
 
-#### 使用者仍在等待：Xorg 先找出可用的顯示裝置
+其中 `waitforserver()` 用來確認 Xorg 已經能接受 X11 connection。 以下程式碼來自 [`xinit: xinit.c:333`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinit.c#L333-362)：
 
-第一個 client 連入後，需要先知道自己能在哪一個桌面座標系統建立視窗，也需要知道這個桌面的尺寸與可用 pixel formats。 X11 把這一組顯示資源稱為 X Screen
+```c
+// [xinit: xinit.c:333-362]
+static Bool
+waitforserver(void)
+{
+    int ncycles = 120;
+    int cycles;
+    ...
 
-每個 X Screen 都有自己的座標系統、寬度、高度、depths 與 visuals，並以一個 Root Window 作為該 Screen 的 Window tree 根節點。 Xorg 必須先找出本文使用的顯示裝置，才能建立符合實際 display setup 的 X Screen，再在 client 建立 connection 時把這些資料回傳給它
+    for (cycles = 0; cycles < ncycles; cycles++) {
+        if ((xd = XOpenDisplay(displayNum))) {
+            // 已經能連到 Xorg，保留這條 connection
+            return(TRUE);
+        }
+        else {
+            // 無法建立 connection 時，先確認 Xorg 行程是否仍在執行
+            if (!processTimeout(1, "X server to begin accepting connections"))
+                break;
+        }
+    }
+
+    Errorx("giving up");
+    return(FALSE);
+}
+```
+
+`ncycles` 將嘗試次數限制在 120 次。 每一輪都會以 `displayNum` 指定的 display name 呼叫 `XOpenDisplay()`，嘗試建立 X11 connection。 成功時，`XOpenDisplay()` 會回傳代表這條 libX11 connection 的 `Display *`，並存入全域變數 `xd`，`waitforserver()` 隨即回傳 `TRUE`
+
+如果 `XOpenDisplay()` 失敗，`processTimeout()` 會短暫等待，同時檢查 Xorg 行程是否仍在執行。 Xorg 還在執行時，迴圈會進入下一輪，再次嘗試建立 connection。 Xorg 已經結束，或 120 次嘗試都沒有成功時，`waitforserver()` 會回傳 `FALSE`
+
+`startServer()` 在 `fork()` 前會先封鎖 `SIGUSR1`。 子行程會恢復原本的訊號遮罩，將 `SIGUSR1` 的處理方式設成 `SIG_IGN`，再以 `Execute(server_argv)` 進入 Xorg。 父行程會以 `sigsuspend()` 等待 Xorg 的 `SIGUSR1`，或在 `alarm(15)` 到期後醒來，接著呼叫 `waitforserver()`
+
+`SIGUSR1` 會喚醒 `xinit`，接著 `waitforserver()` 再以實際建立 connection 的結果判斷 X server 是否就緒。 `XOpenDisplay()` 成功後，`startServer()` 才會回傳正值。 將這兩個函式放回 `main()` 的判斷式後，父、子行程的主要分支如下：
+
+```callgraph
+[xinit: xinit.c:294] int main(int argc, char *argv[])
+  │
+  │  if (startServer(server) > 0
+  │      && startClient(client) > 0) { ... }
+  │  // 先判斷 && 左側的 startServer(server)
+  ↓
+[xinit: xinit.c:393-476]
+static pid_t startServer(char *server_argv[])
+  │
+  │  sigemptyset(&mask);
+  │  sigaddset(&mask, SIGUSR1);
+  │  sigprocmask(SIG_BLOCK, &mask, &old);
+  │  serverpid = fork();
+  │
+  ├─ serverpid == 0：Xorg 子行程
+  │    │
+  │    │  sigprocmask(SIG_SETMASK, &old, NULL);
+  │    │  signal(SIGUSR1, SIG_IGN);
+  │    │  ...
+  │    │  Execute(server_argv);
+  │    ↓
+  │  啟動 Xorg
+  │    │
+  │    │  // 本文下一節會沿這條子行程繼續追蹤
+  │    ↓
+  │  Xorg 初始化顯示裝置與 connection setup 資料
+  │
+  └─ serverpid > 0：xinit 父行程
+       │
+       │  alarm(15);
+       │  sigsuspend(&old);
+       │  alarm(0);
+       │  ...
+       │  if (waitforserver() == 0) { ... }
+       ↓
+     [xinit: xinit.c:333-362]
+     static Bool waitforserver(void)
+       │
+       │  for (cycles = 0; cycles < ncycles; cycles++) {
+       │      if ((xd = XOpenDisplay(displayNum))) {
+       │          return TRUE;
+       │      }
+       │      ...
+       │  }
+       │
+       ├─ XOpenDisplay() 成功：return TRUE
+       │    ↓
+       │  startServer() 回傳正值 serverpid
+       │    │
+       │    │  // 回到 main()，接著去判斷 startClient(client) > 0
+       │    ↓
+       │  稍後回到 xinit 父行程
+       │
+       └─ XOpenDisplay() 失敗：下一輪再嘗試
+```
+
+### Xorg 子行程：完成顯示初始化與 connection setup
+
+在 `xinit` 父行程停在 `startServer()` 內等待 Xorg 的通知的這段期間，`Execute(server_argv)` 會將 `startServer()` 建立的子行程換成 Xorg，Xorg 子行程接著會找出顯示裝置、建立 X Screen 與 pixel storage，再進入 event loop
+
+#### 把 Linux 顯示裝置建立成第一個 X Screen
+
+Xorg 要能接受第一個 client，必須先準備一個讓 client 建立視窗的桌面座標系統，並確定這個桌面的尺寸與可用的 pixel formats。 X11 把這一組顯示資源稱為 X Screen
+
+每個 X Screen 都有自己的座標系統、寬度、高度、可用的 color depths，以及用來解讀 pixel values 的 visuals，並會以一個 Root Window 作為該 Screen 的 Window tree 根節點。 Xorg 必須先找出本文使用的顯示裝置，才能建立符合實際 display setup 的 X Screen，後續再在 client 建立 connection 時把這些資料回傳給它
 
 管理共通的 X11 state 與處理裝置相依工作是兩種責任，Xorg 原始程式碼也據此分成 DIX 與 DDX。 DIX（Device Independent X）是 X server 的裝置獨立核心，負責 protocol dispatch、resource table，以及共用的 Screen／Window runtime state。 不論底下接的是哪種顯示環境，clients 都會透過 DIX 使用相同的 X11 協定 objects
 
@@ -1115,46 +1263,9 @@ Framebuffer 是 kernel object，引用保存 pixels 的 buffer object，並描�
 
 Plane 的 state 會選擇 framebuffer，並保存 source rectangle 與 pixels 在 CRTC 畫面中的位置。 CRTC 的 state 保存 active mode 與掃描時序。 Encoder 表示 CRTC 到 connector 之間的 routing stage，connector 則代表可供 userspace 查詢 modes 的實體或虛擬顯示端點
 
-Linux driver 探測顯示裝置時，會先建立 plane、CRTC、encoder 與 connector，等待 userspace 提供 framebuffer 與 mode state。 Primary plane 是本例整個桌面的 scanout source（掃描輸出來源），cursor plane 則讓滑鼠指標可以獨立更新。 `output->index` 之後會成為 virtio-gpu protocol 使用的 scanout ID
+Linux driver 探測顯示裝置時，會先建立 plane、CRTC、encoder 與 connector，等待 userspace 提供 framebuffer 與 mode state。 Primary plane 是本例整個桌面的 scanout 來源，cursor plane 則讓滑鼠指標可以獨立更新。 `output->index` 之後會成為 virtio-gpu protocol 使用的 scanout ID
 
-#### 本文固定追蹤的圖形組態
-
-走到這裡，我們已經知道 `startx` 如何啟動 Xorg，也知道 Xorg 會經過 DIX、XFree86 DDX、modesetting、GBM／libdrm 與 DRM／KMS。 接下來要進入各層的原始程式碼，因此先把同一個齒輪視窗放進一組固定的測試環境
-
-rendering 這一側還會用到 GLX、Gallium、softpipe 與 `drisw`。 GLX 連接 OpenGL 與 X11 Window，讓 Mesa 知道算好的畫面要交給哪一個視窗。 Gallium 是 Mesa frontend 與 rendering drivers 之間共用的介面。 本文選擇的 softpipe 會用 guest CPU 算出 pixels，`drisw` 則在 swap 時把 pixels 交給 X server
-
-這個範例固定使用下列目標組態：
-
-- 使用者以 `startx`／`xinit` 啟動 Xorg、`twm`、`xclock` 與 `xterm`。 `twm` 擔任 window manager。 這組桌面程式中不啟動負責合成各視窗內容的 compositor
-- OpenGL 使用 Mesa 的 direct software GLX 路徑，Gallium 軟體 driver 固定為 softpipe。 rendering work 留在 application 行程，由 guest CPU 執行
-- Xorg 使用 modesetting driver 管理顯示裝置。 各視窗不會被重新導向各自的 off-screen storage，可見 pixels 會直接寫進 Xorg 管理的 X Screen 像素儲存區
-- Xorg 透過 Mesa `libgbm` 配置一份可由 CPU 寫入、也能供 KMS scanout 的整桌 buffer。 本文固定追蹤 `GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT` candidate，沿著它進入 `DRM_IOCTL_MODE_CREATE_DUMB`。 這是 DRM／KMS 提供的基礎線性 buffer 建立介面
-- Guest 顯示裝置使用 virtio-gpu 2D。 `VIRTIO_GPU_F_VIRGL` 與 `VIRTIO_GPU_F_RESOURCE_BLOB` 均未協商，因此 kernel 會以 `RESOURCE_CREATE_2D` 建立傳統 2D resource，再用 `RESOURCE_ATTACH_BACKING` 接上 guest 記憶體
-- Host emulator 使用 SDL2 display backend。 後文將這個終點稱為「本例的 SDL window」
-
-Xorg 的裝置設定如下：
-
-```conf
-Section "Device"
-    Identifier "virtio-gpu"
-    Driver "modesetting"
-    Option "AccelMethod" "none"
-    Option "ShadowFB" "off"
-EndSection
-```
-
-Application 啟動時固定設定：
-
-```bash
-export LIBGL_ALWAYS_SOFTWARE=true
-export GALLIUM_DRIVER=softpipe
-```
-
-這組條件會把 application 的 OpenGL work 留在 guest CPU 上執行，算好的 pixels 再經 X server、DRM／KMS 與 virtio-gpu 走到本例的 SDL window
-
-本文把 softpipe 這類使用 CPU 產生 pixels 的元件統稱為軟體 renderer。 llvmpipe 是另一個 Gallium 軟體 driver，classic swrast 則是 Mesa 傳統的軟體 rasterizer。 本文主線仍固定使用 softpipe
-
-rendering 這一側的選擇確定後，現在回到顯示裝置。 Linux `virtio_gpu` driver 會在 Xorg 啟動前先完成 device probe，為每個 `struct virtio_gpu_output` 建立 primary plane、cursor plane、CRTC、virtual encoder 與 virtual connector。 以下節錄來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_display.c:274`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_display.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n274)：
+在本文的固定組態中，Linux `virtio_gpu` driver 會在 Xorg 啟動前先完成 device probe，為每個 `struct virtio_gpu_output` 建立 primary plane、cursor plane、CRTC、virtual encoder 與 virtual connector。 以下節錄來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_display.c:274`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_display.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n274)：
 
 ```c
 // [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:274]
@@ -1191,13 +1302,13 @@ vgdev_output_init(struct virtio_gpu_device *vgdev, int index)
 
 這組 topology 已在 kernel probe 建立。 Xorg 接下來要做的是建立 X Screen 與它的像素儲存區，再透過 KMS framebuffer 將該儲存區綁進既有 topology
 
-#### Xorg 建立第一個 X Screen：從 `ScrnInfoRec` 到 `ScreenRec`
+##### 從 `ScrnInfoRec` 到 `ScreenRec`
 
-使用者仍在等待。 Xorg 已經找出顯示裝置與 KMS topology，現在要把這些資料整理成第一個 X Screen。 在任何 client 能選擇 X Screen、取得 Root Window 或建立自己的 Window 以前，server-side records 必須先存在
+Linux 已經替 virtio-gpu 建立 KMS topology，Xorg 現在要探測這個顯示裝置，再把取得的組態整理成第一個 X Screen。 在任何 client 能選擇 X Screen、取得 Root Window 或建立自己的 Window 以前，server-side records 必須先存在
 
-本節先追蹤 XFree86 DDX 的 `ScrnInfoRec` 如何接到 DIX 的 `ScreenRec`，並在 modesetting `ScreenInit()` callback 邊界停下。 Connection setup reply 會在 X Screen 像素儲存區建立後處理
+本節先認識 XFree86 DDX 的 `ScrnInfoRec` 與 DIX 的 `ScreenRec`，再回到 `InitOutput()`，串起裝置探測、兩筆記錄的建立與連接，最後停在 modesetting `ScreenInit()` callback 邊界。 Connection setup reply 會在 X Screen 像素儲存區建立後處理
 
-##### XFree86 DDX 以 `ScrnInfoRec` 保存 display driver 的組態
+###### XFree86 DDX 以 `ScrnInfoRec` 保存 display driver 的組態
 
 XFree86 DDX 先以 `ScrnInfoRec` 保存 display driver 初始化一個 X Screen 時需要的組態與 callbacks
 
@@ -1307,7 +1418,7 @@ ms_platform_probe(DriverPtr driver, int entity_num, int flags,
 }
 ```
 
-##### DIX 以 `ScreenRec` 保存 X Screen 狀態
+###### DIX 以 `ScreenRec` 保存 X Screen 狀態
 
 在本文追蹤的 Xorg 原始程式碼中，一個 X Screen 具體對應到 Xorg 配置的一個 `ScreenRec` instance。 `ScreenRec` 是 X server 用來保存一個 X Screen 狀態的 C struct，其中會記錄 Screen 的編號、寬度、高度、可用的 depths／visuals、Root Window pointer，以及 Xorg 操作這個 Screen 時使用的 callbacks
 
@@ -1354,7 +1465,7 @@ extern ScreenInfo screenInfo;
 ScreenInfo screenInfo;
 ```
 
-##### `InitOutput()` 先探測顯示裝置，再建立 `ScreenRec`
+###### 回到 `InitOutput()`：先探測顯示裝置，再建立 `ScreenRec`
 
 Xorg 啟動時，`dix_main()` 先將 `screenInfo.numScreens` 設為 0，再呼叫 `InitOutput()`
 
@@ -1457,7 +1568,7 @@ AddScreen(Bool (*pfnInit)(ScreenPtr pScreen, int argc, char **argv),
 
 第一次呼叫 `AddScreen()` 時，`numScreens` 是 0，因此 `init_screen()` 會將 `myNum` 設為 0，新的 `ScreenRec` 也會登記在 `screenInfo.screens[0]`。 下一次呼叫時，兩者的索引則是 1，依此類推
 
-##### `ScrnInfoRec` 與 `ScreenRec` 如何互相連接
+###### `ScrnInfoRec` 與 `ScreenRec` 如何互相連接
 
 `InitOutput()` 傳給 `AddScreen()` 的初始化函式是 `xf86ScreenInit()`。 `AddScreen()` 呼叫它時，`ScreenRec::myNum` 已經設定完成，但 `InitOutput()` 還沒有將 `ScrnInfoRec *` 寫入 `ScreenRec::devPrivates`
 
@@ -1489,7 +1600,7 @@ xf86ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 }
 ```
 
-本節需要的包含關係與執行順序如下。 `InitOutput()` 是外層初始化函式，前段配置 `ScrnInfoRec`，後段再建立 `ScreenRec`：
+把前面的片段合起來後，兩種記錄的建立與連接順序如下。 `InitOutput()` 是外層初始化函式，前段配置 `ScrnInfoRec`，後段再建立 `ScreenRec`：
 
 ```callgraph
 [Xorg: dix/main.c:134] int dix_main(...)
@@ -1564,11 +1675,15 @@ xf86ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
 將 `ScrnInfoRec *` 寫入 `ScreenRec::devPrivates` 的動作發生得更晚。 modesetting `ScreenInit()` 成功回傳後，`AddScreen()` 才回傳索引，`InitOutput()` 隨後執行 `dixSetPrivate()`，並再次確認 `ScrnInfoRec::pScreen` 指向 `screenInfo.screens[scr_index]`。 初次 `xf86ScreenInit()` 因此不能依賴這筆私有資料，而是以已設定的 `ScreenRec::myNum` 索引 `xf86Screens[]`
 
-#### modesetting `ScreenInit()` 建立 front BO 與 dumb BO storage
+#### 為 X Screen 建立可顯示的 pixel storage
 
 使用者還在等桌面出現。 Xorg 已建立 `ScreenRec`，但這個 X Screen 仍需要一份能保存完整畫面的像素儲存區。 X server 會用一個 `PixmapRec` 表示整個 X Screen 的內容，本文將它稱為 screen Pixmap。 modesetting driver 還要建立 front BO，也就是 `drmmode_rec::front_bo` 指向的 `struct gbm_bo`。 這個 object 由 `libgbm` 在 Xorg 行程中建立，並能供 KMS scanout 使用
 
-這個 GBM object 會包裝 kernel 中的 GEM dumb BO，而 screen Pixmap 稍後會指向它的 CPU mapping。 `struct gbm_bo`、screen Pixmap、GEM buffer object 與 KMS framebuffer 分屬不同層級，但會透過 mapping 或 reference 接到同一份 X Screen 像素儲存區。 `ScreenInit()` 會先建立 front BO 並取得 CPU virtual address，接著讓 screen Pixmap 指向這份 mapping
+這個 GBM object 會包裝 kernel 中的 GEM dumb BO，而 screen Pixmap 稍後會指向它的 CPU mapping
+
+`struct gbm_bo`、screen Pixmap、GEM buffer object 與 KMS framebuffer 分屬不同層級，但會透過 mapping 或 reference 接到同一份 X Screen 像素儲存區。 `ScreenInit()` 會先建立 front BO 與 CPU mapping，並登記 `CreateScreenResources` callback
+
+等 `ScreenInit()` 回傳後，DIX 才呼叫這個 callback，讓 screen Pixmap 指向該 mapping
 
 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1994`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1994-L2025) 的完整函式簽名與初始 BO call site 如下：
 
@@ -1590,7 +1705,7 @@ DRI 的全名是 Direct Rendering Infrastructure，是一組銜接 Mesa loader�
 
 Xorg 的 `gbm_bo_create_and_map_with_flag_list()` 會依序嘗試多組 usage flags，每一個 candidate 都會呼叫 Mesa `libgbm` 提供的 GBM 公開 API。 當 Xorg 嘗試 `GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT` 時，`libgbm` 會將這一次建立要求分派給 DRI backend，再進入 `create_dumb()`。 本節固定追蹤這條 fallback 分支，藉此觀察 Xorg、Mesa GBM、DRM core 與 Linux `virtio_gpu` driver 各自負責的一段
 
-`drmIoctl()` 雖位於 Mesa `libgbm` 原始程式碼，執行者仍是載入它的 Xorg 行程。 DRM core 解析 `CREATE_DUMB` 後，透過 `drm_driver::dumb_create` 進入 virtio-gpu 實作
+這裡的 `drmIoctl()` 呼叫寫在 Mesa `libgbm` 原始程式碼中，API 則由 libdrm 提供。 執行這段程式碼的是載入兩個函式庫的 Xorg 行程。 DRM core 解析 `CREATE_DUMB` 後，透過 `drm_driver::dumb_create` 進入 virtio-gpu 實作
 
 下圖的 Xorg helpers 可對照 [`Xorg: drmmode_display.c:4838`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L4838-L4856) 與 [`Xorg: drmmode_bo.c:142`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_bo.c#L142-L298)
 
@@ -1762,11 +1877,171 @@ Linux `virtio_gpu` driver 在同一次建立中配置 GEM shmem backing，另外
 
 到這裡為止，guest 已配置 GEM shmem backing、取得 `hw_res_handle`，並送出建立 host resource 的 requests，但 KMS 還沒有將這個 BO 選為 scanout source
 
-#### Xorg 將 X Screen 資料準備成 connection setup reply
+##### Xorg screen `PixmapRec` 與 mapped front BO
+
+`ScreenInit()` 回傳後，DIX 會開始建立 screen resources，並呼叫剛才登記的 `modesetCreateScreenResources()`。 此時系統的 `xinitrc` 尚未啟動 `twm`、終端機與時鐘，但 Xorg 已經需要一份 storage，準備保存稍後出現的桌面背景、視窗內容與 decorations。 下圖先追蹤 Xorg `PixmapRec` 如何連到這份 storage，並同時預告稍後建立的 KMS framebuffer 與 scanout objects
+
+先回答兩個問題：
+
+1. Xorg 用哪個 object 保存目前的完整桌面
+2. 這個 object 如何連到 DRM／KMS 與 virtio-gpu 使用的顯示 resource
+
+![Xorg screen storage 與稍後 KMS scanout 的 object 關係](./image/glx-object-stage-1-xorg-display-storage.png)
+
+首先我們來看 Xorg screen 的 `PixmapRec`。 前文已將這個代表整個 X Screen 內容的 storage object 稱為 screen Pixmap。 以下程式碼來自 [`Xorg: include/pixmapstr.h:75`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/pixmapstr.h#L75-L86) 的 `PixmapRec` 定義，用來確認這個 object 如何描述 X Screen 像素儲存區：
+
+```c
+// [Xorg: include/pixmapstr.h:75-86]
+typedef struct _Pixmap {
+    DrawableRec drawable;
+    PrivateRec *devPrivates;
+    int refcnt;
+    int devKind;                /* This is the pitch of the pixmap, typically width*bpp/8. */
+    DevUnion devPrivate;        /* When !NULL, devPrivate.ptr points to the raw pixel data. */
+    ...
+} PixmapRec;
+```
+
+其中 `drawable` 用來記錄這份 Pixmap 的尺寸、color depth 與所屬 Screen，`devKind` 用來記錄每一列 pixels 的 pitch。 在本文的組態中，`devPrivate.ptr` 最後會指向 front BO 的 CPU mapping，讓 X server 能透過 `PixmapRec` 找到 X Screen 像素儲存區
+
+接著是 Xorg 透過 GBM 持有的 mapped front BO。 它在 Xorg 端的型態是 `struct gbm_bo *`，指向 Mesa `libgbm` 建立的 userspace object。 這個 object 用來保存 buffer 的寬度、高度、format、stride 與 handle，並連回建立這份 buffer 的 `gbm_device`
+
+Xorg 確實會 include Mesa 安裝的公開 `gbm.h`，也會在建置與執行期 link `libgbm`。 公開 header 只把 `struct gbm_device`、`struct gbm_bo` 與 `struct gbm_surface` 宣告成 opaque types。 Xorg 可以保存 pointer 並呼叫 `gbm_bo_get_*()`、`gbm_bo_map()` 與 `gbm_bo_destroy()`，卻不能解參考私有欄位
+
+下方完整 layout 來自 Mesa GBM backend ABI，用來解釋這個 pointer 傳入 `libgbm` 後所指向的 object。 它不是 Xorg 可直接使用的公開 struct definition
+
+以下片段分別來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.h:9`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_bo.h#L9) 與 [`Mesa: src/gbm/main/gbm.h:46`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.h#L46-48)，用來顯示 Xorg include 的正是 GBM 公開 header，而公開 header 只提供 opaque declarations：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.h:9]
+#include <gbm.h>
+
+...
+
+// [Mesa: src/gbm/main/gbm.h:46]
+struct gbm_device;
+struct gbm_bo;
+struct gbm_surface;
+```
+
+:::tip
+GBM 的全名是 Generic Buffer Manager。 在 [`Mesa: src/gbm/main/gbm.h:41`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.h#L41-58) 的定義中，它提供一層抽象，用來向平台底層的 memory manager 請求 buffer。 GBM 是 Mesa 專案提供的 userspace 函式庫，GBM backend 也是 userspace 實作
+
+Linux kernel 公開 DRM device node 與 UAPI。 Xorg 開啟 device node 取得 fd，GBM backend 透過這個 fd 配置、匯入、匯出或 mapping buffer。 Xorg 另外透過 libdrm 與同一個 DRM device fd 建立 KMS framebuffer，並設定 display state
+
+呼叫端會將 DRM fd、尺寸、pixel format 與 `GBM_BO_USE_SCANOUT`、`GBM_BO_USE_WRITE` 等用途交給 GBM。 GBM backend 會配置符合需求的 buffer，再回傳 `struct gbm_bo`。 呼叫端可透過 GBM API 查詢 stride、handle 與 modifier，也可以要求 CPU mapping 或匯出 dma-buf fd。 後文「Loader、DRI 與 libgbm」會再沿原始程式碼詳細展開 `gbm_device`、`gbm_bo` 與 `gbm_surface`
+:::
+
+以下程式碼來自 [`Mesa: src/gbm/main/gbm_backend_abi.h:180`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm_backend_abi.h#L180-201) 的 GBM backend ABI，用來確認 `struct gbm_bo` 在 userspace 中保存的基本資料：
+
+```c
+// [Mesa: src/gbm/main/gbm_backend_abi.h:180-201]
+struct gbm_bo_v0 {
+   uint32_t width;
+   uint32_t height;
+   uint32_t stride;
+   uint32_t format;
+   union gbm_bo_handle handle;
+   void *user_data;
+   ...
+};
+
+...
+
+struct gbm_bo {
+   struct gbm_device *gbm;
+   struct gbm_bo_v0 v0;
+};
+```
+
+Xorg 的 modesetting driver 會把這個 pointer 保存在 `drmmode_rec` 的 `front_bo`。 以下片段來自三個位置：
+
+- [`Xorg: drmmode_display.h:78`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.h#L78-L94)：宣告 `drmmode_rec` 持有的 GBM device 與 front BO
+- [`Xorg: driver.c:1722`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1722-L1756)：取出 CPU mapping，再交給 screen Pixmap
+- [`Xorg: mi/miscrinit.c:116`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/mi/miscrinit.c#L116-L120)：將 mapping 位址寫入 `PixmapRec` 的 `devPrivate.ptr`
+
+這三段程式碼顯示 Xorg 如何持有 front BO pointer，再讓 screen Pixmap 借用它的 CPU mapping：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.h:78]
+typedef struct {
+    int fd;
+    ...
+    struct gbm_device *gbm; // declaration from gbm.h in Mesa
+    ...
+    struct gbm_bo *front_bo;
+    ...
+} drmmode_rec, *drmmode_ptr;
+
+...
+
+// [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722]
+static Bool
+modesetCreateScreenResources(ScreenPtr pScreen)
+{
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
+    modesettingPtr ms = modesettingPTR(pScrn);
+    PixmapPtr rootPixmap;
+    void *pixels = NULL;
+    ...
+
+    if (!ms->drmmode.glamor)
+        pixels = gbm_bo_get_map(ms->drmmode.front_bo);
+
+    rootPixmap = pScreen->GetScreenPixmap(pScreen);
+    ...
+    pScreen->ModifyPixmapHeader(rootPixmap, -1, -1, -1, -1, -1, pixels);
+    ...
+}
+
+...
+
+// [Xorg: mi/miscrinit.c:64]
+Bool
+miModifyPixmapHeader(PixmapPtr pPixmap, int width, int height, int depth,
+                     int bitsPerPixel, int devKind, void *pPixData)
+{
+    ...
+    if (pPixData)
+        pPixmap->devPrivate.ptr = pPixData;
+    ...
+    return TRUE;
+}
+```
+
+同一個 `front_bo` 會跨過三個持有與引用層次。 Xorg modesetting 把 pointer 保存於 `drmmode_rec::front_bo`，並呼叫 GBM API 管理它的生命週期。 Pointer 指向的 `struct gbm_bo` 是 Mesa `libgbm` 實作的 userspace object
+
+在本文選定的 `DRM_IOCTL_MODE_CREATE_DUMB` 分支中，底層 storage 是 Linux DRM 建立的 GEM dumb BO。 KMS framebuffer 與 virtio-gpu 2D resource 則繼續引用這份 storage
+
+```text
+Xorg modesetting
+  │
+  │  drmmode_rec::front_bo
+  │  保存 pointer，呼叫 GBM API 建立、map 與釋放
+  ↓
+Mesa libgbm
+  │
+  │  struct gbm_bo userspace object
+  │  保存尺寸、stride、format、handle 與 backend operations
+  ↓
+Linux DRM
+  │
+  │  scanout-capable BO backing storage
+  ↓
+KMS framebuffer reference
+```
+
+Screen `PixmapRec` 與 front BO 指向同一份 X Screen 像素儲存區。 `PixmapRec` 描述 X server 看到的 drawable storage，`devPrivate.ptr` 則借用 front BO 的 CPU mapping。 後面加入的 Mesa client-side color buffer 才是另一份獨立 storage
+
+由於本文將 `AccelMethod` 設為 `none`，所以 `gbm_create_best_bo()` 會要求一份可供 CPU mapping 的 front BO。 Xorg 自己定義的 `gbm_bo_get_map()` helper 取出先前由公開 `gbm_bo_map()` 建立的 mapping 位址，`miModifyPixmapHeader()` 再將這個位址寫入 screen `PixmapRec` 的 `devPrivate.ptr`。 後面不論哪個 Window 產生新內容，X server 最後都要讓這份 X Screen 像素儲存區反映可見結果
+
+Xorg 之後會建立一個引用這份 BO 的 KMS framebuffer，`fb_id` 用來識別該 framebuffer。 Primary plane 以 `FB_ID` 選取 framebuffer，再以 `CRTC_ID` 接到 scanout pipeline。 本例未協商 `VIRTIO_GPU_F_RESOURCE_BLOB`，因此 BO 建立時會走傳統的 `RESOURCE_CREATE_2D`／`RESOURCE_ATTACH_BACKING` 分支。 圖中的 objects 依序保存 pointer、handle 或 object reference，並未因此產生額外的 pixel copy
+
+#### 將 X Screen 資料準備成 connection setup reply
 
 使用者此刻仍在等待，Xorg 要先準備第一條 client connection 所需的共同資料。 由於 Xorg 與 X11 client 位於不同的行程，application 不能直接讀取 Xorg 行程裡的 `ScreenRec`。 Xorg 會將 client 需要的 server-wide 資料與各個 X Screen 的資料序列化至一段名為 `ConnectionInfo` 的連續 byte buffer，作為 connection setup reply 的共同內容
 
-`ScreenInit()` 回傳後，DIX 會建立 screen resources 與 Root Windows，再初始化輸入裝置。 Primary screen 的 `modesetCreateScreenResources()` 會以 `pScrn->is_gpu == FALSE` 呼叫 `drmmode_set_desired_modes(..., FALSE, FALSE)`，此時只建立 software desired state，不會提交 hardware modeset。 Xorg 接著呼叫 `CreateConnectionBlock()`，將各個 X Screen 的資料依序編碼進 buffer
+`ScreenInit()` 回傳後，DIX 會呼叫 `modesetCreateScreenResources()` 建立 screen resources，再建立 Root Windows 並初始化輸入裝置。 Xorg 接著呼叫 `CreateConnectionBlock()`，將各個 X Screen 的資料依序編碼進 buffer
 
 以下程式碼來自 [`Xorg: dix/main.c:134`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/main.c#L134-L288)，用來確認 `CreateConnectionBlock()` 與 `Dispatch()` 的執行順序：
 
@@ -1889,11 +2164,44 @@ CreateConnectionBlock(void)
 
 因此結合 `dix_main()` 的內容可知，`CreateConnectionBlock()` 會在 `Dispatch()` 前先執行一次，按照 `screenInfo.screens[]` 既有的順序，將各個 X Screen 序列化至 `ConnectionInfo`。 Connection block 依賴的是已完成的 `ScreenRec`、Root Window、depths 與 visuals，不需要等待 active scanout，因此它早於第一次 `ADDFB` 與 `SETCRTC`
 
-接著 `NotifyParentProcess()` 以 SIGUSR1 喚醒 `xinit`。 這時 `ConnectionInfo` 已保存 connection setup reply 共用的資料，但 `waitforserver()` 尚未成功。 Xorg 還要進入 `Dispatch()`，讓 event loop 建立第一個 KMS framebuffer 並完成首次 scanout 綁定，接著實際處理 `XOpenDisplay()` 的 connection 與 setup exchange
+`startServer()` 建立子行程時，曾將子行程處理 `SIGUSR1` 的方式設成 `SIG_IGN`。 這項設定會在 `Execute(server_argv)` 執行 Xorg 後保留下來
 
-#### Xorg 進入 `Dispatch()`：只執行一次的 BlockHandler 完成首次 scanout 綁定
+Xorg 較早在 [`Xorg: dix/main.c:157`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/main.c#L153-L160) 呼叫 `CreateWellKnownSockets()` 建立 listening sockets，而該函式會在 [`Xorg: os/connection.c:307`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/os/connection.c#L303-L308) 呼叫 `InitParentProcess()`。 以下程式碼取自同一個檔案，用來確認 Xorg 如何辨識 `xinit`，並在稍後準備好 connection setup 資料時通知父行程：
 
-SIGUSR1 已喚醒 `xinit`，但使用者仍看不到桌面 clients，`waitforserver()` 也還在嘗試連線。 Xorg 此刻要把 front BO 包成 KMS framebuffer，並綁進 kernel probe 已建立的 plane、CRTC、encoder 與 connector topology
+```c
+// [Xorg: os/connection.c:187-197]
+static void
+InitParentProcess(void)
+{
+    ...
+    handler = OsSignal(SIGUSR1, SIG_IGN);
+    if (handler == SIG_IGN)
+        RunFromSmartParent = TRUE;
+    OsSignal(SIGUSR1, handler);
+    ParentProcess = getppid();
+    ...
+}
+
+// [Xorg: os/connection.c:201-215]
+void
+NotifyParentProcess(void)
+{
+    ...
+    if (RunFromSmartParent) {
+        if (ParentProcess > 1)
+            kill(ParentProcess, SIGUSR1);
+    }
+    ...
+}
+```
+
+`CreateWellKnownSockets()` 執行 `InitParentProcess()` 時，Xorg 會讀到繼承而來的 `SIG_IGN`，將 `RunFromSmartParent` 設為 `TRUE`，並保存 `xinit` 的 PID。 後續的 `dix_main()` 完成 `CreateConnectionBlock()` 後才呼叫 `NotifyParentProcess()`，以 `SIGUSR1` 喚醒 `xinit` 父行程
+
+這時 `ConnectionInfo` 已保存 connection setup reply 共用的資料，但 `waitforserver()` 的 `XOpenDisplay()` 尚未成功。 Xorg 還要進入 `Dispatch()`，讓 event loop 建立第一個 KMS framebuffer 並完成首次 scanout 綁定，接著實際處理 `XOpenDisplay()` 的 connection 與 setup exchange
+
+#### 進入 `Dispatch()`：只執行一次的 BlockHandler 完成首次 scanout 綁定
+
+SIGUSR1 已喚醒 `xinit`，但使用者仍看不到桌面 clients，`waitforserver()` 也還在重試 `XOpenDisplay()`。 Xorg 此刻要把 front BO 包成 KMS framebuffer，並綁進 kernel probe 已建立的 plane、CRTC、encoder 與 connector topology
 
 `ScreenInit()` 登記的 `modesetCreateScreenResources()` 已在 DIX 建立 screen resources 時執行。 對本文的 primary screen 而言，`pScrn->is_gpu` 是 `FALSE`，因此 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1722-L1733) 呼叫 `drmmode_set_desired_modes(..., FALSE, FALSE)` 時只形成 software desired state，不會提交 actual hardware modeset
 
@@ -2043,51 +2351,77 @@ KMS framebuffer 保存 GEM object reference 與 scanout layout，pixels 繼續�
 
 這一輪只把 framebuffer 綁進 kernel 已建立的 display topology。 `ADDFB`、`SETCRTC` 與第一次 `SET_SCANOUT` 都是 display state 的初始建立或變更，不是每幀固定重做。 後續只有 BO／framebuffer、mode、source rectangle 或 scanout binding 改變時，才可能再次走這些操作
 
-這個只執行一次的 BlockHandler 完成後，`WaitForSomething()` 才進入輪詢。 Xorg event loop 隨後接受 `xinit` 的 connection 並傳回 setup reply，`waitforserver()` 的 `XOpenDisplay(displayNum)` 因而成功，`startServer()` 回傳，`xinit` 才會繼續執行 `startClient()`
+這個只執行一次的 BlockHandler 完成後，`WaitForSomething()` 才進入輪詢。 Xorg event loop 隨後接受 `xinit` 的 connection 並傳回 setup reply，`waitforserver()` 的 `XOpenDisplay(displayNum)` 因而成功。 Xorg 的 modesetting 主線至此已完成，`xinit` 父行程也可以繼續執行
 
-Xorg 的 modesetting 主線至此已完成
+### 回到 `xinit` 父行程：`startClient()` 執行系統的 `xinitrc`
 
-### Xorg 就緒後，第一批 clients 如何建立 X11 session
+現在回到先前停在 `startServer()` 裡的 `xinit` 父行程。 `waitforserver()` 的 `XOpenDisplay(displayNum)` 已成功取得 setup reply，因此 `waitforserver()` 回傳 `TRUE`，`startServer()` 接著回傳 Xorg 子行程的 PID。 `main()` 於是繼續判斷 `&&` 右側的 `startClient(client) > 0`
 
-Xorg 準備好 connection setup 資料，並完成首次 scanout 綁定後，`xinit` 才執行 `xinitrc`。 第一批桌面 clients 各自連入同一個 Xorg，libX11 再把 setup reply 轉成每條 connection 專屬的 `Display` 與 `Screen[]`。 `twm` 完成這些共同步驟後，才會取得 window manager 角色
+傳入 `startClient()` 的 `client_argv[0]` 是系統的 `xinitrc` 路徑。 接下來的 callgraph 會從 `waitforserver()` 的成功分支恢復，再沿三段關鍵程式碼追到第一批桌面 clients：
 
-#### Xorg 就緒後：`xinitrc` 啟動 `twm`、`xclock` 與 `xterm`
-
-`waitforserver()` 已完成 setup connection，使用者接下來會看到桌面 clients 陸續出現。 Xorg 此刻要處理第一批 client connections，而 `xinit` 的 `main()` 才跨過 `startServer(server) > 0`，呼叫 [`xinit: xinit.c:560`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinit.c#L560-582) 的 `startClient()`。 先前選定的 client 是系統的 `xinitrc`，`startClient()` 會執行這份 shell script
+- [`xinit: xinit.c:560`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinit.c#L560-582) 顯示 `startClient()` 如何建立執行 `xinitrc` 的子行程
+- [`xinit: xinit.c:655`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinit.c#L655-659) 顯示 `set_environment()` 如何設定 `DISPLAY`
+- [`xinit: xinitrc.cpp:51`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinitrc.cpp#L51-55) 顯示系統的 `xinitrc` 如何啟動 `twm`、`xclock` 與 `xterm`
 
 ```callgraph
-waitforserver() 的 XOpenDisplay(displayNum) 成功
+回到 [xinit: xinit.c:333] waitforserver()
+  │
+  │  XOpenDisplay(displayNum) 成功
+  │  return TRUE;
   ↓
-startServer(server) 回傳成功
+[xinit: xinit.c:475]
+startServer(server) 回傳 serverpid
   ↓
 [xinit: xinit.c:294]
 if (startServer(server) > 0 && startClient(client) > 0) { ... }
+  │
+  │  // && 左側已成立，開始判斷右側的 startClient(client)
   ↓
-[xinit: xinit.c:560]
+[xinit: xinit.c:560-582]
 static pid_t startClient(char *client_argv[])
   │
-  │  fork()
-  ├─ 執行 xinitrc 的子行程：Execute(client_argv)
-  │    // client_argv 指向系統的 xinitrc
-  ↓
-[xinit: xinitrc.cpp:51]
-  ├─ twm &
-  ├─ xclock ... &
-  ├─ xterm ... &
-  └─ exec xterm ...
-       // build 後的實際命令名稱
-       // 由 TWM／XCLOCK／XTERM 展開而來
+  │  clientpid = fork();
+  │
+  ├─ clientpid == 0：執行 xinitrc 的子行程
+  │    │
+  │    │  [xinit: xinit.c:564]
+  │    │  set_environment();
+  │    ↓
+  │  [xinit: xinit.c:655-659] static void set_environment(void)
+  │    │
+  │    │  setenv("DISPLAY", displayNum, TRUE);
+  │    ↓
+  │  [xinit: xinit.c:572]
+  │    │
+  │    │  ...
+  │    │  Execute(client_argv);
+  │    │  // client_argv[0] 是系統的 xinitrc 路徑
+  │    ↓
+  │  [xinit: xinitrc.cpp:51-55]
+  │    ├─ TWM &
+  │    ├─ XCLOCK -geometry 50x50-1+1 &
+  │    ├─ XTERM -geometry 80x50+494+51 &
+  │    ├─ XTERM -geometry 80x20+494-0 &
+  │    └─ exec XTERM -geometry 80x66+0+0 -name login
+  │         // build 後，TWM／XCLOCK／XTERM 會展開成實際命令名稱
+  │
+  └─ clientpid > 0：xinit 父行程
+       └─ return clientpid;
+            // xinitrc 最後以 exec XTERM 將自身換成前景 xterm
+            // main() 會等待 Xorg 或這個 xterm 結束
 ```
 
-[`xinit: xinitrc.cpp:51`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinitrc.cpp#L51-55) 裡的 `TWM`、`XCLOCK` 與 `XTERM` 是 build-time tokens，會在 build 時對應到本文組態選入的 `twm`、`xclock` 與 `xterm`。 `&` 讓 shell 不等待前一個程式結束，因此 script 中的啟動順序不代表 clients 完成 X11 connection 的順序
+`set_environment()` 在執行 `xinitrc` 前把 `DISPLAY` 設成 `displayNum`。 系統的 `xinitrc` 以及它啟動的程式都會繼承這個環境變數，因此 `twm`、`xclock` 與 `xterm` 知道要連到剛才由 `startServer()` 啟動的 Xorg
 
-`twm`、`xclock` 與 `xterm` 是彼此獨立的行程，各自建立一條 X11 connection。 連線後建立的 client-side objects 留到下一節說明
+`xinitrc.cpp` 裡的 `TWM`、`XCLOCK` 與 `XTERM` 是 build-time tokens，會在 build 時對應到本文組態選入的 `twm`、`xclock` 與 `xterm`。 `&` 讓 shell 啟動一個程式後立刻繼續執行下一行，因此 script 中的命令順序不代表各個 clients 完成 X11 connection 的順序
+
+`twm`、`xclock` 與 `xterm` 是彼此獨立的行程，各自建立一條 X11 connection。 建立 connection 後產生的 client-side objects 留到下一節說明
 
 使用者等桌面出現並可操作後，才會從 `xterm` 啟動 `glxgears`。 另一種 session 啟動方式是由 GDM、LightDM、SDDM 這類 display manager 提供圖形登入、驗證帳號、啟動 Xorg 與 session 程式。 這些啟動方式雖然不同，各個 X11 clients 在 session 中仍會分別建立自己的 connection
 
 #### 第一批 X11 clients 連到 Xorg：libX11 建立 `Display` 與 `Screen[]`
 
-系統的 `xinitrc` 已啟動第一批桌面 clients。 故事中的第一個具體 client 是 `twm`：它在 `main()` 呼叫 `XtOpenDisplay()`，經 Xt 與 Xlib 建立自己的 X11 connection。 `xclock` 與 `xterm` 也會各自建立 connection，但 shell 的啟動順序不保證哪一條先完成 setup
+系統的 `xinitrc` 已啟動第一批桌面 clients。 故事中的第一個具體 client 是 `twm`：它在 `main()` 呼叫 `XtOpenDisplay()`，經 Xt 與 Xlib 建立自己的 X11 connection。 Xt（X Toolkit Intrinsics）是建立在 Xlib 上的 toolkit layer。 `xclock` 與 `xterm` 也會各自建立 connection，但 shell 的啟動順序不保證哪一條先完成 setup
 
 Xt 底下仍由 libX11 處理 connection setup。 以下沿 libX11 `XOpenDisplay()` 的內部工作，追蹤 setup reply 如何成為 `Display` 與 `Screen[]`。 使用者稍後從 `xterm` 啟動 `glxgears` 時，會另外呼叫 `XOpenDisplay()` 建立另一條 connection，重複相同的 setup。 其 call site 留到 application Window 與 OpenGL context 出場時再看
 
@@ -2224,7 +2558,7 @@ XOpenDisplay(register _Xconst char *display)
 - Xorg 行程中的 `screenInfo.screens[i]` 指向 X Screen `i` 的 `ScreenRec`，保存 server-side 狀態與 callbacks
 - 每個 libX11 `Display` 都有自己的 `screens[i]`，保存該 connection 從 setup reply 取得的 X Screen `i` 資料，供 application 查詢 Root Window XID、尺寸、depths、visuals 與預設 colormap
 
-兩側以相同的陣列索引 `i` 表示同一個 X Screen，但不是同一個 C struct instance，也沒有跨行程的 pointer 關係。 這些 Screen records 保存的是 X Screen metadata，整張桌面的 pixels 則位於後面會看到的 X Screen 像素儲存區。 screen Pixmap 與 front BO 會從不同層級連到這份儲存區
+兩側以相同的陣列索引 `i` 表示同一個 X Screen，但不是同一個 C struct instance，也沒有跨行程的 pointer 關係。 這些 Screen records 保存的是 X Screen metadata，整張桌面的 pixels 則位於前面建立的 X Screen 像素儲存區。 screen Pixmap 與 front BO 會從不同層級連到這份儲存區
 
 X11 client 使用的 API 也有不同選擇：
 
@@ -2340,49 +2674,23 @@ Window manager 也可以採用不同的視窗安排政策：
 - 其他 stacking window managers 可以在相同的 X11 角色上增加工作區、較複雜的 decoration 與管理政策，代價是多出相應的狀態與元件
 - tiling window managers 會依規則自動安排畫面空間，減少手動擺放與重疊，適合鍵盤導向的操作方式，但 placement 與 decoration policy 會和本文的 `twm` 例子不同
 
-Window manager 負責 placement、move／resize、restack 與 focus，compositor 則合成 redirected contents。 同一個行程可以同時實作兩種角色。 本文的 `twm` 只負責 window management
+Window manager 負責 placement、move／resize、restack 與 focus，compositor 則合成各 Window 被 redirect 到 off-screen Pixmap 的內容。 同一個行程可以同時實作兩種角色。 本文的 `twm` 只負責 window management
 
 到這裡，`twm` 已取得 window manager 角色。 下一個尚未受管理的 application Window 要求 map 時，Xorg 會先送出 `MapRequest`，讓 `twm` 決定如何管理它
 
-### `glxgears` 如何得到一個能夠 rendering 的視窗
+### `glxgears` 如何把 application Window 加入桌面
 
-X11 session 就緒後，使用者從 `xterm` 啟動 `glxgears`。 這個 client 會建立自己的 X11 connection，選出 Xorg 與 OpenGL 都能接受的 pixel format，建立 application Window，再建立一組保存 OpenGL state 的 rendering context。 `twm` 會為 Window 加上 frame，`glXMakeCurrent()` 最後把 context 與同一個 Window XID 接成 rendering target
+X11 session 就緒後，使用者從 `xterm` 啟動 `glxgears`。 這個 client 會建立自己的 X11 connection，選出 Xorg 與 OpenGL 都能接受的 pixel format，再建立 application Window。 `twm` 隨後會替這個 Window 加上 frame，並把它放進既有的 Window tree
 
-#### `glxgears` 建立 application Window 與 OpenGL context
+#### `glxgears` 建立 application Window
 
 使用者在 `xterm` 輸入 `glxgears` 後，新的 application 行程要先連到 Xorg，再建立一個能同時供 X11 顯示與 OpenGL rendering 使用的 Window。 前一節已經看過 `twm` 如何取得 window manager 角色，現在沿著 `glxgears` 原始程式碼的實際順序，看看這個新視窗最初如何建立
 
-`glxgears` 的 application Window 用來顯示齒輪內容。 建立它以前，application 要先選出一個 X11 visual，決定 X server 如何解讀 Window 的 pixel values。 Application 還要建立 OpenGL context，用來保存 OpenGL state、object bindings 與 driver-side rendering state。 後面的 `glXMakeCurrent()` 才會把 context 與 application Window 接成一組 rendering environment
+`glxgears` 的 application Window 用來顯示齒輪內容。 建立它以前，application 要先選出一個 X11 visual，決定 X server 如何解讀 Window 的 pixel values。 同一個 `make_window()` 也會建立 OpenGL context，但 Display 這一側先沿著 Window XID 查看 `XCreateWindow()`、`XMapWindow()` 與 `twm` 的處理結果
 
-`main()` 先呼叫 `XOpenDisplay()`。 這會替 `glxgears` 建立自己的 X11 connection，以及屬於這條 connection 的 libX11 `Display` 與 `Screen[]`
+`main()` 先呼叫 `XOpenDisplay()`，替 `glxgears` 建立自己的 X11 connection，以及屬於這條 connection 的 libX11 `Display` 與 `Screen[]`。 `make_window()` 接著從該 connection 取得 X Screen 與 Root Window，並使用已選好的 visual 建立 application Window。 回到 `main()` 後，`XMapWindow()` 才會要求 Xorg 顯示這個 Window
 
-接著，`make_window()` 先找出要使用的 X Screen。 它會從該 Screen 取得 Root Window，並選擇 visual。 `XCreateWindow()` 會使用這些資料建立 application Window，`glXCreateContext()` 則會建立 OpenGL context。 回到 `main()` 後，下一行才要求顯示 Window：
-
-```c
-// [mesademos: src/xdemos/glxgears.c:701-757]
-int
-main(int argc, char *argv[])
-{
-   ...
-   Display *dpy;
-   Window win;
-   GLXContext ctx;
-   ...
-
-   dpy = XOpenDisplay(dpyName);
-   if (!dpy) {
-      ...
-      return -1;
-   }
-   ...
-   make_window(dpy, "glxgears", x, y, winWidth, winHeight, &win, &ctx);
-   XMapWindow(dpy, win);
-   glXMakeCurrent(dpy, win, ctx);
-   ...
-}
-```
-
-以下是 `make_window()` 中決定 X Screen、visual、Window 與 context 的關鍵片段。 `DefaultScreen(dpy)` 從 `Display` 取得這條 connection 預設使用的 X Screen 編號，本文會得到 0。 `RootWindow(dpy, scrnum)` 再從 `dpy->screens[scrnum]` 取得該 X Screen 的 Root Window XID：
+Display 路徑在意的是 `XCreateWindow()` 產生的 Window XID，以及這個 XID 進入 Xorg 後對應的 `WindowRec`。 以下程式碼取自 [`mesademos: src/xdemos/glxgears.c:464`](https://github.com/JoakimSoderberg/mesademos/blob/master/src/xdemos/glxgears.c#L464-L555)，保留 `make_window()` 的函式名稱、參數，以及建立 Window 所需的關鍵片段：
 
 ```c
 // [mesademos: src/xdemos/glxgears.c:464-555]
@@ -2391,75 +2699,27 @@ make_window(Display *dpy, const char *name,
             int x, int y, int width, int height,
             Window *winRet, GLXContext *ctxRet)
 {
-   int attribs[64];
-   int i = 0;
    int scrnum;
    Window root;
    Window win;
-   GLXContext ctx;
    XVisualInfo *visinfo;
    XSetWindowAttributes attr;
    unsigned long mask;
    ...
 
-   attribs[i++] = GLX_RGBA;
-   attribs[i++] = GLX_DOUBLEBUFFER;
-   ...
-   attribs[i++] = GLX_DEPTH_SIZE;
-   attribs[i++] = 1;
-   ...
-   attribs[i++] = None;
-
    scrnum = DefaultScreen(dpy);
    root = RootWindow(dpy, scrnum);
-
-   visinfo = glXChooseVisual(dpy, scrnum, attribs);
-   if (!visinfo) {
-      ...
-      exit(1);
-   }
-
-   attr.background_pixel = 0;
-   attr.border_pixel = 0;
-   attr.colormap = XCreateColormap(dpy, root, visinfo->visual, AllocNone);
-   attr.event_mask = StructureNotifyMask | ExposureMask | KeyPressMask;
-   mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
-
+   ...
    win = XCreateWindow(dpy, root, x, y, width, height,
                        0, visinfo->depth, InputOutput,
                        visinfo->visual, mask, &attr);
    ...
-   ctx = glXCreateContext(dpy, visinfo, NULL, True);
-   if (!ctx) {
-      ...
-      exit(1);
-   }
-   ...
    *winRet = win;
-   *ctxRet = ctx;
+   ...
 }
 ```
 
-每筆 GLX framebuffer configuration 都會描述一種可供 OpenGL drawable 使用的 buffer 組態，其中包含可搭配的 X11 visual、color buffer 格式、depth／stencil buffer 大小與 double-buffering 能力。 `glXChooseVisual()` 會用 application 提供的 GLX attributes 篩選這些 configurations，例如要求 RGBA color、以 `GLX_DEPTH_SIZE` 指定 OpenGL depth buffer 至少具有多少 bits，以及要求 double buffering。 它最後會回傳相容 visual 對應的 `XVisualInfo`
-
-X11 visual 描述 X server 應如何解讀 Window 的 pixel values，例如 color depth、color class 與 RGB channel masks。 以下程式碼節錄自 [`libX11: include/X11/Xutil.h:287`](https://gitlab.freedesktop.org/xorg/lib/libx11/-/blob/libX11-1.8.7/include/X11/Xutil.h#L287-302)：
-
-```c
-// [libX11: include/X11/Xutil.h:287-302]
-typedef struct {
-    Visual *visual;
-    VisualID visualid;
-    int screen;
-    int depth;
-    ...
-    unsigned long red_mask;
-    unsigned long green_mask;
-    unsigned long blue_mask;
-    ...
-} XVisualInfo;
-```
-
-`visual` 指向選定的 libX11 `Visual` object，`visualid` 是 X server 識別該 visual 的 ID。 `screen` 記錄它所屬的 X Screen 編號，`depth` 則是使用這個 visual 建立 drawable 時使用的 color depth。 TrueColor 與 DirectColor visual 會以三個 channel masks 描述 red、green 與 blue 在 pixel value 中使用的 bits
+`DefaultScreen(dpy)` 取得這條 connection 預設使用的 X Screen 編號，本文會得到 0。 `RootWindow(dpy, scrnum)` 再從 `dpy->screens[scrnum]` 取得該 X Screen 的 Root Window XID。 `visinfo` 的選擇與 OpenGL context 的建立屬於 Rendering setup，會在下一個 H2 沿著同一個 `make_window()` 完整展開
 
 `XCreateWindow()` 接著使用 Root Window XID 作為 `parent`，並帶入相同的 visual 與 depth。 對 `glxgears` 而言，回傳的 `win` 保存 application Window 的 XID。 GLX 後面會把這個 XID 當成 drawable，也就是 context 要讀寫的 X11 rendering target
 
@@ -2565,9 +2825,9 @@ struct _Window {
 剛處理完 `CreateWindow` request 時，application Window 尚未 map，`twm` 也還沒建立外框。 這棵 tree 的相關部分如下：
 
 ```text
-X Screen 0／ScreenRec（管理這棵 Window tree）
+X Screen 0／ScreenRec
   │
-  │  ScreenRec::root
+  │  ScreenRec::root 指向 Window tree 的根節點
   ↓
 Root Window／WindowRec（Window tree 的根節點）
   │
@@ -2579,7 +2839,7 @@ glxgears application Window／WindowRec
   │  mapped = FALSE
 ```
 
-`glXCreateContext()` 最後使用同一份 `XVisualInfo` 建立相容的 OpenGL context。 此時 context 與 application Window 都已建立，但還沒有綁在一起。 `main()` 接下來會先呼叫 `XMapWindow()`，再以 `glXMakeCurrent()` 建立兩者的關係
+`make_window()` 回傳 application Window XID 與相容的 OpenGL context。 Display 路徑接著使用 Window XID 發出 `XMapWindow()` request，Rendering 路徑則會在後面的章節從 `glXMakeCurrent()` 接著往下走
 
 #### `glxgears` 要求顯示 Window：`twm` 建立 frame 與 title
 
@@ -2725,131 +2985,11 @@ Root Window
 
 Application Window 的 map request 先設定 `mapped`，但 frame 尚未 realized，因此暫時返回。 等 frame 也被 map 後，`RealizeTree()` 才會連同已 mapped 的 title 與 application Windows 一起 realize。 Xorg 接著依三者的 geometry 與 stacking 計算可見範圍，使用者才會在桌面看見帶有青色外框與標題列的 `glxgears`
 
-#### GLX 將 application Window 設為 current rendering target
-
-剛才我們在 `glxgears` 的 `XMapWindow()` 暫停，沿著 X11 request 查看 Xorg 與 `twm` 最後如何管理這個 Window。 現在回到 `main()` 的下一行 `glXMakeCurrent(dpy, win, ctx)`。 由於 `XMapWindow()` 不會等待另一條 `twm` connection 完成整段管理流程，application 執行這一行時，Window 可能仍在等待 `twm` 處理 `MapRequest`。 Window 是否已經 viewable，不會改變 `win` 所代表的 XID
-
-前面的 `glXChooseVisual()` 第一次讓 `glxgears` 進入 Mesa GLX。 Mesa 會為這個 libX11 `Display *` 建立 `glx_display`，並讓 `glx_display::screens[i]` 指向 X Screen `i` 對應的 `glx_screen`。 `glx_screen` 保存這個 X Screen 可用的 GLX visual／framebuffer configurations，以及 context 與 drawable operations 需要的 callbacks
-
-因此，同一個 X Screen 在 Xorg、libX11 與 Mesa GLX 內分別有自己的 client-side 或 server-side object：
-
-```callgraph
-Xorg 行程
-=================================================
-[Xorg: dix/globals.c:65] screenInfo.screens[i]
-  │
-  │  指向 X Screen i 的 server-side ScreenRec
-  │  connection setup reply 將必要資料編碼成 protocol records
-  ↓
-glxgears 行程：libX11
-=================================================
-[libX11: include/X11/Xlibint.h:72] Display::screens[i]
-  │
-  │  保存 setup reply 建立的 client-side Screen
-  │  win 是這個 Screen 之下 application Window 的 XID
-  ↓
-glxgears 行程：Mesa GLX
-=================================================
-[Mesa: src/glx/glxclient.h:615] glx_display::screens[i]
-  │
-  │  指向 X Screen i 的 client-side glx_screen
-  │  保存 GLX configurations 與 backend callbacks
-  ↓
-[Mesa: src/glx/glxclient.h:248] struct glx_context
-  │
-  │  ctx 指向 glXCreateContext() 建立的 context
-  │  context 的 psc 指回這個 glx_screen
-```
-
-`glXMakeCurrent()` 的三個參數正好把這幾類 object 接在一起：`dpy` 指出 X11 connection，`win` 是同時作為 draw 與 read drawable 的 application Window XID，`ctx` 則是要設為 current 的 OpenGL context。 GLX 可以把尚未 map 的相容 X11 Window 設為 drawable，判斷依據是 Window XID、visual 與 context configuration，不要求 Window 已進入 viewable state。 Mesa 的 `MakeContextCurrent()` 會先透過 context backend 的 `bind()` 連接 drawable，成功後再記錄 current display、draw drawable 與 read drawable：
-
-```c
-// [Mesa: src/glx/glxcurrent.c:100-188]
-static Bool
-MakeContextCurrent(Display *dpy, GLXDrawable draw, GLXDrawable read,
-                   GLXContext gc_user, unsigned opcode)
-{
-   struct glx_context *gc = (struct glx_context *) gc_user;
-   struct glx_context *oldGC = __glXGetCurrentContext();
-   ...
-
-   if (oldGC != &dummyContext) {
-      oldGC->vtable->unbind(oldGC);
-      oldGC->currentDpy = NULL;
-      ...
-   }
-   __glXSetCurrentContextNull();
-
-   if (gc) {
-      ...
-      if (gc->vtable->bind(gc, draw, read) != Success) {
-         ret = GL_FALSE;
-      } else {
-         gc->currentDpy = dpy;
-         gc->currentDrawable = draw;
-         gc->currentReadable = read;
-         __glXSetCurrentContext(gc);
-      }
-   }
-   ...
-   return ret;
-}
-
-Bool
-glXMakeCurrent(Display *dpy, GLXDrawable draw, GLXContext gc)
-{
-   return MakeContextCurrent(dpy, draw, draw, gc, X_GLXMakeCurrent);
-}
-```
-
-`bind()` 讓 backend 為這個 context 接上 `win` 對應的 rendering buffers。 `currentDpy`、`currentDrawable` 與 `currentReadable` 記錄 context 當下綁定的 X11 connection 與 drawable。 `__glXSetCurrentContext()` 則讓呼叫 `glXMakeCurrent()` 的執行緒取得 current context。 完整的執行緒區域儲存（thread-local storage，TLS）dispatch 與 loader callback 路徑會在後文的 GLX 章節展開
-
-當 `glXMakeCurrent()` 成功後，OpenGL default framebuffer 便會對應到 application Window 的 rendering buffers。 後續 `glClear()` 與其他 OpenGL operations 會使用這個 current context 與 rendering target。 等 application 完成一幀，`glXSwapBuffers(dpy, win)` 才會再次進入 GLX，要求交付這個 drawable 的 back buffer
-
-#### 從 `glClear()` 看 OpenGL 呼叫需要哪些 object 與角色
-
-`glXMakeCurrent()` 完成後，application 才進入反覆產生各幀畫面的 rendering loop。 下面以其中一輪為例：`glClear()` 先清除 color buffer 與 depth buffer，application 接著畫出新的齒輪角度，最後呼叫 `glXSwapBuffers()` 交付這一幀
-
-```c
-while (window_is_open) {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    draw_gears_with_opengl(...);
-    glXSwapBuffers(display, window);
-}
-```
-
-要理解 `glClear()` 如何執行，以及相同的 OpenGL calls 為什麼能落到不同 renderer，我們需要先認識下列 object 與角色：
-
-- OpenGL context
-  - 代表一組 rendering environment，保存 current OpenGL state 與 object bindings。 `glClear()` 的參數只表示了要清除哪些 buffers，實際使用的 clear color 來自先前由 `glClearColor()` 設定的 context state
-- rendering target
-  - 表示這次 operation 要寫入的 color、depth 或 stencil buffers。 對 `glClear()` 而言，實際目標來自目前綁定的 framebuffer
-- OpenGL vendor 實作
-  - 實際執行 OpenGL API 的 userspace 程式碼。 同一組 OpenGL 入口可以由不同 vendor 實作
-- State Tracker 與 Gallium（Mesa 路徑）
-  - Mesa OpenGL frontend 驗證 API 呼叫後，State Tracker 會將 OpenGL state 與 operations 轉成 Gallium 使用的形式。 Gallium 則提供 State Tracker 與不同 rendering drivers 共同遵守的介面與 framework，例如由 `pipe_context` 定義的 rendering callbacks
-- Gallium driver（Mesa 路徑）
-  - 實作 Gallium 定義的介面，接住 State Tracker 轉換後的 rendering work，再決定要由 CPU 直接算出 pixels、建立實體 GPU commands，或編碼成虛擬 GPU protocol
-
-本文接下來固定追蹤 Mesa 提供的 OpenGL vendor 路徑。 OpenGL 呼叫會依序經過 Mesa OpenGL frontend、State Tracker 與 Gallium 介面，最後由 current context 使用的 Gallium driver 接手 rendering work
-
-AMD 的 radeonsi、Intel 的 iris、軟體 drivers softpipe 與 llvmpipe，以及 VirGL guest driver 都是 Mesa 裡的 Gallium drivers。 它們接收的都是相同類型的 Gallium state 與 operations，但會用不同方法完成 rendering：
-
-- softpipe 與 llvmpipe 會在 application 行程中使用 CPU 執行 vertex processing、rasterization 與 fragment processing，再把結果寫進 system memory 中的 color buffer。 softpipe 使用較直接的 C 實作，llvmpipe 則會透過 LLVM JIT 產生 CPU native code，並使用多個 worker 執行緒平行處理 tiles
-- iris、radeonsi 等原生硬體 driver 會在 userspace 編譯 shader、配置 GPU resources 並建立 GPU commands，接著透過 kernel driver 將工作交給實體 GPU 執行
-- VirGL guest driver 會把 Gallium rendering state 與 commands 編碼成 VirGL protocol，經 virtio-gpu 傳給 host，再由 host 上的 virglrenderer 交給 host 圖形堆疊執行
-
-而如果 OpenGL vendor 是 NVIDIA proprietary OpenGL 堆疊，API 呼叫則會由 NVIDIA 的 userspace 函式庫接住，再配合 NVIDIA kernel module。 這條路徑就不會經過 Mesa OpenGL frontend、State Tracker 或 Gallium。 因此，系統有沒有安裝 Mesa，與該 OpenGL context 是否由 Mesa 實作，是兩個不同的問題
-
-本文固定的 vGPU 2D 組態使用 Mesa `drisw` 與 softpipe。 `glClear()` 與後續的齒輪 draw calls 會由 softpipe 在 `glxgears` 行程中執行
-
-一輪 rendering 完成時，softpipe 已把新角度的齒輪 pixels 寫進 DRI 軟體 winsys 為 drawable 建立的 color buffer。 winsys 是 Gallium driver 對接視窗系統的整合層，會建立 display target，並在 swap 時把其中的 pixels 交給 loader。 下文將這份位於 application 行程內、尚未交給 Xorg 的 storage 稱為 Mesa client-side color buffer。 Xorg 用來顯示整個桌面的 screen Pixmap，此時仍是上一份內容
-
-齒輪持續轉動時，使用者把 `xterm` 拖到 `glxgears` 前方。 Mesa 已經算好的一幀仍留在 color buffer，Xorg 則必須根據新的視窗位置，重新決定齒輪視窗有哪些區域可以顯示
+application Window 進入桌面後，Xorg 已經知道它的 parent、geometry 與 stacking。 當使用者把 `xterm` 拖到 `glxgears` 前方時，Xorg 必須根據新的視窗位置，重新決定齒輪視窗有哪些區域可以顯示
 
 ### 使用者移動視窗時，可見範圍如何改變
 
-application Window 與 rendering target 建立後，桌面操作仍會改變它能顯示的區域。 我們先追蹤 `twm` 如何把拖曳與升起視窗的決定送給 Xorg，再看 Xorg 如何更新 geometry、stacking 與一組可見矩形。 被遮住的內容重新露出時，`Expose` event 會要求 application 再次產生該區域
+application Window 加入 Window tree 後，桌面操作仍會改變它能顯示的區域。 我們先追蹤 `twm` 如何把拖曳與升起視窗的決定送給 Xorg，再看 Xorg 如何更新 geometry、stacking 與一組可見矩形。 被遮住的內容重新露出時，`Expose` event 會通知 application 再次產生該區域
 
 #### 使用者移動 `xterm`：`twm` 更新 geometry 與 stacking
 
@@ -3180,148 +3320,27 @@ fbPutImage(DrawablePtr pDrawable, GCPtr pGC, int depth,
 
 本文的 application Window 維持 `RedirectDrawNone`，並由 `Screen::GetWindowPixmap()` 沿著 parent 的 Pixmap mapping 取得 screen Pixmap。 Root Window、frame、title 與 application Windows 都使用這份 Pixmap。 每個 Window 描述共同 storage 中不同的位置與可見範圍。 Application Window 的 `backingStore` 設為 `NotUseful`，因此沒有另一份 storage 保留被遮住的 pixels
 
+![X11 Window／Drawable 與 screen Pixmap storage mapping](./image/glx-object-stage-2-x11-window-storage.png)
+
+圖中的 Windows 各自保存 hierarchy、geometry、origin 與可見範圍，但 `GetWindowPixmap()` 最後都解析到已安裝的 screen Pixmap。 Screen `PixmapRec::devPrivate.ptr` 又指向 mapped front BO，因此這些 Windows 描述的是同一份 X Screen 像素儲存區中的不同區域，而不是各自配置一份 pixels
+
 `xterm` 遮住齒輪時，screen Pixmap 的那塊區域已經改為保存 `xterm` 的 pixels。 `glxgears` 又沒有自己的 off-screen backing Pixmap，因此 Xorg 無法直接從另一份既有 storage 還原齒輪內容，application 必須在收到 `Expose` 後重新產生該區域
 
 若 Composite client 對 Window 或 subwindows 送出 redirect request，Window drawing 會改為進入各自的 off-screen backing Pixmap。 compositor 可以保留被遮住的內容，穩定地重新合成畫面，也能加入陰影、透明與動畫。 代價是多出 backing storage、同步與每幀合成工作
 
-使用者移開 `xterm` 後，`glxgears` 收到 `Expose` 並產生下一個完整畫面。 接下來就從這一幀完成 rendering 的 color buffer 繼續往下看，追蹤它如何交給 Xorg，最後進入 scanout
+使用者移開 `xterm` 後，`glxgears` 收到 `Expose` 並產生下一個完整畫面。 後面的 Rendering 章節會追蹤 Mesa 如何產生這一幀，並把它轉成 `PutImage`／`ShmPutImage` request。 這裡先留在 Display 路徑，從 Xorg 收到 request 的位置繼續往下看
 
-### 完成的一幀如何從 Mesa 走到 scanout
+### Xorg 收到一幀 pixels 後，如何更新 scanout
 
-新的一幀齒輪畫面完成 rendering 後，pixels 先停在 Mesa client-side color buffer。 `glXSwapBuffers()` 會讓 `drisw` 將這份內容交給 Xorg，Xorg 再套用 Window origin 與 composite clip，更新 screen Pixmap／front BO。 最後，dirty update 會把變動送進既有的 KMS scanout 路徑
+Rendering 路徑最後會透過 `XPutImage()` 或 `XShmPutImage()`，把完成的一幀交到 X11 connection。 Display 路徑從 Xorg event loop 取出這個 image request 開始，先套用 Window origin 與 composite clip，更新 screen Pixmap／front BO，再以 dirty update 把變動送進既有的 KMS scanout 路徑
 
-#### `glXSwapBuffers()` 讓 DRI／`drisw` 將 pixels 交給 Xorg
-
-這一幀已經留在 Mesa client-side color buffer。 `glxgears` 呼叫 `glXSwapBuffers(dpy, win)` 時，`win` 仍是 `twm` reparent 以前建立的 application Window XID。 Swap 會沿用 setup 階段建立的 drawable、Mesa client-side color buffer 與 X Screen 像素儲存區，把已經算好的 pixels 交給該 X11 drawable
-
-前面的 GBM allocation 路徑已經介紹 DRI 如何銜接 Mesa driver 與視窗系統。 現在進入的是 DRI software frontend `drisw`：softpipe 負責「怎麼算出 pixels」，`drisw` 則負責「怎麼把算好的 pixels 交給 X11 drawable」。 Context 與 drawable setup 階段已經建立好這條 DRI loader callback 路徑，`glXSwapBuffers()` 只需要沿既有 objects 完成這一幀的 pixel 交付：
-
-```callgraph
-Mesa GLX：從 glXSwapBuffers() 進入 drisw
-=================================================
-[Mesa: src/glx/glxcmds.c:654] glXSwapBuffers(...)
-  │
-  └─ gc->vtable->swap_buffers(dpy, drawable)
-       │
-       │  [Mesa: src/glx/drisw_glx.c:464-472]
-       │  drisw_context_vtable.swap_buffers = __glXSwapBuffers
-       ↓
-[Mesa: src/glx/glxcmds.c:669] __glXSwapBuffers(...)
-  │
-  ├─ pdraw = GetGLXDRIDrawable(dpy, drawable)
-  └─ pdraw->psc->driScreen.swapBuffers(...)
-       │
-       │  [Mesa: src/glx/drisw_glx.c:665]
-       │  driswCreateScreen() 將 callback 註冊成 driswSwapBuffers
-       ↓
-[Mesa: src/glx/drisw_glx.c:556] driswSwapBuffers(...)
-  ├─ 需要 flush 時先 CALL_Flush(...)
-  └─ driSwapBuffers(pdraw->dri_drawable)
-       ↓
-[Mesa: src/gallium/frontends/dri/dri_util.c:869] driSwapBuffers(...)
-  │
-  └─ drawable->swap_buffers(drawable)
-       │
-       │  [Mesa: src/gallium/frontends/dri/drisw.c:593]
-       │  callback 註冊成 drisw_swap_buffers
-       ↓
-[Mesa: src/gallium/frontends/dri/drisw.c:276] drisw_swap_buffers(...)
-  ↓
-[Mesa: src/gallium/frontends/dri/drisw.c:226] drisw_swap_buffers_with_damage(...)
-  ├─ ptex = drawable->textures[ST_ATTACHMENT_BACK_LEFT]
-  ├─ st_context_flush(..., ST_FLUSH_FRONT, ...)
-  ├─ 等待 rendering fence 完成
-  └─ drisw_copy_to_front(..., ptex, 0, NULL)
-       │
-       │  nboxes = 0，這次交付完整的 back-left image
-       ↓
-[Mesa: src/gallium/frontends/dri/drisw.c:211] drisw_copy_to_front(...)
-  ↓
-[Mesa: src/gallium/frontends/dri/drisw.c:191] drisw_present_texture(...)
-  │
-  └─ screen->base.screen->flush_frontbuffer(...)
-       │
-       │  [Mesa: src/gallium/drivers/softpipe/sp_screen.c:461]
-       │  softpipe 將 callback 註冊成 softpipe_flush_frontbuffer
-       ↓
-
-softpipe 與 DRI software winsys：將 pixels 交給 loader
-=================================================
-[Mesa: src/gallium/drivers/softpipe/sp_screen.c:407]
-softpipe_flush_frontbuffer(...)
-  │
-  └─ winsys->displaytarget_display(...)
-       │
-       │  [Mesa: src/gallium/winsys/sw/dri/dri_sw_winsys.c:427]
-       │  DRI software winsys 將 callback 註冊成
-       │  dri_sw_displaytarget_display
-       ↓
-[Mesa: src/gallium/winsys/sw/dri/dri_sw_winsys.c:350]
-dri_sw_displaytarget_display(...)
-  │
-  │  nboxes == 0，使用整張 image 的交付分支
-  ├─ display target 有有效 shmid
-  │    └─ dri_sw_ws->lf->put_image_shm(...)
-  │         │
-  │         │  [Mesa: src/gallium/frontends/dri/drisw.c:583]
-  │         │  drisw_shm_lf.put_image_shm = drisw_put_image_shm
-  │         ↓
-  │       [Mesa: src/gallium/frontends/dri/drisw.c:181]
-  │       drisw_put_image_shm(...)
-  │         ↓
-  │       [Mesa: src/gallium/frontends/dri/drisw.c:85] put_image_shm(...)
-  │         ├─ loader version > 4 且有 putImageShm2
-  │         │    └─ loader->putImageShm2(...)
-  │         └─ 否則
-  │              └─ loader->putImageShm(...)
-  │
-  └─ display target 沒有有效 shmid
-       └─ dri_sw_ws->lf->put_image(...)
-            │
-            │  [Mesa: src/gallium/frontends/dri/drisw.c:575]
-            │  drisw_lf.put_image = drisw_put_image
-            ↓
-          [Mesa: src/gallium/frontends/dri/drisw.c:166] drisw_put_image(...)
-            ↓
-          [Mesa: src/gallium/frontends/dri/drisw.c:64] put_image(...)
-            └─ loader->putImage(...)
-  ↓
-`__DRIswrastLoaderExtension::putImage*` callback 邊界
-  ↓
-
-Mesa GLX swrast loader（軟體 rasterization loader）：將 loader callback 轉成 Xlib operation
-=================================================
-[Mesa: src/glx/drisw_glx.c:366-388] swrast loader extension tables
-  ├─ putImage = swrastPutImage
-  ├─ putImageShm = swrastPutImageShm
-  └─ putImageShm2 = swrastPutImageShm2
-       ↓
-[Mesa: src/glx/drisw_glx.c:235-289] swrastPutImage*(...)
-  ↓
-[Mesa: src/glx/drisw_glx.c:200] swrastXPutImage(...)
-  │
-  ├─ 尚未建立 XImage，或傳入的 shmid 已改變
-  │    ↓
-  │  [Mesa: src/glx/drisw_glx.c:70] XCreateDrawable(...)
-  │    ├─ shmid >= 0：嘗試 XShmCreateImage() 與 XShmAttach()
-  │    └─ XShm 無法使用或 attach 失敗：
-  │         ├─ pdp->shminfo.shmid = -1
-  │         └─ 改以 XCreateImage() 建立一般 XImage
-  │
-  ├─ pdp->shminfo.shmid >= 0
-  │    ├─ XShmPutImage(...)
-  │    └─ XSync(...)
-  └─ 否則
-       └─ XPutImage(...)
-            │
-            │  target 是 glxgears application Window 的 XID
-            ↓
-X11 PutImage／ShmPutImage request 進入 Xorg
-```
-
-Mesa 呼叫 `XPutImage()` 或 `XShmPutImage()` 時，已經把 color buffer 交到 X11 協定邊界。 一般 `XPutImage()` 只把 request 排入 connection。 XShm 路徑後面的 `XSync()` 會等待 X server 處理同步 request，但不會把後續 `DIRTYFB`、virtio-gpu commands 與 SDL present 變成 `glXSwapBuffers()` 內的同步函式鏈
+#### Xorg 處理 `PutImage`／`ShmPutImage` request
 
 Xorg 的 event loop 稍後從 connection 取出 request。 本文的完整 pixel 交付會讓 core `PutImage` 與 MIT-SHM `ShmPutImage` 分支匯合到 GC 的 `PutImage` operation，再經 Damage wrapper 與 framebuffer 實作寫入 X Screen 像素儲存區：
+
+![Window update 套用 origin 與 composite clip，更新 screen Pixmap／front BO](./image/glx-action-stage-3-window-server-update.png)
+
+X server 在處理 image request 時，會加入 Window drawable 的 screen origin，再套用 GC composite clip。 可寫的 pixels 會在這次 request processing 內直接更新 screen Pixmap／front BO
 
 ```callgraph
 Xorg：在 server event loop 處理 X11 image request
@@ -3375,6 +3394,10 @@ Xorg 會以 Window origin 將 Window-local 座標轉成 X Screen 座標，套用
 Xorg 處理 pixel 交付產生的 `PutImage` request、改寫 screen Pixmap 後，Damage tracking 會記錄需要發布的變動範圍。 `damagePutImage()` 先以 GC composite clip 的 extents 縮小 PutImage bounding box，再把結果併入 Damage Region。 Damage Region 因此是 Xorg 必須通知 display 路徑的保守範圍，不是 application Window `clipList` 中每個可見矩形的一對一副本
 
 Dirty tracking 啟用時，`msBlockHandler()` 會呼叫 `dispatch_dirty()`。 後面的 `dispatch_damages()` 會先把 Damage Region 轉成目前 CRTC 可使用的 clip rectangles，只有至少留下一個 rectangle 時才呼叫 `drmModeDirtyFB()`。 這個 ioctl 讓既有 KMS framebuffer 進入 atomic dirty update，再由 virtio-gpu primary plane 把 pixels 傳給 host-side 2D resource：
+
+![Scanout update 先搬移 pixels，再發布更新](./image/glx-action-stage-4-scanout-update.png)
+
+這次 scanout update 會先以 `TRANSFER_TO_HOST_2D` 把 dirty rectangle 的 pixels 從 guest backing 搬進 host-side 2D resource，再用 `RESOURCE_FLUSH` 要求 host 發布更新。 `SET_SCANOUT` 則只在 framebuffer binding 或 source rectangle 改變時重新送出
 
 以下 callgraph 從 Xorg 已經收到 pixels 開始。 它固定追蹤 virtio-gpu framebuffer 實作的 `dirty` callback，並看到 DRM atomic helper 如何把 dirty rectangles 放進 primary plane state：
 
@@ -3583,199 +3606,260 @@ semu SDL display backend：在 event loop 中消費 display queue
 
 當 scanout 仍綁定該 resource，且 payload 建立成功時，semu 會擷取 `SET_SCANOUT` 所記錄的完整 source view，再把這份 snapshot 排入 display queue。 這個 flush rectangle 不會再次裁切 payload。 Linux `virtio_gpu` driver 收到 flush command 的 response 時，畫面仍可能只停在佇列中。 等 SDL event loop 成功更新 texture 並執行 `SDL_RenderPresent()`，使用者才會看見新內容
 
-## 一幀畫面的 pixel storage 與交付路徑
+Xorg 完成這次 dirty update 後，長時間存在的 screen Pixmap、front BO、KMS framebuffer 與 scanout binding 都會繼續供下一幀使用。 Display 路徑到這裡已經從 X11 image request 走到使用者看見更新後的畫面。 接下來回到 application 行程，追蹤 Mesa 如何產生這個 request
 
-前一節沿著函式與 request 的先後順序，追蹤 `glxgears` 的一幀畫面如何從 Mesa 走到本例的 SDL window。 現在把觀察重點移到流程中持續存在的 objects 與 storage：哪些 objects 真正持有 pixels、哪些 objects 只保存 reference 或座標關係，以及 `glXSwapBuffers()` 前後何時會複製 pixel data。 這些關係會說明 Mesa client-side color buffer 與 Xorg screen Pixmap／front BO 為何是兩份 storage，也能分辨同一份底層 storage 被多個 objects 引用的情況
+## Rendering：Application 如何進入 Mesa
 
-本節分三輪觀察同一幀畫面。 第一輪確認每個 object 對應哪份 storage，第二輪追蹤每一幀的 pixel 交付，第三輪再把這些 objects 與動作放回從 device probe 到 `DIRTYFB` 的完整生命週期
+前面的 Display 章節已經準備好 X Screen、application Window 與 scanout path，也確認 Xorg 收到 image request 後會如何更新畫面。 現在回到使用者啟動 `glxgears` 的時間點，沿著 application 這一側查看 OpenGL context 如何接到 X11 drawable、Mesa 如何產生 pixels，以及 `glXSwapBuffers()` 如何走到 Xlib 的 image request 入口
 
-### 兩份 guest-side pixel storage
+### `glxgears` 選擇 visual 並建立 OpenGL context
 
-齒輪尚未畫出前，Xorg 已經必須保存完整桌面，Mesa 則要為即將產生的結果取得一份可寫入的 color buffer
+Display 章節沿著 `XCreateWindow()` 看過 application Window 如何加入 Xorg 的 Window tree。 現在從同一個 `make_window()` 回到 application 行程，先回答 rendering 開始前的兩個問題：
 
-先確認兩件事：Xorg 把目前桌面保存在哪裡，以及 application Window 如何對映到那份既有 storage。 接著再加入 Mesa client-side color buffer，才能在 swap 與 dirty update 出現時分辨 pixels 正從哪裡移到哪裡
+1. 這個 Window 要使用哪一種 pixel format
+2. 哪一個 OpenGL context 會保存後續 draw calls 使用的 state 與 objects
 
-#### Xorg screen `PixmapRec` 與 mapped front BO
+`main()` 先呼叫 `XOpenDisplay()`。 這會替 `glxgears` 建立自己的 X11 connection，以及屬於這條 connection 的 libX11 `Display` 與 `Screen[]`
 
-使用者尚未啟動 `glxgears` 時，Xorg 已經需要一份 storage 保存背景、既有的終端機、時鐘與 `twm` decorations。 第一張圖先不加入 application-specific objects，只追蹤這份完整 X Screen content 如何從 Xorg `PixmapRec` 連到 DRM／KMS 與 virtio-gpu
-
-先回答兩個問題：
-
-1. Xorg 用哪個 object 保存目前的完整桌面？
-2. 這個 object 又如何連到 DRM／KMS 與 virtio-gpu 使用的顯示 resource？
-
-![Object 第 1 階段：Xorg screen Pixmap 指向 front BO 的 CPU mapping，KMS framebuffer 保存 GEM object reference](./image/glx-object-stage-1-xorg-display-storage.png)
-
-首先我們來看 Xorg screen 的 `PixmapRec`。 前文已將這個代表整個 X Screen 內容的 storage object 稱為 screen Pixmap。 以下程式碼來自 [`Xorg: include/pixmapstr.h:75`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/pixmapstr.h#L75-L86) 的 `PixmapRec` 定義，用來確認這個 object 如何描述 X Screen 像素儲存區：
+接著，`make_window()` 先找出要使用的 X Screen。 它會從該 Screen 取得 Root Window，並選擇 visual。 `XCreateWindow()` 會使用這些資料建立 application Window，`glXCreateContext()` 則會建立 OpenGL context。 回到 `main()` 後，下一行才要求顯示 Window：
 
 ```c
-// [Xorg: include/pixmapstr.h:75-86]
-typedef struct _Pixmap {
-    DrawableRec drawable;
-    PrivateRec *devPrivates;
-    int refcnt;
-    int devKind;                /* This is the pitch of the pixmap, typically width*bpp/8. */
-    DevUnion devPrivate;        /* When !NULL, devPrivate.ptr points to the raw pixel data. */
-    ...
-} PixmapRec;
-```
-
-其中 `drawable` 用來記錄這份 Pixmap 的尺寸、color depth 與所屬 Screen，`devKind` 用來記錄每一列 pixels 的 pitch。 在本文的組態中，`devPrivate.ptr` 最後會指向 front BO 的 CPU mapping，讓 X server 能透過 `PixmapRec` 找到 X Screen 像素儲存區
-
-接著是 Xorg 透過 GBM 持有的 mapped front BO。 它在 Xorg 端的型態是 `struct gbm_bo *`，指向 Mesa `libgbm` 建立的 userspace object。 這個 object 用來保存 buffer 的寬度、高度、format、stride 與 handle，並連回建立這份 buffer 的 `gbm_device`
-
-Xorg 確實會 include Mesa 安裝的公開 `gbm.h`，也會在建置與執行期 link `libgbm`。 公開 header 只把 `struct gbm_device`、`struct gbm_bo` 與 `struct gbm_surface` 宣告成 opaque types。 Xorg 可以保存 pointer 並呼叫 `gbm_bo_get_*()`、`gbm_bo_map()` 與 `gbm_bo_destroy()`，卻不能解參考私有欄位
-
-下方完整 layout 來自 Mesa GBM backend ABI，用來解釋這個 pointer 傳入 `libgbm` 後所指向的 object。 它不是 Xorg 可直接使用的公開 struct definition
-
-以下片段分別來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.h:9`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_bo.h#L9) 與 [`Mesa: src/gbm/main/gbm.h:46`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.h#L46-48)，用來顯示 Xorg include 的正是 GBM 公開 header，而公開 header 只提供 opaque declarations：
-
-```c
-// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.h:9]
-#include <gbm.h>
-
-...
-
-// [Mesa: src/gbm/main/gbm.h:46]
-struct gbm_device;
-struct gbm_bo;
-struct gbm_surface;
-```
-
-:::tip
-GBM 的全名是 Generic Buffer Manager。 在 [`Mesa: src/gbm/main/gbm.h:41`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.h#L41-58) 的定義中，它提供一層抽象，用來向平台底層的 memory manager 請求 buffer。 GBM 是 Mesa 專案提供的 userspace 函式庫，GBM backend 也是 userspace 實作
-
-Linux kernel 公開 DRM device node 與 UAPI。 Xorg 開啟 device node 取得 fd，GBM backend 透過這個 fd 配置、匯入、匯出或 mapping buffer。 Xorg 另外透過 libdrm 與同一個 DRM device fd 建立 KMS framebuffer，並設定 display state
-
-呼叫端會將 DRM fd、尺寸、pixel format 與 `GBM_BO_USE_SCANOUT`、`GBM_BO_USE_WRITE` 等用途交給 GBM。 GBM backend 會配置符合需求的 buffer，再回傳 `struct gbm_bo`。 呼叫端可透過 GBM API 查詢 stride、handle 與 modifier，也可以要求 CPU mapping 或匯出 dma-buf fd。 後文「Loader、DRI 與 libgbm」會再沿原始程式碼詳細展開 `gbm_device`、`gbm_bo` 與 `gbm_surface`
-:::
-
-以下程式碼來自 [`Mesa: src/gbm/main/gbm_backend_abi.h:180`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm_backend_abi.h#L180-201) 的 GBM backend ABI，用來確認 `struct gbm_bo` 在 userspace 中保存的基本資料：
-
-```c
-// [Mesa: src/gbm/main/gbm_backend_abi.h:180-201]
-struct gbm_bo_v0 {
-   uint32_t width;
-   uint32_t height;
-   uint32_t stride;
-   uint32_t format;
-   union gbm_bo_handle handle;
-   void *user_data;
+// [mesademos: src/xdemos/glxgears.c:701-757]
+int
+main(int argc, char *argv[])
+{
    ...
-};
+   Display *dpy;
+   Window win;
+   GLXContext ctx;
+   ...
 
-...
-
-struct gbm_bo {
-   struct gbm_device *gbm;
-   struct gbm_bo_v0 v0;
-};
+   dpy = XOpenDisplay(dpyName);
+   if (!dpy) {
+      ...
+      return -1;
+   }
+   ...
+   make_window(dpy, "glxgears", x, y, winWidth, winHeight, &win, &ctx);
+   XMapWindow(dpy, win);
+   glXMakeCurrent(dpy, win, ctx);
+   ...
+}
 ```
 
-Xorg 的 modesetting driver 會把這個 pointer 保存在 `drmmode_rec` 的 `front_bo`。 以下片段來自三個位置：
-
-- [`Xorg: drmmode_display.h:78`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.h#L78-L94)：宣告 `drmmode_rec` 持有的 GBM device 與 front BO
-- [`Xorg: driver.c:1722`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1722-L1756)：取出 CPU mapping，再交給 screen Pixmap
-- [`Xorg: mi/miscrinit.c:116`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/mi/miscrinit.c#L116-L120)：將 mapping 位址寫入 `PixmapRec` 的 `devPrivate.ptr`
-
-這三段程式碼顯示 Xorg 如何持有 front BO pointer，再讓 screen Pixmap 借用它的 CPU mapping：
+以下是 `make_window()` 中決定 X Screen、visual、Window 與 context 的關鍵片段。 Display 章節已經沿著 `DefaultScreen()` 與 `RootWindow()` 取得預設 X Screen 和 Root Window，這裡改看 `glXChooseVisual()` 如何選出 visual，以及 `glXCreateContext()` 如何建立相容的 context：
 
 ```c
-// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.h:78]
+// [mesademos: src/xdemos/glxgears.c:464-555]
+static void
+make_window(Display *dpy, const char *name,
+            int x, int y, int width, int height,
+            Window *winRet, GLXContext *ctxRet)
+{
+   int attribs[64];
+   int i = 0;
+   int scrnum;
+   Window root;
+   Window win;
+   GLXContext ctx;
+   XVisualInfo *visinfo;
+   XSetWindowAttributes attr;
+   unsigned long mask;
+   ...
+
+   attribs[i++] = GLX_RGBA;
+   attribs[i++] = GLX_DOUBLEBUFFER;
+   ...
+   attribs[i++] = GLX_DEPTH_SIZE;
+   attribs[i++] = 1;
+   ...
+   attribs[i++] = None;
+
+   scrnum = DefaultScreen(dpy);
+   root = RootWindow(dpy, scrnum);
+
+   visinfo = glXChooseVisual(dpy, scrnum, attribs);
+   if (!visinfo) {
+      ...
+      exit(1);
+   }
+
+   attr.background_pixel = 0;
+   attr.border_pixel = 0;
+   attr.colormap = XCreateColormap(dpy, root, visinfo->visual, AllocNone);
+   attr.event_mask = StructureNotifyMask | ExposureMask | KeyPressMask;
+   mask = CWBackPixel | CWBorderPixel | CWColormap | CWEventMask;
+
+   win = XCreateWindow(dpy, root, x, y, width, height,
+                       0, visinfo->depth, InputOutput,
+                       visinfo->visual, mask, &attr);
+   ...
+   ctx = glXCreateContext(dpy, visinfo, NULL, True);
+   if (!ctx) {
+      ...
+      exit(1);
+   }
+   ...
+   *winRet = win;
+   *ctxRet = ctx;
+}
+```
+
+每筆 GLX framebuffer configuration 都會描述一種可供 OpenGL drawable 使用的 buffer 組態，其中包含可搭配的 X11 visual、color buffer 格式、depth／stencil buffer 大小與 double-buffering 能力。 `glXChooseVisual()` 會用 application 提供的 GLX attributes 篩選這些 configurations，例如要求 RGBA color、以 `GLX_DEPTH_SIZE` 指定 OpenGL depth buffer 至少具有多少 bits，以及要求 double buffering。 它最後會回傳相容 visual 對應的 `XVisualInfo`
+
+X11 visual 描述 X server 應如何解讀 Window 的 pixel values，例如 color depth、color class 與 RGB channel masks。 以下程式碼節錄自 [`libX11: include/X11/Xutil.h:287`](https://gitlab.freedesktop.org/xorg/lib/libx11/-/blob/libX11-1.8.7/include/X11/Xutil.h#L287-302)：
+
+```c
+// [libX11: include/X11/Xutil.h:287-302]
 typedef struct {
-    int fd;
+    Visual *visual;
+    VisualID visualid;
+    int screen;
+    int depth;
     ...
-    struct gbm_device *gbm; // declaration from gbm.h in Mesa
+    unsigned long red_mask;
+    unsigned long green_mask;
+    unsigned long blue_mask;
     ...
-    struct gbm_bo *front_bo;
-    ...
-} drmmode_rec, *drmmode_ptr;
+} XVisualInfo;
+```
 
-...
+`visual` 指向選定的 libX11 `Visual` object，`visualid` 是 X server 識別該 visual 的 ID。 `screen` 記錄它所屬的 X Screen 編號，`depth` 則是使用這個 visual 建立 drawable 時使用的 color depth。 TrueColor 與 DirectColor visual 會以三個 channel masks 描述 red、green 與 blue 在 pixel value 中使用的 bits
 
-// [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722]
+`glXChooseVisual()` 選出的 visual 同時參與 X11 Window 與 GLX drawable setup。 `XCreateWindow()` 使用它建立 application Window，`glXCreateContext()` 則建立與該 visual 相容的 OpenGL context。 `make_window()` 回傳兩個 objects 後，`main()` 會先送出 `XMapWindow()` request，再以 `glXMakeCurrent()` 將 context 綁到這個 Window
+
+### GLX 將 application Window 設為 current rendering target
+
+剛才我們在 `glxgears` 的 `XMapWindow()` 暫停，沿著 X11 request 查看 Xorg 與 `twm` 最後如何管理這個 Window。 現在回到 `main()` 的下一行 `glXMakeCurrent(dpy, win, ctx)`。 由於 `XMapWindow()` 不會等待另一條 `twm` connection 完成整段管理流程，application 執行這一行時，Window 可能仍在等待 `twm` 處理 `MapRequest`。 Window 是否已經 viewable，不會改變 `win` 所代表的 XID
+
+前面的 `glXChooseVisual()` 第一次讓 `glxgears` 進入 Mesa GLX。 Mesa 會為這個 libX11 `Display *` 建立 `glx_display`，並讓 `glx_display::screens[i]` 指向 X Screen `i` 對應的 `glx_screen`。 `glx_screen` 保存這個 X Screen 可用的 GLX visual／framebuffer configurations，以及 context 與 drawable operations 需要的 callbacks
+
+因此，同一個 X Screen 在 Xorg、libX11 與 Mesa GLX 內分別有自己的 client-side 或 server-side object：
+
+```callgraph
+Xorg 行程
+=================================================
+[Xorg: dix/globals.c:65] screenInfo.screens[i]
+  │
+  │  指向 X Screen i 的 server-side ScreenRec
+  │  connection setup reply 將必要資料編碼成 protocol records
+  ↓
+glxgears 行程：libX11
+=================================================
+[libX11: include/X11/Xlibint.h:72] Display::screens[i]
+  │
+  │  保存 setup reply 建立的 client-side Screen
+  │  win 是這個 Screen 之下 application Window 的 XID
+  ↓
+glxgears 行程：Mesa GLX
+=================================================
+[Mesa: src/glx/glxclient.h:615] glx_display::screens[i]
+  │
+  │  指向 X Screen i 的 client-side glx_screen
+  │  保存 GLX configurations 與 backend callbacks
+  ↓
+[Mesa: src/glx/glxclient.h:248] struct glx_context
+  │
+  │  ctx 指向 glXCreateContext() 建立的 context
+  │  context 的 psc 指回這個 glx_screen
+```
+
+`glXMakeCurrent()` 的三個參數正好把這幾類 object 接在一起：`dpy` 指出 X11 connection，`win` 是同時作為 draw 與 read drawable 的 application Window XID，`ctx` 則是要設為 current 的 OpenGL context。 GLX 可以把尚未 map 的相容 X11 Window 設為 drawable，判斷依據是 Window XID、visual 與 context configuration，不要求 Window 已進入 viewable state。 Mesa 的 `MakeContextCurrent()` 會先透過 context backend 的 `bind()` 連接 drawable，成功後再記錄 current display、draw drawable 與 read drawable：
+
+```c
+// [Mesa: src/glx/glxcurrent.c:100-188]
 static Bool
-modesetCreateScreenResources(ScreenPtr pScreen)
+MakeContextCurrent(Display *dpy, GLXDrawable draw, GLXDrawable read,
+                   GLXContext gc_user, unsigned opcode)
 {
-    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
-    modesettingPtr ms = modesettingPTR(pScrn);
-    PixmapPtr rootPixmap;
-    void *pixels = NULL;
-    ...
+   struct glx_context *gc = (struct glx_context *) gc_user;
+   struct glx_context *oldGC = __glXGetCurrentContext();
+   ...
 
-    if (!ms->drmmode.glamor)
-        pixels = gbm_bo_get_map(ms->drmmode.front_bo);
+   if (oldGC != &dummyContext) {
+      oldGC->vtable->unbind(oldGC);
+      oldGC->currentDpy = NULL;
+      ...
+   }
+   __glXSetCurrentContextNull();
 
-    rootPixmap = pScreen->GetScreenPixmap(pScreen);
-    ...
-    pScreen->ModifyPixmapHeader(rootPixmap, -1, -1, -1, -1, -1, pixels);
-    ...
+   if (gc) {
+      ...
+      if (gc->vtable->bind(gc, draw, read) != Success) {
+         ret = GL_FALSE;
+      } else {
+         gc->currentDpy = dpy;
+         gc->currentDrawable = draw;
+         gc->currentReadable = read;
+         __glXSetCurrentContext(gc);
+      }
+   }
+   ...
+   return ret;
 }
 
-...
-
-// [Xorg: mi/miscrinit.c:64]
 Bool
-miModifyPixmapHeader(PixmapPtr pPixmap, int width, int height, int depth,
-                     int bitsPerPixel, int devKind, void *pPixData)
+glXMakeCurrent(Display *dpy, GLXDrawable draw, GLXContext gc)
 {
-    ...
-    if (pPixData)
-        pPixmap->devPrivate.ptr = pPixData;
-    ...
-    return TRUE;
+   return MakeContextCurrent(dpy, draw, draw, gc, X_GLXMakeCurrent);
 }
 ```
 
-同一個 `front_bo` 會跨過三個持有與引用層次。 Xorg modesetting 把 pointer 保存於 `drmmode_rec::front_bo`，並呼叫 GBM API 管理它的生命週期。 Pointer 指向的 `struct gbm_bo` 是 Mesa `libgbm` 實作的 userspace object
+`bind()` 讓 backend 為這個 context 接上 `win` 對應的 rendering buffers。 `currentDpy`、`currentDrawable` 與 `currentReadable` 記錄 context 當下綁定的 X11 connection 與 drawable。 `__glXSetCurrentContext()` 則讓呼叫 `glXMakeCurrent()` 的執行緒取得 current context。 完整的執行緒區域儲存（thread-local storage，TLS）dispatch 與 loader callback 路徑會在後文的 GLX 章節展開
 
-在本文選定的 `DRM_IOCTL_MODE_CREATE_DUMB` 分支中，底層 storage 是 Linux DRM 建立的 GEM dumb BO。 KMS framebuffer 與 virtio-gpu 2D resource 則繼續引用這份 storage
+當 `glXMakeCurrent()` 成功後，OpenGL default framebuffer 便會對應到 application Window 的 rendering buffers。 後續 `glClear()` 與其他 OpenGL operations 會使用這個 current context 與 rendering target。 等 application 完成一幀，`glXSwapBuffers(dpy, win)` 才會再次進入 GLX，要求交付這個 drawable 的 back buffer
 
-```text
-Xorg modesetting
-  │
-  │  drmmode_rec::front_bo
-  │  保存 pointer，呼叫 GBM API 建立、map 與釋放
-  ↓
-Mesa libgbm
-  │
-  │  struct gbm_bo userspace object
-  │  保存尺寸、stride、format、handle 與 backend operations
-  ↓
-Linux DRM
-  │
-  │  scanout-capable BO backing storage
-  ↓
-KMS framebuffer reference
+### 從 `glClear()` 看 OpenGL 呼叫需要哪些 object 與角色
+
+`glXMakeCurrent()` 完成後，application 才進入反覆產生各幀畫面的 rendering loop。 下面以其中一輪為例：`glClear()` 先清除 color buffer 與 depth buffer，application 接著畫出新的齒輪角度，最後呼叫 `glXSwapBuffers()` 交付這一幀
+
+```c
+while (window_is_open) {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    draw_gears_with_opengl(...);
+    glXSwapBuffers(display, window);
+}
 ```
 
-Screen `PixmapRec` 與 front BO 指向同一份 X Screen 像素儲存區。 `PixmapRec` 描述 X server 看到的 drawable storage，`devPrivate.ptr` 則借用 front BO 的 CPU mapping。 後面加入的 Mesa client-side color buffer 才是另一份獨立 storage
+要理解 `glClear()` 如何執行，以及相同的 OpenGL calls 為什麼能落到不同 renderer，我們需要先認識下列 object 與角色：
 
-由於本文將 `AccelMethod` 設為 `none`，所以 `gbm_create_best_bo()` 會要求一份可供 CPU mapping 的 front BO。 Xorg 自己定義的 `gbm_bo_get_map()` helper 取出先前由公開 `gbm_bo_map()` 建立的 mapping 位址，`miModifyPixmapHeader()` 再將這個位址寫入 screen `PixmapRec` 的 `devPrivate.ptr`。 後面不論哪個 Window 產生新內容，X server 最後都要讓這份 X Screen 像素儲存區反映可見結果
+- OpenGL context
+  - 代表一組 rendering environment，保存 current OpenGL state 與 object bindings。 `glClear()` 的參數只表示了要清除哪些 buffers，實際使用的 clear color 來自先前由 `glClearColor()` 設定的 context state
+- rendering target
+  - 表示這次 operation 要寫入的 color、depth 或 stencil buffers。 對 `glClear()` 而言，實際目標來自目前綁定的 framebuffer
+- OpenGL vendor 實作
+  - 實際執行 OpenGL API 的 userspace 程式碼。 同一組 OpenGL 入口可以由不同 vendor 實作
+- State Tracker 與 Gallium（Mesa 路徑）
+  - Mesa OpenGL frontend 驗證 API 呼叫後，State Tracker 會將 OpenGL state 與 operations 轉成 Gallium 使用的形式。 Gallium 則提供 State Tracker 與不同 rendering drivers 共同遵守的介面與 framework，例如由 `pipe_context` 定義的 rendering callbacks
+- Gallium driver（Mesa 路徑）
+  - 實作 Gallium 定義的介面，接住 State Tracker 轉換後的 rendering work，再決定要由 CPU 直接算出 pixels、建立實體 GPU commands，或編碼成虛擬 GPU protocol
 
-Xorg 另外建立一個引用這份 BO 的 KMS framebuffer，`fb_id` 用來識別該 framebuffer。 Primary plane 以 `FB_ID` 選取 framebuffer，再以 `CRTC_ID` 接到 scanout pipeline。 本例未協商 `VIRTIO_GPU_F_RESOURCE_BLOB`，因此 BO 建立時會走傳統的 `RESOURCE_CREATE_2D`／`RESOURCE_ATTACH_BACKING` 分支。 圖中的 objects 依序保存 pointer、handle 或 object reference，並未因此產生額外的 pixel copy
+本文接下來固定追蹤 Mesa 提供的 OpenGL vendor 路徑。 OpenGL 呼叫會依序經過 Mesa OpenGL frontend、State Tracker 與 Gallium 介面，最後由 current context 使用的 Gallium driver 接手 rendering work
 
-#### 未 redirect Window 指向 X Screen 像素儲存區
+AMD 的 radeonsi、Intel 的 iris、軟體 drivers softpipe 與 llvmpipe，以及 VirGL guest driver 都是 Mesa 裡的 Gallium drivers。 它們接收的都是相同類型的 Gallium state 與 operations，但會用不同方法完成 rendering：
 
-前一節已建立 frame、title 與 application Window 的 Window tree，也說明 reparent 不會改變 application Window 的 XID。 因此 `glXSwapBuffers()` 仍指定 application Window，不會改成把 pixels 交給 `twm` frame Window
+- softpipe 與 llvmpipe 會在 application 行程中使用 CPU 執行 vertex processing、rasterization 與 fragment processing，再把結果寫進 system memory 中的 color buffer。 softpipe 使用較直接的 C 實作，llvmpipe 則會透過 LLVM JIT 產生 CPU native code，並使用多個 worker 執行緒平行處理 tiles
+- iris、radeonsi 等原生硬體 driver 會在 userspace 編譯 shader、配置 GPU resources 並建立 GPU commands，接著透過 kernel driver 將工作交給實體 GPU 執行
+- VirGL guest driver 會把 Gallium rendering state 與 commands 編碼成 VirGL protocol，經 virtio-gpu 傳給 host，再由 host 上的 virglrenderer 交給 host 圖形堆疊執行
 
-![Object 第 2 階段：X11 Window／Drawable 與 screen Pixmap storage mapping](./image/glx-object-stage-2-x11-window-storage.png)
+而如果 OpenGL vendor 是 NVIDIA proprietary OpenGL 堆疊，API 呼叫則會由 NVIDIA 的 userspace 函式庫接住，再配合 NVIDIA kernel module。 這條路徑就不會經過 Mesa OpenGL frontend、State Tracker 或 Gallium。 因此，系統有沒有安裝 Mesa，與該 OpenGL context 是否由 Mesa 實作，是兩個不同的問題
 
-在本文的固定路徑中，Root Window、`twm` frame、title 與 application Window 都維持 `RedirectDrawNone`。 它們各自保存 hierarchy、geometry、origin 與可見範圍，但 `GetWindowPixmap()` 最後都解析到已安裝的 screen Pixmap。 Screen `PixmapRec::devPrivate.ptr` 又指向 mapped front BO，因此這些 Windows 描述的是同一份 X Screen 像素儲存區中的不同區域，而不是各自配置一份 pixels
+本文固定的 vGPU 2D 組態使用 Mesa `drisw` 與 softpipe。 `glClear()` 與後續的齒輪 draw calls 會由 softpipe 在 `glxgears` 行程中執行
 
-交付 `PutImage` 類 request 時，X server 以 application Window 為 drawable。 它先將 Window-local destination 加上 screen origin，再以 Window 的 visible region 與 GC／client clip 得到的 composite clip 限制寫入範圍
+一輪 rendering 完成後，新的齒輪 pixels 會先留在 application 行程內。 接下來要確認這份 storage 由誰建立，以及它和 Xorg screen Pixmap 之間的關係
 
-可寫的矩形直接更新 screen Pixmap／front BO。 被其他 Window 遮住的部分不會覆寫目前桌面內容
+### Mesa client-side color buffer
 
-#### Mesa client-side color buffer
+Display 這一側已經知道 application Window 對映到哪一份 screen storage，也知道它在 `twm` frame 底下的位置。 Application 這一側還需要一份供軟體 renderer 寫入的 color buffer。 下一張圖會在既有的 display objects 之外，加入第二份 guest-side pixel storage
 
-此時 server 端已經知道 request 要寫入哪一份 storage，也知道 `twm` frame 底下的 application Window 位於螢幕哪裡。 Application 端仍缺少供軟體 renderer 寫入的 color buffer。 下一張圖要補上第二份 guest-side pixel storage
+接下來要回答兩個問題：
 
-guest CPU 算出的 pixels 在 swap 前由誰保存？ Mesa 要把哪一份 client-side storage 的內容交給 X server，才能更新剛才的 drawable？
+1. guest CPU 算出的 pixels 在 swap 前由誰保存
+2. Mesa 要把哪一份 client-side storage 的內容交給 X server，才能更新剛才的 drawable
 
-![Object 第 3 階段：Mesa client-side color buffer、X11 drawable 與 Xorg front BO](./image/glx-object-stage-3-mesa-client-buffer.png)
+![Mesa client-side color buffer、X11 drawable 與 Xorg front BO](./image/glx-object-stage-3-mesa-client-buffer.png)
 
-第三列加入 Mesa client-side color buffer。 軟體 renderer 以 guest CPU 執行 OpenGL work，算好的 pixels 先寫入這份 buffer。 它位於 application／Mesa 一側，由 DRI 軟體 winsys 建立軟體 display target 及其 userspace backing，因此 rendering 期間不需要先把每個 draw 送進 virtio-gpu
+圖中加入 Mesa client-side color buffer。 軟體 renderer 以 guest CPU 執行 OpenGL work，算好的 pixels 先寫入這份 buffer。 它位於 application／Mesa 一側，由 DRI 軟體 winsys 建立軟體 display target 及其 userspace backing，因此 rendering 期間不需要先把每個 draw 送進 virtio-gpu
 
 這份 userspace backing 不一定要透過一般的 heap memory 配置取得。 DRI 軟體 winsys 若能使用 SHM put-image callback，會優先配置 SysV SHM segment。 配置失敗或 callback 不可用時，才改用 aligned heap memory
 
@@ -3785,23 +3869,19 @@ guest CPU 算出的 pixels 在 swap 前由誰保存？ Mesa 要把哪一份 clie
 
 Mesa client-side color buffer 在 swap 時保存要交付的 `glxgears` pixel range。 screen Pixmap／front BO 保存的則是整個 X Screen 目前可見的結果。 在本文未 redirect 的路徑中，swap 只會把 GC composite clip 允許的矩形寫進 screen Pixmap，因此兩份 storage 可能同時保存可見區域的相同 pixel values，但 screen Pixmap 不會因此取得被其他視窗遮住的完整齒輪畫面
 
-三張圖至此建立了 storage 與交付目的地的關係：application Window 與既有的 origin／clip state 決定目標、位置與可寫範圍，Mesa client-side color buffer 保存尚未交付的 rendering 結果，screen `PixmapRec`／front BO 則保存 X Screen 的可見結果。 下一節改追一幀畫面如何在兩份 storage 之間移動
+現在可以對照兩份 storage 與交付目的地的關係：application Window 與既有的 origin／clip state 決定目標、位置與可寫範圍，Mesa client-side color buffer 保存尚未交付的 rendering 結果，screen `PixmapRec`／front BO 則保存 X Screen 的可見結果。 下一節改追一幀畫面如何在兩份 storage 之間移動
 
-### 一幀的交付：rendering、pixel 交付、window update 與 scanout update
+### Rendering 結果如何抵達 X11 request 邊界
 
-前面的 objects 與 storage 準備完成後，第一幀齒輪畫面也會沿著接下來的路徑出現。 為了看清每次交接，這裡追蹤齒輪轉動後的下一幀畫面：application 更新角度，發出這一幀所需的 OpenGL operations，再呼叫 swap，要求 Xorg 以新的內容更新同一個 Window
-
-使用者只會看到齒輪平順地轉動一小段。 圖形堆疊內部卻要先在 Mesa client-side color buffer 產生算好的 pixels，再將它們交給 X server，最後更新 host-side resource。 接下來沿著這一幀的 pixels 往下看，逐步確認每個階段由誰處理，以及完成後畫面停在哪一份 storage
-
-`twm` 已在 application Window 出現前完成 frame Window、位置與 stacking setup。 正常的下一幀齒輪畫面會直接使用 Xorg 保存的既有 Window state，因此以下分成 rendering、swap／pixel 交付、window update 與 scanout update 四個逐幀動作
+Mesa client-side color buffer 已經保存這一幀的 pixels。 接下來先用兩張圖確認 rendering 與 swap 各自完成的工作，再沿原始程式碼追蹤 `glXSwapBuffers()` 如何進入 `drisw`，最後呼叫 `XPutImage()` 或 `XShmPutImage()`。 從 Xorg event loop 取出 request 開始的處理流程，已在前面的 Display 章節展開
 
 #### rendering：在 Mesa client-side color buffer 產生 pixels
 
-application 發出 OpenGL work 後，第一批算好的 pixels 由誰產生，又先寫進兩份 guest-side storage 中的哪一份？
+這一步要確認 application 發出 OpenGL work 後，由誰算出 pixels，以及結果先寫進兩份 guest-side storage 中的哪一份
 
-![動作第 1 階段：rendering 在 application 與 Mesa 區域產生算好的 pixels](./image/glx-action-stage-1-rendering.png)
+![Rendering 在 application 與 Mesa 區域產生算好的 pixels](./image/glx-action-stage-1-rendering.png)
 
-第一個動作是 rendering。 Application 對 current OpenGL context 發出 OpenGL operation。 softpipe 隨即在 guest CPU 上執行 vertex processing、rasterization 與 fragment processing，再將 pixels 寫入上一輪加入的 Mesa client-side color buffer
+Application 對 current OpenGL context 發出 OpenGL operation 後，softpipe 會在 guest CPU 上執行 vertex processing、rasterization 與 fragment processing，再將 pixels 寫入前一節介紹的 Mesa client-side color buffer
 
 softpipe 負責「怎麼算出 pixels」，`drisw` 則負責後續「怎麼把算好的 pixels 交給 X11 drawable」
 
@@ -3811,143 +3891,148 @@ softpipe 負責「怎麼算出 pixels」，`drisw` 則負責後續「怎麼把�
 
 要讓這一幀離開 Mesa client-side color buffer，application 必須明確要求交換 drawable 的內容。 下一個動作因此從 swap 開始，處理 Mesa 與 X server 之間的 pixel 交付
 
-Mesa client-side color buffer 已有完整內容後，swap 如何讓 pixels 跨進 X server？ 這次交接實際攜帶的資料又是什麼？
+這一步要確認 Mesa client-side color buffer 已有完整內容後，swap 如何讓 pixels 跨進 X server，以及這次交接實際攜帶什麼資料
 
-![動作第 2 階段：Swap 透過 XPutImage 或 XShmPutImage 把 pixels 交給 X server](./image/glx-action-stage-2-present.png)
+![Swap 透過 XPutImage 或 XShmPutImage 把 pixels 交給 X server](./image/glx-action-stage-2-present.png)
 
-第二個動作是 swap 與 pixel 交付。 application 呼叫 `glXSwapBuffers()` 後，`drisw` 會取出要交付的 pixel range，經 Mesa GLX loader 呼叫 `XPutImage()` 或 `XShmPutImage()`。 libX11／libXext 接著建立 core `PutImage` 或 MIT-SHM `ShmPutImage` wire request
+application 呼叫 `glXSwapBuffers()` 後，`drisw` 會取出要交付的 pixel range，經 Mesa GLX loader 呼叫 `XPutImage()` 或 `XShmPutImage()`。 libX11／libXext 接著建立 core `PutImage` 或 MIT-SHM `ShmPutImage` wire request
 
 Core `PutImage` request 會攜帶 inline pixel bytes、目標 drawable、座標與尺寸。 MIT-SHM `ShmPutImage` request 則攜帶 shared-memory segment 與 offset reference，再由 X server 讀取對應的 pixels。 這條軟體路徑沒有使用 X Present extension，因此本節以「pixel 交付」描述它，將 `Present` 專名保留給後面 DRI3／Present 路徑
 
-兩條 request 都把 client rendering 結果交到 X server 邊界，但 wire payload 不同。 接下來的 window update 會處理這一個 request，依 drawable mapping 決定實際寫入的 screen 區域
+兩條 request 都把 client rendering 結果交到 X server 邊界，但 wire payload 不同。 Request 抵達 Xorg 後，前面 Display 章節介紹的 window update 會依 drawable mapping、Window origin 與 composite clip 決定實際寫入的 screen 區域
 
-#### window update：套用 origin 與 clip
+#### `glXSwapBuffers()` 讓 DRI／`drisw` 將 pixels 交給 Xorg
 
-X server 已收到 Window 的 pixels，接下來如何套用 Window 位置與 clip region，讓只有可見內容進入 screen Pixmap／front BO？
+這一幀已經留在 Mesa client-side color buffer。 `glxgears` 呼叫 `glXSwapBuffers(dpy, win)` 時，`win` 仍是 `twm` reparent 以前建立的 application Window XID。 Swap 會沿用 setup 階段建立的 drawable、Mesa client-side color buffer 與 X Screen 像素儲存區，把已經算好的 pixels 交給該 X11 drawable
 
-![動作第 3 階段：window update 套用 origin 與 composite clip，更新 screen Pixmap／front BO](./image/glx-action-stage-3-window-server-update.png)
+前面的 rendering 概觀已經區分 softpipe 與 `drisw` 的工作。 Context 與 drawable setup 階段也已建立 DRI loader callback 路徑，因此 `glXSwapBuffers()` 會沿著既有 objects 完成這一幀的 pixel 交付：
 
-第三個動作是 window update。 X server 在處理同一個 put-image request 時，加入 Window drawable 的 screen origin，再套用 GC composite clip。 可寫的 pixels 直接進入目前安裝的 screen Pixmap／front BO，更新會在這次 request processing 內完成
+```callgraph
+Mesa GLX：從 glXSwapBuffers() 進入 drisw
+=================================================
+[Mesa: src/glx/glxcmds.c:654] glXSwapBuffers(...)
+  │
+  └─ gc->vtable->swap_buffers(dpy, drawable)
+       │
+       │  [Mesa: src/glx/drisw_glx.c:464-472]
+       │  drisw_context_vtable.swap_buffers = __glXSwapBuffers
+       ↓
+[Mesa: src/glx/glxcmds.c:669] __glXSwapBuffers(...)
+  │
+  ├─ pdraw = GetGLXDRIDrawable(dpy, drawable)
+  └─ pdraw->psc->driScreen.swapBuffers(...)
+       │
+       │  [Mesa: src/glx/drisw_glx.c:665]
+       │  driswCreateScreen() 將 callback 註冊成 driswSwapBuffers
+       ↓
+[Mesa: src/glx/drisw_glx.c:556] driswSwapBuffers(...)
+  ├─ 需要 flush 時先 CALL_Flush(...)
+  └─ driSwapBuffers(pdraw->dri_drawable)
+       ↓
+[Mesa: src/gallium/frontends/dri/dri_util.c:869] driSwapBuffers(...)
+  │
+  └─ drawable->swap_buffers(drawable)
+       │
+       │  [Mesa: src/gallium/frontends/dri/drisw.c:593]
+       │  callback 註冊成 drisw_swap_buffers
+       ↓
+[Mesa: src/gallium/frontends/dri/drisw.c:276] drisw_swap_buffers(...)
+  ↓
+[Mesa: src/gallium/frontends/dri/drisw.c:226] drisw_swap_buffers_with_damage(...)
+  ├─ ptex = drawable->textures[ST_ATTACHMENT_BACK_LEFT]
+  ├─ st_context_flush(..., ST_FLUSH_FRONT, ...)
+  ├─ 等待 rendering fence 完成
+  └─ drisw_copy_to_front(..., ptex, 0, NULL)
+       │
+       │  nboxes = 0，這次交付完整的 back-left image
+       ↓
+[Mesa: src/gallium/frontends/dri/drisw.c:211] drisw_copy_to_front(...)
+  ↓
+[Mesa: src/gallium/frontends/dri/drisw.c:191] drisw_present_texture(...)
+  │
+  └─ screen->base.screen->flush_frontbuffer(...)
+       │
+       │  [Mesa: src/gallium/drivers/softpipe/sp_screen.c:461]
+       │  softpipe 將 callback 註冊成 softpipe_flush_frontbuffer
+       ↓
 
-window update 讓 front BO 取得經過 origin 與 clipping 後的 X Screen 可見結果。 Mesa client-side color buffer 仍是另一份 guest-side storage，Window／Drawable 則只提供 request 與 X Screen 像素儲存區之間的對應關係
+softpipe 與 DRI software winsys：將 pixels 交給 loader
+=================================================
+[Mesa: src/gallium/drivers/softpipe/sp_screen.c:407]
+softpipe_flush_frontbuffer(...)
+  │
+  └─ winsys->displaytarget_display(...)
+       │
+       │  [Mesa: src/gallium/winsys/sw/dri/dri_sw_winsys.c:427]
+       │  DRI software winsys 將 callback 註冊成
+       │  dri_sw_displaytarget_display
+       ↓
+[Mesa: src/gallium/winsys/sw/dri/dri_sw_winsys.c:350]
+dri_sw_displaytarget_display(...)
+  │
+  │  nboxes == 0，使用整張 image 的交付分支
+  ├─ display target 有有效 shmid
+  │    └─ dri_sw_ws->lf->put_image_shm(...)
+  │         │
+  │         │  [Mesa: src/gallium/frontends/dri/drisw.c:583]
+  │         │  drisw_shm_lf.put_image_shm = drisw_put_image_shm
+  │         ↓
+  │       [Mesa: src/gallium/frontends/dri/drisw.c:181]
+  │       drisw_put_image_shm(...)
+  │         ↓
+  │       [Mesa: src/gallium/frontends/dri/drisw.c:85] put_image_shm(...)
+  │         ├─ loader version > 4 且有 putImageShm2
+  │         │    └─ loader->putImageShm2(...)
+  │         └─ 否則
+  │              └─ loader->putImageShm(...)
+  │
+  └─ display target 沒有有效 shmid
+       └─ dri_sw_ws->lf->put_image(...)
+            │
+            │  [Mesa: src/gallium/frontends/dri/drisw.c:575]
+            │  drisw_lf.put_image = drisw_put_image
+            ↓
+          [Mesa: src/gallium/frontends/dri/drisw.c:166] drisw_put_image(...)
+            ↓
+          [Mesa: src/gallium/frontends/dri/drisw.c:64] put_image(...)
+            └─ loader->putImage(...)
+  ↓
+`__DRIswrastLoaderExtension::putImage*` callback 邊界
+  ↓
 
-#### scanout update：搬移並發布 dirty pixels
+Mesa GLX swrast loader（軟體 rasterization loader）：將 loader callback 轉成 Xlib operation
+=================================================
+[Mesa: src/glx/drisw_glx.c:366-388] swrast loader extension tables
+  ├─ putImage = swrastPutImage
+  ├─ putImageShm = swrastPutImageShm
+  └─ putImageShm2 = swrastPutImageShm2
+       ↓
+[Mesa: src/glx/drisw_glx.c:235-289] swrastPutImage*(...)
+  ↓
+[Mesa: src/glx/drisw_glx.c:200] swrastXPutImage(...)
+  │
+  ├─ 尚未建立 XImage，或傳入的 shmid 已改變
+  │    ↓
+  │  [Mesa: src/glx/drisw_glx.c:70] XCreateDrawable(...)
+  │    ├─ shmid >= 0：嘗試 XShmCreateImage() 與 XShmAttach()
+  │    └─ XShm 無法使用或 attach 失敗：
+  │         ├─ pdp->shminfo.shmid = -1
+  │         └─ 改以 XCreateImage() 建立一般 XImage
+  │
+  ├─ pdp->shminfo.shmid >= 0
+  │    ├─ XShmPutImage(...)
+  │    └─ XSync(...)
+  └─ 否則
+       └─ XPutImage(...)
+            │
+            │  target 是 glxgears application Window 的 XID
+            ↓
+X11 PutImage／ShmPutImage request 進入 Xorg
+```
 
-front BO 已在 guest 記憶體中更新，host-side resource 尚未因而自動反映新內容。 要讓本例的 SDL window 看到同一個可見區域，最後一個動作必須把 X Screen 像素儲存區的 dirty region 交給 DRM／KMS 與 virtio-gpu
+Mesa 呼叫 `XPutImage()` 或 `XShmPutImage()` 時，已經把 color buffer 交到 X11 協定邊界。 一般 `XPutImage()` 只把 request 排入 connection。 XShm 路徑後面的 `XSync()` 會等待 X server 處理同步 request，但不會把後續 `DIRTYFB`、virtio-gpu commands 與 SDL present 變成 `glXSwapBuffers()` 內的同步函式鏈
 
-哪些操作把 dirty front BO 搬到 host-side resource，為什麼 `TRANSFER_TO_HOST_2D` 必須先於 `RESOURCE_FLUSH`？
-
-![動作第 4 階段：scanout update 先搬移 pixels，再發布更新](./image/glx-action-stage-4-scanout-update.png)
-
-第四個動作是 scanout update。 Xorg modesetting 會以 `drmModeDirtyFB()` 將 front BO 的改動矩形交給 DRM／KMS。 virtio-gpu driver 接著以 `TRANSFER_TO_HOST_2D` 把指定矩形的 pixels 從 guest backing 搬進 host-side 2D resource，再用 `RESOURCE_FLUSH` 要求 host 發布更新。 semu 會為仍綁定該 resource 的 scanout 建立 snapshot 並排入 display queue，SDL event loop 稍後才更新 texture 並呈現這一幀
-
-四個動作已經把一幀畫面從 Mesa client-side color buffer 帶到 host 視窗。 這條路徑仍有一個時間上的問題：DRM device、front BO 與 scanout resource 都早於 application 存在，它們究竟在何時建立？ 第三輪把相同 object 與動作放回 VM 的完整生命週期
-
-### 完整時間線：初始化、Window setup 與逐幀更新
-
-前兩輪分別回答 pixels 存在哪裡，以及一幀畫面如何在這些 storage 之間移動。 最後把 objects 與逐幀動作放回從系統啟動到畫面更新的先後順序，分辨長時間沿用的 display state、application 啟動時建立的 objects，以及每一幀重複執行的工作
-
-以下五張生命週期圖以 owner 與 storage 的大區塊呈現各階段，文字則補上區塊內的事件順序
-
-#### VM 開機與 DRM device probe
-
-VM 剛開機、Xorg 尚未啟動時，guest 必須先建立哪些裝置 object，host 才能告訴它可用的 scanout 資訊？
-
-![GLX 生命週期第 1 階段：VM 開機與 DRM device probe](./image/glx-lifecycle-stage-1-device-probe.png)
-
-生命週期的第 1 階段是 VM 開機與 device probe。 Linux virtio-gpu driver 探測裝置後建立 DRM device 與 KMS objects，讓 guest 有能力表示 connector、CRTC、plane 與後續 framebuffer state。 使用者執行 `startx` 後，Xorg modesetting driver 會再開啟這個 DRM device，讀取既有的 KMS resources，並選出要建立 X Screen 的顯示裝置。 此時 application、Mesa context 與 Xorg front BO 都還不存在
-
-virtio-gpu driver 先從 device config 取得 scanout 數量，再以 `GET_DISPLAY_INFO` 取得並記錄各 scanout 的尺寸，以及是否啟用。 Host 端由本例設定的 SDL2 display backend 承接最終顯示，畫面仍等待 guest 指定實際的 scanout resource。 此時 display topology 已可供 DRM／KMS 表示，還沒有可顯示的 pixels
-
-device probe 完成後，guest 已知道顯示端能提供什麼，卻沒有一份 X Screen 像素儲存區可交給 scanout。 下一階段由 modesetting `ScreenInit()` 配置 front BO，準備 Root Window 與 connection setup reply，再進入 event loop 執行第一次 modeset
-
-#### Xorg 建立 X Screen 像素儲存區，進入 `Dispatch()` 後綁定 scanout
-
-Xorg 在什麼時候建立 front BO，又為何要等到進入 `Dispatch()` 後，才讓 KMS framebuffer 與 scanout 引用這份 storage？
-
-![GLX 生命週期第 2 階段：Xorg 建立 X Screen 像素儲存區，完成 connection setup 後再首次綁定 scanout](./image/glx-lifecycle-stage-2-startx-display-setup.png)
-
-第 2 階段從 modesetting `ScreenInit()` 開始。 Xorg 會為整個 X Screen 建立可供 CPU mapping 的 GBM front BO。 本文選定的 `GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT` 分支由 Mesa `create_dumb()` 送出 `DRM_IOCTL_MODE_CREATE_DUMB`，底層則建立傳統的 virtio-gpu 2D resource 與 guest backing
-
-`ScreenInit()` 完成後，Xorg 建立 Root Window，並將 `xWindowRoot`、`xDepth` 與 `xVisualType` 編碼成 connection setup reply。 `NotifyParentProcess()` 此時會用 SIGUSR1 喚醒 `xinit`，但 `waitforserver()` 的 `XOpenDisplay()` 還要等 Xorg 進入 event loop，才能完成 setup exchange
-
-Xorg 接著進入 `Dispatch()`。 第一次 `WaitForSomething()` 執行只會執行一次的 BlockHandler 時，modesetting 才建立引用 X Screen 像素儲存區的 KMS framebuffer，並首次送出 `SETCRTC`。 virtio-gpu primary-plane update 會以 `SET_SCANOUT` 將同一個 2D resource 綁到既有的 KMS topology。 Host 收到 `SET_SCANOUT` 後，便知道本例的 SDL window 要觀看哪個 resource
-
-front BO、KMS framebuffer 與 resource-to-scanout binding 都會跨越後續多幀。 一般的畫面更新只改變 resource 內容，不需要在每次 swap 時重新選擇 scanout
-
-#### `XOpenDisplay()` 成功後，`xinitrc` 與 `twm` 建立 session
-
-Xorg 進入 event loop 後，`waitforserver()` 的 `XOpenDisplay()` 可以完成 connection setup。 `xinit` 隨後執行系統的 `xinitrc`，啟動 `twm`、`xclock` 與 `xterm`。 `twm` 會在 Root Window 選取 `SubstructureRedirectMask`，取得管理後續頂層 application Windows 的 window manager 角色
-
-使用者之後從 `xterm` 執行 `glxgears`。 這個時間點以前，X Screen 像素儲存區、KMS scanout state 與 `twm` 的管理角色都已存在。 `glxgears` 的 application Window、frame／title Windows、GLX context 與 Mesa client-side color buffer 則會在 application 啟動後才加入
-
-#### `glxgears` 完成 Window／GLX setup，Mesa 產生 pixels
-
-X Screen 像素儲存區已準備完成。 application startup 的另一條 setup 路徑還要建立哪些 GLX／Mesa objects，軟體 renderer 才能產生第一幀 pixels？
-
-![GLX 生命週期 第 3 階段：application 建立 GLX context，軟體 renderer 產生 pixels](./image/glx-lifecycle-stage-3-application-rendering.png)
-
-圖中的灰色 X11 Window objects 與 `XCreateWindow()` 箭頭表示一次性的 application／Window setup，橘色 objects 與箭頭才表示 application rendering
-
-第 3 張生命週期圖聚焦 application setup 與 rendering。 `glxgears` 先建立 application Window 與 OpenGL context。 `XMapWindow()` 送出非同步 request，Xorg 後續會產生 `MapRequest`，再由 `twm` 建立 frame／title Windows，並將 application Window reparent 到 frame 下方
-
-Application source 不會等待 window manager 完成這些工作，下一行就會呼叫 `glXMakeCurrent()`，將 context 與 application Window 對應的 drawable 設為目前執行緒的 rendering environment
-
-Client 行程內會建立一份 Mesa client-side color buffer，軟體 renderer 使用 guest CPU 將這一幀算成 pixels。 這個生命週期階段新增的是 application 與 Mesa objects，以及位於 Mesa client-side color buffer 的 rendering 結果。 VM boot 與 `startx` 建立的 display objects 維持原狀
-
-application rendering 結束時，pixels 仍停在 Mesa 一側。 它們還沒有套用 Window 的位置與 clipping，也沒有更新 host resource。 下一階段從 swap 開始，將前一輪看過的三個後續動作合併成一次 display update
-
-#### swap、window update 與 scanout update
-
-application 呼叫 swap 後，pixel 交付、window update 與 scanout update 如何在同一個生命週期階段內接續，直到本例的 SDL window 顯示下一幀？
-
-![GLX 生命週期 第 4 階段：client pixel 交付、window update 與 scanout update](./image/glx-lifecycle-stage-4-client-present-display-update.png)
-
-第 4 階段是 client pixel 交付與 display update。 `glXSwapBuffers()` 讓 `drisw` 經 loader callback 回到 Mesa GLX，Mesa GLX 再呼叫 `XPutImage()` 或 `XShmPutImage()`。 libX11／libXext 建立 wire request 後，X server 在處理 request 時加入 Window origin 並套用 GC composite clip，直接更新 screen Pixmap／front BO
-
-在本文固定的 front-buffer 組態中，Xorg modesetting 會在 dirty tracking 已啟用且 Damage Region 非空時，以 `drmModeDirtyFB()` 將改動的矩形交給 DRM／KMS。 virtio-gpu 將 `TRANSFER_TO_HOST_2D` 與 `RESOURCE_FLUSH` 排入 control virtqueue，semu 收到後再把可發布的 snapshot 排入 display queue。 SDL event loop 最後更新 texture，讓本例的 SDL window 顯示新一幀畫面
-
-這個生命週期階段將一幀內的三個動作放進同一段時間，從 application swap 開始，到 host display 更新為止。 前三個階段各自建立的 device、screen 與 client objects 會在此一起工作
-
-最後一張圖將前四張圖放在同一條生命週期中。 圖中的大區塊仍按 device、display setup、application rendering 與 display update 分類，實際事件依下列順序發生：
-
-1. Linux 探測 virtio-gpu device 並建立 KMS topology。 `startx` 啟動 Xorg 後，modesetting 再開啟 DRM device 並讀取顯示資源
-2. modesetting `ScreenInit()` 建立 front BO，本文選定的分支送出 `DRM_IOCTL_MODE_CREATE_DUMB`，並建立 `RESOURCE_CREATE_2D`／`RESOURCE_ATTACH_BACKING`
-3. Xorg 建立 Root Window，再由 `CreateConnectionBlock()` 準備 connection setup reply
-4. `NotifyParentProcess()` 送出 SIGUSR1，喚醒仍在等待 Xorg 的 `xinit`。 `waitforserver()` 接著仍會呼叫 `XOpenDisplay()`，等待 Xorg 完成 connection setup exchange
-5. Xorg 進入 `Dispatch()`，第一次 `WaitForSomething()` 執行只會執行一次的 BlockHandler
-6. 這個 BlockHandler 依序以 `ADDFB` 建立 KMS framebuffer、首次執行 `SETCRTC`，並由 virtio-gpu 送出第一個 `SET_SCANOUT`
-7. Xorg 的 event loop 接受 `xinit` 用來測試 server 的 setup connection，並回傳 setup reply
-8. `waitforserver()` 的 `XOpenDisplay()` 成功，`xinit` 接著呼叫 `startClient()`
-9. 系統的 `xinitrc` 啟動 `twm`、`xclock` 與 `xterm`，這些 clients 分別連到 Xorg
-10. `twm` 在 Root Window 選取 `SubstructureRedirectMask`，取得 window manager 角色
-11. 使用者執行 `glxgears`，application 依序完成 `XOpenDisplay()`、`glXChooseVisual()`、`XCreateWindow()` 與 `glXCreateContext()`
-12. `XMapWindow()` 非同步送出 MapWindow request。 Xorg 後續會產生 `MapRequest`，再由 `twm` 建立 frame／title Windows
-13. Application source 不等待 `MapRequest` 處理完成，接著呼叫 `glXMakeCurrent()`，將 OpenGL context 與 application Window 對應的 drawable 設為目前執行緒的 rendering environment
-14. softpipe 將 rendering 結果寫入 Mesa client-side color buffer
-15. `glXSwapBuffers()` 觸發 pixel 交付與 window update，後續的 `DIRTYFB` 再把 screen damage 交給 scanout update
-
-這個順序可以用來回答三個時間問題：
-
-- 哪些工作屬於初始化？
-- 哪些工作只在 Window management event 發生時執行？
-- 哪些工作會在每一幀畫面再次發生？
-
-![GLX 生命週期主資料路徑：device probe、Xorg display setup、session clients、application rendering 與 DIRTYFB update](./image/glx-lifecycle-stage-5-complete.png)
-
-這張圖沿用相同配色：灰色是 application／Window setup，藍色是 device probe，綠色是 display setup，橘色是 rendering，紫色是 client pixel 交付／display update
-
-第 5 張圖將四段主要資料路徑放進同一張圖。 Linux device probe、Xorg 的 `ScreenInit()`、connection setup、第一次 KMS modeset，以及 `xinitrc` 啟動 `twm` 並讓它取得 window manager 角色，都屬於 application 啟動前的準備工作
-
-application startup 隨後分成兩條可以交錯的 setup 路徑。 `twm` 與 Xorg 處理 frame Window、reparent、geometry 與 clip，application 與 Mesa 則建立 GLX objects 與 Mesa client-side color buffer。 第一個可見幀需要兩條 setup 路徑都完成，後續每一幀才重複 rendering、swap 與 `DIRTYFB` display update
-
-主資料路徑圖也讓四個 guest-side 工作區域回到同一條路徑：Application 發出操作，Mesa 產生 client-side pixels，X11／Xorg 決定可見 screen content，DRM／kernel 管理 scanout storage。 Host emulator 位於這四個區域之外，作為最後的 host display 邊界。 Pixels 依序跨過 guest owners 再抵達 host，object 的生命週期則可能長於一幀畫面
-
-在本例固定的 softpipe 2D 組態下，rendering 留在軟體 renderer，virtio-gpu 的工作集中在 display pipeline。 Guest CPU 先完成 application 的 OpenGL work，virtio-gpu 之後才搬移並發布 front BO 的 dirty pixels。 這項分工把 Mesa 在本例中的入口與出口圈了出來
-
-## Application 如何進入 Mesa
-
-`glxgears` 此時已透過 `XOpenDisplay()` 完成 X11 connection setup，接下來的第一個 GLX 呼叫是 `glXChooseVisual()`。 這個呼叫會讓 application 第一次進入 GLX vendor 路徑
+到這裡，我們先沿著 application 的呼叫順序，從 context setup 走到一幀 pixels 抵達 X11 request 邊界。 接下來將相同路徑逐層展開，時間點回到 `glxgears` 完成 `XOpenDisplay()` 之後，從它呼叫的第一個 GLX API `glXChooseVisual()` 開始進入 Mesa GLX vendor 的實作
 
 本章先確認 GLX 呼叫會載入哪些執行期產物，再以 `glXCreateContextAttribsARB()` 與 direct make-current 的原始程式碼路徑作為代表，依序追蹤 GL Vendor-Neutral Dispatch（GLVND）如何找到 Mesa vendor、Mesa GLX 如何建立 client-side context、DRI 如何接上 State Tracker，以及成功與失敗時各層要保留或釋放哪些 object。 這條 Mesa 入口同時適用於前面的 drisw 基準路徑與後面的 VirGL 3D 路徑
 
