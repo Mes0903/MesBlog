@@ -921,13 +921,11 @@ display controller 週期性讀取 pixels
 
 在我們的例子中，當 Linux 開機並進入文字終端機後，若使用者想啟動圖形桌面，需要手動執行 `startx` 命令，開始建立圖形工作環境。 啟動完成後，螢幕上會出現由 `twm` 管理的 `xclock` 與 `xterm` 視窗，使用者接著便能從 `xterm` 開啟 `glxgears`
 
-本文把從 Xorg 啟動、桌面程式陸續連入並持續運作，到使用者離開桌面為止的完整圖形工作階段稱為 X11 session。 本文會使用三個元件啟動這個 session：
+本文把從 Xorg 啟動、桌面程式陸續連入並持續運作，到使用者離開桌面為止的完整圖形工作階段稱為 X11 session。 本文會使用三個元件來啟動這個 session：
 
-- `startx` 是使用者執行的 shell script。 它選出要交給 `xinit` 的 X server 與 client，並整理兩者各自需要的參數
+- `startx` 是使用者執行的 shell script。 它負責選出要交給 `xinit` 的 X server 與 client，並整理兩者各自需要的參數
 - `xinit` 是由 C 原始程式碼編譯出的可執行檔。 它會先啟動 Xorg，接著等到 X server 可以接受 connection 後，再啟動 `startx` 選出的 client
 - 本文選到的 client 是系統的 `xinitrc`。 這是一份 shell script，用來啟動 `twm`、`xclock` 與 `xterm` 等 X11 clients
-
-`startx` 最後傳給 `xinit` 的命令會分成兩組參數，以 `--` 分開。 前方指定 client 及其參數，在本文中就是系統的 `xinitrc`。 後方則指定 X server 可執行檔、display name 與 server 參數。 `xinit` 會依照這兩組資料先啟動 Xorg，等 Xorg 可以接受 connection 後，再執行系統的 `xinitrc`
 
 這套啟動路徑需要 Xorg、libX11、`twm`、`xclock`、`xinit` 與 `xterm`。 以下設定來自 [`semu: configs/x11.config:17`](https://github.com/sysprog21/semu/blob/fd0812970c3c934b46e4897284894e9705355b50/configs/x11.config#L17-L26)，用來確認 Buildroot 會把這些彼此獨立的 X11 元件放進 guest root filesystem：
 
@@ -948,9 +946,19 @@ BR2_PACKAGE_XTERM=y
 
 這些元件進入 guest root filesystem 後，使用者接著輸入的命令只有 `startx` 本身。 這時，client 與 client 參數都是空的，因此 `startx` 必須自行選出要交給 `xinit` 的 client
 
-`startx.cpp` 用來產生 `startx` shell script。 建置時，`XINITDIR`、`XTERM`、`XSERVER` 與 `XINIT` 會展開成實際路徑或命令
+`startx.cpp` 是 `startx` shell script 的原始模板。 這裡的 `.cpp` 是 xinit 專案用來標記 C preprocessor 輸入檔的副檔名，與 C++ 無關。 以下建置規則取自 [`xinit: cpprules.in:15`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/cpprules.in#L15-18)：
 
-以下片段取自 [`xinit: startx.cpp:50`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L50-61) 與 [`xinit: startx.cpp:182`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L182-199)。 `startx` 會檢查使用者的 `xinitrc` 與系統的 `xinitrc`，再把其中一份設成 client：
+```make
+# [xinit: cpprules.in:15-18]
+SUFFIXES = .cpp
+
+.cpp:
+	$(AM_V_GEN)$(RAWCPP) $(TRADITIONALCPPFLAGS) $(CPP_FILES_FLAGS) $< | $(CPP_SED_MAGIC) > $@
+```
+
+對 `startx.cpp` 而言，`$<` 是輸入模板，`$@` 則是輸出的 `startx`。 模板內主要是 shell 語法，並混合 `#ifdef` 等 C preprocessor directives。 建置系統會先用 `RAWCPP` 展開 `XINITDIR`、`XTERM`、`XSERVER` 與 `XINIT` 等巨集，再用 `CPP_SED_MAGIC` 移除 C preprocessor 產生的行號，並把 `XCOMM` 轉成 shell script 使用的 `#`。 最後產生的 `startx` 便是安裝後由使用者執行的 shell script
+
+以下片段取自 [`xinit: startx.cpp:50`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L50-61) 與 [`xinit: startx.cpp:182`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L182-199)。 建置後產生的 `startx` 會依照這些 shell 程式碼檢查使用者的 `xinitrc` 與系統的 `xinitrc`，再把其中一份設成 client：
 
 ```sh
 # [xinit: startx.cpp:50-61]
@@ -987,7 +995,7 @@ if [ x"$clientargs" = x ]; then
 fi
 ```
 
-使用者沒有指定 client，因此 `client` 一開始是空的，`clientargs` 也沒有內容。 `startx` 會先把 `client` 暫設成預設的 `xterm`，接著檢查可用的 `xinitrc`。 本文環境沒有 `$HOME/.xinitrc`，`XINITRC` 也沒有指向另一份有效檔案，但 `sysclientrc` 指向的檔案存在。 這個檔案就是系統的 `xinitrc`，所以第二個檔案判斷會把 `client` 改成 `sysclientrc`
+由於使用者沒有指定 client，因此 `client` 一開始是空的，`clientargs` 也沒有內容。 `startx` 會先把 `client` 暫時設成預設的 `xterm`，接著檢查可用的 `xinitrc`。 由於本文環境沒有 `$HOME/.xinitrc`，`XINITRC` 也沒有指向另一份有效檔案，但 `sysclientrc` 指向的檔案存在，而這個檔案就是系統的 `xinitrc`，所以第二個檔案判斷會把 `client` 改成 `sysclientrc`
 
 選好 client 後，`startx` 還要把 client 與 X server 兩側的參數交給 `xinit`。 以下程式碼來自 [`xinit: startx.cpp:310`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L307-310)，用來確認最後執行的命令：
 
@@ -1018,28 +1026,30 @@ main(int argc, char *argv[])
 }
 ```
 
-C 會先計算 `&&` 左側的 `startServer(server) > 0`。 `startServer()` 成功回傳後，才會繼續呼叫 `startClient(client)`。 此時 `client` 指向系統的 `xinitrc`，新的子行程會執行這份 shell script。 我們先停在左側的 `startServer()`，看 Xorg 如何完成顯示環境與 connection setup，等它可以接受 connection 後再回到 `startClient()`
+其會先確認 `&&` 左側的 `startServer(server) > 0`。 `startServer()` 成功回傳後，才會繼續呼叫 `startClient(client)`。 此時 `client` 指向的是系統的 `xinitrc`，因此新的子行程會執行這份 shell script。 我們先停在左側的 `startServer()`，看 Xorg 如何完成顯示環境與 connection setup，等它可以接受 connection 後再回到 `startClient()`
 
 ```callgraph
 使用者執行 startx
   │
   ↓
-[xinit: startx.cpp:50] startx shell script
+[xinit: startx.cpp:50] 建置後的 startx shell script
   │
   ├─ userclientrc=$HOME/.xinitrc
   ├─ 若 XINITRC 指向有效檔案：userclientrc=$XINITRC
-  └─ sysclientrc=XINITDIR/xinitrc
+  ├─ sysclientrc=XINITDIR/xinitrc
+  │
   ↓
-[xinit: startx.cpp:182] startx shell script
+[xinit: startx.cpp:182] 建置後的 startx shell script
   │
   ├─ startx 沒有收到 client 與 client 參數
   ├─ client = defaultclient，clientargs 為空
   ├─ $HOME/.xinitrc 不存在
   ├─ XINITRC 沒有指向有效檔案
   │    // userclientrc 沒有指向可執行的自訂 xinitrc
-  └─ 系統的 xinitrc 存在：client = sysclientrc
+  ├─ 系統的 xinitrc 存在：client = sysclientrc
+  │
   ↓
-[xinit: startx.cpp:310] startx shell script
+[xinit: startx.cpp:310] 建置後的 startx shell script
   │
   │  XINIT "$client" $clientargs -- "$server" $display $serverargs
   │  // client 指向系統的 xinitrc，server 指向 Xorg 可執行檔
@@ -1061,11 +1071,11 @@ static pid_t startServer(char *server_argv[])
             // 等 Xorg 的 SIGUSR1，或在 15 秒後醒來
 ```
 
-`startServer()` 呼叫 `fork()` 後，子行程會透過 `Execute(server_argv)` 啟動 Xorg，`xinit` 父行程則設定 15 秒的 alarm，接著停在 `sigsuspend()`。 兩條執行路徑從這裡分開：Xorg 子行程繼續初始化顯示裝置，`xinit` 父行程等待 Xorg 的通知。 接下來先沿 Xorg 子行程往下看，等它送出 SIGUSR1 後，再回到父行程的 `waitforserver()`
+`startServer()` 呼叫 `fork()` 後，子行程會透過 `Execute(server_argv)` 啟動 Xorg，`xinit` 父行程則會設定 15 秒的 alarm，接著停在 `sigsuspend()`。 兩條執行路徑從這裡分開：Xorg 子行程繼續初始化顯示裝置，`xinit` 父行程則等待 Xorg 的通知。 接下來我們先沿 Xorg 子行程往下看，等它送出 SIGUSR1 後，再回到父行程的 `waitforserver()`
 
 #### 使用者仍在等待：Xorg 先找出可用的顯示裝置
 
-使用者此時仍看著文字終端機。 第一個 client 連入後，需要先知道自己能在哪一個桌面座標系統建立視窗，也需要知道這個桌面的尺寸與可用 pixel formats。 X11 把這一組顯示資源稱為 X Screen
+第一個 client 連入後，需要先知道自己能在哪一個桌面座標系統建立視窗，也需要知道這個桌面的尺寸與可用 pixel formats。 X11 把這一組顯示資源稱為 X Screen
 
 每個 X Screen 都有自己的座標系統、寬度、高度、depths 與 visuals，並以一個 Root Window 作為該 Screen 的 Window tree 根節點。 Xorg 必須先找出本文使用的顯示裝置，才能建立符合實際 display setup 的 X Screen，再在 client 建立 connection 時把這些資料回傳給它
 
