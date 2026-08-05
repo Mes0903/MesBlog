@@ -1219,100 +1219,223 @@ static pid_t startServer(char *server_argv[])
 
 ### Xorg 子行程：完成顯示初始化與 connection setup
 
-在 `xinit` 父行程停在 `startServer()` 內等待 Xorg 的通知的這段期間，`Execute(server_argv)` 會將 `startServer()` 建立的子行程換成 Xorg，Xorg 子行程接著會找出顯示裝置、建立 X Screen 與 pixel storage，再進入 event loop
+`xinit` 父行程停在 `startServer()` 內等待 Xorg 通知時，`Execute(server_argv)` 會將 `startServer()` 建立的子行程換成 Xorg。 Xorg 子行程接著會找出顯示裝置、建立 X Screen 與 pixel storage，再進入 event loop
 
 #### 把 Linux 顯示裝置建立成第一個 X Screen
 
-Xorg 要能接受第一個 client，必須先準備一個讓 client 建立視窗的桌面座標系統，並確定這個桌面的尺寸與可用的 pixel formats。 X11 把這一組顯示資源稱為 X Screen
+Xorg 要能接受第一個 X11 client，必須先準備一個可讓 client 建立視窗的桌面座標範圍，並確定這個範圍的寬度、高度與可用的 pixel formats。 X11 將這一組顯示資源稱為 X Screen
 
-每個 X Screen 都有自己的座標系統、寬度、高度、可用的 color depths，以及用來解讀 pixel values 的 visuals，並會以一個 Root Window 作為該 Screen 的 Window tree 根節點。 Xorg 必須先找出本文使用的顯示裝置，才能建立符合實際 display setup 的 X Screen，後續再在 client 建立 connection 時把這些資料回傳給它
+每個 X Screen 都有自己的座標系統、寬度、高度、可用 color depths，以及用來解讀 pixel values 的 visuals。 X server 還會為它建立一個 Root Window，作為該 X Screen 的 Window tree 根節點。 由於本文只建立了一個 X Screen，因此稍後出現的整個桌面都位於 X Screen 0 的座標範圍內
 
-管理共通的 X11 state 與處理裝置相依工作是兩種責任，Xorg 原始程式碼也據此分成 DIX 與 DDX。 DIX（Device Independent X）是 X server 的裝置獨立核心，負責 protocol dispatch、resource table，以及共用的 Screen／Window runtime state。 不論底下接的是哪種顯示環境，clients 都會透過 DIX 使用相同的 X11 協定 objects
+接下來我們先來看 Xorg 會用什麼 object 表示 X Screen，再回頭追蹤 Xorg 是如何從 Linux 顯示裝置取得所需資料來建立 X Screen 的
 
-DDX（Device Dependent X）則是 X server 接到實際平台、顯示與輸入環境的裝置相依部分。 它提供 DIX 所需的裝置操作，讓共用核心不必直接知道硬體、作業系統介面或 display backend 的細節
+##### X Screen 與 `ScreenRec`
 
-本文執行的是 Xorg，其中 `hw/xfree86/` 保存從 XFree86 延續而來的 DDX 框架。 `xf86` 這個歷史名稱因而保留在框架的目錄、API 與識別字中
+在本文追蹤的 Xorg 原始程式碼中，一個 X Screen 會由一個 `ScreenRec` instance 保存 server-side 的狀態。 它記錄了 X Screen 的編號、座標範圍、可用 depths／visuals、Root Window pointer，以及 Xorg 操作這個 X Screen 時使用的 callbacks
 
-本文組態中的 `Driver "modesetting"` 會選到 XFree86 DDX 的 modesetting display driver。 這個 userspace driver 會提供 `PreInit`、`ScreenInit` 等 callbacks，讓 XFree86 DDX 框架能初始化實際的 Linux DRM 顯示裝置
+以下程式碼來自 [`Xorg: include/scrnintstr.h:512`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/scrnintstr.h#L512-L535)：
 
-建立顯示 buffer 時，modesetting driver 會使用 GBM。 GBM 是一組 buffer-management API 與 object model，Mesa 的 `libgbm` 則是本文載入的 userspace 函式庫實作。 Xorg 將 DRM device fd、尺寸、pixel format 與 usage flags 交給 `libgbm`，成功後取得一個 `struct gbm_bo *`。 libdrm 再把 userspace 發出的 DRM／KMS operations 包裝成相應的 ioctl requests
+```c
+// [Xorg: include/scrnintstr.h:512-535]
+typedef struct _Screen {
+    int myNum;
+    ...
+    short x, y, width, height;
+    ...
+    short numDepths;
+    unsigned char rootDepth;
+    DepthPtr allowedDepths;
+    ...
+    short numVisuals;
+    VisualPtr visuals;
+    WindowPtr root;
+    ...
+} ScreenRec;
+```
 
-本節追蹤的 Xorg display 路徑如下：
+`myNum` 是 X Screen 在 Xorg 內的編號。 `width`／`height` 表示座標範圍的寬度與高度，`x`／`y` 則是 Xorg 排列多個 X Screens 時使用的內部 offset。 `allowedDepths` 列出了 drawables 可使用的 color depths，`visuals` 描述了 pixel values 如何對應到 colors，`root` 則會指向該 X Screen 的 Root Window
+
+Root Window 與其他 X11 Windows 都會以 `WindowRec` 保存 server-side 的狀態。 `WindowRec` 內嵌著一筆 `DrawableRec`，用來保存 XID、座標、尺寸、color depth 與所屬 X Screen。 其餘欄位則用來描述這個 Window 在 Window tree 裡的位置、目前的可見範圍與顯示狀態
+
+下面的程式碼片段取自三個位置：
+
+- [`Xorg: include/pixmapstr.h:57`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/pixmapstr.h#L57-L69) 定義所有 drawables 共用的 `DrawableRec`
+- [`Xorg: include/xlibre_ptrtypes.h:21`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/xlibre_ptrtypes.h#L21-L23) 宣告 `WindowPtr` 與 `WindowRec`
+- [`Xorg: include/windowstr.h:118`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/windowstr.h#L118-L151) 定義 `WindowRec`，並加入 Window tree、clipping 與顯示狀態所需的欄位
+
+```c
+// [Xorg: include/pixmapstr.h:57-69]
+typedef struct _Drawable {
+    unsigned char type;
+    unsigned char class;
+    unsigned char depth;
+    unsigned char bitsPerPixel;
+    XID id;
+    short x;
+    short y;
+    unsigned short width;
+    unsigned short height;
+    ScreenPtr pScreen;
+    ...
+} DrawableRec;
+
+// [Xorg: include/xlibre_ptrtypes.h:21-23]
+struct _Window;
+typedef struct _Window *WindowPtr;
+typedef struct _Window WindowRec;
+
+// [Xorg: include/windowstr.h:118-151]
+struct _Window {
+    DrawableRec drawable;
+    PrivateRec *devPrivates;
+    WindowPtr parent;
+    WindowPtr nextSib;
+    WindowPtr prevSib;
+    WindowPtr firstChild;
+    WindowPtr lastChild;
+    RegionRec clipList;
+    RegionRec borderClip;
+    ...
+    xPoint origin;
+    unsigned short borderWidth;
+    ...
+    unsigned overrideRedirect:1;
+    ...
+    unsigned mapped:1;
+    unsigned realized:1;
+    unsigned viewable:1;
+    ...
+    unsigned redirectDraw:2;
+    ...
+};
+```
+
+這些欄位各自保存不同層次的資料：
+
+- `drawable`
+  - `type` 用來區分這筆 `DrawableRec` 所屬的 object
+    - `DRAWABLE_WINDOW` 表示可接收繪圖輸出的 Window
+    - `DRAWABLE_PIXMAP` 表示 Pixmap
+    - `UNDRAWABLE_WINDOW` 則表示不能接收繪圖輸出的 `InputOnly` Window
+  - `class` 記錄 Window 是 `InputOutput` 還是 `InputOnly`
+    - `InputOutput` Window 可以顯示內容並接收輸入事件
+    - `InputOnly` Window 則只參與輸入事件與 Window tree
+  - `depth`、`bitsPerPixel`、`width` 與 `height` 用來描述內容區域的 pixel layout 與尺寸
+  - `id` 是 X11 clients 用來引用該 Window 的 XID
+  - `pScreen` 指向它所屬的 `ScreenRec`
+  - `x`／`y` 是相對於 X Screen 的絕對座標
+- `WindowRec`
+  - `devPrivates` 指向每個 Window 專屬的額外儲存區
+    - extension 或 DDX 會先向 Xorg 註冊一個 private key，Xorg 再為該 key 分配一個儲存位置
+    - extension 或 DDX 之後可以用同一個 key，在每個 Window 的對應位置保存並取回自己的 pointer 或 state
+  - Window 使用哪份 Pixmap 會由 `ScreenRec::GetWindowPixmap()` callback 查詢
+  - `parent` 指向目前 Window 在 Window tree 中的直接 parent
+    - `firstChild` 與 `lastChild` 分別指向以目前 Window 為 parent，而且在 stacking order 中位於最上方與最下方的直屬 child
+    - 這些 children 具有相同的 parent，再由 `nextSib` 與 `prevSib` 串接並保存 stacking order
+  - `origin` 記錄相對於 parent Window 的位置
+  - `borderWidth` 記錄外框寬度
+  - `clipList` 與 `borderClip` 都是由一個或多個矩形組成的 `RegionRec`
+    - `clipList` 保存 Window 內容可輸出的範圍
+    - `borderClip` 包含 border，計算時不會再因 child Windows 扣除區域
+  - `mapped` 表示 `MapWindow()` 已將 Window 設為 mapped
+    - `realized` 表示 Window 本身與 ancestors 都已 mapped，而且 Xorg 已執行 X Screen 的 `RealizeWindow` callback
+    - `viewable` 表示 Window 已 realized，且 class 是 `InputOutput`
+  - `overrideRedirect` 決定 map／configure request 是否略過 window manager 的 redirect policy，`redirectDraw` 則記錄 Composite extension 是否將 Window drawing redirect 到另一份 Pixmap
+
+`parent`／child 關係描述的是 Window tree 的巢狀結構，不表示 stacking 高低。 Child 的座標以 parent 為基準，可見範圍也會受 parent 限制。 Parent 移動時，整棵 child subtree 會一起移動。 Parent 被 unmap 時，subtree 內的 Windows 也會變得不可見。 Stacking order 則只會在具有相同 parent 的 siblings 之間比較
+
+每個 X Screen 都以一個 Root Window 作為 Window tree 的根節點。 Root Window 的 `parent` 是 `NULL`，`ScreenRec::root` 會指向它。 每個 child Window 本身也能成為 parent，繼續連接自己的 child Windows，因此 Window tree 可以向下延伸成多層結構：
 
 ```callgraph
-Xorg 行程
+X Screen 0／ScreenRec
+  │
+  │  ScreenRec::root
   ↓
-DIX：X server 共用核心
+Root Window／WindowRec
+  │
+  │  parent = NULL
+  │  firstChild 指向最上層的直屬 child
+  ↓
+最上層 child／WindowRec
+  │
+  ├─ parent → Root Window
+  ├─ prevSib = NULL
+  ├─ firstChild／lastChild → 以目前 Window 為 parent 的 children
+  └─ nextSib → 下一個較低的 sibling
+       ↓
+     中間的 sibling
+       │
+       ├─ prevSib → 較高的 sibling
+       └─ nextSib → 較低的 sibling
+            ↓
+          最下層 child／WindowRec
+            │
+            ├─ nextSib = NULL
+            └─ Root Window::lastChild 指向這裡
+```
+
+從 `firstChild` 沿著 `nextSib` 會依 stacking order 由上往下走訪同一個 parent 的直屬 children，從 `lastChild` 沿著 `prevSib` 則會由下往上走訪
+
+當 application 建立 application Window，`twm` 接著建立 frame Window 與 title Window，再把 application Window 移到 frame Window 底下時，這三個 X11 Windows 在 Xorg 中各自也都由一個獨立的 `WindowRec` 來保存狀態
+
+Xorg 會使用一個全域的 `ScreenInfo screenInfo` 來登記 server 內的所有 X Screens。 `numScreens` 用來記錄已建立的數量，`screens[i]` 則指向表示 X Screen `i` 的 `ScreenRec`。 以下程式碼來自 [`Xorg: include/scrnintstr.h:717`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/scrnintstr.h#L717-L734) 與 [`Xorg: dix/globals.c:65`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/globals.c#L65)：
+
+```c
+// [Xorg: include/scrnintstr.h:717-734]
+typedef struct _ScreenInfo {
+    ...
+    int numScreens;
+    ScreenPtr screens[MAXSCREENS];
+    ...
+} ScreenInfo;
+
+extern ScreenInfo screenInfo;
+
+// [Xorg: dix/globals.c:65]
+ScreenInfo screenInfo;
+```
+
+由於本文只建立一個 X Screen，所以完成初始化後，`screenInfo.numScreens` 是 1，`screenInfo.screens[0]` 會指向 X Screen 0 的 `ScreenRec`。 後面的 connection setup reply、Root Window 建立與 screen resource 初始化，都會從這筆 server-side record 取出所需資料
+
+##### 從 `ScreenRec` 所需資料看 DIX、XFree86 DDX 與 modesetting 的分工
+
+現在問題變得具體了：DIX 最後要管理一筆 `ScreenRec`，但它的尺寸、visuals 與可用 display modes 必須配合實際顯示裝置。 Xorg 將這兩種責任分成 DIX 與 DDX
+
+DIX（Device Independent X）是 X server 的裝置獨立核心。 它負責分派 X11 requests、管理 resource table，以及保存共用的 Screen／Window 執行期狀態。 不論底下接的是實體 GPU、虛擬 GPU，或其他顯示後端，X11 clients 都會透過 DIX 使用相同的 protocol objects
+
+DDX（Device Dependent X）是 X server 接到實際平台、顯示與輸入環境的裝置相依部分。 本文執行的是 Xorg，其中 `hw/xfree86/` 保存從 XFree86 延續而來的 DDX 框架，因此 `xf86` 這個歷史名稱仍會出現在目錄、API 與 C identifiers 中
+
+`Driver "modesetting"` 會選到這套框架中的 modesetting display driver。 它不會在 Xorg 行程中建立 Linux DRM device，而是取得並持有 kernel DRM device 的 fd，查詢現有的 KMS 顯示資源，再把結果轉成 XFree86 DDX 能使用的 output／CRTC records。 等 DIX 建立 `ScreenRec` 時，modesetting 還會提供 `ScreenInit` callback，建立 X Screen 所需的 pixel storage 與 screen callbacks
+
+這些 DRM／KMS operations 會經過 libdrm。 libdrm 是一組 userspace 函式庫，向 Xorg 提供 `drmModeGetResources()`、`drmModeSetCrtc()` 等 API，再把呼叫轉成 Linux DRM UAPI 定義的 ioctl requests
+
+這一段的分層關係如下：
+
+```callgraph
+X11 clients 需要一個可建立 Windows 的 X Screen
+  ↓
+Xorg DIX
+  │
+  │  管理 ScreenRec、Window tree 與 X11 protocol resources
   ↓
 XFree86 DDX 框架
+  │
+  │  管理 display driver 的探測、組態與 callbacks
   ↓
-modesetting：Xorg userspace display driver
-  ↓
-GBM／libdrm
+Xorg modesetting display driver
+  │
+  │  透過 libdrm 查詢並設定 Linux DRM／KMS device
   ↓
 Linux DRM／KMS driver
 ```
 
-display 路徑進入 kernel 後會使用 KMS。 KMS 是 Linux DRM 的 display subsystem，定義 framebuffer、plane、CRTC、encoder、connector 與 display mode 等 object，再由具體的 DRM driver 實作這些 objects 的 operations
+XFree86 DDX 會先建立 `ScrnInfoRec` 並登記 modesetting callbacks，`PreInit()` 再把顯示組態填入這筆記錄。 DIX 稍後才配置 `ScreenRec`，並讓兩筆記錄互相連接。 接下來先沿 `InitOutput()` 的前半段看 `ScrnInfoRec` 如何出現
 
-rendering 與 KMS 可以由同一個 DRM driver 實作，也可以由不同的 drivers 分工。 本文接下來選定的組態會讓 application 在 userspace 使用 CPU 完成 rendering，kernel 的 DRM driver 則負責 X Screen 像素儲存區與 KMS state
-
-KMS 的 scanout object chain 依序是 framebuffer → plane → CRTC → encoder → connector。 Userspace 會提交 buffer、mode 與各個 objects 的連接關係，DRM core 與 driver 再把這些輸入轉成 display controller 能執行的狀態
-
-Framebuffer 是 kernel object，引用保存 pixels 的 buffer object，並描述 scanout 所需的 pixel format、尺寸與 pitch。 Xorg 稍後會透過 `ADDFB` ioctl 請 DRM core 與 driver 建立這個 object，成功後取得一個 `fb_id`，後續再以該 ID 引用它
-
-Plane 的 state 會選擇 framebuffer，並保存 source rectangle 與 pixels 在 CRTC 畫面中的位置。 CRTC 的 state 保存 active mode 與掃描時序。 Encoder 表示 CRTC 到 connector 之間的 routing stage，connector 則代表可供 userspace 查詢 modes 的實體或虛擬顯示端點
-
-Linux driver 探測顯示裝置時，會先建立 plane、CRTC、encoder 與 connector，等待 userspace 提供 framebuffer 與 mode state。 Primary plane 是本例整個桌面的 scanout 來源，cursor plane 則讓滑鼠指標可以獨立更新。 `output->index` 之後會成為 virtio-gpu protocol 使用的 scanout ID
-
-在本文的固定組態中，Linux `virtio_gpu` driver 會在 Xorg 啟動前先完成 device probe，為每個 `struct virtio_gpu_output` 建立 primary plane、cursor plane、CRTC、virtual encoder 與 virtual connector。 以下節錄來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_display.c:274`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_display.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n274)：
-
-```c
-// [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:274]
-static int
-vgdev_output_init(struct virtio_gpu_device *vgdev, int index)
-{
-    struct drm_device *dev = vgdev->ddev;
-    struct virtio_gpu_output *output = vgdev->outputs + index;
-    struct drm_connector *connector = &output->conn;
-    struct drm_encoder *encoder = &output->enc;
-    struct drm_crtc *crtc = &output->crtc;
-    struct drm_plane *primary, *cursor;
-    ...
-
-    primary = virtio_gpu_plane_init(vgdev, DRM_PLANE_TYPE_PRIMARY, index);
-    ...
-    cursor = virtio_gpu_plane_init(vgdev, DRM_PLANE_TYPE_CURSOR, index);
-    ...
-    ret = drm_crtc_init_with_planes(dev, crtc, primary, cursor,
-                                    &virtio_gpu_crtc_funcs, NULL);
-    ...
-    drm_connector_init(dev, connector, &virtio_gpu_connector_funcs,
-                       DRM_MODE_CONNECTOR_VIRTUAL);
-    ...
-    drm_simple_encoder_init(dev, encoder, DRM_MODE_ENCODER_VIRTUAL);
-    ...
-    drm_connector_attach_encoder(connector, encoder);
-    drm_connector_register(connector);
-    return 0;
-}
-```
-
-每個 `struct virtio_gpu_output` 內嵌 CRTC、connector、encoder 與 scanout metadata。 Primary 與 cursor planes 由 `virtio_gpu_plane_init()` 另行配置，再 attach 到該 CRTC。 這些 KMS objects 均由 kernel DRM device 管理
-
-這組 topology 已在 kernel probe 建立。 Xorg 接下來要做的是建立 X Screen 與它的像素儲存區，再透過 KMS framebuffer 將該儲存區綁進既有 topology
-
-##### 從 `ScrnInfoRec` 到 `ScreenRec`
-
-Linux 已經替 virtio-gpu 建立 KMS topology，Xorg 現在要探測這個顯示裝置，再把取得的組態整理成第一個 X Screen。 在任何 client 能選擇 X Screen、取得 Root Window 或建立自己的 Window 以前，server-side records 必須先存在
-
-本節先認識 XFree86 DDX 的 `ScrnInfoRec` 與 DIX 的 `ScreenRec`，再回到 `InitOutput()`，串起裝置探測、兩筆記錄的建立與連接，最後停在 modesetting `ScreenInit()` callback 邊界。 Connection setup reply 會在 X Screen 像素儲存區建立後處理
-
-###### XFree86 DDX 以 `ScrnInfoRec` 保存 display driver 的組態
+##### `InitOutput()` 前段：探測裝置並建立 `ScrnInfoRec`
 
 XFree86 DDX 先以 `ScrnInfoRec` 保存 display driver 初始化一個 X Screen 時需要的組態與 callbacks
 
-這筆記錄會保存預設 depth、bits per pixel、virtual size 與 driver private data，以及稍後由 display driver 提供的 `ScreenInit` callback
+這筆記錄會保存預設 color depth 與 virtual size，也會記錄每個 pixel 使用的 bits。 Display driver private data 和稍後會被呼叫的 `ScreenInit` callback 也保存在這裡
 
 下面四段程式碼來自：
 
@@ -1418,62 +1541,276 @@ ms_platform_probe(DriverPtr driver, int entity_num, int flags,
 }
 ```
 
-###### DIX 以 `ScreenRec` 保存 X Screen 狀態
+##### `InitOutput()` 中段：modesetting `PreInit()` 查詢 DRM／KMS
 
-在本文追蹤的 Xorg 原始程式碼中，一個 X Screen 具體對應到 Xorg 配置的一個 `ScreenRec` instance。 `ScreenRec` 是 X server 用來保存一個 X Screen 狀態的 C struct，其中會記錄 Screen 的編號、寬度、高度、可用的 depths／visuals、Root Window pointer，以及 Xorg 操作這個 Screen 時使用的 callbacks
+`ms_platform_probe()` 建立 `ScrnInfoRec` 並登記 callbacks 後，這筆記錄仍不知道 X Screen 最後要採用哪個尺寸與 display mode。 modesetting 的 `PreInit()` 會取得並持有可用的 DRM device fd，再從 kernel 查詢目前可用的顯示資源
 
-每個 X Screen 都有一個稱為 Root Window 的特殊 X11 Window。 Root Window 涵蓋了該 Screen 的完整座標範圍，也是這棵 Window tree 的根節點。 由於本文只建立一個 X Screen，因此前面截圖中的整個桌面區域就是 X Screen 0 的座標範圍。 Xorg 會以 `screenInfo.screens[0]` 指向的 `ScreenRec` instance 保存這個 X Screen 的狀態
+這裡進入的 KMS（Kernel Mode Setting）是 Linux DRM subsystem 中負責 display 的部分。 我們可以先沿 scanout 的引用與輸出關係，將本節會用到的 KMS objects 排在一起：
 
-以下程式碼來自 [`Xorg: include/scrnintstr.h:512`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/scrnintstr.h#L512-L535)：
-
-```c
-// [Xorg: include/scrnintstr.h:512-535]
-typedef struct _Screen {
-    int myNum;
-    ...
-    short x, y, width, height;
-    ...
-    short numDepths;
-    unsigned char rootDepth;
-    DepthPtr allowedDepths;
-    ...
-    short numVisuals;
-    VisualPtr visuals;
-    WindowPtr root;
-    ...
-} ScreenRec;
+```callgraph
+保存 pixels 的 buffer object
+  │
+  │  提供實際 pixel storage
+  ↓
+KMS framebuffer
+  │
+  │  描述 format、尺寸與 pitch，並引用該 BO
+  ↓
+plane
+  │
+  │  選擇 framebuffer、source rectangle 與 CRTC 上的目的位置
+  ↓
+CRTC
+  │
+  │  保存 active mode 與掃描時序，產生一條顯示輸出資料流
+  ↓
+encoder
+  │
+  │  表示 CRTC 與 connector 之間的轉換／路由階段
+  │  宣告可以與哪些 CRTC 配對
+  ↓
+connector
+  │
+  │  列出可使用的 encoders
+  │  並表示 userspace 可查詢狀態與 modes 的顯示端點
+  ↓
+顯示裝置
 ```
 
-`myNum` 是這個 X Screen 在 Xorg 內的編號，`width`／`height` 是 Screen 的寬度與高度，`x`／`y` 則是 Xorg 安排多個 Screens 時使用的內部 offset。 `allowedDepths` 列出可供 drawables 使用的 depths，`visuals` 則描述 pixel values 如何對應到 colors。 `root` 指向這個 X Screen 的 Root Window
+CRTC 這個名稱源自 Cathode Ray Tube Controller。 在 DRM／KMS object model 中，它代表一條依 display mode 與掃描時序輸出畫面的 pipeline，不要求底下真的是 CRT 顯示器。 本文把上述 objects、可用 display modes 與它們允許的連接關係合稱為 KMS display topology
 
-Root Window 與其他 X11 Windows 在 Xorg 中都以 `WindowRec` 保存 server-side 狀態。 `ScreenRec::root` 是一個 `WindowPtr`，指向這個 X Screen 的 Root Window。 Window tree 的完整欄位與走訪方式會留到 `glxgears` 建立 application Window 時再看
+Kernel driver probe 會先建立 plane、CRTC、encoder 與 connector，並宣告哪些連接方式可用。 Xorg 啟動後查詢這組既有 topology，再選擇相容的 connector、CRTC 與 mode。 實際 pixel storage 與引用它的 KMS framebuffer 會在下一階段建立，因此 `PreInit()` 主要完成顯示能力查詢與初始組態選擇，尚未提交桌面的第一次 scanout
 
-Xorg 會使用一個全域 `ScreenInfo screenInfo` 登記 X server 內的所有 X Screens。 `numScreens` 記錄目前已建立的 X Screen 數量，`screens[i]` 則是一個 `ScreenPtr`，指向表示 X Screen `i` 的 `ScreenRec`。 以下程式碼來自 [`Xorg: include/scrnintstr.h:717`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/scrnintstr.h#L717-L734) 與 [`Xorg: dix/globals.c:65`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/globals.c#L65)：
+本文使用 virtio-gpu 2D。 Linux `virtio_gpu` driver 會在 Xorg 啟動前，為每個 virtual scanout 建立 primary plane、cursor plane、CRTC、virtual encoder 與 virtual connector。 Primary plane 稍後承載整個桌面，cursor plane 則能讓滑鼠指標獨立更新
+
+以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_display.c:274`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_display.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n274)：
 
 ```c
-// [Xorg: include/scrnintstr.h:717-734]
-typedef struct _ScreenInfo {
+// [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:274]
+static int
+vgdev_output_init(struct virtio_gpu_device *vgdev, int index)
+{
+    struct drm_device *dev = vgdev->ddev;
+    struct virtio_gpu_output *output = vgdev->outputs + index;
+    struct drm_connector *connector = &output->conn;
+    struct drm_encoder *encoder = &output->enc;
+    struct drm_crtc *crtc = &output->crtc;
+    struct drm_plane *primary, *cursor;
     ...
-    int numScreens;
-    ScreenPtr screens[MAXSCREENS];
+
+    primary = virtio_gpu_plane_init(vgdev, DRM_PLANE_TYPE_PRIMARY, index);
     ...
-} ScreenInfo;
-
-extern ScreenInfo screenInfo;
-
-// [Xorg: dix/globals.c:65]
-ScreenInfo screenInfo;
+    cursor = virtio_gpu_plane_init(vgdev, DRM_PLANE_TYPE_CURSOR, index);
+    ...
+    ret = drm_crtc_init_with_planes(dev, crtc, primary, cursor,
+                                    &virtio_gpu_crtc_funcs, NULL);
+    ...
+    drm_connector_init(dev, connector, &virtio_gpu_connector_funcs,
+                       DRM_MODE_CONNECTOR_VIRTUAL);
+    ...
+    drm_simple_encoder_init(dev, encoder, DRM_MODE_ENCODER_VIRTUAL);
+    ...
+    drm_connector_attach_encoder(connector, encoder);
+    drm_connector_register(connector);
+    return 0;
+}
 ```
 
-###### 回到 `InitOutput()`：先探測顯示裝置，再建立 `ScreenRec`
+`struct virtio_gpu_output` 保存這個 virtual scanout 的 CRTC、encoder、connector 與 metadata。 `virtio_gpu_plane_init()` 另外配置 primary／cursor planes，`drm_crtc_init_with_planes()` 再將它們登記為該 CRTC 的 primary／cursor planes
 
-Xorg 啟動時，`dix_main()` 先將 `screenInfo.numScreens` 設為 0，再呼叫 `InitOutput()`
+`drm_connector_attach_encoder()` 登記 connector 可使用的 encoder。 這些都是 kernel DRM objects，`index` 則會成為 virtio-gpu protocol 內辨識 virtual scanout 的 ID
 
-`InitOutput()` 前段會透過 `xf86BusConfig()` 探測顯示裝置。 modesetting 的 probe callback 在這個階段呼叫 `xf86AllocateScreen()`，建立前面看到的 `ScrnInfoRec`
+Xorg modesetting 不會直接取得這些 kernel struct pointers。 `PreInit()` 會呼叫 `drmmode_pre_init()`，後者透過 libdrm 取得 KMS resources 的 userspace snapshots
 
-`InitOutput()` 完成 driver matching、`PreInit()` 與必要的驗證後，才在後段為每筆保留下來的 `ScrnInfoRec` 呼叫 `AddScreen(xf86ScreenInit, ...)`，建立相應的 `ScreenRec`
+`xf86CrtcConfigInit()` 先建立 `xf86CrtcConfigRec`，並將 pointer 存入 `pScrn->privates[xf86CrtcConfigPrivateIndex]`。 `xf86OutputCreate()` 與 `xf86CrtcCreate()` 再將 `xf86OutputRec`／`xf86CrtcRec` 加入這筆 configuration record 的 arrays
 
-以下片段用來呈現同一次 `InitOutput()` 中前後兩個階段，來源如下：
+以下片段分別來自：
+
+- [`Xorg: hw/xfree86/common/xf86Init.c:469`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/common/xf86Init.c#L469-L479)
+- [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1235`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1235-L1450)
+- [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4129`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L4129-L4182)
+- [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:2811`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L2811-L2833)
+- [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:3653`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L3653-L3754)
+
+`InitOutput()` 會逐一呼叫 probe 階段登記的 `ScrnInfoRec::PreInit` callback。 modesetting 的 callback 成功時，該 `ScrnInfoRec` 才會標成 `configured`：
+
+```c
+// [Xorg: hw/xfree86/common/xf86Init.c:469-479]
+void
+InitOutput(int argc, char **argv)
+{
+    ...
+    for (i = 0; i < xf86NumScreens; i++) {
+        ...
+        if (xf86Screens[i]->PreInit &&
+            xf86Screens[i]->PreInit(xf86Screens[i], 0))
+            xf86Screens[i]->configured = TRUE;
+        ...
+    }
+    ...
+}
+```
+
+接著進入 modesetting `PreInit()`。 它會將 `ScrnInfoRec` 與 modesetting private state 交給 `drmmode_pre_init()`：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1235,1433]
+static Bool
+PreInit(ScrnInfoPtr pScrn, int flags)
+{
+    modesettingPtr ms;
+    ...
+
+    ms = modesettingPTR(pScrn);
+    ...
+    if (drmmode_pre_init(pScrn, &ms->drmmode,
+                         pScrn->bitsPerPixel / 8) == FALSE) {
+        ...
+        goto fail;
+    }
+    ...
+    if (!(pScrn->is_gpu && connector_count == 0) &&
+        pScrn->modes == NULL) {
+        ...
+        return FALSE;
+    }
+
+    pScrn->currentMode = pScrn->modes;
+    ...
+    return TRUE;
+fail:
+    return FALSE;
+}
+```
+
+`drmmode_pre_init()` 完成 dumb-buffer capability 檢查並建立 `xf86CrtcConfigRec` 後，會以 `drmModeGetResources()` 取得 connector 與 CRTC IDs。 它接著逐一呼叫 `drmmode_output_init()` 與 `drmmode_crtc_init()`，最後由 `xf86InitialConfiguration()` 嘗試建立初始 output、CRTC 與 mode 組合。 外層 `PreInit()` 隨後會檢查 `pScrn->modes` 是否已有可用 mode：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4129-4182]
+Bool
+drmmode_pre_init(ScrnInfoPtr pScrn, drmmode_ptr drmmode, int cpp)
+{
+    modesettingEntPtr ms_ent = ms_ent_priv(pScrn);
+    drmModeResPtr mode_res;
+    ...
+
+    xf86CrtcConfigInit(pScrn, &drmmode_xf86crtc_config_funcs);
+    ...
+    mode_res = drmModeGetResources(drmmode->fd);
+    if (!mode_res)
+        return FALSE;
+
+    for (i = 0; i < mode_res->count_connectors; i++)
+        crtcs_needed += drmmode_output_init(pScrn, drmmode,
+                                            mode_res, i, FALSE,
+                                            crtcshift);
+    ...
+    for (i = 0; i < mode_res->count_crtcs; i++)
+        if (!xf86IsEntityShared(pScrn->entityList[0]) ||
+            (crtcs_needed &&
+             !(ms_ent->assigned_crtcs & (1 << i))))
+            crtcs_needed -= drmmode_crtc_init(pScrn, drmmode,
+                                              mode_res, i);
+    ...
+    drmModeFreeResources(mode_res);
+    xf86InitialConfiguration(pScrn, TRUE);
+    return TRUE;
+}
+```
+
+Connector 與 CRTC 的 userspace records 會在兩個 helper 內建立。 `drmmode_output_init()` 以 `drmModeGetConnector()` 取得 connector 狀態與 modes，再讀取它列出的 encoders，計算這個 output 可配對的 CRTC 集合。 `xf86InitialConfiguration()` 後續會使用這份 `possible_crtcs` 資料選擇初始組合
+
+`drmmode_crtc_init()` 會以 `xf86CrtcCreate()` 建立 `xf86CrtcRec`，並用 `drmModeGetCrtc()` 保存 kernel CRTC 當下狀態的 snapshot
+
+`drmmode_crtc_init()` 接著呼叫 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:2521`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L2521-L2699) 的 `drmmode_crtc_create_planes()`，透過 `drmModeGetPlaneResources()` 與 `drmModeGetPlane()` 查詢可供這個 CRTC 使用的 planes
+
+Helper 會選出 primary plane，保存它的 ID、formats 與 modifiers。 若 libdrm API 與 plane properties 提供 cursor size hints，helper 也會一併收集
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:3653-3754]
+static unsigned int
+drmmode_output_init(ScrnInfoPtr pScrn, drmmode_ptr drmmode,
+                    drmModeResPtr mode_res, int num,
+                    Bool dynamic, int crtcshift)
+{
+    drmModeConnectorPtr koutput;
+    drmModeEncoderPtr *kencoders = NULL;
+    xf86OutputPtr output;
+    ...
+
+    koutput = drmModeGetConnector(drmmode->fd,
+                                  mode_res->connectors[num]);
+    ...
+    for (i = 0; i < koutput->count_encoders; i++)
+        kencoders[i] = drmModeGetEncoder(
+            drmmode->fd, koutput->encoders[i]);
+    ...
+    output = xf86OutputCreate(pScrn, &drmmode_output_funcs, name);
+    ...
+    output->driver_private = drmmode_output;
+    output->possible_crtcs = 0;
+    for (i = 0; i < koutput->count_encoders; i++)
+        output->possible_crtcs |=
+            (kencoders[i]->possible_crtcs >> crtcshift) & 0x7f;
+    ...
+}
+
+// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:2811-2833]
+static unsigned int
+drmmode_crtc_init(ScrnInfoPtr pScrn, drmmode_ptr drmmode,
+                  drmModeResPtr mode_res, int num)
+{
+    xf86CrtcPtr crtc;
+    ...
+
+    crtc = xf86CrtcCreate(pScrn, &drmmode_crtc_funcs);
+    ...
+    drmmode_crtc->mode_crtc =
+        drmModeGetCrtc(drmmode->fd, mode_res->crtcs[num]);
+    ...
+}
+```
+
+XFree86 DDX 沒有另外建立 `xf86EncoderRec`。 `xf86OutputRec::possible_crtcs` 保存可配對 CRTC 的 mask，`xf86OutputRec::driver_private` 則指向持有 `drmModeConnector`／`drmModeEncoder` snapshots 的 modesetting private record
+
+```callgraph
+[Xorg: hw/xfree86/common/xf86Init.c:469] InitOutput()
+  │
+  │  xf86Screens[i]->PreInit(xf86Screens[i], 0)
+  ↓
+[Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1235] PreInit()
+  ↓
+[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4129]
+drmmode_pre_init(...)
+  │
+  ├─ drmModeGetResources(fd)
+  │    └─ 取得 connector／CRTC IDs 與尺寸限制
+  │
+  ├─ for each connector ID
+  │    └─ drmmode_output_init(...)
+  │         ├─ drmModeGetConnector(...)
+  │         ├─ drmModeGetEncoder(...)
+  │         └─ xf86OutputCreate(...)
+  │
+  ├─ for each CRTC ID
+  │    └─ drmmode_crtc_init(...)
+  │         ├─ xf86CrtcCreate(...)
+  │         ├─ drmModeGetCrtc(...)
+  │         └─ drmmode_crtc_create_planes(...)
+  │              ├─ drmModeGetPlaneResources(...)
+  │              └─ drmModeGetPlane(...)
+  │
+  └─ xf86InitialConfiguration(...)
+       └─ 嘗試建立 X Screen 的初始 output、CRTC 與 display mode
+```
+
+`PreInit()` 完成後，`ScrnInfoRec` 已保存建立 X Screen 所需的 depth、virtual size、display modes 與 driver private state
+
+##### `InitOutput()` 後段：建立並登記 `ScreenRec`
+
+現在回到同一次 `InitOutput()`。 Driver matching、`PreInit()` 與組態驗證完成後，它會為每筆保留下來的 `ScrnInfoRec` 呼叫 `AddScreen(xf86ScreenInit, ...)`，建立相應的 `ScreenRec`
+
+`dix_main()` 在呼叫 `InitOutput()` 前，先將 `screenInfo.numScreens` 初始化為 0。 因此第一個成功加入的 `ScreenRec` 會成為 `screenInfo.screens[0]`，也就是本文一直追蹤的 X Screen 0。 以下片段顯示 `InitOutput()` 的外層範圍與後段 `AddScreen()` call site，來源如下：
 
 - [`Xorg: dix/main.c:134`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/main.c#L134-L200)
 - [`Xorg: hw/xfree86/common/xf86Init.c:280`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/common/xf86Init.c#L280-L282)
@@ -1568,9 +1905,9 @@ AddScreen(Bool (*pfnInit)(ScreenPtr pScreen, int argc, char **argv),
 
 第一次呼叫 `AddScreen()` 時，`numScreens` 是 0，因此 `init_screen()` 會將 `myNum` 設為 0，新的 `ScreenRec` 也會登記在 `screenInfo.screens[0]`。 下一次呼叫時，兩者的索引則是 1，依此類推
 
-###### `ScrnInfoRec` 與 `ScreenRec` 如何互相連接
+##### `ScrnInfoRec` 與 `ScreenRec` 如何互相連接
 
-`InitOutput()` 傳給 `AddScreen()` 的初始化函式是 `xf86ScreenInit()`。 `AddScreen()` 呼叫它時，`ScreenRec::myNum` 已經設定完成，但 `InitOutput()` 還沒有將 `ScrnInfoRec *` 寫入 `ScreenRec::devPrivates`
+`InitOutput()` 傳給 `AddScreen()` 的初始化函式是 `xf86ScreenInit()`。 `AddScreen()` 呼叫它時，`ScreenRec::myNum` 已經設定完成，但 `ScreenRec::devPrivates` 中由 `xf86ScreenKey` 指定的 slot 還沒有寫入 `ScrnInfoRec *`
 
 第一次建立 X Screen 時，兩種記錄的連接必須先靠 `myNum` 與兩個陣列的共同索引完成
 
@@ -1634,10 +1971,21 @@ xf86ScreenInit(ScreenPtr pScreen, int argc, char **argv)
   │    │    └─ xf86Screens[i] → ScrnInfoRec
   │    └─ [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:420]
   │         ms_setup_scrn_hooks(...)
+  │         ├─ pScrn->PreInit = PreInit
   │         └─ pScrn->ScreenInit = ScreenInit
   │
-  ├─ [Xorg: hw/xfree86/common/xf86Init.c:469-479]
-  │  完成 driver matching、PreInit() 與必要驗證
+  ├─ 完成 driver matching 後呼叫 modesetting PreInit()
+  │    ↓
+  │  [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1235] PreInit()
+  │    ↓
+  │  [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4129]
+  │  drmmode_pre_init(...)
+  │    ├─ drmModeGetResources(...)
+  │    ├─ drmmode_output_init(...)
+  │    ├─ drmmode_crtc_init(...)
+  │    └─ xf86InitialConfiguration(...)
+  │         // 存進與 ScrnInfoRec 關聯的 xf86CrtcConfigRec，
+  │         // 並更新 pScrn 的 modes 與 virtual size
   │
   └─ 建立 DIX X Screen 的階段
        ↓
@@ -1659,12 +2007,10 @@ xf86ScreenInit(ScreenPtr pScreen, int argc, char **argv)
        │  callback 由 modesetting driver 註冊
        ↓
      [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1995] ScreenInit()
+       │
+       │  // 下一節進入這個 callback，建立 front BO 並登記 screen-resource callback
        ↓
-     callback 成功回傳，AddScreen() 才將索引傳回 InitOutput()
-       ↓
-     [Xorg: hw/xfree86/common/xf86Init.c:637-647] InitOutput()
-       ├─ dixSetPrivate(..., xf86Screens[i])
-       └─ xf86Screens[i]->pScreen = screenInfo.screens[i]
+     暫停在 modesetting ScreenInit() 入口
 ```
 
 兩種記錄在這裡各自保存不同層次的狀態：
@@ -1673,11 +2019,13 @@ xf86ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 - `screenInfo.screens[i]` 指向 `ScreenRec`，保存 DIX 管理的 X Screen 執行期狀態
 - `ScrnInfoRec::pScreen` 在初始化時指向相應的 `ScreenRec`
 
-將 `ScrnInfoRec *` 寫入 `ScreenRec::devPrivates` 的動作發生得更晚。 modesetting `ScreenInit()` 成功回傳後，`AddScreen()` 才回傳索引，`InitOutput()` 隨後執行 `dixSetPrivate()`，並再次確認 `ScrnInfoRec::pScreen` 指向 `screenInfo.screens[scr_index]`。 初次 `xf86ScreenInit()` 因此不能依賴這筆私有資料，而是以已設定的 `ScreenRec::myNum` 索引 `xf86Screens[]`
+進入 modesetting `ScreenInit()` 前，`xf86ScreenInit()` 已讓 `ScrnInfoRec::pScreen` 指向正在初始化的 `ScreenRec`。 反方向的 `xf86ScreenKey` private slot 會等 callback 成功回傳後才寫入，因此初次 `xf86ScreenInit()` 會先以 `ScreenRec::myNum` 索引 `xf86Screens[]`。 接下來沿著這個 callback 建立 pixel storage，再回到 `InitOutput()` 完成最後一筆連接
 
-#### 為 X Screen 建立可顯示的 pixel storage
+#### 完成 `ScreenRec` 並建立可顯示的 pixel storage
 
-使用者還在等桌面出現。 Xorg 已建立 `ScreenRec`，但這個 X Screen 仍需要一份能保存完整畫面的像素儲存區。 X server 會用一個 `PixmapRec` 表示整個 X Screen 的內容，本文將它稱為 screen Pixmap。 modesetting driver 還要建立 front BO，也就是 `drmmode_rec::front_bo` 指向的 `struct gbm_bo`。 這個 object 由 `libgbm` 在 Xorg 行程中建立，並能供 KMS scanout 使用
+使用者還在等桌面出現。 `AddScreen()` 已配置並登記 `ScreenRec`。 modesetting `ScreenInit()` 接著依 `ScrnInfoRec` 逐步填入尺寸、depths、visuals 與 framebuffer callbacks，並準備一份能保存完整畫面的像素儲存區
+
+X server 會用一個 `PixmapRec` 表示整個 X Screen 的內容，本文將它稱為 screen Pixmap。 modesetting driver 還要建立 front BO，也就是 `drmmode_rec::front_bo` 指向的 `struct gbm_bo`。 這個 object 由 `libgbm` 在 Xorg 行程中建立，並能供 KMS scanout 使用
 
 這個 GBM object 會包裝 kernel 中的 GEM dumb BO，而 screen Pixmap 稍後會指向它的 CPU mapping
 
@@ -1685,10 +2033,12 @@ xf86ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
 等 `ScreenInit()` 回傳後，DIX 才呼叫這個 callback，讓 screen Pixmap 指向該 mapping
 
-[`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1994`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1994-L2025) 的完整函式簽名與初始 BO call site 如下：
+以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1994`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1994-L2060) 與 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:2151`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L2151-L2152)
+
+前半段建立 initial BOs，並依 `ScrnInfoRec` 初始化 `ScreenRec` 的 visual、depth 與 framebuffer state。 最後一個 call site 則將 `PreInit()` 建立的 output／CRTC configuration 接到目前的 `ScreenRec`：
 
 ```c
-// [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1994-2025]
+// [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1994-2152]
 static Bool
 ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 {
@@ -1698,8 +2048,29 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
     if (!drmmode_create_initial_bos(pScrn, &ms->drmmode))
         return FALSE;
     ...
+    miClearVisualTypes();
+    if (!miSetVisualTypes(pScrn->depth,
+                          miGetDefaultVisualMask(pScrn->depth),
+                          pScrn->rgbBits, pScrn->defaultVisual))
+        return FALSE;
+    if (!miSetPixmapDepths())
+        return FALSE;
+    ...
+    if (!fbScreenInit(pScreen, NULL,
+                      pScrn->virtualX, pScrn->virtualY,
+                      pScrn->xDpi, pScrn->yDpi,
+                      pScrn->displayWidth, pScrn->bitsPerPixel))
+        return FALSE;
+    ...
+    if (!xf86CrtcScreenInit(pScreen))
+        return FALSE;
+    ...
 }
 ```
+
+`miSetVisualTypes()` 與 `miSetPixmapDepths()` 準備可用 visuals／depths，`fbScreenInit()` 再用 `virtualX`、`virtualY` 與 bits per pixel 初始化 `ScreenRec` 的尺寸與 framebuffer callbacks。 這裡傳入的 pixel pointer 是 `NULL`，真正的 front BO mapping 會等後面的 `modesetCreateScreenResources()` 再交給 screen Pixmap
+
+[`Xorg: hw/xfree86/modes/xf86Crtc.c:803`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/modes/xf86Crtc.c#L803-L839) 的 `xf86CrtcScreenInit()` 會初始化這個 X Screen 的 RandR integration。 RandR 是 X11 用來查詢與設定 outputs、CRTCs、display modes、rotation 與 screen size 的 extension。 這一步會將 `PreInit()` 建立的 output／CRTC configuration 接進 DIX `ScreenRec`
 
 DRI 的全名是 Direct Rendering Infrastructure，是一組銜接 Mesa loader、rendering driver 與視窗系統的介面。 `libgbm` 的 DRI backend 位於 `src/gbm/backends/dri/`，負責將單次 GBM buffer 建立要求交給可用的 driver 路徑。 本例的 usage flags 會讓它改走 `create_dumb()`，向 DRM 建立基礎線性 buffer
 
@@ -1869,17 +2240,35 @@ int virtio_gpu_object_create(
 
 `CREATE_DUMB` 成功後回傳的 `handle`、`pitch` 與 `size` 有不同用途。 `handle` 讓這個 DRM file 可以繼續引用 GEM object，`pitch` 表示每列 pixels 佔用的 bytes，`size` 則是實際配置大小。 GBM 將這些結果收進 `struct gbm_bo`，Xorg 之後只透過 GBM API 查詢它們
 
-Linux `virtio_gpu` driver 在同一次建立中配置 GEM shmem backing，另外取得 `hw_res_handle`。 `virtio_gpu_cmd_create_resource()` 將 `RESOURCE_CREATE_2D` 排入 control virtqueue，要求 host device 建立可由 resource ID 引用的 2D resource。 `virtio_gpu_object_attach()` 接著排入 `RESOURCE_ATTACH_BACKING`，要求 host 將 guest pages 接給這個 resource
+Linux `virtio_gpu` driver 在同一次建立中配置 GEM shmem backing，並取得作為 virtio resource ID 的 `hw_res_handle`。 `virtio_gpu_cmd_create_resource()` 將 `RESOURCE_CREATE_2D` 排入 control virtqueue，也就是 guest driver 用來向 virtio-gpu device 傳送控制命令的 virtqueue。 Host device 會建立可由 resource ID 引用的 2D resource，`virtio_gpu_object_attach()` 接著以 `RESOURCE_ATTACH_BACKING` 將 guest pages 接給這個 resource
 
 `ScreenInit()` 還會登記兩個 callbacks，來源分別位於 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:2089`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L2089) 與 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:2136`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L2136-L2137)
 
-第一個 callback 將 `pScreen->CreateScreenResources` 登記為 `modesetCreateScreenResources()`，第二個則把 `pScreen->BlockHandler` 換成 `msBlockHandler_oneshot()`。 這裡只登記 callbacks，尚未執行第一次 `ADDFB` 或 `SETCRTC`
+第一個 callback 將 `pScreen->CreateScreenResources` 登記為 `modesetCreateScreenResources()`，第二個則把 `pScreen->BlockHandler` 換成 `msBlockHandler_oneshot()`。 這裡只登記 callbacks，尚未將 BO 包成 KMS framebuffer，也尚未提交第一次 display mode
 
-到這裡為止，guest 已配置 GEM shmem backing、取得 `hw_res_handle`，並送出建立 host resource 的 requests，但 KMS 還沒有將這個 BO 選為 scanout source
+此時 front BO 尚未成為 KMS scanout source
+
+`ScreenInit()` 成功回傳後，先前暫停的 `AddScreen()` 與 `InitOutput()` 會繼續完成兩筆 X Screen records 的連接。 `dixSetPrivate()` 將 `ScrnInfoRec *` 寫入 `ScreenRec::devPrivates` 的 `xf86ScreenKey` slot，`ScrnInfoRec::pScreen` 則再次指向相同的 `ScreenRec`：
+
+```callgraph
+[Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1995]
+ScreenInit() 回傳 TRUE
+  ↓
+[Xorg: dix/dispatch.c:4131] AddScreen()
+  │
+  │  callback 成功，回傳新 X Screen 的索引
+  ↓
+[Xorg: hw/xfree86/common/xf86Init.c:637-647] InitOutput()
+  ├─ dixSetPrivate(&screenInfo.screens[i]->devPrivates,
+  │                xf86ScreenKey, xf86Screens[i])
+  └─ xf86Screens[i]->pScreen = screenInfo.screens[i]
+       ↓
+     InitOutput() 完成，回到 dix_main()
+```
 
 ##### Xorg screen `PixmapRec` 與 mapped front BO
 
-`ScreenInit()` 回傳後，DIX 會開始建立 screen resources，並呼叫剛才登記的 `modesetCreateScreenResources()`。 此時系統的 `xinitrc` 尚未啟動 `twm`、終端機與時鐘，但 Xorg 已經需要一份 storage，準備保存稍後出現的桌面背景、視窗內容與 decorations。 下圖先追蹤 Xorg `PixmapRec` 如何連到這份 storage，並同時預告稍後建立的 KMS framebuffer 與 scanout objects
+`InitOutput()` 完成後，`dix_main()` 會開始建立 screen resources，並呼叫剛才登記的 `modesetCreateScreenResources()`。 此時系統的 `xinitrc` 尚未啟動 `twm`、終端機與時鐘，但 Xorg 已經需要一份 storage，準備保存稍後出現的桌面背景、視窗內容與 decorations。 下圖先追蹤 Xorg `PixmapRec` 如何連到這份 storage，並同時預告稍後建立的 KMS framebuffer 與 scanout objects
 
 先回答兩個問題：
 
@@ -2009,33 +2398,35 @@ miModifyPixmapHeader(PixmapPtr pPixmap, int width, int height, int depth,
 }
 ```
 
-同一個 `front_bo` 會跨過三個持有與引用層次。 Xorg modesetting 把 pointer 保存於 `drmmode_rec::front_bo`，並呼叫 GBM API 管理它的生命週期。 Pointer 指向的 `struct gbm_bo` 是 Mesa `libgbm` 實作的 userspace object
+Xorg modesetting 保存 `drmmode_rec::front_bo` pointer，並負責在關閉 Screen 時呼叫 `gbm_bo_destroy()`。 Pointer 指向的是 Mesa `libgbm` 配置的 userspace wrapper，不會直接傳入 kernel。 Wrapper 內的 GEM handle 屬於 Xorg 開啟的 DRM file namespace，kernel 會透過這個 handle 找到並持有相應的 GEM object
 
-在本文選定的 `DRM_IOCTL_MODE_CREATE_DUMB` 分支中，底層 storage 是 Linux DRM 建立的 GEM dumb BO。 KMS framebuffer 與 virtio-gpu 2D resource 則繼續引用這份 storage
+Screen Pixmap、GBM BO 與 KMS framebuffer 會以不同方式連到同一個 guest GEM backing：
 
-```text
-Xorg modesetting
+```callgraph
+Xorg modesetting：drmmode_rec::front_bo
   │
-  │  drmmode_rec::front_bo
-  │  保存 pointer，呼叫 GBM API 建立、map 與釋放
+  │  pointer 指向 libgbm userspace wrapper
   ↓
-Mesa libgbm
+Mesa libgbm：struct gbm_bo
   │
-  │  struct gbm_bo userspace object
-  │  保存尺寸、stride、format、handle 與 backend operations
+  │  保存 Xorg DRM file namespace 內的 GEM handle
   ↓
-Linux DRM
+Linux DRM：GEM dumb BO 與 guest shmem backing
+  ↑
+  ├─ screen Pixmap
+  │    └─ devPrivate.ptr 借用同一個 GEM BO 的 CPU mapping
   │
-  │  scanout-capable BO backing storage
-  ↓
-KMS framebuffer reference
+  └─ KMS framebuffer
+       └─ base.obj[0] 另外持有一筆 GEM object reference
 ```
 
-Screen `PixmapRec` 與 front BO 指向同一份 X Screen 像素儲存區。 `PixmapRec` 描述 X server 看到的 drawable storage，`devPrivate.ptr` 則借用 front BO 的 CPU mapping。 後面加入的 Mesa client-side color buffer 才是另一份獨立 storage
+這些 objects 沒有各自保存一份 pixels。 Screen `PixmapRec` 透過 mapping 存取 guest GEM backing，GBM BO 透過 GEM handle 引用它，KMS framebuffer 則保存供 scanout 使用的 format／layout 與 GEM reference。 後面加入的 Mesa client-side color buffer 才是另一份獨立 storage
+
+`virtio_gpu` 另外為這個 GEM object 建立 host-side 2D resource ID，並以 `RESOURCE_ATTACH_BACKING` 登記可供 transfer 使用的 guest pages。 Host resource 內的 pixels 要等後續 `TRANSFER_TO_HOST_2D` 才會更新
 
 由於本文將 `AccelMethod` 設為 `none`，所以 `gbm_create_best_bo()` 會要求一份可供 CPU mapping 的 front BO。 Xorg 自己定義的 `gbm_bo_get_map()` helper 取出先前由公開 `gbm_bo_map()` 建立的 mapping 位址，`miModifyPixmapHeader()` 再將這個位址寫入 screen `PixmapRec` 的 `devPrivate.ptr`。 後面不論哪個 Window 產生新內容，X server 最後都要讓這份 X Screen 像素儲存區反映可見結果
 
-Xorg 之後會建立一個引用這份 BO 的 KMS framebuffer，`fb_id` 用來識別該 framebuffer。 Primary plane 以 `FB_ID` 選取 framebuffer，再以 `CRTC_ID` 接到 scanout pipeline。 本例未協商 `VIRTIO_GPU_F_RESOURCE_BLOB`，因此 BO 建立時會走傳統的 `RESOURCE_CREATE_2D`／`RESOURCE_ATTACH_BACKING` 分支。 圖中的 objects 依序保存 pointer、handle 或 object reference，並未因此產生額外的 pixel copy
+稍後建立的 KMS framebuffer 會引用同一個 GEM BO。 此時 Xorg 已經準備好 X Screen 像素儲存區，KMS 尚未把它選成 scanout source
 
 #### 將 X Screen 資料準備成 connection setup reply
 
@@ -2162,7 +2553,7 @@ CreateConnectionBlock(void)
 
 `xWindowRoot` 內保存了 Root Window XID、Screen 尺寸、預設 root depth 與 root visual 等資料。 後續的 `xDepth` 與 `xVisualType` records 則列出了該 Screen 可用的 depths 與 visuals。 `numRoots` 會等於 X Screens 的數量，因為每個 X Screen 都有一個 Root Window
 
-因此結合 `dix_main()` 的內容可知，`CreateConnectionBlock()` 會在 `Dispatch()` 前先執行一次，按照 `screenInfo.screens[]` 既有的順序，將各個 X Screen 序列化至 `ConnectionInfo`。 Connection block 依賴的是已完成的 `ScreenRec`、Root Window、depths 與 visuals，不需要等待 active scanout，因此它早於第一次 `ADDFB` 與 `SETCRTC`
+因此結合 `dix_main()` 的內容可知，`CreateConnectionBlock()` 會在 `Dispatch()` 前先執行一次，按照 `screenInfo.screens[]` 既有的順序，將各個 X Screen 序列化至 `ConnectionInfo`。 Connection block 依賴的是已完成的 `ScreenRec`、Root Window、depths 與 visuals，不需要等待 active scanout，因此它早於 KMS framebuffer 的建立與第一次 modeset
 
 `startServer()` 建立子行程時，曾將子行程處理 `SIGUSR1` 的方式設成 `SIG_IGN`。 這項設定會在 `Execute(server_argv)` 執行 Xorg 後保留下來
 
@@ -2276,7 +2667,8 @@ virtio_gpu_framebuffer_init(...)
   ├─ drm_helper_mode_fill_fb_struct(...)
   └─ drm_framebuffer_init(..., &virtio_gpu_fb_funcs)
        │
-       │  // fb_id 現在可以穩定引用這份 GEM storage
+       │  // DRM framebuffer 保存 GEM object reference，
+       │  // fb_id 用來識別這個 framebuffer object
        ↓
 
 Xorg modesetting：設定 CRTC 與 display mode
@@ -2286,6 +2678,8 @@ static int drmmode_crtc_set_mode(xf86CrtcPtr crtc, Bool test_only)
   │
   │  fb_id = front BO 對應的 KMS framebuffer
   │  output_ids[] = 要接上的 connectors
+  │  x／y = framebuffer 內的 source offset
+  │  mode = CRTC 要採用的 display mode
   └─ drmModeSetCrtc(fd, crtc_id, fb_id,
                     x, y, output_ids, output_count, &mode)
        │
@@ -2313,12 +2707,22 @@ int drm_mode_setcrtc(struct drm_device *dev,
 int drm_atomic_helper_set_config(struct drm_mode_set *set,
                                  struct drm_modeset_acquire_ctx *ctx)
   ├─ state = drm_atomic_commit_alloc(...)
-  ├─ __drm_atomic_helper_set_config(set, state)
+  ├─ [Linux: drivers/gpu/drm/drm_atomic.c:1915]
+  │  __drm_atomic_helper_set_config(set, state)
+  │    ├─ CRTC state：設定 mode 與 active = true
+  │    ├─ primary plane state：設定 CRTC 與 framebuffer
+  │    ├─ 設定 source rectangle 與 CRTC destination rectangle
+  │    └─ update_output_state(...)
+  │         └─ requested connector states 指向這個 CRTC
   └─ drm_atomic_commit(state)
        ↓
 [Linux: drivers/gpu/drm/drm_atomic.c:1774]
 int drm_atomic_commit(struct drm_atomic_commit *state)
   ├─ drm_atomic_check_only(state)
+  │    ├─ [Linux: drivers/gpu/drm/drm_atomic_helper.c:293]
+  │    │  update_connector_routing(...)
+  │    │    ├─ 為 connector 選出 best_encoder
+  │    │    └─ 驗證 encoder->possible_crtcs
   │    └─ validation 失敗：回傳錯誤，不進入 commit tail
   └─ validation 成功：
        state->dev->mode_config.funcs->atomic_commit(...)
@@ -2330,6 +2734,17 @@ int drm_atomic_helper_commit(...)
   ├─ drm_atomic_helper_swap_state(...)
   └─ commit_tail(state)
        └─ drm_atomic_helper_commit_tail(state)
+            │
+            ├─ drm_atomic_helper_commit_modeset_disables(...)
+            │    └─ drm_atomic_helper_commit_crtc_set_mode(...)
+            │         ↓
+            │       [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:91]
+            │       virtio_gpu_crtc_mode_set_nofb(...)
+            │         └─ SET_SCANOUT(resource_id = 0)
+            │              // 先解除舊 scanout binding
+            │              // 新 resource 與 source rectangle 由後面的
+            │              // 非零 SET_SCANOUT 設定
+            │
             ↓
 [Linux: drivers/gpu/drm/drm_atomic_helper.c:2972]
 drm_atomic_helper_commit_planes(...)
@@ -2343,13 +2758,15 @@ virtio_gpu_primary_plane_update(...)
   ├─ 沒有有效 damage
   │    └─ 結束這次 plane update
   ├─ dumb BO：TRANSFER_TO_HOST_2D
-  ├─ framebuffer／source／modeset 變更：SET_SCANOUT
+  ├─ framebuffer／source 改變，或 output->needs_modeset：SET_SCANOUT
   └─ 有效 damage update：RESOURCE_FLUSH
 ```
 
-KMS framebuffer 保存 GEM object reference 與 scanout layout，pixels 繼續留在原本的 X Screen 像素儲存區。 第一次 modeset 時，primary plane 從沒有 framebuffer 變成引用 front BO 對應的 framebuffer，因此 `virtio_gpu_primary_plane_update()` 會發出第一次 `SET_SCANOUT`，將 virtio resource ID、virtual scanout ID 與 source rectangle 綁在一起
+KMS framebuffer 保存 GEM object reference 與 scanout layout，不會因 `ADDFB` 再配置一份 guest pixel storage。 第一次 modeset 時，primary plane 從沒有 framebuffer 變成引用 front BO 對應的 framebuffer
 
-這一輪只把 framebuffer 綁進 kernel 已建立的 display topology。 `ADDFB`、`SETCRTC` 與第一次 `SET_SCANOUT` 都是 display state 的初始建立或變更，不是每幀固定重做。 後續只有 BO／framebuffer、mode、source rectangle 或 scanout binding 改變時，才可能再次走這些操作
+`drm_atomic_helper_damage_merged()` 會將完整 plane source 視為這次需要更新的區域，再交給 `virtio_gpu_primary_plane_update()`。 Dumb BO 分支先以 `TRANSFER_TO_HOST_2D` 更新 host-side 2D resource，再以非零 resource ID 的 `SET_SCANOUT` 建立 virtual scanout binding，最後送出 `RESOURCE_FLUSH`
+
+這一輪同時建立 initial display state，並把目前的 front BO 內容交給 virtual scanout。 `ADDFB` 建立可供 KMS state 引用的 framebuffer object，`SETCRTC` 建立或更新 kernel 內的 KMS state，非零 resource ID 的 `SET_SCANOUT` 則把 virtio resource 綁到 virtual scanout。 一般畫面更新不會重建這整組 state，而是沿後面的 `DIRTYFB` 路徑重用既有 objects
 
 這個只執行一次的 BlockHandler 完成後，`WaitForSomething()` 才進入輪詢。 Xorg event loop 隨後接受 `xinit` 的 connection 並傳回 setup reply，`waitforserver()` 的 `XOpenDisplay(displayNum)` 因而成功。 Xorg 的 modesetting 主線至此已完成，`xinit` 父行程也可以繼續執行
 
@@ -2773,62 +3190,11 @@ WindowPtr dixCreateWindow(Window wid, WindowPtr pParent,
   └─ 將 pWin 接到 pParent 的 child／sibling links
 ```
 
-Xorg 用 `DrawableRec` 保存可繪製 object 共有的 XID、座標、尺寸、depth 與所屬 X Screen。 `WindowRec` 以 `drawable` 內嵌這份資料，再用 `parent`、children 與 sibling links 保存 Window tree
+`dixCreateWindow()` 會依前面介紹的 `WindowRec` object model 填入新 Window。 `drawable.pScreen` 指向 Root Window 所屬的 `ScreenRec`，`drawable.id` 保存 `glxgears` 配置的 XID，`parent` 指向 Root Window，child／sibling links 則把新的 application Window 插入既有 tree
 
-下面三段定義分別來自 [`Xorg: include/pixmapstr.h:57`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/pixmapstr.h#L57-L69)、[`Xorg: include/xlibre_ptrtypes.h:22`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/xlibre_ptrtypes.h#L22-L23) 與 [`Xorg: include/windowstr.h:118`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/windowstr.h#L118-L149)：
-
-```c
-// [Xorg: include/pixmapstr.h:57-69]
-typedef struct _Drawable {
-    unsigned char type;
-    unsigned char class;
-    unsigned char depth;
-    unsigned char bitsPerPixel;
-    XID id;
-    short x;
-    short y;
-    unsigned short width;
-    unsigned short height;
-    ScreenPtr pScreen;
-    ...
-} DrawableRec;
-
-// [Xorg: include/xlibre_ptrtypes.h:22-23]
-typedef struct _Window *WindowPtr;
-typedef struct _Window WindowRec;
-
-// [Xorg: include/windowstr.h:118-149]
-struct _Window {
-    DrawableRec drawable;
-    PrivateRec *devPrivates;
-    WindowPtr parent;
-    WindowPtr nextSib;
-    WindowPtr prevSib;
-    WindowPtr firstChild;
-    WindowPtr lastChild;
-    ...
-    unsigned mapped:1;
-    unsigned realized:1;
-    unsigned viewable:1;
-    ...
-};
-```
-
-這三個欄位記錄 Window 從收到 map request 到能參與畫面更新的狀態：
-
-- `mapped` 表示 `MapWindow` request 已獲准，Xorg 已將 `WindowRec::mapped` 設為 `TRUE`
-- `realized` 表示這個已 mapped Window 的 ancestors 也都已 mapped，Xorg 已呼叫 X Screen 的 `RealizeWindow` callback
-- `viewable` 表示一個 `InputOutput` Window 已 realized，可以參與可見範圍計算
-
-`drawable.pScreen` 指向這個 Window 所屬的 `ScreenRec`。 `parent` 指向父 Window，`firstChild` 與 `lastChild` 記錄直屬 children 的兩端，同一層的 children 再以 `nextSib` 與 `prevSib` 互相連接。 `firstChild` 位於最上層，`lastChild` 位於最下層，因此 sibling links 同時保存相同 parent 下的 stacking order
-
-剛處理完 `CreateWindow` request 時，application Window 尚未 map，`twm` 也還沒建立外框。 這棵 tree 的相關部分如下：
+剛處理完 `CreateWindow` request 時，application Window 的 `mapped`、`realized` 與 `viewable` 都是 `FALSE`，`twm` 也還沒建立外框。 這棵 tree 的相關部分如下：
 
 ```text
-X Screen 0／ScreenRec
-  │
-  │  ScreenRec::root 指向 Window tree 的根節點
-  ↓
 Root Window／WindowRec（Window tree 的根節點）
   │
   │  firstChild／nextSib／prevSib 串接同一層的 Windows
@@ -2837,6 +3203,8 @@ glxgears application Window／WindowRec
   │
   │  parent 指回 Root Window
   │  mapped = FALSE
+  │  realized = FALSE
+  │  viewable = FALSE
 ```
 
 `make_window()` 回傳 application Window XID 與相容的 OpenGL context。 Display 路徑接著使用 Window XID 發出 `XMapWindow()` request，Rendering 路徑則會在後面的章節從 `glXMakeCurrent()` 接著往下走
@@ -2999,7 +3367,7 @@ application Window 加入 Window tree 後，桌面操作仍會改變它能顯示
 
 在 [`twm: src/events.c:1492`](https://gitlab.freedesktop.org/xorg/app/twm/-/blob/twm-1.0.12/src/events.c#L1492-1580) 的 `HandleButtonRelease()` 中，拖曳結束會先呼叫 `SetupWindow()` 更新 geometry，再依 policy 決定是否呼叫 `XRaiseWindow()`。 [`twm: src/resize.c:752`](https://gitlab.freedesktop.org/xorg/app/twm/-/blob/twm-1.0.12/src/resize.c#L752-902) 的 `SetupWindow()` 會進入 `SetupFrame()`，為 application、title 與 frame Windows 更新 geometry，必要時也會調整 title highlight Window，並通知 application 它在 X Screen 上的新位置
 
-接下來的 Xorg callgraph 會先使用 Region 與 `borderClip`。 Region 是由一個或多個矩形組成的座標範圍。 `WindowRec::borderClip` 則是 Window 保存的一個 Region，用來描述包含 border 在內的可顯示範圍
+接下來的 Xorg callgraph 會使用前面介紹的 `WindowRec::borderClip`。 當 geometry 或 stacking 改變時，Xorg 會沿 Window tree 重新驗證可見範圍，並以 Region 中的一組矩形保存計算結果
 
 ```callgraph
 twm：更新 xterm frame geometry
@@ -3243,21 +3611,12 @@ RegionRects(RegionPtr reg)
 
 GC（Graphics Context）是 Xorg 用來保存 drawing operation state 的 object，其中包含顏色、raster operation、subwindow mode 與 client clip。 程式碼中的 `GCPtr` 是指向這個 object 的 pointer。 `miComputeCompositeClip()` 會依 GC state 將 Window 的可見範圍與 client clip 組成這次 operation 使用的 composite clip
 
-下面三段程式碼把 application Window 的 `clipList` 接到稍後的 `PutImage` operation：
+下面兩段程式碼把 application Window 的 `clipList` 接到稍後的 `PutImage` operation：
 
-- [`Xorg: include/windowstr.h:126`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/windowstr.h#L126-L127) 保存 `clipList` 與 `borderClip` 兩種 Region
 - [`Xorg: mi/migc.c:99`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/mi/migc.c#L99-L154) 在一般 `ClipByChildren` 模式下以 `clipList` 建立 GC composite clip
 - [`Xorg: fb/fbimage.c:27`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/fb/fbimage.c#L27-L70) 把 drawable origin 加到 request 座標，並將 composite clip 傳給 framebuffer 寫入函式
 
 ```c
-// [Xorg: include/windowstr.h:126-127]
-struct _Window {
-    ...
-    RegionRec clipList;         /* clipping rectangle for output */
-    RegionRec borderClip;       /* NotClippedByChildren + border */
-    ...
-};
-
 // [Xorg: mi/migc.c:99-154]
 void
 miComputeCompositeClip(GCPtr pGC, DrawablePtr pDrawable)
@@ -3393,11 +3752,13 @@ Xorg 會以 Window origin 將 Window-local 座標轉成 X Screen 座標，套用
 
 Xorg 處理 pixel 交付產生的 `PutImage` request、改寫 screen Pixmap 後，Damage tracking 會記錄需要發布的變動範圍。 `damagePutImage()` 先以 GC composite clip 的 extents 縮小 PutImage bounding box，再把結果併入 Damage Region。 Damage Region 因此是 Xorg 必須通知 display 路徑的保守範圍，不是 application Window `clipList` 中每個可見矩形的一對一副本
 
-Dirty tracking 啟用時，`msBlockHandler()` 會呼叫 `dispatch_dirty()`。 後面的 `dispatch_damages()` 會先把 Damage Region 轉成目前 CRTC 可使用的 clip rectangles，只有至少留下一個 rectangle 時才呼叫 `drmModeDirtyFB()`。 這個 ioctl 讓既有 KMS framebuffer 進入 atomic dirty update，再由 virtio-gpu primary plane 把 pixels 傳給 host-side 2D resource：
+Dirty tracking 啟用時，`msBlockHandler()` 會呼叫 `dispatch_dirty()`。 後面的 `dispatch_damages()` 會先將 Damage Region 轉成目前 CRTC 可使用的 clip rectangles，只有至少留下一個 rectangle 時才呼叫 `drmModeDirtyFB()`
+
+`DIRTYFB` request 傳遞的是 damage coordinates，不會攜帶 pixels。 這個 ioctl 讓既有 KMS framebuffer 進入 atomic dirty update，再由 virtio-gpu primary plane 將 pixels 傳給 host-side 2D resource：
 
 ![Scanout update 先搬移 pixels，再發布更新](./image/glx-action-stage-4-scanout-update.png)
 
-這次 scanout update 會先以 `TRANSFER_TO_HOST_2D` 把 dirty rectangle 的 pixels 從 guest backing 搬進 host-side 2D resource，再用 `RESOURCE_FLUSH` 要求 host 發布更新。 `SET_SCANOUT` 則只在 framebuffer binding 或 source rectangle 改變時重新送出
+這次 scanout update 會先以 `TRANSFER_TO_HOST_2D` 把 dirty rectangle 的 pixels 從 guest backing 搬進 host-side 2D resource，再用 `RESOURCE_FLUSH` 要求 host 發布更新。 `SET_SCANOUT` 則在 framebuffer／source rectangle 改變，或 mode／routing 更新令 `output->needs_modeset` 成立時重新送出
 
 以下 callgraph 從 Xorg 已經收到 pixels 開始。 它固定追蹤 virtio-gpu framebuffer 實作的 `dirty` callback，並看到 DRM atomic helper 如何把 dirty rectangles 放進 primary plane state：
 
@@ -3548,11 +3909,11 @@ virtio_gpu_primary_plane_update(struct drm_plane *plane,
 
 如果 framebuffer 已解除綁定，或 CRTC 已經 inactive，第一個分支會用 resource ID 0 停用 scanout，接著結束這次 update
 
-display state 仍然 active 時，`drm_atomic_helper_damage_merged()` 才把新舊 plane state 中的 damage 合併成 `rect`。 沒有 damage 就直接返回
+display state 仍然 active 時，`drm_atomic_helper_damage_merged()` 會讀取 plane state 上的 damage clips，將多個 rectangles 合併成單一 bounding rectangle `rect`，再限制於有效 source 範圍內。 沒有提供 damage clips 時，helper 會改用完整的 plane source。 只有 plane 不可見、沒有 CRTC／framebuffer，或所有 clips 都沒有和有效 source 相交時，才會結束這次 update
 
 因為本例的 GEM object 是 dumb BO，`virtio_gpu_update_dumb_bo()` 會將 `TRANSFER_TO_HOST_2D` 排入 control virtqueue，要求 host 把這個矩形的 guest backing pixels 複製到 host-side 2D resource
 
-同一個 framebuffer、source rectangle 與 CRTC 持續使用時，`if` 條件不成立，因此通常不會每幀重送 `SET_SCANOUT`。 這個 command 在初次 modeset、framebuffer 切換或 source rectangle 改變時更新 resource-to-scanout binding。 `RESOURCE_FLUSH` 則在每次有效 damage update 的尾端發出，通知 host 把已更新的 resource 內容發布到目前綁定的 scanout
+同一個 framebuffer、source rectangle 與 CRTC 持續使用，而且沒有新的 modeset 要求時，`if` 條件不成立，因此通常不會每幀重送 `SET_SCANOUT`。 這個 command 在初次 modeset、framebuffer 切換、source rectangle 改變，或 mode／routing 更新時改寫 resource-to-scanout binding。 `RESOURCE_FLUSH` 則在每次有效 damage update 的尾端發出，通知 host 把已更新的 resource 內容發布到目前綁定的 scanout
 
 最後跨出 guest kernel 邊界，semu 的 2D device backend 會依三種 commands 各自完成一項工作：
 
@@ -3566,7 +3927,7 @@ Linux 送入 control virtqueue 的 commands
   │    └─ vgpu_sw_copy_image_from_pages(request, resource)
   │         // 將 guest backing pages 的 damage rectangle 複製進 host 2D image
   │
-  ├─ 只在 scanout binding 變更時：
+  ├─ scanout binding 或 mode／routing 變更時：
   │  [semu: virtio-gpu-sw.c:626]
   │  vgpu_sw_cmd_set_scanout_handler(...)
   │    └─ 在 scanouts[scanout_id] 記錄 resource ID 與 source rectangle
