@@ -1429,9 +1429,11 @@ modesetting driver 執行在 Xorg 行程中，實際的顯示裝置則由 Linux 
 
 DRM 會把圖形裝置（如 GPU）公開成 `/dev/dri/card0` 這類位於 `/dev/dri/` 底下的 DRM device node。 Userspace 程式可以用 `open()` 開啟其中一個 node，取得之後用來操作該 DRM device 的 file descriptor（fd）
 
-DRM 的 userspace API（UAPI）定義了 userspace 與 kernel 共同使用的 ioctl request numbers、argument structures 與回傳格式。 每個 request number 都表示著一項固定操作，對應的 UAPI structure 則用來傳入查詢條件、更新內容或接收 kernel 回傳的結果
+取得 DRM device fd 後，Xorg 的 modesetting driver 會呼叫 userspace 函式庫 libdrm，向 kernel 查詢顯示資訊或提交顯示狀態。 libdrm 會依照 DRM 的 userspace API（UAPI）準備 ioctl，再透過前面的 fd 將要求送往對應的 DRM device
 
-DRM core 是 DRM 內由各個裝置 drivers 共用的 kernel 程式碼。 它會處理 ioctl 的分派與呼叫權限的檢查，也會管理共用的 DRM objects。 `virtio_gpu`、`amdgpu` 與 `i915` 等裝置專屬的 DRM drivers 會建立各自裝置的 objects 並登記 callbacks，再把共用操作轉成該裝置能夠執行的工作
+DRM UAPI 定義了 userspace 與 kernel 共同使用的 ioctl request numbers、argument structures 與回傳格式。 每個 request number 都表示著一項固定操作，對應的 UAPI structure 則用來傳入查詢條件、更新內容或接收 kernel 回傳的結果
+
+libdrm 發出的 ioctl 進入 kernel 後，會由 DRM core 接住。 DRM core 是 DRM 內由各個裝置 drivers 共用的 kernel 程式碼，位於 ioctl 入口與裝置專屬 DRM driver 之間。 它會處理 ioctl 的分派與呼叫權限檢查，也會管理共用的 DRM objects。 `virtio_gpu`、`amdgpu` 與 `i915` 等裝置專屬的 DRM drivers 會建立各自裝置的 objects 並登記 callbacks，再把共用操作轉成該裝置能夠執行的工作
 
 因此，modesetting driver 想知道的是 kernel 提供了哪些顯示輸出，以及每個輸出可以使用哪些 display modes。 而 DRM 中負責保存與更新這些顯示狀態的部分稱為 KMS（Kernel Mode Setting）
 
@@ -1444,7 +1446,7 @@ KMS 執行的核心工作稱為 mode setting。 它會選擇並套用一個 disp
 - Linux kernel 的 mode setting 是 KMS 執行的顯示模式設定工作
 :::
 
-現在回到 Xorg 的顯示初始化流程。 libdrm 是 userspace 的函式庫，會以 `drmMode*()` 等函式提供 KMS API。 modesetting driver 取得 DRM device fd 後，會將該 fd 與查詢參數傳給這些函式。 libdrm 接著把函式參數填入 DRM UAPI 定義的 ioctl argument structures，再向 kernel 發出對應的 ioctl。 Kernel 回傳資料後，libdrm 會把它整理成 Xorg 使用的 structures
+現在回到 Xorg 的顯示初始化流程，沿著剛才介紹的 libdrm 繼續往下看。 libdrm 會以 `drmMode*()` 等函式提供 KMS API。 modesetting driver 會將 DRM device fd 與查詢參數傳給這些函式，libdrm 接著把函式參數填入 DRM UAPI 定義的 ioctl argument structures，再向 kernel 發出對應的 ioctl。 Kernel 回傳資料後，libdrm 會把它整理成 Xorg 使用的 structures
 
 ioctl 進入 kernel 後，DRM core 會依 request number 選擇對應的 KMS 處理函式，並檢查 arguments 與呼叫權限。 查詢顯示組態時，處理函式會讀取 `virtio_gpu` driver 在裝置初始化期間建立並登記的 KMS objects 與目前狀態。 後續更新顯示狀態時，DRM core 則會經由 `virtio_gpu` 提供的 callbacks 將要求交給裝置
 
@@ -1492,7 +1494,9 @@ XFree86 DDX、modesetting 與共用 screen initialization code
 DIX 使用完成初始化的 ScreenRec 管理 X Screen
 ```
 
-這組分工也會反映在 DIX 操作 `ScreenRec` 與 `WindowRec` 的方式上。 以下片段來自 [`Xorg: dix/window.c:738`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/window.c#L738-L900)，用來展示 `dixCreateWindow()` 如何配置並初始化 `WindowRec`、把它接進 Window tree，再透過 `ScreenRec::CreateWindow` 進入目前 X Screen 安裝的 Window implementation：
+這個 callgraph 一路顯示了 Xorg 的顯示初始化到 DIX 的過程：完成初始化的 `ScreenRec` 會成為 DIX 管理 X Screen 時使用的 server-side object。 等 Xorg 啟動完成、client 日後要求建立 Window，`dixCreateWindow()` 便會透過這筆 `ScreenRec`，將新 Window 從 DIX 共用流程交給目前 X Screen 使用的具體實作
+
+以下片段來自 [`Xorg: dix/window.c:738`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/window.c#L738-L900)，用來觀察 `dixCreateWindow()` 如何處理共用的 Window state 與 Window tree，最後再藉由 `ScreenRec::CreateWindow` 進入具體實作：
 
 ```c
 // [Xorg: dix/window.c:738-900]
@@ -1542,58 +1546,15 @@ dixCreateWindow(Window wid, WindowPtr pParent, int x, int y, unsigned w,
 }
 ```
 
-`dixAllocateScreenObjectWithPrivates()` 會配置 DIX 管理的 `WindowRec`，其餘 DIX 程式碼則會填入共用狀態，並將它接進 Window tree。 最後的 `pScreen->CreateWindow(pWin)` 則經由 `ScreenRec` 進入顯示初始化期間安裝的 Window implementation
+`dixAllocateScreenObjectWithPrivates()` 會配置 DIX 管理的 `WindowRec`。 接著，`dixCreateWindow()` 會填入共用的 Window state，再透過 `parent`、`firstChild`、`lastChild`、`prevSib` 與 `nextSib` 將新 Window 接進既有的 Window tree。 這些操作都屬於 DIX 管理的 X11 共用流程
 
-本文的 `fbScreenInit()` 會先把 `fbCreateWindow()` 安裝進這個欄位。 這個函式來自 X server 的 fb layer，也就是使用 pixel storage 實作共用 Window 與 Pixmap operations 的程式碼。 Xorg 初始化 Composite extension 時，[`compScreenInit()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/composite/compinit.c#L309-L351) 會把既有的 `fbCreateWindow()` 保存到 `CompScreenRec::CreateWindow`，再以 `compCreateWindow()` 包住 `ScreenRec::CreateWindow`
+完成共用狀態與 Window tree 的處理後，`pScreen->CreateWindow(pWin)` 會呼叫目前 X Screen 安裝的 `CreateWindow` callback。 這個 callback slot 位於 `ScreenRec`，是 DIX 共用流程與目前 X Screen 的 Window implementation 之間的交接點。 Xorg 會在顯示初始化階段為這個 slot 安裝具體實作。 建立 Window 時，該實作會從這裡接手新 Window，繼續準備底層狀態
 
-本文沒有啟動 compositing manager，也沒有 client 要求 redirect Window drawing。 [`compCreateWindow()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/composite/compwindow.c#L558-L583) 仍會先呼叫保存的 `fbCreateWindow()`，再檢查新 Window 是否需要建立 Composite redirect。 完整的 `CreateWindow` request path 會在 `glxgears` 建立 application Window 時再展開
-
-```callgraph
-[Xorg: dix/window.c:738] dixCreateWindow(...)
-  │
-  ├─ dixAllocateScreenObjectWithPrivates(..., WindowRec, ...)
-  │    └─ 配置 WindowRec 與每個 Window 專屬的 private storage
-  │
-  ├─ 填入共用 Window state，並接進 Window tree
-  │
-  └─ pScreen->CreateWindow(pWin)
-       │
-       │  Xorg 初始化 Composite extension 後，
-       │  ScreenRec::CreateWindow 指向 compCreateWindow
-       ↓
-     [Xorg: composite/compwindow.c:558]
-     Bool compCreateWindow(WindowPtr pWin)
-       │
-       │  pScreen->CreateWindow = cs->CreateWindow;
-       │  ret = (*pScreen->CreateWindow)(pWin);
-       │  // cs->CreateWindow 保存被包住的 callback
-       ↓
-     [Xorg: fb/fbwindow.c:30]
-     Bool fbCreateWindow(WindowPtr pWin)
-       │
-       │  完成 framebuffer layer 為這個 Window 保存的初始化狀態
-       ↓
-     [Xorg: composite/compwindow.c:566]
-     compCreateWindow(...) 繼續檢查 Composite redirect
-       │
-       ├─ Window Pixmap 與 parent Pixmap 不同
-       │    └─ SetWindowPixmap(pWin, parent_pixmap)
-       ├─ parent 已有 client 登記 subwindow redirect
-       │    └─ compRedirectWindow(...)
-       ├─ Window 符合 implicit redirect 條件
-       │    └─ compRedirectWindow(...)
-       └─ cs->CreateWindow = pScreen->CreateWindow;
-          pScreen->CreateWindow = compCreateWindow;
-          return ret;
-```
-
-這段程式碼把剛才的分層落到一個具體操作上。 DIX 配置並管理共用的 `WindowRec` 與 Window tree，`ScreenRec` callback 則讓相同的 DIX 程式碼進入目前 X Screen 安裝的實作
-
-現在，DIX、DDX 與 `ScreenRec` callback 的分工已經建立。 下一步要回答的是：在 DIX 配置 `ScreenRec` 以前，XFree86 DDX 會用哪個 object 保存 modesetting driver 查詢並選定的顯示組態
+看過初始化完成後的 `ScreenRec` 如何參與 Window request path，現在回到 Xorg 的顯示初始化，繼續追蹤建立這筆 `ScreenRec` 所需的裝置組態
 
 ##### XFree86 DDX 先用 `ScrnInfoRec` 保存顯示組態
 
-在 DIX 配置相應的 `ScreenRec` 以前，XFree86 DDX 需要先保存 display driver 查詢到的組態。 它使用 `ScrnInfoRec` 記錄預設 color depth、virtual size、每個 pixel 使用的 bits、可用 display modes、driver private data 與初始化 callbacks
+在 DIX 配置相應的 `ScreenRec` 以前，XFree86 DDX 需要先保存 display driver 查詢到的組態。 它使用 `ScrnInfoRec` 記錄預設的 color depth、virtual size、每個 pixel 使用的 bits、可用的 display modes、driver private data 與初始化 callbacks
 
 下面四段程式碼來自：
 
@@ -1602,7 +1563,7 @@ dixCreateWindow(Window wid, WindowPtr pParent, int x, int y, unsigned w,
 - [`Xorg: include/xf86.h:52`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/xf86.h#L52)
 - [`Xorg: hw/xfree86/common/xf86Globals.c:49`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/common/xf86Globals.c#L49)
 
-第一段讓 `ScrnInfoRec` 與 `ScrnInfoPtr` 分別成為 `struct _ScrnInfoRec` 及其 pointer 的別名。 第二段列出本文會用到的欄位，後兩段則確認 `xf86Screens` 的宣告與實際定義：
+第一段讓 `ScrnInfoRec` 與 `ScrnInfoPtr` 分別成為 `struct _ScrnInfoRec` 及其 pointer 的別名。 第二段列出本文會用到的欄位，後兩段則用來確認 `xf86Screens` 的宣告與實際定義：
 
 ```c
 // [Xorg: include/xlibre_ptrtypes.h:26-27]
@@ -2585,7 +2546,9 @@ miScreenInit(ScreenPtr pScreen, void *pbits, int xsize, int ysize,
 }
 ```
 
-這裡可以回頭對照前面的 `dixCreateWindow()`。 DIX 仍負責配置 `WindowRec` 與修改 Window tree，呼叫 `pScreen->CreateWindow(pWin)` 時則會進入 `fbCreateWindow()`。 同一筆 `ScreenRec` 同時保存 DIX 管理的 X Screen state，以及 fb／mi layers 安裝的 operations
+這裡可以回頭對照前面的 `dixCreateWindow()`。 DIX 仍負責配置 `WindowRec` 與修改 Window tree，`fbSetupScreen()` 則在這個初始化階段將 `fbCreateWindow()` 安裝成 `ScreenRec::CreateWindow` 的基礎實作。 同一筆 `ScreenRec` 因此同時保存 DIX 管理的 X Screen state，以及 fb／mi layers 安裝的 operations
+
+Xorg 後續初始化 Composite extension 時會再包裝這個 callback，application 建立 Window 時的實際呼叫鏈會在故事走到 `glxgears` 後接著展開
 
 ##### 最後階段：登記 screen callbacks 並初始化 RandR state
 
@@ -3546,10 +3509,105 @@ WindowPtr dixCreateWindow(Window wid, WindowPtr pParent,
   ├─ 驗證 depth 與 visual 是否可供這個 X Screen 使用
   ├─ 配置 WindowRec，設定 drawable.id = wid
   ├─ pWin->parent = pParent
-  └─ 將 pWin 接到 pParent 的 child／sibling links
+  ├─ 將 pWin 接到 pParent 的 child／sibling links
+  └─ pScreen->CreateWindow(pWin)
 ```
 
 `dixCreateWindow()` 會依前面介紹的 `WindowRec` object model 填入新 Window。 `drawable.pScreen` 指向 Root Window 所屬的 `ScreenRec`，`drawable.id` 保存 `glxgears` 配置的 XID，`parent` 指向 Root Window，child／sibling links 則把新的 application Window 插入既有 tree
+
+到這裡，Xorg 已經建立 application Window 的 server-side object，也知道它位於 Window tree 的哪裡。 這個 Window 日後作為 drawable 接收 drawing requests 時，Xorg 還需要知道 pixels 應該寫進整個 X Screen 使用的 screen Pixmap，還是另一份 off-screen Pixmap。 `pScreen->CreateWindow(pWin)` 會進入目前 X Screen 安裝的 callback chain，初始化這個 Window 使用的 pixel storage mapping
+
+前面的 [`fbSetupScreen()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/fb/fbscreen.c#L94-L140) 已將 `fbCreateWindow()` 安裝成 `ScreenRec::CreateWindow` 的基礎實作。 `fbCreateWindow()` 會把 screen Pixmap 存進新 Window 的 fb private storage，讓 Window 一開始沿用 X Screen 的 pixel storage
+
+在 `glxgears` 連入以前，Xorg 已經完成 Composite extension 初始化。 Composite extension 是 Xorg 內負責 Window drawing redirect 的 server-side extension，compositing manager 則是透過這套 extension 要求 redirect 並合成各個 Windows 的 X11 client。 本文沒有啟動 compositing manager，但 Xorg 仍會以 `compCreateWindow()` 包住原本的 `fbCreateWindow()`，讓 Composite extension 能在每次建立 Window 時檢查是否需要 redirect
+
+以下三段程式碼用來展示 Composite extension 如何保存並包裝基礎 callback，以及 `fbCreateWindow()` 如何建立 Window 與 screen Pixmap 的初始 mapping。 各段來源如下：
+
+- [`Xorg: composite/compinit.c:309`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/composite/compinit.c#L309-L351)
+- [`Xorg: composite/compwindow.c:558`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/composite/compwindow.c#L558-L583)
+- [`Xorg: fb/fbwindow.c:30`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/fb/fbwindow.c#L30-L36)
+
+```c
+// [Xorg: composite/compinit.c:309-351]
+Bool
+compScreenInit(ScreenPtr pScreen)
+{
+    ...
+    CompScreenPtr cs = calloc(1, sizeof(CompScreenRec));
+    ...
+    cs->CreateWindow = pScreen->CreateWindow;
+    pScreen->CreateWindow = compCreateWindow;
+    ...
+}
+
+// [Xorg: composite/compwindow.c:558-583]
+Bool
+compCreateWindow(WindowPtr pWin)
+{
+    ScreenPtr pScreen = pWin->drawable.pScreen;
+    CompScreenPtr cs = GetCompScreen(pScreen);
+    Bool ret;
+
+    pScreen->CreateWindow = cs->CreateWindow;
+    ret = (*pScreen->CreateWindow) (pWin);
+    ...
+    cs->CreateWindow = pScreen->CreateWindow;
+    pScreen->CreateWindow = compCreateWindow;
+    ...
+    return ret;
+}
+
+// [Xorg: fb/fbwindow.c:30-36]
+Bool
+fbCreateWindow(WindowPtr pWin)
+{
+    dixSetPrivate(&pWin->devPrivates, fbGetWinPrivateKey(pWin),
+                  fbGetScreenPixmap(pWin->drawable.pScreen));
+    return TRUE;
+}
+```
+
+`compScreenInit()` 先把當時的 `ScreenRec::CreateWindow` 保存到 `CompScreenRec::CreateWindow`，再將公開的 callback slot 換成 `compCreateWindow()`。 `compCreateWindow()` 執行時會暫時把 slot 還原成保存的 callback，因此 `ret = (*pScreen->CreateWindow)(pWin)` 會進入 `fbCreateWindow()`，不會再次呼叫 `compCreateWindow()`
+
+`fbCreateWindow()` 將 `fbGetScreenPixmap()` 回傳的 screen Pixmap 寫進這個 Window 的 private storage。 基礎初始化完成後，`compCreateWindow()` 才會判斷是否有 client 要求 redirect，或 Xorg 是否需要自動 redirect 這個 Window。 本文固定追蹤沒有 client 提出 redirect request，而且 `glxgears` 使用的 visual 不會觸發自動 redirect 的分支，因此這個建立階段結束時，`redirectDraw` 維持 `RedirectDrawNone`
+
+```callgraph
+X Screen initialization：建立 CreateWindow callback chain
+=================================================
+[Xorg: fb/fbscreen.c:94] fbSetupScreen(...)
+  │
+  │  pScreen->CreateWindow = fbCreateWindow;
+  ↓
+[Xorg: composite/compinit.c:309] compScreenInit(pScreen)
+  │
+  ├─ cs->CreateWindow = pScreen->CreateWindow
+  │    └─ 保存 fbCreateWindow
+  └─ pScreen->CreateWindow = compCreateWindow
+
+glxgears application Window creation：使用 callback chain
+=================================================
+[Xorg: dix/window.c:738] dixCreateWindow(...)
+  │
+  ├─ 配置並填入 WindowRec
+  ├─ 將 WindowRec 接進 Window tree
+  └─ pScreen->CreateWindow(pWin)
+       ↓
+     [Xorg: composite/compwindow.c:558] compCreateWindow(pWin)
+       │
+       │  暫時將 pScreen->CreateWindow 還原成 cs->CreateWindow
+       ↓
+     [Xorg: fb/fbwindow.c:30] fbCreateWindow(pWin)
+       │
+       │  將 screen Pixmap 存進 Window 的 fb private storage
+       ↓
+     compCreateWindow() 繼續檢查 Composite redirect
+       │
+       │  本文沒有 client redirect，visual 也不會觸發自動 redirect
+       ↓
+     pWin->redirectDraw 維持 RedirectDrawNone
+       │
+       └─ Window private storage 仍保存 screen Pixmap
+```
 
 剛處理完 `CreateWindow` request 時，application Window 的 `mapped`、`realized` 與 `viewable` 都是 `FALSE`，`twm` 也還沒建立外框。 這棵 tree 的相關部分如下：
 
@@ -3657,7 +3715,20 @@ TwmWindow *AddWindow(Window w, int iconm, IconMgr *iconp)
        ├─ 從原 parent 的 sibling chain 移除 pWin
        ├─ pWin->parent = pParent
        ├─ 插入新 parent 的 child／sibling links
-       └─ 依新 parent 重新計算 absolute x／y
+       ├─ 依新 parent 重新計算 absolute x／y
+       └─ pScreen->ReparentWindow(pWin, pPriorParent)
+            ↓
+          [Xorg: composite/compwindow.c:426]
+          void compReparentWindow(WindowPtr pWin,
+                                  WindowPtr pPriorParent)
+            │
+            ├─ 依舊 parent 與新 parent 重新檢查 redirect
+            └─ 若 pWin->redirectDraw == RedirectDrawNone
+                 └─ compSetPixmap(
+                        pWin,
+                        (*pScreen->GetWindowPixmap)(pWin->parent),
+                        pWin->borderWidth)
+                      // 將 Window 的 Pixmap pointer 更新成新 parent 使用的 Pixmap
   ↓
 [twm: src/events.c:1345] `glxgears` 沒有 WM_HINTS StateHint
   │
@@ -3710,7 +3781,9 @@ Root Window
        └─ glxgears application Window
 ```
 
-`XReparentWindow()` 只改變 application Window 在 Window tree 裡的 parent 與座標，不會改變它的 XID。 因此，`glxgears` 的 `win` 仍指向原本的 application Window。 後續 `glXMakeCurrent(dpy, win, ctx)` 與 `glXSwapBuffers(dpy, win)` 會繼續使用相同的 drawable identity
+`XReparentWindow()` 會改變 application Window 在 Window tree 裡的 parent 與座標，並透過 [`compReparentWindow()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/composite/compwindow.c#L426-L470) 更新 redirect state 與 Pixmap mapping。 本文固定的 visual 組合不會在 reparent 前後觸發自動 redirect，因此 `compSetPixmap()` 會讓 application Window 改用新 parent，也就是 frame Window 使用的 Pixmap
+
+`XReparentWindow()` 完成後，application Window 仍使用原本的 XID。 `glxgears` 變數 `win` 也繼續保存這個 XID，因此後續 `glXMakeCurrent(dpy, win, ctx)` 與 `glXSwapBuffers(dpy, win)` 會使用相同的 drawable identity
 
 Application Window 的 map request 先設定 `mapped`，但 frame 尚未 realized，因此暫時返回。 等 frame 也被 map 後，`RealizeTree()` 才會連同已 mapped 的 title 與 application Windows 一起 realize。 Xorg 接著依三者的 geometry 與 stacking 計算可見範圍，使用者才會在桌面看見帶有青色外框與標題列的 `glxgears`
 
@@ -4038,7 +4111,9 @@ fbPutImage(DrawablePtr pDrawable, GCPtr pGC, int depth,
 
 `miWindowExposures()` 因此會將 `Expose` event 傳給 `glxgears`。 Application 收到 event 後會再次產生內容。 持續執行的 rendering loop 也會讓後續各幀填入重新露出的範圍
 
-本文的 application Window 維持 `RedirectDrawNone`，並由 `Screen::GetWindowPixmap()` 沿著 parent 的 Pixmap mapping 取得 screen Pixmap。 Root Window、frame、title 與 application Windows 都使用這份 Pixmap。 每個 Window 描述共同 storage 中不同的位置與可見範圍。 Application Window 的 `backingStore` 設為 `NotUseful`，因此沒有另一份 storage 保留被遮住的 pixels
+前面 `compCreateWindow()` 與 `compReparentWindow()` 完成 redirect 檢查後，本文 application Window 的 `redirectDraw` 維持 `RedirectDrawNone`。 `ScreenRec::GetWindowPixmap()` 會直接讀出保存在 Window private storage 內的 Pixmap pointer
+
+在未 redirect 的分支中，`compCreateWindow()` 與 `compReparentWindow()` 會讓這個 pointer 和 parent 使用的 Pixmap 相同，因此 Root Window、frame、title 與 application Windows 最後都會取得 screen Pixmap。 每個 Window 描述共同 storage 中不同的位置與可見範圍。 Application Window 的 `backingStore` 設為 `NotUseful`，因此沒有另一份 storage 保留被遮住的 pixels
 
 ![X11 Window／Drawable 與 screen Pixmap storage mapping](./image/glx-object-stage-2-x11-window-storage.png)
 
