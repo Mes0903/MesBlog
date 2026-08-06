@@ -915,9 +915,9 @@ display controller 週期性讀取 pixels
 使用者看見齒輪轉到下一個角度
 ```
 
-### 本文 Big picture 固定追蹤的圖形組態
+### 固定後續追蹤的 rendering 與 display 組態
 
-前面已經把齒輪轉動一格拆成 Rendering 與 Display 兩條路徑。 接下來我們要沿原始程式碼走過這兩條路徑，因此我們先把同一個齒輪視窗放進一組固定的測試環境
+前面已經把齒輪轉動一格拆成 Rendering 與 Display 兩條路徑。 兩條路徑各自都有多種實作方式，接下來若同時切換 software rendering、hardware rendering、window system 與虛擬顯示裝置，讀者會很難判斷目前追蹤的是哪一條分支。 因此，我們先把同一個齒輪視窗放進一組固定的測試環境，後文再沿著這組條件逐層展開
 
 這組環境是一台由 semu 提供的 VM。 本文將 VM 內執行 Linux、Xorg 與 Mesa 的一側稱為 guest，將執行 semu 與 SDL2 display backend 的外層系統稱為 host。 guest CPU 與 guest memory 因此分別表示 VM 看見的 CPU 執行環境與記憶體
 
@@ -928,9 +928,9 @@ rendering 這一側我們會用到 GLX、Gallium、softpipe 與 `drisw`。 GLX �
 - 使用者以 `startx`／`xinit` 啟動 Xorg、`twm`、`xclock` 與 `xterm`。 `twm` 擔任 window manager。 這組桌面程式中不啟動負責合成各視窗內容的 compositor
 - OpenGL 使用 Mesa 的 direct software GLX 路徑。 direct 表示 OpenGL calls 由載入 application 行程的 Mesa userspace 實作執行，而不是編碼成 indirect GLX rendering requests 交給 X server。 software 表示 rendering 固定由 Gallium softpipe driver 使用 guest CPU 完成
 - GLX source-reading 主線從 Mesa 自己提供的公開 `libGL` 入口開始，也就是 Mesa 建置時的 `with_glvnd=false` 分支。 GLVND 是可選的 vendor-neutral dispatch layer，後文會另開比較支線，查看 Mesa 在 `with_glvnd=true` 時提供的 vendor ABI
-- Xorg 使用自己的 userspace modesetting display driver 管理顯示裝置。 這個 driver 會經 DRM／KMS 介面查詢與更新 kernel 保存的顯示狀態。 各視窗不會被重新導向各自的 off-screen storage，可見 pixels 會直接寫進 Xorg 管理的 X Screen 像素儲存區
-- Xorg 透過 Mesa `libgbm` 配置一份可由 CPU 寫入、也能供 KMS scanout 的整桌 buffer。 為了讓 Display overview 保持單一路徑，本節選擇 `GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT` candidate 經 DRI backend 的 `create_dumb()` 進入 `DRM_IOCTL_MODE_CREATE_DUMB`。 後面的 libgbm 章節會回到完整分支，說明相同結果也可能經 DRI image／`kms_swrast` 抵達
-- Guest 顯示裝置使用 virtio-gpu 2D。 `VIRTIO_GPU_F_VIRGL` 與 `VIRTIO_GPU_F_RESOURCE_BLOB` 均未協商，因此 kernel 會以 `RESOURCE_CREATE_2D` 建立傳統的 2D resource，再用 `RESOURCE_ATTACH_BACKING` 接上 guest 記憶體
+- Xorg 使用自己的 userspace modesetting display driver 管理顯示裝置。 這個 driver 會透過 Linux DRM／KMS 查詢可用的顯示輸出，並要求 kernel 套用解析度、顯示用 buffer 與 scanout state。 各視窗不會被重新導向各自的 off-screen storage，可見 pixels 會直接寫進 Xorg 管理的 X Screen 像素儲存區
+- `libgbm` 是 Mesa 提供的 userspace buffer API。 Xorg 會透過它配置一份可由 CPU 寫入、也能供 KMS scanout 的整桌線性 buffer，Display 章節會固定沿著這條 allocation 路徑往下追蹤
+- Guest 顯示裝置使用 virtio-gpu 2D。 Guest 與裝置沒有協商 VirGL 3D 或 blob resource 功能，因此 display 路徑會使用傳統 2D resource，並將 guest 記憶體接成該 resource 的 backing storage
 - Host emulator 使用 SDL2 display backend。 後文將這個終點稱為「本例的 SDL window」
 
 Xorg 的裝置設定如下：
@@ -955,19 +955,53 @@ export GALLIUM_DRIVER=softpipe
 
 ## Display：從 `startx` 建立 X Screen 到 scanout 更新
 
-使用者必須先啟動圖形桌面，齒輪程式才有辦法連線到 X server。 本節我們會從使用者執行 `startx` 開始，看它如何啟動 Xorg，再沿著 Xorg 內部的共用核心、裝置相依框架與顯示 driver，走到 Linux DRM／KMS 準備的 display 路徑
+現在我們把時間倒回 Linux 剛進入文字終端機的時刻。 此時還沒有 X server，也沒有 `twm`、`xterm` 與 `glxgears` 視窗。 使用者必須先啟動圖形環境，讓 Xorg 準備好桌面的座標範圍與像素儲存區，桌面 clients 才能連入並建立視窗
 
-### 使用者執行 `startx`：由 `xinit` 啟動 Xorg
+這一章會沿著下列順序，把 Display 這一側的主線接起來：
+
+```callgraph
+使用者在文字終端機執行 startx
+  │
+  │  startx 選出 X server 命令與系統的 xinitrc
+  ↓
+xinit 建立 Xorg 子行程
+  │
+  │  xinit 父行程等待 Xorg 接受第一條 X11 connection
+  ↓
+Xorg 準備 X Screen、桌面像素儲存區與 client 連線所需的資料
+  │
+  │  Xorg 透過 Linux DRM／KMS 建立初始 scanout state
+  ↓
+xinit 執行系統的 xinitrc
+  │
+  │  twm、xclock 與 xterm 分別連到 Xorg
+  ↓
+twm 登記為 window manager
+  │
+  │  後續 application Window 的顯示與位置要求會先經過 twm
+  ↓
+使用者從 xterm 啟動 glxgears
+  │
+  │  glxgears 建立 Window，twm 加上 frame 與 title
+  ↓
+Xorg 將新 pixels 寫入桌面像素儲存區
+  │
+  │  Xorg 將變動發布到既有 scanout
+  ↓
+使用者在螢幕上看見更新後的齒輪
+```
+
+### 使用者執行 `startx`：準備 Xorg 與桌面 client 命令
 
 在我們的例子中，當 Linux 開機並進入文字終端機後，若使用者想啟動圖形桌面，需要手動執行 `startx` 命令，開始建立圖形工作環境。 啟動完成後，螢幕上會出現由 `twm` 管理的 `xclock` 與 `xterm` 視窗，使用者接著便能從 `xterm` 開啟 `glxgears`
 
-本文把從 Xorg 啟動、桌面程式陸續連入並持續運作，到使用者離開桌面為止的完整圖形工作階段稱為 X11 session。 本文會使用三個元件來啟動這個 session：
+本文把從 Xorg 啟動、桌面程式陸續連入並持續運作，到使用者離開桌面為止的完整圖形工作階段稱為 X11 session。 本節先追蹤 `startx` 如何選出啟動這個 session 所需的兩組命令，終點是將 Xorg 與系統的 `xinitrc` 一起交給 `xinit`。 三個元件在這一步分別負責：
 
 - `startx` 是使用者執行的 shell script。 它負責選出要交給 `xinit` 的 X server 與 client，並整理兩者各自需要的參數
 - `xinit` 是由 C 原始程式碼編譯出的可執行檔。 在它的命令列語意中，client 位置表示 X server 就緒後要啟動的程式或 script。 `xinit` 會先啟動 Xorg 並等待 server 就緒，再執行這個位置指定的內容
 - 本文在 client 位置指定系統的 `xinitrc`。 這份 shell script 會啟動 `twm`、`xclock` 與 `xterm`，它們才是接著連到 Xorg 的 X11 clients
 
-#### `startx` 選出 Xorg 與系統的 `xinitrc`
+#### 本文 guest 中有哪些 X11 啟動元件
 
 這套啟動路徑需要 Xorg、libX11、`twm`、`xclock`、`xinit` 與 `xterm`。 Buildroot 是本文用來組裝 guest root filesystem 的建置系統。 以下設定來自 [`semu: configs/x11.config:17`](https://github.com/sysprog21/semu/blob/fd0812970c3c934b46e4897284894e9705355b50/configs/x11.config#L17-L26)，用來確認 Buildroot 會把這些彼此獨立的 X11 元件放進 guest root filesystem：
 
@@ -986,7 +1020,7 @@ BR2_PACKAGE_XAPP_XINIT=y
 BR2_PACKAGE_XTERM=y
 ```
 
-這些元件進入 guest root filesystem 後，使用者接著只會輸入 `startx`。 由於命令列沒有指定 Xorg 就緒後要執行的程式及其參數，`startx` 會選用系統的 `xinitrc`，再把它交給 `xinit` 執行
+##### `startx` shell script 如何由原始模板產生
 
 `startx.cpp` 是 `startx` shell script 的原始模板。 這裡的 `.cpp` 是 xinit 專案用來標記 C preprocessor 輸入檔的副檔名，與 C++ 無關。 以下建置規則取自 [`xinit: cpprules.in:15`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/cpprules.in#L15-18)：
 
@@ -1000,7 +1034,19 @@ SUFFIXES = .cpp
 
 對 `startx.cpp` 而言，`$<` 是輸入模板，`$@` 則是輸出的 `startx`。 模板內主要是 shell 語法，並混合 `#ifdef` 等 C preprocessor directives。 建置系統會先用 `RAWCPP` 展開 `XINITDIR`、`XTERM`、`XSERVER` 與 `XINIT` 等巨集，再用 `CPP_SED_MAGIC` 移除 C preprocessor 產生的行號，並把 `XCOMM` 轉成 shell script 使用的 `#`。 最後產生的 `startx` 便是安裝後由使用者執行的 shell script
 
-以下片段取自 [`xinit: startx.cpp:50`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L50-61) 與 [`xinit: startx.cpp:182`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L182-199)。 建置後產生的 `startx` 會依照這些 shell 程式碼檢查使用者的 `xinitrc` 與系統的 `xinitrc`，再把其中一份設成 client：
+#### 命令列沒有指定 client、server 與 display 時，`startx` 選用預設值
+
+這些元件進入 guest root filesystem 後，使用者接著只會輸入 `startx`。 `startx` 收到這條沒有其他參數的命令後，必須自行決定要啟動哪一個 X server、X server 就緒後要執行哪一個桌面 client 命令，以及這次 X server 要使用哪一個 display number
+
+以下片段依序取自：
+
+- [`xinit: startx.cpp:50`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L50-61)
+- [`xinit: startx.cpp:134`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L134-140)
+- [`xinit: startx.cpp:182`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L182-199)
+- [`xinit: startx.cpp:203`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L203-L225)
+- [`xinit: startx.cpp:242`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L242-245)
+
+我們依照實際執行順序，先看 `startx` 如何找出可用的 display number，再看它如何選出 client 與 X server，最後將 display 預設值套進實際參數：
 
 ```sh
 # [xinit: startx.cpp:50-61]
@@ -1008,13 +1054,27 @@ userclientrc=$HOME/.xinitrc
 [ -f "${XINITRC}" ] && userclientrc="${XINITRC}"
 sysclientrc=XINITDIR/xinitrc
 ...
+userserverrc=$HOME/.xserverrc
+...
+sysserverrc=XINITDIR/xserverrc
 defaultclient=XTERM
 defaultserver=XSERVER
 defaultclientargs=""
+defaultdisplay=""
 ...
 clientargs=""
 serverargs=""
 ...
+
+# [xinit: startx.cpp:134-140]
+XCOMM Automatically determine an unused $DISPLAY
+d=0
+while true ; do
+    [ -e "/tmp/.X$d-lock" -o -S "/tmp/.X11-unix/X$d" ] || break
+    d=$(($d + 1))
+done
+defaultdisplay=":$d"
+unset d
 
 # [xinit: startx.cpp:182-199]
 XCOMM process client arguments
@@ -1035,20 +1095,86 @@ XCOMM if no client arguments, use defaults
 if [ x"$clientargs" = x ]; then
     clientargs=$defaultclientargs
 fi
+
+# [xinit: startx.cpp:203-225]
+XCOMM process server arguments
+if [ x"$server" = x ]; then
+    server=$defaultserver
+    ...
+    if [ x"$serverargs" = x -a x"$display" = x ]; then
+        if [ -f "$userserverrc" ]; then
+            server=$userserverrc
+        elif [ -f "$sysserverrc" ]; then
+            server=$sysserverrc
+        fi
+    fi
+fi
+
+# [xinit: startx.cpp:242-245]
+XCOMM if no display, use default
+if [ x"$display" = x ]; then
+    display=$defaultdisplay
+fi
 ```
 
-由於使用者沒有指定 client，因此 `client` 一開始是空的，`clientargs` 也沒有內容。 `startx` 會先把 `client` 暫時設成預設的 `xterm`，接著檢查可用的 `xinitrc`。 由於本文環境沒有 `$HOME/.xinitrc`，`XINITRC` 也沒有指向另一份有效檔案，但 `sysclientrc` 指向的檔案存在，而這個檔案就是系統的 `xinitrc`，所以第二個檔案判斷會把 `client` 改成 `sysclientrc`
+同一台 Linux 電腦可以同時執行多個 X server，因此 `startx` 必須替即將啟動的 Xorg 選出一個尚未使用的 display number。 X11 clients 稍後會以這個編號組成 display name，例如 `:0`，藉此指定要連到哪一個 X server
 
-選好 client 後，`startx` 還要把 client 與 X server 兩側的參數交給 `xinit`。 以下程式碼來自 [`xinit: startx.cpp:310`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L307-310)，用來確認最後執行的命令：
+`startx` 會從 0 開始檢查。 `/tmp/.X0-lock` 與 `/tmp/.X11-unix/X0` 都表示 display number 0 可能已被使用，只要其中一個存在，迴圈就會繼續檢查下一個編號。 由於本文啟動前沒有其他 X server，因此第一次檢查便會停止，`defaultdisplay` 最後會為 `:0`
+
+由於使用者沒有指定 client，因此 `client` 一開始是空的，`clientargs` 也沒有內容。 `startx` 會先把 `client` 暫時設成預設的 `xterm`，接著檢查可用的 `xinitrc`。 由於本文環境沒有 `$HOME/.xinitrc`，`XINITRC` 也沒有指向另一份有效檔案，但 `sysclientrc` 指向的系統 `xinitrc` 存在，所以第二個檔案判斷會把 `client` 改成 `sysclientrc`
+
+Server 一側同樣沒有收到自訂命令或參數，因此 `server` 會先設成 `defaultserver`。 `startx` 接著會依序檢查使用者的 `$HOME/.xserverrc`，以及 `XINITDIR/xserverrc` 指向的系統 `xserverrc`。 這兩種檔案都是用來啟動 X server 的 shell script。 找到其中一份時，`startx` 便會改以該 script 作為 server 命令
+
+而因為本文的 guest 沒有這兩份 `xserverrc`，所以 `server` 會保持為 `defaultserver`
+
+這個 `defaultserver` 來自建置時的 `XSERVER`。 [`xinit: configure.ac:49`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/configure.ac#L49) 會將其預設值設為 `${bindir}/X`
+
+本文的組態會把 `${bindir}` 展開成 `/usr/bin`，因此建置後的 `startx` 會以 `/usr/bin/X` 作為預設 server 命令。 本文 guest 安裝的 X server 是 Xorg，所以執行 `/usr/bin/X` 後便會啟動 Xorg
+
+:::tip
+X server 是接收 X11 requests、管理 X11 resources 並將結果提供給顯示環境的角色。 除了本文使用的 Xorg，Linux 上還會看到下列實作：
+
+- `Xvfb` 在記憶體中建立虛擬 framebuffer，不需要實體顯示裝置，常用於自動化測試與無螢幕環境
+- `Xephyr` 在既有的 X server 裡開啟一個視窗，並在該視窗中提供另一套 X server，常用來測試巢狀桌面或隔離不同的 X11 session
+- `Xwayland` 在 Wayland compositor 底下提供 X server。 對 X11 applications 而言，它仍扮演 X server，另一側則以 Wayland client 的身分把視窗交給 compositor
+
+本文的 `/usr/bin/X` 會啟動 Xorg，由 Xorg 直接沿 DRM／KMS 路徑管理本文使用的顯示裝置
+:::
+
+命令列同樣沒有提供 `display`，所以最後一段會執行 `display=$defaultdisplay`。 到這裡，我們可以看到 client 指向了系統的 `xinitrc`，server 選到了啟動 Xorg 的入口，而實際傳給下一個程式的 `display` 則為 `:0`
+
+:::tip
+X display name 常見的格式是：
+
+```text
+[host]:display[.screen]
+```
+
+- `host` 表示 X server 所在的主機。 省略時表示本機
+- `display` 表示該主機上的 X server instance 編號。 同一台主機同時執行多個 X servers 時，各自需要不同的 display number。 對本機連線而言，display number 0 會用到 `/tmp/.X11-unix/X0` 這個 UNIX domain socket 路徑，display number 1 則對應 `/tmp/.X11-unix/X1`
+- `screen` 會在選定 X server 後，指定這條 connection 預設使用該 server 管理的哪一個 X Screen。 每個 X Screen 都有自己的 Root Window、桌面座標範圍與 pixel formats。 省略 screen number 時會使用 X Screen 0
+
+因此，`:0` 表示連到本機編號 0 的 X server，並預設使用 X Screen 0。 `:0.0` 則把相同的 X Screen 0 明確寫了出來。 若這個 X server 還管理 X Screen 1，`:0.1` 依然會連到同一個 X server 與 `/tmp/.X11-unix/X0`，只是將 X Screen 1 設成這條 connection 的預設 X Screen
+
+X Screen number 不是螢幕或顯示輸出的編號。 一個 X Screen 可以橫跨多個顯示輸出，因此同時連接多台螢幕時，X server 仍可能只提供 X Screen 0
+:::
+
+#### `startx` 把 Xorg、`xinitrc` 與 display name 交給 `xinit`
+
+選好 client、X server 與 display name 後，`startx` 會把這三項結果連同兩側的參數交給 `xinit`。 以下程式碼來自 [`xinit: startx.cpp:310`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/startx.cpp#L307-310)，用來確認最後執行的命令：
 
 ```sh
 # [xinit: startx.cpp:310]
 XINIT "$client" $clientargs -- "$server" $display $serverargs
 ```
 
-建置完成時，`XINIT` 會展開成 `xinit`。 此時 `client` 指向系統的 `xinitrc`，`server` 則指向 Xorg 可執行檔。 `startx` 到這裡便把兩側的命令整理完成了，接下來由 `xinit` 控制它們的啟動順序
+建置完成時，`XINIT` 會展開成 `xinit`。 此時 `client` 指向系統的 `xinitrc`，`server` 指向會啟動 Xorg 的 server 入口，`display` 則是剛才選出的 `:0`。 `startx` 到這裡便把啟動所需的命令與 display name 整理完成了，接下來由 `xinit` 控制兩側的啟動順序
 
-### `xinit` 父行程：`startServer()` 建立 Xorg 子行程
+### `xinit` 建立 Xorg 子行程，並等待它接受 X11 connection
+
+前面 `startx` 已經把啟動 Xorg 的 server 命令、系統的 `xinitrc` 與 display name `:0` 交給了 `xinit`。 接下來我們想知道 `xinit` 該如何確保 X server 會先完成啟動，再執行會連到這個 server 的桌面 clients
+
+本節我們會先看 `xinit` 是如何建立 Xorg 子行程的，再接著看父行程是如何以 `XOpenDisplay()` 實際測試 connection 的。 等這個呼叫成功後，`xinit` 才會繼續執行系統的 `xinitrc`
 
 以下程式碼來自 [`xinit: xinit.c:146`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinit.c#L146-155) 與 [`xinit: xinit.c:294`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinit.c#L294-301) 的 `main()`，用來確認 X server 與 client 的啟動順序：
 
@@ -1070,7 +1196,9 @@ main(int argc, char *argv[])
 }
 ```
 
-由於 C 的 `&&` 會由左往右判斷，`main()` 會先呼叫 `startServer(server)`。 傳入的 `server[0]` 是 Xorg 可執行檔，`startServer()` 會建立 Xorg 子行程，並在父行程中確認這個 X server 已能接受 connection。 只有 `startServer()` 回傳正值後，`main()` 才會去判斷右側的 `startClient(client) > 0`
+由於 C 的 `&&` 會由左往右判斷，`main()` 會先呼叫 `startServer(server)`，其中 `server` 內帶有前一節選出的 X server 命令與參數。 `startServer()` 會先建立子行程，子行程再以 `Execute(server_argv)` 執行選定的 X server。 本文選到的 `/usr/bin/X` 會啟動 Xorg，因此這個子行程接著會被 Xorg 取代
+
+`xinit` 父行程則會等到確認 Xorg 已能接受 connection 後，再從 `startServer()` 回到 `main()`，繼續判斷右側的 `startClient(client) > 0`。 `startClient()` 會建立另一個子行程，設定 `DISPLAY=:0`，再執行前面選出的系統 `xinitrc`。 這份 script 接著會啟動 `twm`、`xclock` 與 `xterm`，讓它們連到剛就緒的 Xorg
 
 接著我們看一下 `startServer()` 是如何把這條執行路徑分成父、子兩個行程的。 以下程式碼來自 [`xinit: xinit.c:393`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinit.c#L393-476)：
 
@@ -1090,7 +1218,7 @@ startServer(char *server_argv[])
 
     switch(serverpid) {
     case 0:
-        // Xorg 子行程：恢復原本的訊號遮罩，再忽略 SIGUSR1
+        // 子行程：準備以選定的 X server 取代自己
         sigprocmask(SIG_SETMASK, &old, NULL);
         ...
         signal(SIGUSR1, SIG_IGN);
@@ -1125,9 +1253,12 @@ startServer(char *server_argv[])
 }
 ```
 
-`switch(serverpid)` 直接分開兩條路徑。 `case 0` 是即將進入 Xorg 的子行程，`default` 則是繼續留在 `xinit` 裡的父行程
+`startServer()` 在 `fork()` 前會先封鎖 `SIGUSR1`，避免 Xorg 太早送出通知而讓父行程錯過。 `fork()` 回傳後，`switch(serverpid)` 將執行流程分成兩條路徑：
 
-其中 `waitforserver()` 用來確認 Xorg 已經能接受 X11 connection。 以下程式碼來自 [`xinit: xinit.c:333`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinit.c#L333-362)：
+- `case 0` 是子行程。 它會恢復原本的訊號遮罩，將 `SIGUSR1` 的處理方式設成 `SIG_IGN`，再以 `Execute(server_argv)` 將自己換成 Xorg
+- `default` 是仍在執行 `xinit` 的父行程。 它會設定 15 秒的 alarm，接著停在 `sigsuspend()`，等待 Xorg 送出 `SIGUSR1`。 收到通知或 alarm 到期後，父行程才會呼叫 `waitforserver()`，實際嘗試建立 connection
+
+其中 `waitforserver()` 用來確認 Xorg 已能開始接受 X11 connection。 以下程式碼來自 [`xinit: xinit.c:333`](https://gitlab.freedesktop.org/xorg/app/xinit/-/blob/xinit-1.4.2/xinit.c#L333-362)：
 
 ```c
 // [xinit: xinit.c:333-362]
@@ -1155,27 +1286,18 @@ waitforserver(void)
 }
 ```
 
-`displayNum` 保存本文使用的 X display name `:0`，用來選擇這次要連線的 X server。 `ncycles` 將嘗試次數限制在 120 次。 每一輪都會以 `displayNum` 呼叫 `XOpenDisplay()`，嘗試建立 X11 connection。 成功時，`XOpenDisplay()` 會回傳代表這條 libX11 connection 的 `Display *`，並存入全域變數 `xd`，`waitforserver()` 隨即回傳 `TRUE`
+`displayNum` 保存著前一節由 `startx` 傳入的 `:0`，讓 `XOpenDisplay()` 知道這次要連到本機編號 0 的 X server
 
-:::tip
-X display name 常見的格式是：
+`ncycles` 將嘗試次數限制在 120 次。 每一輪都會以 `displayNum` 呼叫 `XOpenDisplay()`，嘗試建立 X11 connection。 成功時，`XOpenDisplay()` 會回傳代表這條 libX11 connection 的 `Display *`，並存入全域變數 `xd`。 `waitforserver()` 隨即回傳 `TRUE`
 
-```text
-[host]:display[.screen]
-```
+如果 `XOpenDisplay()` 失敗，`processTimeout()` 會短暫等待，同時檢查 Xorg 行程是否仍在執行。 如果 Xorg 還在執行，那迴圈會進入下一輪，再次嘗試建立 connection。 當 Xorg 已經結束，或嘗試了 120 次都沒有成功時，`waitforserver()` 會回傳 `FALSE`
 
-- `host` 表示 X server 所在的主機。 省略時表示本機
-- `display` 表示該主機上的 X server instance 編號。 同一台主機同時執行多個 X servers 時，各自需要不同的編號
-- `screen` 表示這條 connection 預設使用哪一個 X Screen。 省略時使用 X Screen 0
+因此 `waitforserver()` 在這裡會產生兩種結果，讓我們結合外層的 `startServer()` 一起來看：
 
-因此，`:0` 表示連到本機編號 0 的 X server，並預設使用 X Screen 0。 `:0.0` 則把相同的 X Screen 0 明確寫了出來
-:::
+- `waitforserver()` 回傳 `TRUE` 時，`startServer()` 會回傳正值 `serverpid`，讓 `main()` 繼續呼叫 `startClient()`
+- `waitforserver()` 回傳 `FALSE` 時，`startServer()` 會執行 `shutdown()`、將 `serverpid` 設為 `-1`，再回到 `main()`。 `&&` 左側的判斷失敗後，`main()` 不會呼叫 `startClient()`
 
-如果 `XOpenDisplay()` 失敗，`processTimeout()` 會短暫等待，同時檢查 Xorg 行程是否仍在執行。 Xorg 還在執行時，迴圈會進入下一輪，再次嘗試建立 connection。 Xorg 已經結束，或 120 次嘗試都沒有成功時，`waitforserver()` 會回傳 `FALSE`
-
-`startServer()` 在 `fork()` 前會先封鎖 `SIGUSR1`。 子行程會恢復原本的訊號遮罩，將 `SIGUSR1` 的處理方式設成 `SIG_IGN`，再以 `Execute(server_argv)` 進入 Xorg。 父行程會以 `sigsuspend()` 等待 Xorg 的 `SIGUSR1`，或在 `alarm(15)` 到期後醒來，接著呼叫 `waitforserver()`
-
-`SIGUSR1` 會喚醒 `xinit`，接著 `waitforserver()` 再以實際建立 connection 的結果判斷 X server 是否就緒。 `XOpenDisplay()` 成功後，`startServer()` 才會回傳正值。 將這兩個函式放回 `main()` 的判斷式後，父、子行程的主要分支如下：
+將這兩個函式放回 `main()` 的判斷式後，父、子行程的主要分支如下：
 
 ```callgraph
 [xinit: xinit.c:294] int main(int argc, char *argv[])
@@ -1192,18 +1314,16 @@ static pid_t startServer(char *server_argv[])
   │  sigprocmask(SIG_BLOCK, &mask, &old);
   │  serverpid = fork();
   │
-  ├─ serverpid == 0：Xorg 子行程
+  ├─ serverpid == 0：準備啟動 X server 的子行程
   │    │
   │    │  sigprocmask(SIG_SETMASK, &old, NULL);
   │    │  signal(SIGUSR1, SIG_IGN);
   │    │  ...
   │    │  Execute(server_argv);
+  │    │  // 本文選到的 /usr/bin/X 會啟動 Xorg
   │    ↓
-  │  啟動 Xorg
-  │    │
-  │    │  // 本文下一節會沿這條子行程繼續追蹤
-  │    ↓
-  │  Xorg 初始化顯示裝置與 connection setup 資料
+  │  子行程被 Xorg 取代
+  │    // 下一節會沿這條分支繼續追蹤
   │
   └─ serverpid > 0：xinit 父行程
        │
@@ -1226,44 +1346,125 @@ static pid_t startServer(char *server_argv[])
        ├─ XOpenDisplay() 成功：return TRUE
        │    ↓
        │  startServer() 回傳正值 serverpid
-       │    │
-       │    │  // 回到 main()，接著去判斷 startClient(client) > 0
        │    ↓
-       │  稍後回到 xinit 父行程
+       │  main() 可以繼續判斷 startClient(client) > 0
        │
        └─ XOpenDisplay() 失敗：下一輪再嘗試
 ```
 
-### Xorg 子行程：完成顯示初始化與 connection setup
+到這裡，`xinit` 父行程的流程已經完整了。 `startServer()` 會等待 Xorg，並以 `XOpenDisplay(":0")` 確認它已能接受 connection，成功後再讓 `main()` 繼續呼叫 `startClient()`。 下一節會回到 `fork()` 建立的子行程，追蹤 `Execute(server_argv)` 啟動 Xorg 後需要完成哪些初始化，才能讓這次 `XOpenDisplay()` 成功
 
-`xinit` 父行程停在 `startServer()` 內等待 Xorg 通知時，`Execute(server_argv)` 會將 `startServer()` 建立的子行程換成 Xorg。 Xorg 子行程接著會找出顯示裝置、建立 X Screen 與 pixel storage，再進入 event loop
+### Xorg 子行程：讓 `xinit` 成功建立第一條 X11 connection
 
-在進入顯示初始化以前，Xorg 會以 `CreateWellKnownSockets()` 建立接受 client connections 的 listening sockets。 建立這些 sockets 的過程中還會呼叫到 `InitParentProcess()`，其內會保存啟動 Xorg 的 `xinit` 父行程 PID，供稍後傳送 `SIGUSR1` 使用。 建立 Listening socket 後，其他行程便有了可以連線的 endpoint
+現在回到 `fork()` 剛建立子行程的時間點。 `Execute(server_argv)` 會將這個子行程換成 Xorg，`xinit` 父行程則在另一條分支等待 `XOpenDisplay(":0")` 成功。 這個呼叫不只要建立 transport connection，還要完成 X11 connection setup，取得 X server 與各個 X Screens 的基本資料
 
-以下程式碼來自 [`Xorg: dix/main.c:153`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/main.c#L153-L160) 與 [`Xorg: os/connection.c:285`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/os/connection.c#L285-L308)，用來查看 Xorg 此時如何建立 listening sockets、把它們登記進 event loop，並保存稍後通知 `xinit` 時要用的父行程資訊：
+因此，本節要回答的是，剛啟動的 Xorg 必須準備哪些資料並進入哪一段 event loop，才能接受這條 connection 並送回 setup reply
+
+我們會依序追蹤四個階段：
+
+1. 建立 X11 clients 可以連線的 endpoint
+2. 從 Linux 顯示裝置取得組態，建立 X Screen 與桌面像素儲存區
+3. 建立 Root Window，並把 X Screen 資料序列化成 connection setup reply
+4. 進入 `Dispatch()`，完成首次 scanout，再接受 `xinit` 的 connection 並送出 reply
+
+我們會從 Xorg 剛被 `Execute()` 啟動的地方開始，一路追到它接受 `xinit` 發起的 connection、送回 X11 connection setup 所需的資料，讓 `XOpenDisplay(":0")` 成功取得 `Display *`。 後續 `twm`、`xclock` 與 `xterm` 也會透過相同的流程建立各自的 X11 connection
+
+#### 建立 X11 clients 可以連線的 endpoint
+
+首先，剛啟動的 Xorg 需要建立一個讓 X11 clients 可以連線的 endpoint。 為了達成這件事，Xorg 必須先從啟動參數取得這次使用的 display number，再建立對應的 listening socket，並將 socket fd 登記進 event loop
+
+現在讓我們沿著前一節的子行程繼續往下看。 `Execute()` 啟動 Xorg 可執行檔後，程式會先進入 `main()`，這個入口會把啟動參數直接交給 `dix_main()`。 以下程式碼來自 [`Xorg: dix/stubmain.c:31`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/stubmain.c#L31-L35)：
 
 ```c
-// [Xorg: dix/main.c:153-160]
+// [Xorg: dix/stubmain.c:31-35]
+int
+main(int argc, char *argv[], char *envp[])
+{
+    return dix_main(argc, argv, envp);
+}
+```
+
+`dix_main()` 是安排 X server 初始化工作的頂層函式。 以下程式碼來自 [`Xorg: dix/main.c:135`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/main.c#L135-L160)，列出了本節會追蹤的三個步驟：解析啟動參數、建立 clients 使用的連線入口，以及開始初始化顯示裝置
+
+```c
+// [Xorg: dix/main.c:135-160]
 int
 dix_main(int argc, char *argv[], char *envp[])
 {
+    display = "0";
+
+    InitRegions();
+
+    CheckUserParameters(argc, argv, envp);
+    CheckUserAuthorization();
+
+    ProcessCommandLine(argc, argv);
     ...
+
     InitBlockAndWakeupHandlers();
     OsInit();
 
     CreateWellKnownSockets();
-    // 建立並登記 clients 用來發起 connections 的 endpoints，
-    // 同時保存 xinit 父行程資訊
     ...
     InitOutput(argc, argv);
-    // 前一步完成後，開始初始化顯示裝置
     ...
 }
+```
 
-// [Xorg: os/connection.c:285-308]
+首先，`ProcessCommandLine()` 會從參數中找出 Xorg 這次使用的 display number。 以下程式碼來自 [`Xorg: os/utils.c:404`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/os/utils.c#L404-L440)，用來處理本文由 `startx` 傳入的 `:0`：
+
+```c
+// [Xorg: os/utils.c:404-440]
+void
+ProcessCommandLine(int argc, char *argv[])
+{
+    ...
+    for (i = 1; i < argc; i++) {
+        ...
+        else if (argv[i][0] == ':') {
+            // 本文的 argv[i] 是 ":0"
+            display = argv[i];
+            explicit_display = TRUE;
+            display++;
+            // 略過開頭的 ':'，讓 display 指向字串 "0"
+            ...
+        }
+    }
+}
+```
+
+`ProcessCommandLine()` 看到 `:0` 後，會讓 `display` 指向去掉冒號後的字串 `"0"`。 因此，接下來的初始化工作已經知道 Xorg 這次要使用 display number 0
+
+`ProcessCommandLine()` 回傳後，執行流程會回到 `dix_main()`。 Xorg 完成作業系統相關的初始化後，接著會呼叫 `CreateWellKnownSockets()`。 這個函式會依剛才取得的 display number 建立 listening sockets，將 socket fds 登記進 event loop，並保存稍後通知 `xinit` 時需要的父行程資訊
+
+以下程式碼來自 [`Xorg: os/connection.c:225`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/os/connection.c#L225-L308)，用來查看 Xorg 如何為 display number 0 建立 clients 可以連線的 endpoint：
+
+```c
+// [Xorg: os/connection.c:225-308]
+static Bool
+TryCreateSocket(int num, int *partial)
+{
+    char port[20];
+
+    snprintf(port, sizeof(port), "%d", num);
+
+    return (_XSERVTransMakeAllCOTSServerListeners(port, partial,
+                                                  &ListenTransCount,
+                                                  &ListenTransConns) >= 0);
+}
+
 void
 CreateWellKnownSockets(void)
 {
+    int i;
+    int partial = 0;
+    ...
+
+    // ProcessCommandLine() 已讓 display 指向字串 "0"
+    if (TryCreateSocket(atoi(display), &partial) &&
+        ListenTransCount >= 1)
+        ...
+
     ...
     for (i = 0; i < ListenTransCount; i++) {
         int fd = _XSERVTransGetConnectionNumber(ListenTransConns[i]);
@@ -1278,11 +1479,19 @@ CreateWellKnownSockets(void)
 }
 ```
 
-Xorg 會以 `SetNotifyFd()` 將每個 listening fd 與 `EstablishNewConnections` callback 登記進 event-loop infrastructure，並以 `InitParentProcess()` 保存 `xinit` 的 PID。 完成這些工作後，`dix_main()` 會呼叫 `InitOutput()`，開始初始化顯示裝置。 接下來，我們會沿著這個 call，看 Xorg 如何準備 X11 clients 建立視窗所需的顯示環境
+`atoi(display)` 會將字串 `"0"` 轉成整數 0，再交給 `TryCreateSocket()`。 其內的 `_XSERVTransMakeAllCOTSServerListeners()` 會依 Xorg 啟用的連線方式，為 display number 0 建立一組 listening sockets
 
-#### 把 Linux 顯示裝置建立成第一個 X Screen
+本文的 `xinit`、`twm`、`xclock`、`xterm` 與 `glxgears` 都在同一台 Linux 電腦上執行，因此可以透過 UNIX domain socket 連到 Xorg。 當 display number 是 0 時，Xorg 會建立路徑為 `/tmp/.X11-unix/X0` 的 socket，其中 `X0` 的 `0` 就是 display number 0
 
-Xorg 要能接受第一個 X11 client，必須先準備一個可讓 client 建立視窗的桌面座標範圍，並確定這個範圍的寬度、高度與可用的 pixel formats。 X11 將這一組顯示資源稱為 X Screen
+建立 sockets 後，`SetNotifyFd()` 會將每個 listening fd 與 `EstablishNewConnections()` callback 一起登記進 event loop。 當某個 client 發起 connection，使 listening fd 變成可讀狀態時，event loop 便會呼叫這個 callback。 `EstablishNewConnections()` 會接受等待中的 connection，取得新的 client fd，再建立 Xorg 用來保存 client 狀態的資料
+
+`CreateWellKnownSockets()` 最後會以 `InitParentProcess()` 檢查父行程是否正在等待 `SIGUSR1`，並以 `getppid()` 保存 `xinit` 的 PID。 Xorg 完成後續初始化時，便能用這個 PID 通知 `xinit`
+
+`CreateWellKnownSockets()` 回傳後，執行流程再次回到 `dix_main()`。 連線入口與父行程資訊都已準備完成，所以下一個 `InitOutput()` 會開始取得顯示裝置組態
+
+#### 從 Linux 顯示裝置取得組態，配置第一個 `ScreenRec`
+
+要讓 `XOpenDisplay()` 完成 X11 setup，Xorg 必須先準備一個可讓 clients 建立視窗的桌面座標範圍，並確定這個範圍的寬度、高度與可用的 pixel formats。 X11 將這一組顯示資源稱為 X Screen
 
 每個 X Screen 都有自己的座標系統、寬度、高度、可用 color depths，以及用來解讀 pixel values 的 visuals。 X server 還會為它建立一個 Root Window，作為該 X Screen 的 Window tree 根節點。 由於本文只建立了一個 X Screen，因此稍後出現的整個桌面都位於 X Screen 0 的座標範圍內
 
@@ -1467,7 +1676,7 @@ ScreenInfo screenInfo;
 
 由於本文只建立一個 X Screen，所以完成初始化後，`screenInfo.numScreens` 是 1，`screenInfo.screens[0]` 會指向 X Screen 0 的 `ScreenRec`。 後面在初始化 X Screen 像素儲存區、建立 Root Window 與 connection setup reply 的時候，都會從這筆 server-side record 取出所需資料
 
-##### 建立 `ScreenRec` 前：DIX、DDX 與實際顯示裝置如何分工
+##### 取得顯示組態時，DIX、XFree86 DDX 與 modesetting 如何分工
 
 上一節先介紹了完成初始化後的 object model：Xorg 會以一筆 `ScreenRec` 保存 X Screen 0 的 server-side 狀態，再透過 Root Window 管理 Window tree。 現在回到 Xorg 子行程的顯示初始化時間線。 此時全域的 `screenInfo` 已經存在，但 `screenInfo.numScreens` 仍是 0，`screenInfo.screens[]` 裡也還沒有第一筆 `ScreenRec`
 
@@ -2191,7 +2400,7 @@ xf86ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
 進入 modesetting `ScreenInit()` 前，`xf86ScreenInit()` 已讓 `ScrnInfoRec::pScreen` 指向正在初始化的 `ScreenRec`。 接下來沿著這個 callback 建立 pixel storage，等它回傳後再繼續執行 `InitOutput()`
 
-#### modesetting `ScreenInit()` 完成 `ScreenRec` 並建立 pixel storage
+#### modesetting `ScreenInit()` 填入 `ScreenRec` 並建立 front BO
 
 前一節停在 `xf86ScreenInit()` 呼叫 modesetting `ScreenInit()`。 DIX 已配置並登記 `ScreenRec`，`ScrnInfoRec` 也已保存選定的 depth、virtual size 與 display mode。 接下來，modesetting driver 要為這個 X Screen 建立像素儲存區，並將 X server 共用的繪圖與顯示管理功能接進 `ScreenRec`
 
@@ -2265,7 +2474,7 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 }
 ```
 
-##### 第一階段：建立 front BO
+##### 建立 X Screen 使用的 front BO
 
 Xorg 將 DRM fd 交給 `gbm_create_device()` 後，GBM 會先選出一個 backend，讓後續的 `gbm_bo_create()` 能把尺寸、pixel format 與 usage flags 轉成實際的 buffer allocation。 不同 backend 與 capability 可能讓 front BO 經過不同建立路徑。 本節的目標是先看懂 Xorg 到 kernel 的分層，因此下方 callgraph 會選擇 Mesa DRI backend 直接建立 dumb BO 的分支
 
@@ -2450,7 +2659,7 @@ GBM DRI backend 會將 `pitch` 與 `handle` 放入對外使用的 GBM object，�
 
 Linux `virtio_gpu` driver 在同一次建立中配置 GEM shmem backing，並取得作為 virtio resource ID 的 `hw_res_handle`。 `virtio_gpu_cmd_create_resource()` 將 `RESOURCE_CREATE_2D` 排入 control virtqueue，也就是 guest driver 用來向 virtio-gpu device 傳送控制命令的 virtqueue。 Host device 會建立可由 resource ID 引用的 2D resource，`virtio_gpu_object_attach()` 接著以 `RESOURCE_ATTACH_BACKING` 將 guest pages 接給這個 resource
 
-##### 第二、三階段：準備 visuals／depths 並填入 `ScreenRec`
+##### 填入 X Screen 尺寸、depths 與 visuals
 
 `miSetVisualTypes()` 與 `miSetPixmapDepths()` 準備可用 visuals／depths，`fbScreenInit()` 再用 `virtualX`、`virtualY` 與 bits per pixel 初始化 `ScreenRec` 的尺寸與 framebuffer callbacks。 這裡傳入的 pixel pointer 是 `NULL`，真正的 front BO mapping 會等後面的 `modesetCreateScreenResources()` 再交給 screen Pixmap
 
@@ -2555,7 +2764,7 @@ miScreenInit(ScreenPtr pScreen, void *pbits, int xsize, int ysize,
 
 等 `glxgears` 後面要求建立 application Window，DIX 的 `dixCreateWindow()` 便會呼叫這個 callback slot。 在 client 連入以前，Xorg 還會由 Composite extension 包裝這個 slot。 實際的 Window request path 會等故事走到 `glxgears` 時再沿程式碼展開
 
-##### 最後階段：登記 screen callbacks 並初始化 RandR state
+##### 登記建立 screen Pixmap 與首次 scanout 所需的 callbacks
 
 `ScreenInit()` 還會登記兩個 callbacks，來源分別位於 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:2089`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L2089) 與 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:2136`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L2136-L2137)
 
@@ -2565,7 +2774,9 @@ miScreenInit(ScreenPtr pScreen, void *pbits, int xsize, int ysize,
 
 [`Xorg: hw/xfree86/modes/xf86Crtc.c:803`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/modes/xf86Crtc.c#L803-L839) 的 `xf86CrtcScreenInit()` 會把前面介紹的 RandR interface 接到這個 X Screen。 它會依據與 `ScrnInfoRec` 關聯的 output／CRTC configuration，初始化目前 `ScreenRec` 的 RandR state 與 hooks
 
-#### `ScreenInit()` 回傳後：連接 `ScrnInfoRec` 與 `ScreenRec`，再建立 screen Pixmap
+#### `ScreenInit()` 回傳後，完成 X Screen 的 runtime resources
+
+##### 連接 `ScrnInfoRec` 與 `ScreenRec`
 
 `ScreenInit()` 成功回傳後，先前暫停的 `AddScreen()` 與 `InitOutput()` 會繼續連接同一個 X Screen 的 `ScrnInfoRec` 與 `ScreenRec`。 `dixSetPrivate()` 將 `ScrnInfoRec *` 寫入 `ScreenRec::devPrivates` 的 `xf86ScreenKey` slot，`ScrnInfoRec::pScreen` 則再次指向相同的 `ScreenRec`：
 
@@ -2585,7 +2796,7 @@ ScreenInit() 回傳 TRUE
      InitOutput() 完成，回到 dix_main()
 ```
 
-##### Xorg screen `PixmapRec` 與 mapped front BO
+##### screen Pixmap 如何借用 mapped front BO
 
 `InitOutput()` 完成後，`dix_main()` 會開始建立 screen resources，並呼叫剛才登記的 `modesetCreateScreenResources()`。 此時系統的 `xinitrc` 尚未啟動 `twm`、終端機與時鐘，但 Xorg 已經需要一份 storage，準備保存整個 X Screen 當下可見的桌面結果。 下圖先追蹤 Xorg `PixmapRec` 如何連到這份 storage，並同時預告稍後建立的 KMS framebuffer 與 scanout objects
 
@@ -2758,9 +2969,11 @@ Linux DRM：GEM dumb BO 與 guest shmem backing
 
 稍後建立的 KMS framebuffer 會引用同一個 GEM BO。 此時 Xorg 已經準備好 X Screen 像素儲存區，KMS 尚未把它選成 scanout source
 
-#### 將 X Screen 資料準備成 connection setup reply
+#### 建立 Root Window 與 connection setup reply，再通知 `xinit`
 
-使用者此刻仍在等待，Xorg 要先準備第一條 client connection 所需的共同資料。 由於 Xorg 與 X11 client 位於不同的行程，application 不能直接讀取 Xorg 行程裡的 `ScreenRec`。 Xorg 會將 client 需要的 server-wide 資料與各個 X Screen 的資料序列化至一段名為 `ConnectionInfo` 的連續 byte buffer，作為 connection setup reply 的共同內容
+到目前為止，Xorg 已經建立 `ScreenRec`、front BO 與 screen Pixmap。 這些都是 Xorg 行程內的 objects，`xinit` 的 `XOpenDisplay()` 無法直接讀取它們的 pointers。 Xorg 還需要建立 Root Window，並把 X11 client 在 connection setup 時需要的資料序列化成 protocol reply
+
+##### 建立覆蓋 X Screen 的 Root Window
 
 `ScreenInit()` 回傳後，DIX 會呼叫 `modesetCreateScreenResources()` 建立 screen resources，再為每個 X Screen 建立 Root Window。 Root Window 是這棵 Window tree 的第一筆 `WindowRec`，它的大小覆蓋整個 X Screen，`ScreenRec::root` 也從這時開始指向有效 object
 
@@ -2809,7 +3022,9 @@ CreateRootWindow(ScreenPtr pScreen)
 
 `parent = NullWindow` 表示 Root Window 位於 Window tree 最上方。 它的 `drawable.id` 是 X server 配置的 XID，四個初始 Region 則都先覆蓋整個 X Screen。 這筆 XID、X Screen 尺寸、depth 與 visual 稍後都會進入 connection setup reply
 
-Root Window 建立後，Xorg 會初始化輸入裝置，再呼叫 `CreateConnectionBlock()`，將各個 X Screen 的資料依序編碼進 buffer
+##### 將 X Screen 資料序列化成 setup reply
+
+Root Window 建立後，Xorg 會初始化輸入裝置，再呼叫 `CreateConnectionBlock()`，將各個 X Screen 的資料依序編碼進一段名為 `ConnectionInfo` 的連續 byte buffer。 這段 buffer 是 setup reply 的共用 template，先保存所有 clients 都需要的 X Screen、Root Window、depth 與 visual 資料。 每個 client 專屬的 resource ID range 與當下的 Root Window input mask，會等 `SendConnSetup()` 準備送出 reply 時再填入
 
 以下程式碼來自 [`Xorg: dix/main.c:134`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/main.c#L134-L288)，用來確認 `CreateConnectionBlock()` 與 `Dispatch()` 的執行順序：
 
@@ -2935,7 +3150,9 @@ CreateConnectionBlock(void)
 
 `xWindowRoot` 內保存了 Root Window XID、Screen 尺寸、預設 root depth 與 root visual 等資料。 後續的 `xDepth` 與 `xVisualType` records 則列出了該 Screen 可用的 depths 與 visuals。 `numRoots` 會等於 X Screens 的數量，因為每個 X Screen 都有一個 Root Window
 
-因此結合 `dix_main()` 的內容可知，`CreateConnectionBlock()` 會在 `Dispatch()` 前先執行一次，按照 `screenInfo.screens[]` 既有的順序，將各個 X Screen 序列化至 `ConnectionInfo`。 Connection block 依賴的是已完成的 `ScreenRec`、Root Window、depths 與 visuals，不需要等待 active scanout，因此它早於 KMS framebuffer 的建立與第一次 modeset
+因此結合 `dix_main()` 的內容可知，`CreateConnectionBlock()` 會在 `Dispatch()` 前先執行一次，按照 `screenInfo.screens[]` 既有的順序，將各個 X Screen 序列化至 `ConnectionInfo` template。 這份共用內容依賴的是已完成的 `ScreenRec`、Root Window、depths 與 visuals，不需要等待 active scanout，因此它早於 KMS framebuffer 的建立與第一次 modeset
+
+##### Xorg 以 `SIGUSR1` 通知等待中的 `xinit`
 
 `startServer()` 建立子行程時，曾將子行程處理 `SIGUSR1` 的方式設成 `SIG_IGN`。 這項設定會在 `Execute(server_argv)` 執行 Xorg 後保留下來
 
@@ -2957,11 +3174,13 @@ NotifyParentProcess(void)
 }
 ```
 
-這時 `ConnectionInfo` 已保存 connection setup reply 共用的資料，但 `waitforserver()` 的 `XOpenDisplay()` 尚未成功。 Xorg 還要進入 `Dispatch()`，讓 event loop 建立第一個 KMS framebuffer 並完成首次 scanout 綁定，接著實際處理 `XOpenDisplay()` 的 connection 與 setup exchange
+這時 `ConnectionInfo` template 已保存 connection setup reply 共用的資料。 `NotifyParentProcess()` 會向 `xinit` 送出 `SIGUSR1`。 父行程仍停在 `sigsuspend()` 時，這個 signal 會將它喚醒。 父行程若已因 alarm 到期而進入 `waitforserver()`，則會繼續嘗試 `XOpenDisplay()`。 Xorg 自己接著進入 `Dispatch()`，在 event loop 裡完成首次 scanout，再接受等待中的 connection 並處理 setup exchange
 
-#### 進入 `Dispatch()`：只執行一次的 BlockHandler 完成首次 scanout 綁定
+#### 進入 `Dispatch()`：先完成首次 scanout，再回應 `XOpenDisplay()`
 
-SIGUSR1 已喚醒 `xinit`，但使用者仍看不到桌面 clients，`waitforserver()` 也還在重試 `XOpenDisplay()`。 Xorg 此刻要把 front BO 包成 KMS framebuffer，並綁進 kernel probe 已建立的 plane、CRTC、encoder 與 connector topology
+##### 第一輪 BlockHandler 把 front BO 接到 virtual scanout
+
+Xorg 已送出 `SIGUSR1` 通知，但使用者仍看不到桌面 clients。 Xorg 接著要把 front BO 包成 KMS framebuffer，並綁進 kernel probe 已建立的 plane、CRTC、encoder 與 connector topology
 
 `ScreenInit()` 登記的 `modesetCreateScreenResources()` 已在 DIX 建立 screen resources 時執行。 本文固定追蹤直接承載桌面的主要 X Screen，這條路徑的 `pScrn->is_gpu` 是 `FALSE`。 因此 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1722-L1733) 呼叫 `drmmode_set_desired_modes(..., FALSE, FALSE)` 時，會先保存 Xorg 想要套用的 display state，尚未向 kernel 提交 modeset
 
@@ -3139,11 +3358,266 @@ KMS framebuffer 保存 GEM object reference 與 scanout layout，不會因 `ADDF
 
 這一輪同時建立 initial display state，並把目前的 front BO 內容交給 virtual scanout。 `ADDFB` 建立可供 KMS state 引用的 framebuffer object，`SETCRTC` 建立或更新 kernel 內的 KMS state，非零 resource ID 的 `SET_SCANOUT` 則把 virtio resource 綁到 virtual scanout。 一般畫面更新不會重建這整組 state，而是沿後面的 `DIRTYFB` 路徑重用既有 objects
 
-這個只執行一次的 BlockHandler 完成後，`WaitForSomething()` 才進入輪詢。 Xorg event loop 隨後接受 `xinit` 的 connection 並傳回 setup reply，`waitforserver()` 的 `XOpenDisplay(displayNum)` 因而成功。 Xorg 的 modesetting 主線至此已完成，`xinit` 父行程也可以繼續執行
+##### Xorg 接受 `xinit` 的 connection，並送出 setup reply
 
-### 回到 `xinit` 父行程：`startClient()` 執行系統的 `xinitrc`
+`ConnectionInfo` template 在 Xorg 送出 `SIGUSR1` 前便已準備完成，因此 connection setup 的共用資料不依賴首次 scanout。 不過，本文固定版本的 `WaitForSomething()` 會先執行 BlockHandler，再呼叫 `ospoll_wait()` 等待與處理 fd events。 因此實際執行順序仍是先完成上面的 one-shot modeset，接著才接受 listening socket 上等待中的 connection
 
-現在回到先前停在 `startServer()` 裡的 `xinit` 父行程。 `waitforserver()` 的 `XOpenDisplay(displayNum)` 已成功取得 setup reply，因此 `waitforserver()` 回傳 `TRUE`，`startServer()` 接著回傳 Xorg 子行程的 PID。 `main()` 於是繼續判斷 `&&` 右側的 `startClient(client) > 0`
+以下程式碼來自 [`Xorg: os/WaitFor.c:168`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/os/WaitFor.c#L168-L207)，用來確認 BlockHandler 與 socket event polling 的先後順序：
+
+```c
+// [Xorg: os/WaitFor.c:168-207]
+Bool
+WaitForSomething(Bool are_ready)
+{
+    ...
+    while (1) {
+        ProcessWorkQueue();
+        ...
+        BlockHandler(&timeout);
+        ...
+        i = ospoll_wait(server_poll, timeout);
+        ...
+    }
+}
+```
+
+當 `ospoll_wait()` 發現前面登記的 listening fd 已可讀時，event loop 會呼叫 `EstablishNewConnections()`。 以下程式碼來自 [`Xorg: os/connection.c:614`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/os/connection.c#L614-L650)，用來接受 transport connection，取得新 fd，再為它配置 Xorg 的 client state：
+
+```c
+// [Xorg: os/connection.c:614-650]
+static void
+EstablishNewConnections(int curconn, int ready, void *data)
+{
+    int newconn;
+    CARD32 connect_time;
+    XtransConnInfo trans_conn, new_trans_conn;
+    ...
+
+    if ((trans_conn = lookup_trans_conn(curconn)) == NULL)
+        return;
+
+    if ((new_trans_conn = _XSERVTransAccept(trans_conn)) == NULL)
+        return;
+
+    newconn = _XSERVTransGetConnectionNumber(new_trans_conn);
+    _XSERVTransNonBlock(new_trans_conn);
+    ...
+    AllocNewConnection(new_trans_conn, newconn, connect_time);
+}
+```
+
+`AllocNewConnection()` 不會在 `accept()` 內直接呼叫 setup handler。 它會先建立 `ClientRec`，再把 accepted fd 與 `ClientReady()` 登記到同一個 poll loop。 等 client fd 可讀，`ClientReady()` 才會將這個 client 標成 ready，`Dispatch()` 隨後讀取 request，並按照 request type 從 `client->requestVector` 選出 handler
+
+以下片段來自 [`Xorg: os/connection.c:557`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/os/connection.c#L557-L595)、[`Xorg: dix/dispatch.c:3752`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/dispatch.c#L3752-L3801) 與 [`Xorg: dix/dispatch.c:525`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/dispatch.c#L525-L566)，用來接起 accepted fd、client readiness 與 request dispatch：
+
+```c
+// [Xorg: os/connection.c:557-595]
+static void
+ClientReady(int fd, int xevents, void *data)
+{
+    ClientPtr client = data;
+    ...
+    if (xevents & X_NOTIFY_READ)
+        mark_client_ready(client);
+    ...
+}
+
+static ClientPtr
+AllocNewConnection(XtransConnInfo trans_conn, int fd, CARD32 conn_time)
+{
+    ClientPtr client;
+    ...
+    client = NextAvailableClient((void *) oc);
+    ...
+    ospoll_add(server_poll, fd, ospoll_trigger_edge,
+               ClientReady, client);
+    ...
+    return client;
+}
+
+// [Xorg: dix/dispatch.c:3752-3801]
+void
+InitClient(ClientPtr client, int i, void *ospriv)
+{
+    ...
+    client->requestVector = InitialVector;
+    ...
+}
+
+ClientPtr
+NextAvailableClient(void *ospriv)
+{
+    ...
+    InitClient(client, i, ospriv);
+    ...
+    data.reqType = 1;
+    data.length = bytes_to_int32(sz_xReq + sz_xConnClientPrefix);
+    if (!InsertFakeRequest(client, (char *) &data, sz_xReq)) {
+        ...
+        return NULL;
+    }
+    ...
+    return client;
+}
+
+// [Xorg: dix/dispatch.c:525-566]
+void
+Dispatch(void)
+{
+    ...
+    long read_result = ReadRequestFromClient(client);
+    ...
+    client->majorOp = ((xReq *) client->requestBuffer)->reqType;
+    ...
+    result = (*client->requestVector[client->majorOp]) (client);
+    ...
+}
+```
+
+`NextAvailableClient()` 先將 `requestVector` 設為 `InitialVector`，並插入一個 `reqType = 1` 的 synthetic request header
+
+Client fd 可讀後，`ReadRequestFromClient()` 會將 connection prefix 接到這個 header 後方。 `Dispatch()` 因而先呼叫 `InitialVector[1]` 的 `ProcInitialConnection()`
+
+這個 handler 確認 byte order，將 request type 改成 2，並把 authentication protocol 與 authentication data 的長度納入完整 request。 下一輪 request dispatch 才會進入 `InitialVector[2]` 的 `ProcEstablishConnection()`
+
+`ProcEstablishConnection()` 會檢查 protocol version 與 authorization data。 檢查成功後，`SendConnSetup()` 先將 client 專屬欄位填入 `ConnectionInfo` template，再將 setup prefix 與完整內容寫回 client
+
+以下四段程式碼用來顯示 setup request 的兩階段 dispatch 與成功 reply：
+
+- [`Xorg: dix/tables.c:69`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/tables.c#L69-L72) 定義 setup 階段使用的 `InitialVector`
+- [`Xorg: dix/dispatch.c:3821`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/dispatch.c#L3821-L3849) 讀取 byte order 與完整 connection prefix
+- [`Xorg: dix/dispatch.c:3941`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/dispatch.c#L3941-L3969) 檢查 protocol version 與 authorization data
+- [`Xorg: dix/dispatch.c:3851`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/dispatch.c#L3851-L3937) 送出 setup prefix 與 `ConnectionInfo`
+
+```c
+// [Xorg: dix/tables.c:69-72]
+int (*InitialVector[3]) (ClientPtr /* client */) = {
+    0,
+    ProcInitialConnection,
+    ProcEstablishConnection
+};
+
+// [Xorg: dix/dispatch.c:3821-3849]
+int
+ProcInitialConnection(ClientPtr client)
+{
+    ...
+    // 讀取 byte order，必要時交換 connection prefix 的欄位順序
+    ...
+    stuff->reqType = 2;
+    stuff->length += bytes_to_int32(prefix->nbytesAuthProto) +
+                     bytes_to_int32(prefix->nbytesAuthString);
+    ResetCurrentRequest(client);
+    return Success;
+}
+
+// [Xorg: dix/dispatch.c:3941-3969]
+int
+ProcEstablishConnection(ClientPtr client)
+{
+    ...
+    reason = ClientAuthorized(client, ...);
+    return SendConnSetup(client, reason);
+}
+
+// [Xorg: dix/dispatch.c:3851-3937]
+static int
+SendConnSetup(ClientPtr client, const char *reason)
+{
+    ...
+    ((xConnSetup *) lConnectionInfo)->ridBase = client->clientAsMask;
+    ((xConnSetup *) lConnectionInfo)->ridMask = RESOURCE_ID_MASK;
+    ...
+    root->currentInputMask = pRoot->eventMask | wOtherEventMasks(pRoot);
+    ...
+    // 本例通過檢查，而且 client 與 server 使用相同 byte order
+    WriteToClient(client, sizeof(xConnSetupPrefix), lconnSetupPrefix);
+    WriteToClient(client, lconnSetupPrefix->length << 2, lConnectionInfo);
+    client->clientState = ClientStateRunning;
+    ...
+    return Success;
+}
+```
+
+整段 server-side 路徑可以整理成：
+
+```callgraph
+[Xorg: os/WaitFor.c:168] WaitForSomething(are_ready)
+  │
+  ├─ BlockHandler(&timeout)
+  │    └─ msBlockHandler_oneshot()
+  │         └─ 建立首次 KMS framebuffer 與 scanout state
+  │
+  └─ ospoll_wait(server_poll, timeout)
+       │
+       │  listening fd 已可讀
+       ↓
+[Xorg: os/connection.c:614] EstablishNewConnections(...)
+  │
+  └─ _XSERVTransAccept(...)
+       ↓
+[Xorg: os/connection.c:575] AllocNewConnection(...)
+  │
+  ├─ NextAvailableClient(...)
+  │    ├─ 建立 ClientRec
+  │    ├─ requestVector = InitialVector
+  │    └─ 插入 reqType = 1 的 synthetic request header
+  └─ ospoll_add(..., ClientReady, client)
+       │
+       │  accepted fd 登記 ClientReady callback
+       ↓
+下一輪 ospoll_wait() 發現 client fd 可讀
+  ↓
+[Xorg: os/connection.c:558] ClientReady(...)
+  │
+  └─ mark_client_ready(client)
+       ↓
+[Xorg: dix/dispatch.c:525] Dispatch()／ReadRequestFromClient(client)
+  │
+  │  majorOp = requestBuffer->reqType
+  │  requestVector[majorOp](client)
+  ↓
+[Xorg: dix/dispatch.c:3821] ProcInitialConnection(client)
+  │
+  ├─ 讀取 byte order 與 connection prefix
+  ├─ reqType = 2
+  └─ ResetCurrentRequest(client)
+       │
+       │  下一輪 request dispatch 讀入 authorization data
+  ↓
+[Xorg: dix/dispatch.c:3941] ProcEstablishConnection(client)
+  │
+  ├─ 檢查 protocol version 與 authorization data
+  └─ SendConnSetup(client, reason)
+       │
+       ├─ 填入該 client 的 resource ID range
+       ├─ 填入送出當下的 Root Window input mask
+       ├─ 送出 xConnSetupPrefix
+       ├─ 送出完整 ConnectionInfo
+       └─ clientState = ClientStateRunning
+            ↓
+          libX11 收到 setup reply
+            ↓
+          xinit 的 XOpenDisplay(":0") 回傳 Display *
+            ↓
+          waitforserver() 回傳 TRUE
+```
+
+libX11 收到 reply 後，`XOpenDisplay()` 會回傳 `Display *`。 這個 object 屬於 `xinit` 用來確認 server readiness 的 connection，`waitforserver()` 也會在此回傳 `TRUE`
+
+### Xorg 就緒後，`xinit` 啟動第一批桌面 clients
+
+上一節的終點是 Xorg 接受 `waitforserver()` 建立的 connection，讓 `XOpenDisplay(displayNum)` 成功取得 setup reply。 `xinit` 父行程因此可以離開 `startServer()`，建立子行程執行系統的 `xinitrc`
+
+本節會沿著三個階段，走到桌面準備接收新的 application Window：
+
+1. `xinitrc` 啟動 `twm`、`xclock` 與 `xterm`
+2. 這些 clients 各自建立 X11 connection。 本文以 `twm` 為代表，查看 libX11 如何把 setup reply 整理成 client-side `Display` 與 `Screen[]`
+3. `twm` 從 `Screen[]` 取得 Root Window XID，再登記管理 Root Window 子視窗所需的 events
+
+#### `xinit` 執行系統的 `xinitrc`，啟動 `twm`、`xclock` 與 `xterm`
+
+在 `main()` 的 `&&` 判斷式中，左側的 `startServer(server) > 0` 現在已經成立，因此執行流程會繼續判斷右側的 `startClient(client) > 0`
 
 傳入 `startClient()` 的 `client_argv[0]` 是系統的 `xinitrc` 路徑。 接下來的 callgraph 會從 `waitforserver()` 的成功分支恢復，再沿三段關鍵程式碼追到第一批桌面 clients：
 
@@ -3205,9 +3679,13 @@ static pid_t startClient(char *client_argv[])
 
 `twm`、`xclock` 與 `xterm` 是彼此獨立的行程，各自建立一條 X11 connection。 建立 connection 後產生的 client-side objects 留到下一節說明
 
-使用者等桌面出現並可操作後，才會從 `xterm` 啟動 `glxgears`。 另一種 session 啟動方式是由 GDM、LightDM、SDDM 這類 display manager 提供圖形登入、驗證帳號、啟動 Xorg 與 session 程式。 這些啟動方式雖然不同，各個 X11 clients 在 session 中仍會分別建立自己的 connection
+使用者等桌面出現並可操作後，才會從 `xterm` 啟動 `glxgears`
 
-#### 第一批桌面 X11 clients 連到 Xorg：libX11 建立 `Display` 與 `Screen[]`
+:::tip
+X11 session 也能由 GDM、LightDM、SDDM 這類 display manager 啟動。 Display manager 會提供圖形登入畫面，負責驗證帳號、啟動 Xorg，再執行選定的 session 程式。 這種方式改變的是登入與啟動流程。 Session 建立後，每個 X11 client 仍會建立一條獨立的 X11 connection
+:::
+
+#### `twm` 建立 X11 connection，取得 X Screen 與 Root Window
 
 系統的 `xinitrc` 已啟動第一批桌面 clients。 故事中的第一個具體 client 是 `twm`：它在 `main()` 呼叫 `XtOpenDisplay()`，經 Xt 與 Xlib 建立自己的 X11 connection。 Xt（X Toolkit Intrinsics）是建立在 Xlib 上的 toolkit layer。 `xclock` 與 `xterm` 也會各自建立 connection，但 shell 的啟動順序不保證哪一條先完成 setup
 
@@ -3348,7 +3826,7 @@ XOpenDisplay(register _Xconst char *display)
 
 兩側以相同的陣列索引 `i` 表示同一個 X Screen，但不是同一個 C struct instance，也沒有跨行程的 pointer 關係。 這些 Screen records 保存的是 X Screen metadata，整張桌面的 pixels 則位於前面建立的 X Screen 像素儲存區。 screen Pixmap 與 front BO 會從不同層級連到這份儲存區
 
-##### X11 client API 的其他選擇
+##### 補充：X11 client API 的其他選擇
 
 目前主線由 `twm` 經 Xt 與 libX11 建立 connection。 X11 client 也能選擇其他 API 層級：
 
@@ -3358,7 +3836,7 @@ XOpenDisplay(register _Xconst char *display)
 
 這些選擇可以共存。 [`libX11: configure.ac:81`](https://gitlab.freedesktop.org/xorg/lib/libx11/-/blob/libX11-1.8.7/configure.ac#L78-82) 顯示 libX11 1.8.7 本身就把 `xcb` 列為必要相依項。 本文接著回到固定的 Xt／Xlib 主線。 `twm` 經 Xt 進入 Xlib，`glxgears` 稍後則會直接呼叫 Xlib，兩者都由 libX11 建立 connection state
 
-#### `twm` 在 Root Window 取得 window manager 角色
+#### `twm` 在 Root Window 登記管理子視窗所需的 events
 
 在本文的 X11 session 中，`twm` 會比使用者稍後啟動的 `glxgears` 更早完成上述 connection setup，並透過自己的 libX11 `Display` 取得 X Screen 與 Root Window 資料。 不過，一條普通的 X11 connection 還不足以管理其他 clients 的 Windows。 `twm` 還要在 Root Window 上選取特定 events，取得這個 X Screen 的 window manager 角色
 
@@ -3456,7 +3934,7 @@ X11 error 或同步結果回到等待中的 XSync()
   └─ 沒有 error：twm 取得這個 Root Window 下方 application Windows 的管理角色
 ```
 
-##### Window manager 的其他選擇
+##### 補充：Window manager 的其他選擇
 
 Window manager 也可以採用不同的視窗安排政策：
 
@@ -3468,17 +3946,19 @@ Window manager 負責 placement、move／resize、restack 與 focus，compositor
 
 到這裡，`twm` 已取得 window manager 角色。 下一個尚未受管理的 application Window 要求 map 時，Xorg 會先送出 `MapRequest`，讓 `twm` 決定如何管理它
 
-### `glxgears` 如何把 application Window 加入桌面
+### `glxgears` 建立 application Window，`twm` 加上外框並顯示
 
-X11 session 就緒後，使用者從 `xterm` 啟動 `glxgears`。 這個 client 會建立自己的 X11 connection，選出 Xorg 與 OpenGL 都能接受的 pixel format，再建立 application Window。 `twm` 隨後會替這個 Window 加上 frame，並把它放進既有的 Window tree
+`twm` 已經準備好接收 Root Window 子視窗的管理要求。 使用者從 `xterm` 啟動 `glxgears` 後，這個新 client 會先建立一個尚未顯示的 application Window。 Xorg 將它接進 Window tree，並讓它使用本文既有的 screen Pixmap。 `glxgears` 接著要求顯示 Window，這項要求會先交給 `twm`，直到 frame、title 與 application Window 全部進入可見狀態
 
-#### `glxgears` 建立 application Window
+這一節只沿 Display 主線追蹤 Window XID、server-side `WindowRec`、Window tree 與 pixel storage mapping。 `glxgears` 如何選擇 visual、建立 OpenGL context，以及產生 pixels，會在下一個 Rendering 章節沿同一段 application 程式碼展開
 
-使用者在 `xterm` 輸入 `glxgears` 後，新的 application 行程要先連到 Xorg，再建立一個能同時供 X11 顯示與 OpenGL rendering 使用的 Window。 前一節已經看過 `twm` 如何取得 window manager 角色，現在沿著 `glxgears` 原始程式碼的實際順序，看看這個新視窗最初如何建立
+#### `glxgears` 建立尚未顯示的 Window，Xorg 將它接進 Window tree
 
-`glxgears` 的 application Window 用來顯示齒輪內容。 建立它以前，application 要先選出一個 X11 visual，決定 X server 如何解讀 Window 的 pixel values。 同一個 `make_window()` 也會建立 OpenGL context，但 Display 這一側先沿著 Window XID 查看 `XCreateWindow()`、`XMapWindow()` 與 `twm` 的處理結果
+使用者在 `xterm` 輸入 `glxgears` 後，新的 application 行程要先連到 Xorg，再建立一個能同時供 X11 顯示與 OpenGL rendering 使用的 Window。 本節沿著 `XCreateWindow()` 追到 Xorg 建立對應的 `WindowRec`、將它接進 Window tree，並初始化 pixel storage mapping。 這個階段結束時，Window 尚未顯示
 
-`main()` 先呼叫 `XOpenDisplay()`，替 `glxgears` 建立自己的 X11 connection，以及屬於這條 connection 的 libX11 `Display` 與 `Screen[]`。 `make_window()` 接著從該 connection 取得 X Screen 與 Root Window，並使用已選好的 visual 建立 application Window。 回到 `main()` 後，`XMapWindow()` 才會要求 Xorg 顯示這個 Window
+`glxgears` 的 application Window 用來顯示齒輪內容。 建立它以前，application 要先選出一個 X11 visual，決定 X server 如何解讀 Window 的 pixel values。 同一個 `make_window()` 也會建立 OpenGL context，但 Display 這一側先沿著 Window XID 查看 `XCreateWindow()` 的處理結果
+
+`main()` 先呼叫 `XOpenDisplay()`，替 `glxgears` 建立自己的 X11 connection，以及屬於這條 connection 的 libX11 `Display` 與 `Screen[]`。 `make_window()` 接著從該 connection 取得 X Screen 與 Root Window，並使用已選好的 visual 建立 application Window
 
 Display 路徑在意的是 `XCreateWindow()` 產生的 Window XID，以及這個 XID 進入 Xorg 後對應的 `WindowRec`。 以下程式碼取自 [`mesademos: src/xdemos/glxgears.c:464`](https://github.com/JoakimSoderberg/mesademos/blob/master/src/xdemos/glxgears.c#L464-L555)，保留 `make_window()` 的函式名稱、參數，以及建立 Window 所需的關鍵片段：
 
@@ -3565,6 +4045,8 @@ WindowPtr dixCreateWindow(Window wid, WindowPtr pParent,
 ```
 
 `dixCreateWindow()` 會依前面介紹的 `WindowRec` object model 填入新 Window。 `drawable.pScreen` 指向 Root Window 所屬的 `ScreenRec`，`drawable.id` 保存 `glxgears` 配置的 XID，`parent` 指向 Root Window，child／sibling links 則把新的 application Window 插入既有 tree
+
+##### Xorg 讓未 redirect 的 Window 沿用 screen Pixmap
 
 到這裡，Xorg 已經建立 application Window 的 server-side object，也知道它位於 Window tree 的哪裡。 這個 Window 日後作為 drawable 接收 drawing requests 時，Xorg 還需要知道 pixels 應該寫進整個 X Screen 使用的 screen Pixmap，還是另一份 off-screen Pixmap。 `pScreen->CreateWindow(pWin)` 會進入目前 X Screen 安裝的 callback chain，初始化這個 Window 使用的 pixel storage mapping
 
@@ -3677,7 +4159,7 @@ glxgears application Window／WindowRec
 
 `make_window()` 回傳 application Window XID 與相容的 OpenGL context。 Display 路徑接著使用 Window XID 發出 `XMapWindow()` request，Rendering 路徑則會在後面的章節從 `glXMakeCurrent()` 接著往下走
 
-#### `glxgears` 要求顯示 Window：`twm` 建立 frame 與 title
+#### `glxgears` 要求顯示 Window，`twm` 建立 frame 後讓它進入 viewable state
 
 `XCreateWindow()` 只建立 X11 Window resource。 要讓使用者看見它，`glxgears` 接著呼叫 `XMapWindow(dpy, win)`，要求 Xorg 將 application Window 放進可顯示狀態。 前一節的 `twm` 已經在 Root Window 選取 `SubstructureRedirectMask`，所以 Xorg 會先把這項要求轉成 `MapRequest` event，交給 `twm` 決定外框、初始位置與 stacking
 
@@ -3840,15 +4322,15 @@ Application Window 的 map request 先設定 `mapped`，但 frame 尚未 realize
 
 application Window 進入桌面後，Xorg 已經知道它的 parent、geometry 與 stacking。 當使用者把 `xterm` 拖到 `glxgears` 前方時，Xorg 必須根據新的視窗位置，重新決定齒輪視窗有哪些區域可以顯示
 
-### 使用者移動視窗時，可見範圍如何改變
+### 視窗遮擋改變時，Xorg 重算可見範圍並通知 application 重畫
 
-application Window 加入 Window tree 後，桌面操作仍會改變它能顯示的區域。 我們先追蹤 `twm` 如何把拖曳與升起視窗的決定送給 Xorg，再看 Xorg 如何更新 geometry、stacking 與一組可見矩形。 被遮住的內容重新露出時，`Expose` event 會通知 application 再次產生該區域
+`glxgears` 的 Window 現在已經出現在桌面上。 當使用者把 `xterm` 移到它前方時，`twm` 會把新的位置與 stacking 交給 Xorg。 Xorg 接著重算 `clipList`，也就是由目前可見矩形組成的 Region。 等 `xterm` 再次移開，Xorg 會以 `Expose` event 通知 `glxgears` 重畫剛露出的區域
 
-#### 使用者移動 `xterm`：`twm` 更新 geometry 與 stacking
+本節依序追蹤「遮住」與「重新露出」兩個階段。 第一個階段回答 Window tree、geometry 與 stacking 如何變成可見 Region，第二個階段則回答沒有 compositor 與 per-Window backing Pixmap 時，原本被蓋住的內容由誰重新產生
+
+#### `xterm` 移到 `glxgears` 前方：`twm` 更新位置，Xorg 重算 `clipList`
 
 現在使用者拖曳 `xterm` 的標題列，讓它遮住 `glxgears` 的右半部。 這個動作會改變 xterm frame 的位置，`twm` 也可能依政策將它升起。 Geometry 或 stacking 的變化都會改變 `glxgears` 仍然可見的範圍
-
-##### 使用者拖曳：`twm` 主動送出位置與 stacking requests
 
 `twm` 會從 pointer events 算出 xterm frame 的新座標，並依政策決定是否升起視窗。 Xorg 隨後更新 geometry 與 stacking，再重新計算各個 Windows 的可見範圍
 
@@ -4001,7 +4483,7 @@ Frame request 帶有新 x／y 與既有 width／height。 `ConfigureWindow()` �
 
 `CopyWindow()` 搬移仍可重用的 pixels，`HandleExposures()` 則處理新露出、無法從舊位置還原的區域。 若 `twm` 接著要求升起視窗，`XRaiseWindow()` 會另外送出只包含 `CWStackMode` 的 request。 Window 還沒有位於目標 stacking 位置時，`ReflectStackChange()` 才會移動它，並為受影響的 viewable Windows 重新計算可見區域
 
-##### Application 主動要求：Xorg 先把 request 交給 `twm`
+##### 補充：application 自行要求位置變更時，Xorg 先交給 `twm`
 
 剛才的 request 由使用者拖曳觸發，並由 `twm` 主動送給 Xorg。 Application 本身也能要求改變自己的位置、大小或 stacking，但這是另一個入口
 
@@ -4071,9 +4553,9 @@ Handler 會讀取前述 `valueMask` 與各個 requested values。 尚未由 `twm
 
 已管理 Window 的 request 若包含 `CWStackMode` 且啟用 `Tmp_win->stackmode`，會將 sibling 對應到 frame，並對 frame 呼叫 `XConfigureWindow()`。 已管理 Window 的 geometry 則會調整 frame 的 x／y、width／height 與 border width，最後呼叫 `SetupWindow()`
 
-##### 兩條路徑匯合：Xorg 重算可見 Region
+##### Xorg 依新的 geometry 與 stacking 重算可見 Region
 
-無論 geometry change 是由使用者拖曳還是 application request 引起，Xorg 最後都要回答同一個問題：`xterm` 移到齒輪前方後，`glxgears` application Window 還有哪些矩形可以顯示。 Xorg 會用 Window tree 與 Region 保存計算這個答案所需的狀態：
+不論 geometry change 由哪個入口送入，Xorg 最後都要回答同一個問題：`xterm` 移到齒輪前方後，`glxgears` application Window 還有哪些矩形可以顯示。 Xorg 會用 Window tree 與 Region 保存計算這個答案所需的狀態：
 
 - Window 保存 parent／child、geometry、stacking 與 screen origin
 - `WindowRec::borderClip` 是包含 Window border 在內，目前仍可顯示的 Region
@@ -4162,7 +4644,7 @@ fbPutImage(DrawablePtr pDrawable, GCPtr pGC, int depth,
 
 在未 redirect 的路徑中，application 後續送出的 drawing request 會以 application Window 為 drawable。 Xorg 先把 Window-local 座標加上這個 Window 的 screen origin，再將 `clipList` 與 GC／client clip 合成 composite clip，最後只把仍然可見的矩形寫進 screen Pixmap。 被 `xterm` 蓋住的範圍不在這組 rectangles 內，因此不會改寫畫面上既有的 xterm pixels
 
-#### 使用者移開 `xterm`：`Expose` 與 compositor
+#### `xterm` 移開後：`Expose` 通知 `glxgears` 重畫露出區域
 
 當 `xterm` 移開時，Xorg 會算出 `glxgears` 剛重新露出的 Region。 前面的 [`mesademos: src/xdemos/glxgears.c:525`](https://github.com/JoakimSoderberg/mesademos/blob/master/src/xdemos/glxgears.c#L525) 片段已在建立 application Window 時把 `ExposureMask` 放進 `attr.event_mask`
 
@@ -4178,15 +4660,22 @@ fbPutImage(DrawablePtr pDrawable, GCPtr pGC, int depth,
 
 `xterm` 遮住齒輪時，screen Pixmap 的那塊區域已經改為保存 `xterm` 的 pixels。 `glxgears` 又沒有自己的 off-screen backing Pixmap，因此 Xorg 無法直接從另一份既有 storage 還原齒輪內容，application 必須在收到 `Expose` 後重新產生該區域
 
+##### 補充：啟用 Composite redirect 時由 compositor 重新合成
+
 若 Composite client 對 Window 或 subwindows 送出 redirect request，Window drawing 會改為進入各自的 off-screen backing Pixmap。 compositor 可以保留被遮住的內容，穩定地重新合成畫面，也能加入陰影、透明與動畫。 代價是多出 backing storage、同步與每幀合成工作
 
-使用者移開 `xterm` 後，`glxgears` 收到 `Expose` 並產生下一個完整畫面。 後面的 Rendering 章節會追蹤 Mesa 如何產生這一幀，並把它轉成 `PutImage`／`ShmPutImage` request。 這裡先留在 Display 路徑，從 Xorg 收到 request 的位置繼續往下看
+使用者移開 `xterm` 後，`glxgears` 收到 `Expose`，並在後續 rendering 中重新產生露出區域的內容
 
-### Xorg 收到一幀 pixels 後，如何更新 scanout
+### Xorg 收到 image request 後，將畫面更新送到既有 scanout
 
-本文固定的 direct software GLX／`drisw` 路徑最後會透過 `XPutImage()` 或 `XShmPutImage()`，把完成的一幀交到 X11 connection。 Display 路徑從 Xorg event loop 取出這個 image request 開始，先套用 Window origin 與 composite clip，更新 screen Pixmap／front BO，再以 dirty update 把變動送進既有的 KMS scanout 路徑
+我們到這裡還沒有解釋 Mesa 如何產生 image request。 為了先完成 Display 這一側的下游路徑，本節暫時把 `PutImage`／`ShmPutImage` request 當成輸入，只追蹤 Xorg 收到它之後會做的兩件事：
 
-#### Xorg 處理 `PutImage`／`ShmPutImage` request
+1. 套用 Window origin 與 composite clip，將仍然可見的 pixels 寫進 screen Pixmap，並記錄被修改的區域
+2. 以 `DIRTYFB` 將 front BO 的變動交給既有的 KMS 與 virtio-gpu scanout binding
+
+下一個 Rendering 章節會回到 application 行程，補上 Mesa 如何算出 pixels，以及 `drisw` 如何把它們組成 `PutImage`／`ShmPutImage` request
+
+#### Xorg 將 image request 的可見 pixels 寫入 screen Pixmap
 
 完整一幀的 pixels 可以直接放進 core `PutImage` request，也可以先放在 client 與 X server 共用的 shared-memory segment，再讓 request 指出 pixels 所在的位置。 後一種方法由 MIT-SHM（MIT Shared Memory）extension 提供，對應的 request 是 `ShmPutImage`
 
@@ -4241,7 +4730,7 @@ static void damagePutImage(DrawablePtr pDrawable, GCPtr pGC, ...)
 
 Xorg 會以 Window origin 將 Window-local 座標轉成 X Screen 座標，套用 composite clip，再將仍然可見的矩形寫入 screen Pixmap 與 mapped front BO 共用的 X Screen 像素儲存區。 這個 server-side request 處理完成後，下一個問題是如何讓正在 scanout 的 virtio-gpu 2D resource 取得這些新 pixels
 
-#### `DIRTYFB` 讓更新後的 X Screen 像素儲存區進入 scanout
+#### Xorg 以 `DIRTYFB` 將 front BO 的變動發布到既有 scanout
 
 此時 Xorg 已經持有 front BO，對應的既有 KMS framebuffer 也正綁在 active primary plane 上。 本節從這組持續使用中的 display state 開始，追蹤 Xorg 如何以 `DIRTYFB` 將 runtime damage 交給 kernel display 路徑
 
@@ -4462,7 +4951,7 @@ semu SDL display backend：在 event loop 中消費 display queue
 
 當 scanout 仍綁定該 resource，且 payload 建立成功時，semu 會擷取 `SET_SCANOUT` 所記錄的完整 source view，再把這份 snapshot 排入 display queue。 這個 flush rectangle 不會再次裁切 payload。 Linux `virtio_gpu` driver 收到 flush command 的 response 時，畫面仍可能只停在佇列中。 等 SDL event loop 成功更新 texture 並執行 `SDL_RenderPresent()`，使用者才會看見新內容
 
-Xorg 完成這次 dirty update 後，長時間存在的 screen Pixmap、front BO、KMS framebuffer 與 scanout binding 都會繼續供下一幀使用。 Display 路徑到這裡已經從 X11 image request 走到使用者看見更新後的畫面。 接下來回到 application 行程，追蹤 Mesa 如何產生這個 request
+Xorg 完成這次 dirty update 後，長時間存在的 screen Pixmap、front BO、KMS framebuffer 與 scanout binding 都會繼續供下一幀使用。 Display 路徑到這裡已經從 X11 image request 走到使用者看見更新後的畫面
 
 ## Rendering：Application 如何進入 Mesa
 
