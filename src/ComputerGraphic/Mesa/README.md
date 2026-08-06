@@ -868,12 +868,12 @@ main(int argc, char *argv[])
 
 首先我們需要把 rendering 與 display 區分開來。 application 準備開始算繪時，會透過 OpenGL 提供幾何資料、顏色與 rendering state。 rendering 路徑負責把這些 OpenGL operations 轉成可執行的工作，再由 CPU 或 GPU 算出 pixels。 display 路徑則由視窗系統與 Linux display subsystem 選出目前要顯示的 buffer，決定畫面位於桌面的哪裡，再讓 display controller 持續讀取該 buffer
 
-在本文討論的情境中，我們可以將 GPU driver 堆疊分成 userspace 與 kernel 兩個部分。 以 AMD GPU 為例：
+在本文討論的情境中，我們可以將 GPU driver 堆疊分成 userspace 與 kernel 兩個部分。 Linux DRM（Direct Rendering Manager）是 kernel 的圖形子系統。 `ioctl()` 是 userspace 用來向 kernel driver 發出 request 的 system call。 以 AMD GPU 為例：
 
 - userspace 部分會以共享函式庫的形式載入至 application 行程。 以 Mesa 的 AMD 路徑為例，OpenGL frontend 會先接收並驗證 API operations，接著 State Tracker 再把 OpenGL state 轉成 driver 可以處理的形式，最後由 radeonsi 建立 AMD GPU commands。 這一側會透過 DRM ioctl 將 resource-management 與 command 提交 requests 送進 kernel
 - kernel 部分由 Linux 的 DRM driver 實作。 在這個例子中，`amdgpu` 負責管理 GEM／buffer object、GPU 虛擬位址、command 提交、排程、同步、interrupt 與 reset
 
-另外，display 路徑還會使用到 Linux DRM 的 KMS。 這裡我們只需要先知道 scanout framebuffer 是 KMS 用來引用顯示 storage 的 object 即可。 Framebuffer 之後如何接上完整的 display topology，我們會等 Xorg 子行程進入裝置初始化後再展開
+DRM 中負責管理 display state 的部分稱為 KMS（Kernel Mode Setting）。 在這張 Big picture 裡，KMS 會以 scanout framebuffer 引用 display controller 持續讀取的顯示 storage。 Framebuffer 之後如何接上完整的 display topology，我們會等 Xorg 子行程進入裝置初始化後再展開
 
 一幀畫面的 rendering 與 display 路徑大致如下：
 
@@ -1415,38 +1415,40 @@ ScreenInfo screenInfo;
 而如前所述，要讓這筆 `ScreenRec` 成為可供 clients 使用的 X Screen，Xorg 需要同時處理兩類工作：
 
 - X11 requests 的解析與分派方式、XID 與 server-side object 的對應關係，以及 `ScreenRec`、`WindowRec`、Window tree、geometry、stacking 與 clipping 的操作規則不會隨顯示裝置改變
-- X Screen 的尺寸、depths、visuals 與可用 display modes 必須配合實際顯示裝置。 一個 display mode 描述一組解析度與掃描時序。 另外，Xorg 也要準備操作 Window、Pixmap 與 pixel storage 的具體 callback implementations
+- X Screen 的尺寸、depths、visuals 與可用 display modes 必須配合實際顯示裝置。 一個 display mode 描述解析度、更新率與掃描時序。 Xorg 也要準備操作 Window、Pixmap 與 pixel storage 的具體 callback implementations
 
 Xorg 將第一類共用工作交給了 DIX（Device Independent X）。 DIX 負責定義並管理 X server 共用的 X11 objects 與操作規則，這包括前面看到的 `ScreenRec`、`WindowRec` 與 Window tree。 第二類工作則由 DDX（Device Dependent X）接手。 DDX 會連接平台與顯示裝置，取得裝置能提供的 modes 與 pixel formats，再為 DIX 管理的 objects 準備裝置相依的組態與 callbacks
 
 `ScreenRec` 是兩層交接時共同使用的 object。 DIX 會配置、登記並管理它的共用執行期狀態，DDX initialization path 則會填入裝置相關的尺寸、depths、visuals 與 callback implementations
 
-本文的 Xorg 使用 `hw/xfree86/` 裡的 XFree86 DDX framework。 `xf86` 這個名稱源自 XFree86，現在仍保留在目錄、API 與 C identifiers 中。 這層 framework 會安排裝置探測與 display driver 初始化，再將結果接到 DIX 管理的 `ScreenRec`
+本文的 Xorg 使用 `hw/xfree86/` 裡的 XFree86 DDX framework。 這層 framework 位於 DIX 與具體的 display driver 之間，定義了裝置探測與 X Screen 初始化的共用流程，以及 display driver 需要提供的 callback 介面。 `xf86` 這個名稱源自 XFree86，現在仍保留在目錄、API 與 C identifiers 中
 
-由於本文選用了 `Driver "modesetting"` 組態，因此交給 XFree86 DDX 的裝置查詢會使用 Xorg 的 modesetting display driver 來進行。 這個 driver 執行在 Xorg 行程中。 初始化顯示裝置時，它會先取得一個對應 Linux DRM device 的 file descriptor（fd），再以該 fd 呼叫 libdrm 提供的 `drmMode*()` KMS API，查詢顯示輸出、display modes 與 pixel formats
+本文的 `Driver "modesetting"` 組態會讓 XFree86 DDX 選擇 Xorg 的 modesetting display driver。 XFree86 DDX 會沿著上述共用流程呼叫 modesetting driver 的 callbacks，由 modesetting 完成裝置相依的工作，再把結果接到 DIX 管理的 `ScreenRec`
+
+modesetting driver 執行在 Xorg 行程中，實際的顯示裝置則由 Linux kernel 管理。 要知道兩邊如何交換顯示資訊與操作要求，我們需要先從 Linux 在這條邊界提供的 DRM 介面開始看起
+
+DRM 會把圖形裝置（如 GPU）公開成 `/dev/dri/card0` 這類位於 `/dev/dri/` 底下的 DRM device node。 Userspace 程式可以用 `open()` 開啟其中一個 node，取得之後用來操作該 DRM device 的 file descriptor（fd）
+
+DRM 的 userspace API（UAPI）定義了 userspace 與 kernel 共同使用的 ioctl request numbers、argument structures 與回傳格式。 每個 request number 都表示著一項固定操作，對應的 UAPI structure 則用來傳入查詢條件、更新內容或接收 kernel 回傳的結果
+
+DRM core 是 DRM 內由各個裝置 drivers 共用的 kernel 程式碼。 它會處理 ioctl 的分派與呼叫權限的檢查，也會管理共用的 DRM objects。 `virtio_gpu`、`amdgpu` 與 `i915` 等裝置專屬的 DRM drivers 會建立各自裝置的 objects 並登記 callbacks，再把共用操作轉成該裝置能夠執行的工作
+
+因此，modesetting driver 想知道的是 kernel 提供了哪些顯示輸出，以及每個輸出可以使用哪些 display modes。 而 DRM 中負責保存與更新這些顯示狀態的部分稱為 KMS（Kernel Mode Setting）
+
+KMS 執行的核心工作稱為 mode setting。 它會選擇並套用一個 display mode，再決定要掃描哪份 pixel storage，以及這份畫面要送往哪個顯示輸出。 KMS 會以一組 kernel objects 保存顯示輸出、可用 modes、目前使用的 mode，以及 pixel storage 與顯示輸出的連接關係，讓 userspace 可以查詢或更新這些資料
 
 :::tip
-`modesetting` 在這裡是這個 Xorg display driver 的名稱。 同一個詞也會出現在 Linux kernel 的 mode setting 功能中，兩者位於不同的軟體層次：
+本文後面會同時使用兩種相近的用語：
 
-- Xorg 的 `modesetting`
-  - 是 userspace display driver 的名稱
-  - 由 `Driver "modesetting"` 選取
-  - 位於 Xorg 的 `hw/xfree86/drivers/video/modesetting/`
-  - 負責把 Xorg 的顯示需求轉成 libdrm／KMS API calls
-- Linux kernel 的 mode setting
-  - 指 DRM 子系統中的 KMS（Kernel Mode Setting）功能
-  - 管理 framebuffer、plane、CRTC、encoder、connector 與 display mode
-  - 實際操作由 `virtio_gpu`、`amdgpu`、`i915` 等 DRM device driver 實作
-  - `drm_kms_helper` 則是供這些 drivers 共用的 kernel helper
-
-因此，`Driver "modesetting"` 中的 `modesetting` 是 Xorg driver 的專有名稱。 kernel 裡的 modesetting 通常是泛指 KMS 所提供的顯示模式設定功能。 這兩者位於不同 process／privilege layer，Xorg 的 modesetting driver 正是透過 libdrm 來使用 kernel KMS 的
+- Xorg 的 `modesetting` 是 userspace display driver 的名稱，由 `Driver "modesetting"` 選取，原始程式碼位於 `hw/xfree86/drivers/video/modesetting/`
+- Linux kernel 的 mode setting 是 KMS 執行的顯示模式設定工作
 :::
 
-libdrm 是 userspace 函式庫，負責將函式參數填入 Linux DRM UAPI 定義的 ioctl argument structures，再向 kernel 發出對應的 ioctl。 Kernel 回傳資料後，libdrm 會把它整理成 Xorg 使用的 structures
+現在回到 Xorg 的顯示初始化流程。 libdrm 是 userspace 的函式庫，會以 `drmMode*()` 等函式提供 KMS API。 modesetting driver 取得 DRM device fd 後，會將該 fd 與查詢參數傳給這些函式。 libdrm 接著把函式參數填入 DRM UAPI 定義的 ioctl argument structures，再向 kernel 發出對應的 ioctl。 Kernel 回傳資料後，libdrm 會把它整理成 Xorg 使用的 structures
 
-當 ioctl 進入 Linux kernel 後，mode setting 的工作會由 DRM subsystem 的 KMS（Kernel Mode Setting）接手。 DRM core 會依 ioctl 編號選擇 handler，並檢查 arguments 與呼叫權限
+ioctl 進入 kernel 後，DRM core 會依 request number 選擇對應的 KMS 處理函式，並檢查 arguments 與呼叫權限。 查詢顯示組態時，處理函式會讀取 `virtio_gpu` driver 在裝置初始化期間建立並登記的 KMS objects 與目前狀態。 後續更新顯示狀態時，DRM core 則會經由 `virtio_gpu` 提供的 callbacks 將要求交給裝置
 
-查詢顯示組態時，DRM core 會讀取 `virtio_gpu` 這類裝置專屬的 DRM driver 所建立並登記的 KMS objects 與目前狀態。 更新顯示狀態時，它則會經由 driver 提供的 callbacks 將要求交給裝置。 查詢結果會沿著 ioctl、libdrm 與 Xorg modesetting driver 回傳，成為 XFree86 DDX 後續選擇 X Screen 組態的輸入
+最後，查詢結果會沿著 DRM ioctl、libdrm 與 Xorg modesetting driver 回傳，成為 XFree86 DDX 後續選擇 X Screen 組態的輸入
 
 ```callgraph
 DIX 定義並負責管理 X server 共用的 object model
@@ -1463,19 +1465,23 @@ XFree86 DDX framework
   ↓
 Xorg modesetting display driver
   │
-  │  呼叫 libdrm 提供的 KMS API
+  │  以 DRM device fd 呼叫 drmMode*() KMS API
   ↓
 libdrm
   │
-  │  將 KMS API calls 包裝成 DRM ioctls
+  ├─ 將函式參數填入 DRM UAPI structures
+  └─ 向 DRM device fd 發出對應的 ioctl
   ↓
-Linux DRM core
+Linux DRM core／KMS
   │
-  │  驗證並分派 ioctl
+  ├─ 依 ioctl 編號選擇 KMS 處理函式
+  ├─ 檢查 arguments 與呼叫權限
+  ├─ 查詢時讀取已登記的 KMS objects 與目前狀態
+  └─ 更新時呼叫裝置專屬 driver callbacks
   ↓
 virtio_gpu DRM driver 與其建立的 KMS objects
   │
-  │  提供顯示輸出、modes、formats 與更新 display state 的 callbacks
+  │  提供顯示輸出、modes、formats 與更新 display state 的實作
   ↓
 DRM core／libdrm 將查詢結果交回 Xorg
   ↓
@@ -1486,7 +1492,7 @@ XFree86 DDX、modesetting 與共用 screen initialization code
 DIX 使用完成初始化的 ScreenRec 管理 X Screen
 ```
 
-這組分工也會反映在 DIX 操作 `ScreenRec` 與 `WindowRec` 的方式上。 日後有 client 建立 Window 時，`dixCreateWindow()` 會配置並填入 DIX 管理的 `WindowRec`，再透過 `ScreenRec::CreateWindow` 進入目前 X Screen 安裝的 Window implementation。 以下片段來自 [`Xorg: dix/window.c:738`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/window.c#L738-L900)，保留配置 `WindowRec`、接入 Window tree 與呼叫 callback 的部分：
+這組分工也會反映在 DIX 操作 `ScreenRec` 與 `WindowRec` 的方式上。 以下片段來自 [`Xorg: dix/window.c:738`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/window.c#L738-L900)，用來展示 `dixCreateWindow()` 如何配置並初始化 `WindowRec`、把它接進 Window tree，再透過 `ScreenRec::CreateWindow` 進入目前 X Screen 安裝的 Window implementation：
 
 ```c
 // [Xorg: dix/window.c:738-900]
@@ -1536,7 +1542,7 @@ dixCreateWindow(Window wid, WindowPtr pParent, int x, int y, unsigned w,
 }
 ```
 
-`dixAllocateScreenObjectWithPrivates()` 配置 DIX 管理的 `WindowRec`，其餘 DIX 程式碼會填入共用狀態，並將它接進 Window tree。 最後的 `pScreen->CreateWindow(pWin)` 則經由 `ScreenRec` 進入顯示初始化期間安裝的 Window implementation
+`dixAllocateScreenObjectWithPrivates()` 會配置 DIX 管理的 `WindowRec`，其餘 DIX 程式碼則會填入共用狀態，並將它接進 Window tree。 最後的 `pScreen->CreateWindow(pWin)` 則經由 `ScreenRec` 進入顯示初始化期間安裝的 Window implementation
 
 本文的 `fbScreenInit()` 會先把 `fbCreateWindow()` 安裝進這個欄位。 這個函式來自 X server 的 fb layer，也就是使用 pixel storage 實作共用 Window 與 Pixmap operations 的程式碼。 Xorg 初始化 Composite extension 時，[`compScreenInit()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/composite/compinit.c#L309-L351) 會把既有的 `fbCreateWindow()` 保存到 `CompScreenRec::CreateWindow`，再以 `compCreateWindow()` 包住 `ScreenRec::CreateWindow`
 
