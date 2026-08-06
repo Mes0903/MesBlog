@@ -1408,11 +1408,15 @@ ScreenInfo screenInfo;
 
 由於本文只建立一個 X Screen，所以完成初始化後，`screenInfo.numScreens` 是 1，`screenInfo.screens[0]` 會指向 X Screen 0 的 `ScreenRec`。 後面在初始化 X Screen 像素儲存區、建立 Root Window 與 connection setup reply 的時候，都會從這筆 server-side record 取出所需資料
 
-##### Xorg 如何管理共用 objects，並接上實際顯示裝置
+##### 建立 `ScreenRec` 前：DIX、DDX 與實際顯示裝置如何分工
 
-我們已經知道第一個 X Screen 完成初始化後，Xorg 會用 `ScreenRec` 保存它的狀態，再以 Root Window 為起點管理整棵 Window tree。 現在回到 Xorg 子行程目前所在的顯示初始化階段，此時我們已經有 `screenInfo` 這個 global object 了，但 `screenInfo.numScreens` 仍是 0，需要等到 `AddScreen()` 的時候才會配置第一筆 `ScreenRec`
+上一節先介紹了完成初始化後的 object model：Xorg 會以一筆 `ScreenRec` 保存 X Screen 0 的 server-side 狀態，再透過 Root Window 管理 Window tree。 現在回到 Xorg 子行程的顯示初始化時間線。 此時全域的 `screenInfo` 已經存在，但 `screenInfo.numScreens` 仍是 0，`screenInfo.screens[]` 裡也還沒有第一筆 `ScreenRec`
 
-而如前所述，要讓這筆 `ScreenRec` 成為可供 clients 使用的 X Screen，Xorg 需要同時處理兩類工作：
+接下來的流程要先從 Linux 顯示裝置取得 modes、pixel formats 與顯示尺寸，將選定的組態暫存在 `ScrnInfoRec`，再由 `AddScreen()` 配置 `ScreenRec`
+
+`ScreenInit()` 接著會填入尺寸、depths、visuals 與 callbacks，並準備 X Screen 使用的 pixel storage。 完成後，`screenInfo.screens[0]` 會指向 Xorg 用來表示 X Screen 0 的 `ScreenRec`。 後續流程還會建立 Root Window，最後透過 connection setup reply 將 X Screen 0 告訴 clients
+
+為了完成這條路徑，Xorg 需要同時處理兩類工作：
 
 - X11 requests 的解析與分派方式、XID 與 server-side object 的對應關係，以及 `ScreenRec`、`WindowRec`、Window tree、geometry、stacking 與 clipping 的操作規則不會隨顯示裝置改變
 - X Screen 的尺寸、depths、visuals 與可用 display modes 必須配合實際顯示裝置。 一個 display mode 描述解析度、更新率與掃描時序。 Xorg 也要準備操作 Window、Pixmap 與 pixel storage 的具體 callback implementations
@@ -1494,63 +1498,7 @@ XFree86 DDX、modesetting 與共用 screen initialization code
 DIX 使用完成初始化的 ScreenRec 管理 X Screen
 ```
 
-這個 callgraph 一路顯示了 Xorg 的顯示初始化到 DIX 的過程：完成初始化的 `ScreenRec` 會成為 DIX 管理 X Screen 時使用的 server-side object。 等 Xorg 啟動完成、client 日後要求建立 Window，`dixCreateWindow()` 便會透過這筆 `ScreenRec`，將新 Window 從 DIX 共用流程交給目前 X Screen 使用的具體實作
-
-以下片段來自 [`Xorg: dix/window.c:738`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/window.c#L738-L900)，用來觀察 `dixCreateWindow()` 如何處理共用的 Window state 與 Window tree，最後再藉由 `ScreenRec::CreateWindow` 進入具體實作：
-
-```c
-// [Xorg: dix/window.c:738-900]
-WindowPtr
-dixCreateWindow(Window wid, WindowPtr pParent, int x, int y, unsigned w,
-                unsigned h, unsigned bw, unsigned class, Mask vmask,
-                XID *vlist, int depth, ClientPtr client, VisualID visual,
-                int *error)
-{
-    WindowPtr pWin;
-    WindowPtr pHead;
-    ScreenPtr pScreen;
-    ...
-
-    pScreen = pParent->drawable.pScreen;
-    ...
-    pWin = dixAllocateScreenObjectWithPrivates(pScreen, WindowRec,
-                                               PRIVATE_WINDOW);
-    ...
-    pWin->parent = pParent;
-    ...
-    pHead = RealChildHead(pParent);
-    if (pHead) {
-        pWin->nextSib = pHead->nextSib;
-        if (pHead->nextSib)
-            pHead->nextSib->prevSib = pWin;
-        else
-            pParent->lastChild = pWin;
-        pHead->nextSib = pWin;
-        pWin->prevSib = pHead;
-    }
-    else {
-        pWin->nextSib = pParent->firstChild;
-        if (pParent->firstChild)
-            pParent->firstChild->prevSib = pWin;
-        else
-            pParent->lastChild = pWin;
-        pParent->firstChild = pWin;
-    }
-    ...
-    if (!(*pScreen->CreateWindow)(pWin)) {
-        *error = BadAlloc;
-        DeleteWindow(pWin, None);
-        return NullWindow;
-    }
-    ...
-}
-```
-
-`dixAllocateScreenObjectWithPrivates()` 會配置 DIX 管理的 `WindowRec`。 接著，`dixCreateWindow()` 會填入共用的 Window state，再透過 `parent`、`firstChild`、`lastChild`、`prevSib` 與 `nextSib` 將新 Window 接進既有的 Window tree。 這些操作都屬於 DIX 管理的 X11 共用流程
-
-完成共用狀態與 Window tree 的處理後，`pScreen->CreateWindow(pWin)` 會呼叫目前 X Screen 安裝的 `CreateWindow` callback。 這個 callback slot 位於 `ScreenRec`，是 DIX 共用流程與目前 X Screen 的 Window implementation 之間的交接點。 Xorg 會在顯示初始化階段為這個 slot 安裝具體實作。 建立 Window 時，該實作會從這裡接手新 Window，繼續準備底層狀態
-
-看過初始化完成後的 `ScreenRec` 如何參與 Window request path，現在回到 Xorg 的顯示初始化，繼續追蹤建立這筆 `ScreenRec` 所需的裝置組態
+這張圖先把建立 `ScreenRec` 時會經過的各層，以及顯示資訊往返 userspace 與 kernel 的方向排在一起。 接下來，我們會按照 Xorg 子行程實際執行的順序，依序追蹤 `ScrnInfoRec` 的建立、`PreInit()` 查詢、`AddScreen()` 配置 `ScreenRec`，以及 `ScreenInit()` 填入具體內容。 現在先從 XFree86 DDX 用來保存查詢結果的 `ScrnInfoRec` 開始
 
 ##### XFree86 DDX 先用 `ScrnInfoRec` 保存顯示組態
 
@@ -2546,9 +2494,9 @@ miScreenInit(ScreenPtr pScreen, void *pbits, int xsize, int ysize,
 }
 ```
 
-這裡可以回頭對照前面的 `dixCreateWindow()`。 DIX 仍負責配置 `WindowRec` 與修改 Window tree，`fbSetupScreen()` 則在這個初始化階段將 `fbCreateWindow()` 安裝成 `ScreenRec::CreateWindow` 的基礎實作。 同一筆 `ScreenRec` 因此同時保存 DIX 管理的 X Screen state，以及 fb／mi layers 安裝的 operations
+`fbSetupScreen()` 在這個初始化階段將 `fbCreateWindow()` 安裝成 `ScreenRec::CreateWindow` 的基礎實作。 同一筆 `ScreenRec` 因此同時保存 DIX 管理的 X Screen state，以及 fb／mi layers 安裝的 operations
 
-Xorg 後續初始化 Composite extension 時會再包裝這個 callback，application 建立 Window 時的實際呼叫鏈會在故事走到 `glxgears` 後接著展開
+等 `glxgears` 後面要求建立 application Window，DIX 的 `dixCreateWindow()` 便會呼叫這個 callback slot。 在 client 連入以前，Xorg 還會由 Composite extension 包裝這個 slot。 實際的 Window request path 會等故事走到 `glxgears` 時再沿程式碼展開
 
 ##### 最後階段：登記 screen callbacks 並初始化 RandR state
 
@@ -2559,6 +2507,8 @@ Xorg 後續初始化 Composite extension 時會再包裝這個 callback，applic
 `ScreenInit()` 結束時，front BO 已經是可供 Xorg 使用的 GBM／GEM storage。 後面的 `modesetCreateScreenResources()` 會把 CPU mapping 交給 screen Pixmap，第一次 `msBlockHandler_oneshot()` 則會建立 KMS framebuffer 並將它接進 display pipeline
 
 [`Xorg: hw/xfree86/modes/xf86Crtc.c:803`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/modes/xf86Crtc.c#L803-L839) 的 `xf86CrtcScreenInit()` 會把前面介紹的 RandR interface 接到這個 X Screen。 它會依據與 `ScrnInfoRec` 關聯的 output／CRTC configuration，初始化目前 `ScreenRec` 的 RandR state 與 hooks
+
+#### `ScreenInit()` 回傳後：連接 `ScrnInfoRec` 與 `ScreenRec`，再建立 screen Pixmap
 
 `ScreenInit()` 成功回傳後，先前暫停的 `AddScreen()` 與 `InitOutput()` 會繼續連接同一個 X Screen 的 `ScrnInfoRec` 與 `ScreenRec`。 `dixSetPrivate()` 將 `ScrnInfoRec *` 寫入 `ScreenRec::devPrivates` 的 `xf86ScreenKey` slot，`ScrnInfoRec::pScreen` 則再次指向相同的 `ScreenRec`：
 
