@@ -3112,7 +3112,7 @@ RandR 是 X11 用來查詢與設定 outputs、CRTCs、display modes、rotation �
 
 接下來會沿著這個順序展開，最後再回到 `ScreenInit()` 的回傳路徑
 
-`struct gbm_bo`、screen Pixmap、kernel buffer object 與稍後建立的 KMS framebuffer 分屬不同層級。 `ScreenInit()` 會先建立 GBM desktop BO，並登記 `CreateScreenResources` callback。 等 `ScreenInit()` 回傳後，DIX 才呼叫這個 callback，建立 screen Pixmap 並透過 glamor private state 接上底層 storage
+`struct gbm_bo`、screen Pixmap、kernel buffer object 與稍後建立的 DRM/KMS framebuffer 分屬不同層級。 `ScreenInit()` 會先建立 GBM desktop BO，並登記 `CreateScreenResources` callback。 等 `ScreenInit()` 回傳後，DIX 才呼叫這個 callback，建立 screen Pixmap 並透過 glamor private state 接上底層 storage
 
 #### `ScreenInit()` 沿用 glamor 的 GBM device，並將繪圖環境接到 X Screen
 
@@ -3499,7 +3499,7 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
 第一個 callback 將 `pScreen->CreateScreenResources` 登記為 `modesetCreateScreenResources()`，第二個則把 `pScreen->BlockHandler` 換成 `msBlockHandler_oneshot()`。 `BlockHandler` 是 Xorg event loop 每輪準備進入等待以前執行的 callback。 第一次執行 `msBlockHandler_oneshot()` 時，它會將後續呼叫切換到一般的 `msBlockHandler()`，再提交第一次 display mode
 
-`ScreenInit()` 結束時，GBM desktop BO 已經建立完成。 後面的 `modesetCreateScreenResources()` 會建立 screen Pixmap，再透過 glamor private state 讓它引用這份 storage。 第一次 `msBlockHandler_oneshot()` 則會建立 KMS framebuffer，並將 GBM desktop BO 接進 display pipeline
+`ScreenInit()` 結束時，GBM desktop BO 已經建立完成。 後面的 `modesetCreateScreenResources()` 會建立 screen Pixmap，再透過 glamor private state 讓它引用這份 storage。 第一次 `msBlockHandler_oneshot()` 則會建立 DRM/KMS framebuffer，並將 GBM desktop BO 接進 display pipeline
 
 [`Xorg: hw/xfree86/modes/xf86Crtc.c:803`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/modes/xf86Crtc.c#L803-L839) 的 `xf86CrtcScreenInit()` 會把前面介紹的 RandR 介面接到這個 X Screen。 它會依據與 `ScrnInfoRec` 關聯的 output／CRTC 組態，初始化目前 `ScreenRec` 的 RandR state 與 hooks
 
@@ -3739,7 +3739,7 @@ modesetCreateScreenResources(ScreenPtr pScreen)
 }
 ```
 
-這個時間點還沒有建立 KMS framebuffer，所以 `ms->drmmode.fb_id` 是 0。 `drmModeDirtyFB()` 進入 kernel 後，DRM core 會先用這個 ID 尋找 framebuffer。 以下程式碼來自 [`Linux: drivers/gpu/drm/drm_framebuffer.c:711`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_framebuffer.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n711)，用來顯示找不到 framebuffer 時會回傳的錯誤：
+這個時間點還沒有建立 DRM/KMS framebuffer，所以 `ms->drmmode.fb_id` 是 0。 `drmModeDirtyFB()` 進入 kernel 後，DRM core 會先用這個 ID 尋找 framebuffer。 以下程式碼來自 [`Linux: drivers/gpu/drm/drm_framebuffer.c:711`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_framebuffer.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n711)，用來顯示找不到 framebuffer 時會回傳的錯誤：
 
 ```c
 // [Linux: drivers/gpu/drm/drm_framebuffer.c:711-727]
@@ -4016,15 +4016,17 @@ NotifyParentProcess(void)
 
 ### Xorg 進入 `Dispatch()`，建立初始 scanout 並接受第一條 connection
 
-到這裡，Xorg 已準備好 listening endpoint 與 setup reply template。 X Screen 已完成初始化，像素儲存區與 Root Window 也已建立。 不過 `xinit` 的 `XOpenDisplay()` 仍要等 Xorg 接受 transport connection、讀取 setup request，並送回 reply 才能完成
+到這裡，Xorg 已準備好 listening endpoint 與 setup reply template。 X Screen 已完成初始化，像素儲存區與 Root Window 也已建立。 `xinit` 的 `XOpenDisplay()` 接下來要等 Xorg 接受 transport connection、讀取 setup request，並送回 reply 才能完成
 
 `Dispatch()` 會開始反覆執行 X server 的 event loop。 本文的第一輪會先透過 `BlockHandler` 將 GBM desktop BO 接到 virtual scanout，接著才等待 fd events。 Listening fd 變成可讀時，Xorg 會接受 `xinit` 的 connection，建立 client state，再完成 setup exchange。 接下來會依照這個執行順序分成兩段來看
 
-##### 第一輪 BlockHandler 把 GBM desktop BO 接到 virtual scanout
+#### 第一輪 BlockHandler 建立 DRM/KMS framebuffer 與初始 scanout
 
-Xorg 已送出 `SIGUSR1` 通知，但使用者仍看不到桌面 clients。 Xorg 接著要以 GBM desktop BO 建立 DRM/KMS framebuffer，並綁進前面由 Linux 建立、再由 `PreInit()` 選定的 KMS topology
+前面的 `modesetCreateScreenResources()` 已讓 screen Pixmap 引用 GBM desktop BO，`InitRootWindow()` 也已把 Root Window 的初始背景寫進這份像素儲存區。 這時 Xorg 已擁有整個桌面的 pixels，Linux 也已建立 primary plane、CRTC、encoder 與 connector 組成的 KMS topology
 
-前面的 `modesetCreateScreenResources()` 已保存 Xorg 想要套用的 mode、rotation 與座標，`InitRootWindow()` 也已在 screen Pixmap 寫入全螢幕背景並累積 Damage Region。 第一輪 BlockHandler 接著包含三項工作：建立 KMS framebuffer、對新的 `fb_id` 送出第一筆 `DIRTYFB`，以及以 `SETCRTC` 建立實際的 scanout 繫結
+要讓這份桌面成為 virtual scanout 的來源，Xorg 還需要建立 DRM/KMS framebuffer 來描述 GBM desktop BO 的 scanout layout，指定 primary plane 要取得的 source rectangle，再提交 CRTC、display mode 與 connector routing。 DRM core 會根據前面建立的 KMS topology 選出相容的 encoder，最後由 Linux `virtio_gpu` driver 將這組狀態轉成 virtio-gpu Display commands
+
+前面的 `modesetCreateScreenResources()` 已保存 Xorg 想要套用的 display mode、rotation 與座標，`InitRootWindow()` 則為 screen Pixmap 累積了全螢幕 Damage Region。 第一輪 BlockHandler 會先以 GBM desktop BO 建立 DRM/KMS framebuffer，再嘗試提交累積的 Damage Region，最後提交 Xorg 選定的初始顯示狀態
 
 `ScreenInit()` 已將 `msBlockHandler_oneshot()` 登記成第一輪使用的 callback。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:949`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L949-L958)，用來顯示它會先執行一般的 `msBlockHandler()`，回來後才提交 desired display state：
 
@@ -4061,7 +4063,7 @@ msBlockHandler(ScreenPtr pScreen, void *timeout)
 }
 ```
 
-`dispatch_dirty()` 會先為每個 CRTC 取得 `fb_id`，之後才處理 `InitRootWindow()` 累積的 Damage Region。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:776`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L776-L810)，用來標出建立 framebuffer 與發佈 Damage Region 的先後順序：
+`dispatch_dirty()` 會先為每個 CRTC 取得 `fb_id`，之後才處理 `InitRootWindow()` 累積的 Damage Region。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:776`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L776-L810)，用來標出取得 framebuffer 與提交 Damage Region 的順序：
 
 ```c
 // [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:776-810]
@@ -4083,7 +4085,7 @@ dispatch_dirty(ScreenPtr pScreen)
 }
 ```
 
-目前的 `drmmode->fb_id` 是 0，所以 `drmmode_crtc_get_fb_id()` 會匯入 `drmmode->front_bo` 指向的 GBM desktop BO，並建立 KMS framebuffer。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:655`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L655-L700)，用來顯示這個建立點：
+目前的 `drmmode->fb_id` 是 0，所以 `drmmode_crtc_get_fb_id()` 會取得 `drmmode->front_bo` 指向的 GBM desktop BO，再以它的 handle 與 layout 建立 DRM/KMS framebuffer。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:655`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L655-L700)，用來顯示這個建立點：
 
 ```c
 // [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:655-700]
@@ -4105,11 +4107,9 @@ drmmode_crtc_get_fb_id(xf86CrtcPtr crtc,
 }
 ```
 
-`drmmode_crtc_get_fb_id()` 回傳新的 `fb_id` 後，`dispatch_dirty()` 會繼續呼叫 `dispatch_dirty_region()`，將全螢幕 Damage Region 轉成 clips，再送出 `drmModeDirtyFB()`。 這是新 framebuffer 的第一筆有效 `DIRTYFB` request
+`drmmode_crtc_get_fb_id()` 回傳新的 `fb_id` 後，`dispatch_dirty()` 會繼續呼叫 `dispatch_dirty_region()`，將全螢幕 Damage Region 轉成 clips，再送出 `drmModeDirtyFB()`。 這時 primary plane 尚未引用新 framebuffer，kernel 的 `drm_atomic_helper_dirtyfb()` 找不到 `plane->state->fb == fb` 的 plane。 這筆 request 會完成，但不會產生 plane update，也不會把 pixels 發布到 scanout
 
-不過這個時點還沒有 plane 引用新 framebuffer。 Kernel 的 `drm_atomic_helper_dirtyfb()` 在尋找 `plane->state->fb == fb` 時找不到目標 plane，因此這筆 dirty update 不會將 pixels 發布到 scanout
-
-`msBlockHandler()` 回傳後，`msBlockHandler_oneshot()` 才會執行 `drmmode_set_desired_modes(..., TRUE, FALSE)`。 這會透過 `drmModeSetCrtc()` 把 framebuffer、CRTC、connector 與 mode state 一起交給 kernel。 本文的 Xorg 設定沒有啟用 `Option "Atomic"`，因此 userspace 會以 legacy `SETCRTC` ioctl 提交這組狀態
+`msBlockHandler()` 回傳後，`msBlockHandler_oneshot()` 才會執行 `drmmode_set_desired_modes(..., TRUE, FALSE)`。 這一步會透過 `drmModeSetCrtc()` 提交新 DRM/KMS framebuffer、display mode 與 output routing，首次能夠發布桌面的 plane update 也會在這筆 request 裡產生
 
 把這幾段放回 event loop 後，第一輪 BlockHandler 與後續 fd polling 的順序如下：
 
@@ -4132,40 +4132,103 @@ Bool WaitForSomething(Bool are_ready)
   │    ├─ msBlockHandler(pScreen, pTimeout)
   │    │    └─ dispatch_dirty(pScreen)
   │    │         ├─ drmmode_crtc_get_fb_id(...)
-  │    │              └─ fb_id == 0
-  │    │                   └─ drmmode_bo_import(...)
-  │    │                        └─ drmModeAddFB(...)
-  │    │                             // 先建立 KMS framebuffer
+  │    │         │    └─ fb_id == 0
+  │    │         │         ↓
+  │    │         │       drmmode_bo_import(..., front_bo, &fb_id)
+  │    │         │         ↓
+  │    │         │       drmModeAddFB(...)
+  │    │         │         ↓
+  │    │         │       DRM_IOCTL_MODE_ADDFB
+  │    │         │         ↓
+  │    │         │       drm_mode_addfb(...)
+  │    │         │         ↓
+  │    │         │       drm_internal_framebuffer_create(...)
+  │    │         │         ↓
+  │    │         │       virtio_gpu_user_framebuffer_create(...)
+  │    │         │         └─ 建立 DRM/KMS framebuffer，回傳 fb_id
   │    │         └─ dispatch_dirty_region(...)
   │    │              └─ drmModeDirtyFB(...)
-  │    │                   // 新 framebuffer 尚未綁到 plane，
-  │    │                   // 這筆 request 不會更新 scanout
+  │    │                   // primary plane 尚未引用新 framebuffer
+  │    │                   // 這筆 request 不會產生 plane update
   │    │
   │    └─ drmmode_set_desired_modes(..., TRUE, FALSE)
-  │         └─ drmModeSetCrtc(...)
-  │              // 再提交首次 modeset
+  │         ↓
+  │       drmmode_crtc_set_mode(...)
+  │         ↓
+  │       drmModeSetCrtc(...)
+  │         ↓
+  │       DRM_IOCTL_MODE_SETCRTC
+  │         ↓
+  │       drm_mode_setcrtc(...)
+  │         ↓
+  │       drm_atomic_helper_set_config(...)
+  │         ├─ 建立 primary-plane、CRTC 與 connector state
+  │         └─ drm_atomic_commit(...)
+  │              ├─ atomic check 取得並驗證相容的 encoder
+  │              └─ commit tail
+  │                   ↓
+  │                 virtio_gpu_crtc_mode_set_nofb(...)
+  │                   └─ SET_SCANOUT(resource_id = 0)
+  │                        ↓
+  │                      virtio_gpu_primary_plane_update(...)
+  │                        ├─ SET_SCANOUT(resource_id = desktop resource ID)
+  │                        └─ RESOURCE_FLUSH(full source rectangle)
   │
   └─ ospoll_wait(server_poll, timeout)
 ```
 
-`Option "Atomic"` 決定 Xorg userspace 使用哪一套 KMS ioctl 介面。 Linux `virtio_gpu` driver 本身採用 atomic KMS object-state model，因此 DRM core 收到 legacy `SETCRTC` 後，仍會把 request 轉成 CRTC、plane 與 connector 的 atomic state，完成整體檢查後再 commit。 下面 callgraph 中的 legacy 與 atomic 因而分別位於 userspace API 與 kernel 內部實作兩個層次
+##### 以 GBM desktop BO 建立 DRM/KMS framebuffer
+
+`drmmode_crtc_get_fb_id()` 裡的 `drmmode_bo_import()` 要讓 KMS 可以用 DRM/KMS framebuffer 描述現有的 GBM desktop BO。 固定主線沒有 PRIME、TearFree 或 rotation framebuffer，因此 `fb_id` 仍為 0 時，它會將 `drmmode->front_bo` 交給 `drmmode_bo_import()`
+
+固定分支的 `drmmode_bo_import()` 會從 `struct gbm_bo` 取出寬度、高度、stride 與 `drmmode->fd` 可使用的 GEM handle，再請 KMS 建立 framebuffer。 原本的 GBM desktop BO 繼續提供 storage，函式輸出的 `fb_id` 則用來引用新建立的 DRM/KMS framebuffer
+
+以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:339`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_bo.c#L339-L381)，用來顯示 modesetting driver 如何從 GBM desktop BO 取出 DRM/KMS framebuffer 需要的 layout 與 handle：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:339-381]
+int
+drmmode_bo_import(drmmode_ptr drmmode, struct gbm_bo *bo,
+                  uint32_t *fb_id)
+{
+    uint32_t width = gbm_bo_get_width(bo);
+    uint32_t height = gbm_bo_get_height(bo);
+
+#ifdef GBM_BO_WITH_MODIFIERS
+    modesettingPtr ms = modesettingPTR(drmmode->scrn);
+    if (bo && ms->kms_has_modifiers &&
+        gbm_bo_get_modifier(bo) != DRM_FORMAT_MOD_INVALID) {
+        ...
+        return drmModeAddFB2WithModifiers(...);
+    }
+#endif
+
+    return drmModeAddFB(drmmode->fd, width, height,
+                        drmmode->scrn->depth, drmmode->kbpp,
+                        gbm_bo_get_stride(bo),
+                        gbm_bo_get_handle(bo).u32, fb_id);
+}
+```
+
+Linux `virtio_gpu` driver 會在 [`Linux: drivers/gpu/drm/virtio/virtgpu_display.c:379`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_display.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n379) 將 `mode_config.fb_modifiers_not_supported` 設成 true，Xorg 因此使用 legacy framebuffer ioctl `drmModeAddFB()` 送出 `DRM_IOCTL_MODE_ADDFB`。 被引用的 GBM desktop BO 仍是前節建立的 non-dumb VirGL resource
 
 ```callgraph
-Xorg modesetting：建立 KMS framebuffer
+Xorg modesetting：建立 DRM/KMS framebuffer
 =================================================
-[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:341]
+[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:339]
 int drmmode_bo_import(drmmode_ptr drmmode,
                       struct gbm_bo *bo,
                       uint32_t *fb_id)
   │
-  └─ 本文的 linear dumb BO 分支：
+  ├─ 取得 width、height、stride 與 GEM handle
+  └─ virtio_gpu 不支援 framebuffer modifiers：
        drmModeAddFB(drmmode->fd, width, height,
                     depth, bpp, stride, handle, fb_id)
        │
        │  // libdrm 將 BO handle 與 layout 送入 DRM_IOCTL_MODE_ADDFB
        ↓
 
-Linux DRM/KMS：將 BO 包成 framebuffer object
+Linux DRM/KMS：建立引用 BO 的 framebuffer object
 =================================================
 [Linux: drivers/gpu/drm/drm_framebuffer.c:118]
 int drm_mode_addfb(struct drm_device *dev,
@@ -4174,6 +4237,10 @@ int drm_mode_addfb(struct drm_device *dev,
   │
   ├─ 將 legacy depth／bpp／pitch／handle 轉成 drm_mode_fb_cmd2
   └─ drm_mode_addfb2(dev, &request2, file_priv)
+       ↓
+[Linux: drivers/gpu/drm/drm_framebuffer.c:330]
+int drm_mode_addfb2(...)
+  └─ drm_internal_framebuffer_create(...)
        ↓
 [Linux: drivers/gpu/drm/drm_framebuffer.c:259]
 drm_internal_framebuffer_create(...)
@@ -4197,11 +4264,119 @@ virtio_gpu_framebuffer_init(...)
        │  // DRM framebuffer 保存 GEM object reference，
        │  // fb_id 用來識別這個 framebuffer object
        ↓
+     將 framebuffer object ID 作為 fb_id 回傳給 Xorg
 ```
 
-`ADDFB` 只建立 KMS framebuffer object，讓 `fb_id` 可以描述「哪一份 BO、採用什麼尺寸、format 與 pitch」。 它會為既有的 GEM object 增加 framebuffer reference，不會另外配置一份像素儲存區
+先看 DRM core 如何處理 legacy `ADDFB`。 以下程式碼來自 [`Linux: drivers/gpu/drm/drm_framebuffer.c:118`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_framebuffer.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n118)，用來顯示 width、height、pitch 與 GEM handle 如何被轉成共用 create path 使用的 `drm_mode_fb_cmd2`：
 
-接著，`msBlockHandler_oneshot()` 回到第二個步驟，沿 `drmmode_set_desired_modes(..., TRUE, FALSE)` 提交 mode state。 Xorg 送出的是 legacy `SETCRTC`，DRM core 再依本文的 `virtio_gpu` driver 將它轉成 atomic object state：
+```c
+// [Linux: drivers/gpu/drm/drm_framebuffer.c:118-146]
+int
+drm_mode_addfb(struct drm_device *dev, struct drm_mode_fb_cmd *or,
+               struct drm_file *file_priv)
+{
+    struct drm_mode_fb_cmd2 r = {};
+    ...
+    r.pixel_format = drm_driver_legacy_fb_format(dev, or->bpp, or->depth);
+    r.width = or->width;
+    r.height = or->height;
+    r.pitches[0] = or->pitch;
+    r.handles[0] = or->handle;
+
+    ret = drm_mode_addfb2(dev, &r, file_priv);
+    ...
+    or->fb_id = r.fb_id;
+    return 0;
+}
+```
+
+`drm_mode_addfb2()` 會檢查尺寸、format 與 pitch，再呼叫 `virtio_gpu` 登記的 `fb_create` callback
+
+第一段程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_display.c:318`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_display.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n318)。 第二段來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_display.c:70`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_display.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n70)。 兩段合起來顯示 framebuffer 如何找回現有 GEM object，再把它登記成 KMS object：
+
+```c
+// [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:318-350]
+static struct drm_framebuffer *
+virtio_gpu_user_framebuffer_create(struct drm_device *dev,
+                                   struct drm_file *file_priv,
+                                   const struct drm_format_info *info,
+                                   const struct drm_mode_fb_cmd2 *mode_cmd)
+{
+    struct drm_gem_object *obj = NULL;
+    ...
+    obj = drm_gem_object_lookup(file_priv, mode_cmd->handles[0]);
+    ...
+    ret = virtio_gpu_framebuffer_init(dev, virtio_gpu_fb,
+                                      info, mode_cmd, obj);
+    ...
+    return &virtio_gpu_fb->base;
+}
+
+// [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:70-88]
+static int
+virtio_gpu_framebuffer_init(struct drm_device *dev,
+                            struct virtio_gpu_framebuffer *vgfb,
+                            const struct drm_format_info *info,
+                            const struct drm_mode_fb_cmd2 *mode_cmd,
+                            struct drm_gem_object *obj)
+{
+    int ret;
+
+    vgfb->base.obj[0] = obj;
+    drm_helper_mode_fill_fb_struct(dev, &vgfb->base, info, mode_cmd);
+
+    ret = drm_framebuffer_init(dev, &vgfb->base, &virtio_gpu_fb_funcs);
+    if (ret) {
+        vgfb->base.obj[0] = NULL;
+        return ret;
+    }
+    return 0;
+}
+```
+
+`drm_gem_object_lookup()` 以 Xorg 傳入的 handle 找回既有 GEM object，`virtio_gpu_framebuffer_init()` 讓新 framebuffer 引用它並填入 scanout layout，DRM core 再把新的 object ID 作為 `fb_id` 回傳。 這條路徑只建立 KMS metadata，不配置或複製另一份桌面像素儲存區
+
+##### `SETCRTC` 指定 DRM/KMS framebuffer、display mode 與 connectors
+
+DRM/KMS framebuffer 建立後，Xorg 已能以 `fb_id` 指定 GBM desktop BO 的 scanout layout。 `msBlockHandler_oneshot()` 接著會沿 `drmmode_set_desired_modes(..., TRUE, FALSE)` 提交初始顯示狀態，將這份 DRM/KMS framebuffer 接到選定的 CRTC、display mode 與 connectors
+
+本文將 Xorg 的 `Option "Atomic"` 固定為 off，modesetting driver 因此使用 legacy `drmModeSetCrtc()` 介面。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:845`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L845-L965)，用來顯示 Xorg 如何收集 request 需要的 KMS objects 與 mode：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:845-965]
+static int
+drmmode_crtc_set_mode(xf86CrtcPtr crtc, Bool test_only)
+{
+    ...
+    if (!drmmode_crtc_get_fb_id(crtc, &fb_id, &x, &y))
+        return 1;
+    ...
+    for (i = 0; i < xf86_config->num_output; i++) {
+        xf86OutputPtr output = xf86_config->output[i];
+        ...
+        if (output->crtc != crtc)
+            continue;
+        ...
+        output_ids[output_count++] = drmmode_output->output_id;
+    }
+
+    drmmode_ConvertToKMode(crtc->scrn, &kmode, &crtc->mode);
+    ret = drmModeSetCrtc(drmmode->fd,
+                         drmmode_crtc->mode_crtc->crtc_id,
+                         fb_id, x, y,
+                         output_ids, output_count, &kmode);
+    ...
+    return ret;
+}
+```
+
+`crtc_id` 選擇要套用新狀態的 CRTC。 `fb_id` 指定 primary plane 要使用的 DRM/KMS framebuffer，`x` 與 `y` 表示 CRTC 畫面從 framebuffer 的哪個 source offset 開始。 `kmode` 保存解析度與掃描時序，`output_ids[]` 則列出要連到這個 CRTC 的 connectors
+
+Encoder 不在 `SETCRTC` 傳入參數中。 Xorg 只提交 CRTC 與 connector IDs，kernel 再按照既有 topology 選出相容的 encoder
+
+##### DRM core 將 legacy request 轉成 atomic object state
+
+Legacy `SETCRTC` 是 Xorg 與 DRM core 之間的 userspace API。 Linux `virtio_gpu` driver 內部使用 atomic KMS state model，因此 DRM core 還要把 request 拆成 DRM/KMS framebuffer、primary plane、CRTC 與 connector 之間的 state 關係
 
 ```callgraph
 Xorg modesetting：設定 CRTC 與 display mode
@@ -4209,7 +4384,7 @@ Xorg modesetting：設定 CRTC 與 display mode
 [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:845]
 static int drmmode_crtc_set_mode(xf86CrtcPtr crtc, Bool test_only)
   │
-  │  fb_id = GBM desktop BO 對應的 KMS framebuffer
+  │  fb_id = GBM desktop BO 對應的 DRM/KMS framebuffer
   │  output_ids[] = 要接上的 connectors
   │  x／y = framebuffer 內的 source offset
   │  mode = CRTC 要採用的 display mode
@@ -4250,16 +4425,128 @@ int drm_atomic_helper_set_config(struct drm_mode_set *set,
   └─ drm_atomic_commit(state)
 ```
 
-到這裡，legacy request 已轉成一組描述 CRTC、primary plane、framebuffer 與 connector 關係的 atomic state。 `drm_atomic_commit()` 接著會驗證這組關係，再透過 `virtio_gpu` 登記的 atomic commit callback 套用新 state：
+先看 DRM core 如何將 IDs 轉回 KMS objects。 以下程式碼來自 [`Linux: drivers/gpu/drm/drm_crtc.c:709`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_crtc.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n709)，用來顯示 `SETCRTC` handler 如何找回 CRTC、DRM/KMS framebuffer 與 connectors，再建立 `drm_mode_set`：
+
+```c
+// [Linux: drivers/gpu/drm/drm_crtc.c:709-887]
+int
+drm_mode_setcrtc(struct drm_device *dev, void *data,
+                 struct drm_file *file_priv)
+{
+    struct drm_mode_crtc *crtc_req = data;
+    ...
+    crtc = drm_crtc_find(dev, file_priv, crtc_req->crtc_id);
+    plane = crtc->primary;
+    ...
+    fb = drm_framebuffer_lookup(dev, file_priv, crtc_req->fb_id);
+    ...
+    connector = drm_connector_lookup(dev, file_priv, out_id);
+    ...
+    set.crtc = crtc;
+    set.x = crtc_req->x;
+    set.y = crtc_req->y;
+    set.mode = mode;
+    set.connectors = connector_set;
+    set.num_connectors = num_connectors;
+    set.fb = fb;
+
+    if (drm_drv_uses_atomic_modeset(dev))
+        ret = crtc->funcs->set_config(&set, &ctx);
+    ...
+}
+```
+
+`virtio_gpu` 將 CRTC 的 `set_config` callback 登記成 `drm_atomic_helper_set_config()`。 這個 helper 會建立 atomic commit，再將 `drm_mode_set` 轉成本次 commit 需要的 object state
+
+以下程式碼來自 [`Linux: drivers/gpu/drm/drm_atomic.c:1915`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_atomic.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n1915)，用來顯示 display mode、DRM/KMS framebuffer 與座標如何進入 CRTC 與 primary-plane state：
+
+```c
+// [Linux: drivers/gpu/drm/drm_atomic.c:1915-1986]
+int
+__drm_atomic_helper_set_config(struct drm_mode_set *set,
+                               struct drm_atomic_commit *state)
+{
+    ...
+    crtc_state = drm_atomic_get_crtc_state(state, crtc);
+    primary_state = drm_atomic_get_plane_state(state, crtc->primary);
+    ...
+    drm_atomic_set_mode_for_crtc(crtc_state, set->mode);
+    crtc_state->active = true;
+
+    drm_atomic_set_crtc_for_plane(primary_state, crtc);
+    drm_atomic_set_fb_for_plane(primary_state, set->fb);
+    primary_state->crtc_x = 0;
+    primary_state->crtc_y = 0;
+    primary_state->crtc_w = hdisplay;
+    primary_state->crtc_h = vdisplay;
+    primary_state->src_x = set->x << 16;
+    primary_state->src_y = set->y << 16;
+    if (drm_rotation_90_or_270(primary_state->rotation)) {
+        primary_state->src_w = vdisplay << 16;
+        primary_state->src_h = hdisplay << 16;
+    } else {
+        primary_state->src_w = hdisplay << 16;
+        primary_state->src_h = vdisplay << 16;
+    }
+    ...
+    return update_output_state(state, set);
+}
+```
+
+CRTC state 取得 `mode` 與 `active = true`，用來描述這條 display pipeline 的解析度、時序與啟用狀態。 Primary-plane state 取得 DRM/KMS framebuffer reference、source rectangle 與 CRTC 上的 destination rectangle。 `update_output_state()` 會再讓 request 中的 connector states 指向這個 CRTC
+
+##### Atomic check 為 connector 選擇相容的 encoder
+
+到這裡，legacy request 已轉成一組描述 CRTC、primary plane、DRM/KMS framebuffer 與 connector 關係的 atomic state。 前面的 `vgdev_output_init()` 已為 virtual connector 接上一個 virtual encoder，並以 `possible_crtcs` 限制 encoder 可以搭配的 CRTC。 現在 connector state 指向新 CRTC，atomic check 便要取得 connector 的 encoder，再驗證這條 routing
+
+以下程式碼來自 [`Linux: drivers/gpu/drm/drm_atomic_helper.c:293`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_atomic_helper.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n293)，用來顯示 connector callback 可以選擇 encoder，沒有這些 callbacks 時則取得唯一的 attached encoder，最後再檢查它能否由目標 CRTC 驅動：
+
+```c
+// [Linux: drivers/gpu/drm/drm_atomic_helper.c:293-383]
+static int
+update_connector_routing(struct drm_atomic_commit *state,
+                         struct drm_connector *connector,
+                         struct drm_connector_state *old_connector_state,
+                         struct drm_connector_state *new_connector_state,
+                         bool added_by_user)
+{
+    ...
+    if (funcs->atomic_best_encoder)
+        new_encoder = funcs->atomic_best_encoder(connector, state);
+    else if (funcs->best_encoder)
+        new_encoder = funcs->best_encoder(connector);
+    else
+        new_encoder = drm_connector_get_single_encoder(connector);
+
+    if (!new_encoder)
+        return -EINVAL;
+
+    if (!drm_encoder_crtc_ok(new_encoder,
+                             new_connector_state->crtc))
+        return -EINVAL;
+    ...
+}
+```
+
+`virtio_gpu` connector 沒有登記 best-encoder callback，而且只有一個 attached encoder，因此固定主線會由 `drm_connector_get_single_encoder()` 取得它。 `drm_encoder_crtc_ok()` 再以 `possible_crtcs` bitmask 檢查該 encoder 是否可以與目標 CRTC 配對
+
+固定主線的 virtual encoder callbacks 都是空函式。 這一步只讀取 `possible_crtcs`，檢查 connector 與 CRTC 是否相容
+
+##### Atomic commit 將 KMS state 轉成 virtio-gpu scanout 繫結
+
+Legacy request 此時已轉成 atomic state，但 kernel 尚未套用它，也尚未送出 virtio-gpu Display commands。 `drm_atomic_commit()` 會先驗證整組 state，再進入 commit tail，將它轉成 scanout commands：
 
 ```callgraph
 [Linux: drivers/gpu/drm/drm_atomic.c:1774]
 int drm_atomic_commit(struct drm_atomic_commit *state)
   ├─ drm_atomic_check_only(state)
-  │    ├─ [Linux: drivers/gpu/drm/drm_atomic_helper.c:293]
-  │    │  update_connector_routing(...)
-  │    │    ├─ 為 connector 選出 best_encoder
-  │    │    └─ 驗證 encoder->possible_crtcs
+  │    ├─ dev->mode_config.funcs->atomic_check(...)
+  │    │    │  // virtio_gpu_mode_funcs.atomic_check
+  │    │    │  //     = drm_atomic_helper_check
+  │    │    └─ drm_atomic_helper_check_modeset(...)
+  │    │         └─ update_connector_routing(...)
+  │    │              ├─ 取得 connector 的 virtual encoder
+  │    │              └─ 驗證 encoder->possible_crtcs
   │    └─ 驗證失敗：回傳錯誤，不進入 commit tail
   └─ 驗證成功：
        state->dev->mode_config.funcs->atomic_commit(...)
@@ -4278,9 +4565,8 @@ int drm_atomic_helper_commit(...)
             │       [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:91]
             │       virtio_gpu_crtc_mode_set_nofb(...)
             │         └─ SET_SCANOUT(resource_id = 0)
-            │              // 先解除舊 scanout 繫結
-            │              // 新 resource 與 source rectangle 由後面的
-            │              // 非零 SET_SCANOUT 設定
+            │              // 清除或重設 virtual scanout 繫結
+            │              // 第一次 modeset 可能尚未存在舊繫結
             │
             ↓
 [Linux: drivers/gpu/drm/drm_atomic_helper.c:2972]
@@ -4290,22 +4576,165 @@ drm_atomic_helper_commit_planes(...)
        ↓
 [Linux: drivers/gpu/drm/virtio/virtgpu_plane.c:235]
 virtio_gpu_primary_plane_update(...)
-  ├─ framebuffer 不存在或 CRTC 未 active
-  │    └─ SET_SCANOUT(resource_id = 0) 後結束
-  ├─ 沒有有效 damage
-  │    └─ 結束這次 plane update
-  ├─ dumb BO：TRANSFER_TO_HOST_2D
-  ├─ framebuffer／source 改變，或 output->needs_modeset：SET_SCANOUT
-  └─ 有效 damage update：RESOURCE_FLUSH
+  ├─ new framebuffer != old framebuffer
+  │    └─ SET_SCANOUT(resource_id = bo->hw_res_handle)
+  │         // 將 desktop resource 綁到 virtual scanout
+  └─ RESOURCE_FLUSH(full source rectangle)
+       // 固定主線的 non-dumb VirGL resource 不會執行 TRANSFER_TO_HOST_2D
 ```
 
-KMS framebuffer 保存 GEM object reference 與 scanout layout，不會因 `ADDFB` 再配置一份 guest 像素儲存區。 第一次 modeset 時，primary plane 從沒有 framebuffer 變成引用 GBM desktop BO 對應的 framebuffer
+Commit tail 的 mode-change 階段會呼叫 `virtio_gpu_crtc_mode_set_nofb()`。 以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_display.c:91`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_display.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n91)，用來顯示 CRTC 先以 resource ID 0 將 virtual scanout 設成尚未選擇 resource 的狀態：
 
-`drm_atomic_helper_damage_merged()` 會將完整 plane source 視為這次需要更新的區域，再交給 `virtio_gpu_primary_plane_update()`。 Dumb BO 分支先以 `TRANSFER_TO_HOST_2D` 更新 host-side 2D resource，再以非零 resource ID 的 `SET_SCANOUT` 建立 virtual scanout 繫結，最後送出 `RESOURCE_FLUSH`
+```c
+// [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:91-101]
+static void
+virtio_gpu_crtc_mode_set_nofb(struct drm_crtc *crtc)
+{
+    ...
+    virtio_gpu_cmd_set_scanout(vgdev, output->index, 0,
+                               crtc->mode.hdisplay,
+                               crtc->mode.vdisplay, 0, 0);
+    virtio_gpu_notify(vgdev);
+}
+```
 
-這一輪會建立 initial display state，並把更新 virtual scanout 所需的 commands 排入 virtio-gpu control virtqueue。 `ADDFB` 建立可供 KMS state 引用的 framebuffer object，`SETCRTC` 建立或更新 kernel 內的 KMS state，非零 resource ID 的 `SET_SCANOUT` 則把 virtio resource 綁到 virtual scanout。 一般畫面更新會沿後面的 `DIRTYFB` 路徑重用既有 objects
+第一次 modeset 前可能尚未存在舊繫結，因此 resource ID 0 在這裡是一筆 clear command。 Primary-plane update 隨後會以桌面 resource 建立新的 scanout ID → resource ID 繫結
 
-##### Xorg 接受 `xinit` 的 connection，並送出 setup reply
+以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_plane.c:235`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_plane.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n235)，用來顯示 primary plane 如何取得 DRM/KMS framebuffer 引用的 `virtio_gpu_object`，再建立繫結與發布更新：
+
+```c
+// [Linux: drivers/gpu/drm/virtio/virtgpu_plane.c:235-308]
+static void
+virtio_gpu_primary_plane_update(struct drm_plane *plane,
+                                struct drm_atomic_commit *state)
+{
+    ...
+    if (!drm_atomic_helper_damage_merged(old_state,
+                                         plane->state, &rect))
+        return;
+
+    bo = gem_to_virtio_gpu_obj(plane->state->fb->obj[0]);
+    if (bo->dumb)
+        virtio_gpu_update_dumb_bo(vgdev, plane->state, &rect);
+
+    if (plane->state->fb != old_state->fb ||
+        plane->state->src_w != old_state->src_w ||
+        plane->state->src_h != old_state->src_h ||
+        plane->state->src_x != old_state->src_x ||
+        plane->state->src_y != old_state->src_y ||
+        output->needs_modeset) {
+        output->needs_modeset = false;
+        ...
+        virtio_gpu_cmd_set_scanout(vgdev, output->index,
+                                   bo->hw_res_handle, ...);
+    }
+
+    virtio_gpu_resource_flush(plane, rect.x1, rect.y1,
+                              rect.x2 - rect.x1,
+                              rect.y2 - rect.y1);
+}
+```
+
+第一次 modeset 的 old plane state 沒有 framebuffer，new state 則引用 GBM desktop BO 對應的 DRM/KMS framebuffer。 `drm_atomic_helper_damage_merged()` 因此將完整 source rectangle 作為更新範圍
+
+Framebuffer 變更條件成立後，driver 會以 `bo->hw_res_handle` 作為 nonzero resource ID 送出 `SET_SCANOUT`，將 desktop resource 與 `output->index` 指定的 virtual scanout 綁在一起。 `RESOURCE_FLUSH` 再帶著完整 desktop source rectangle 進入 control virtqueue
+
+固定主線的 GBM desktop BO 是 non-dumb VirGL resource，因此 `bo->dumb` 為 false，`virtio_gpu_update_dumb_bo()` 不會執行。 這條路徑會送出 resource ID 0 與 nonzero resource ID 的 `SET_SCANOUT`，之後再送出 `RESOURCE_FLUSH`，不會出現 `TRANSFER_TO_HOST_2D`
+
+semu 收到 resource ID 0 時，會清除該 scanout 保存的 `primary_resource_id` 與 source rectangle
+
+收到 nonzero resource ID 時，handler 會先記錄 resource ID 與 rectangle，再由 VirGL worker 驗證 resource 並建立 scanout ID → resource ID 繫結。 當 display queue 可以接受新工作，而且這筆 state 沒有被後續 clear request 取代時，worker 會將 GL texture 與 source rectangle 等顯示資料交給 SDL display thread
+
+後續 `RESOURCE_FLUSH` 也會找出引用該 resource 的 scanout，重新交付目前綁定的畫面
+
+以下程式碼來自 [`semu: virtio-gpu-virgl.c:2223`](https://github.com/Mes0903/Mes-semu-dev/blob/288d75407f2526eb78b610dfa84f0c3eec763554/virtio-gpu-virgl.c#L2223-L2302) 與 [`semu: virtio-gpu-virgl.c:2453`](https://github.com/Mes0903/Mes-semu-dev/blob/288d75407f2526eb78b610dfa84f0c3eec763554/virtio-gpu-virgl.c#L2453-L2700)，用來顯示 resource ID 0、nonzero resource ID 與 flush 在虛擬裝置端的三種處理：
+
+```c
+// [semu: virtio-gpu-virgl.c:2223-2302]
+static void
+vgpu_virgl_cmd_set_scanout_handler(virtio_gpu_state_t *vgpu,
+                                   struct virtq_desc *vq_desc,
+                                   uint32_t *plen)
+{
+    ...
+    if (request->resource_id == 0) {
+        scanout->primary_resource_id = 0;
+        scanout->src_x = scanout->src_y = 0;
+        scanout->src_w = scanout->src_h = 0;
+        ...
+        vgpu_display_publish_primary_clear(request->scanout_id);
+        ...
+        return;
+    }
+    ...
+    scanout->primary_resource_id = request->resource_id;
+    scanout->src_x = request->r.x;
+    scanout->src_y = request->r.y;
+    scanout->src_w = request->r.width;
+    scanout->src_h = request->r.height;
+    vgpu_virgl_submit_ctrl_work(...);
+}
+
+// [semu: virtio-gpu-virgl.c:2453-2700]
+static void
+vgpu_virgl_execute_ctrl_request(
+    const struct vgpu_renderer_request *request,
+    struct vgpu_virgl_ctrl_work *work)
+{
+    ...
+    switch (request->command_type) {
+    case VIRTIO_GPU_CMD_SET_SCANOUT:
+        ...
+        virgl_renderer_resource_get_info((int) cmd->resource_id, &info);
+        ...
+        vgpu_virgl_set_renderer_scanout(...);
+        vgpu_display_publish_primary_set_guarded(...);
+        break;
+
+    case VIRTIO_GPU_CMD_RESOURCE_FLUSH:
+        ...
+        vgpu_virgl_publish_gl_scanout(snapshot, cmd->resource_id,
+                                      &snapshot->scanout);
+        break;
+    }
+    ...
+}
+```
+
+這三種 requests 進入 semu 後，會分別清除 `primary_resource_id`、建立新的 scanout ID → resource ID 繫結，以及重新交付已綁定 resource 的畫面。 SDL display thread 取出 command 後，才會更新 VM window 的 GL state 並交換畫面：
+
+```callgraph
+semu virtio-gpu VirGL backend
+=================================================
+VIRTIO_GPU_CMD_SET_SCANOUT(resource_id = 0)
+  │
+  └─ 清除 primary_resource_id 與 source rectangle
+       ↓
+VIRTIO_GPU_CMD_SET_SCANOUT(resource_id = desktop resource ID)
+  │
+  ├─ 驗證 resource 與 source rectangle
+  ├─ 保存 scanout ID → resource ID 繫結
+  └─ 將 GL texture 與 source rectangle 交給 SDL display thread
+       ↓
+VIRTIO_GPU_CMD_RESOURCE_FLUSH
+  │
+  └─ 重新交付目前綁定的畫面
+       ↓
+[semu: window-sw.c:1131]
+window_drain_display_queue()
+  │
+  ├─ vgpu_display_pop_cmd(...)
+  ├─ 將 GL texture 與 source rectangle 套用到 SDL scanout state
+  └─ SDL_GL_SwapWindow(scanout->window)
+       ↓
+semu VM window 顯示初始桌面
+```
+
+第一輪 BlockHandler 到這裡已完成 DRM/KMS framebuffer、display mode、connector routing 與 virtual scanout binding。 後續 application 更新桌面內容時，Xorg 會沿用這組 display state
+
+「Damage Region 經 `DIRTYFB` 抵達 primary-plane update」一節會從既有 framebuffer 與 binding 開始，展開穩態更新路徑
+
+#### Xorg 接受 `xinit` 的 connection，並送出 setup reply
 
 Xorg 送出 `SIGUSR1` 前已建立 `ConnectionInfo` template。 進入 `Dispatch()` 後，本文固定版本的 `WaitForSomething()` 會先執行 BlockHandler，再呼叫 `ospoll_wait()` 等待與處理 fd events。 因此，這條實際執行路徑會先提交上面的 one-shot modeset，接著才接受 listening socket 上等待中的 connection
 
@@ -5436,7 +5865,7 @@ drm_atomic_helper_commit_tail(state)
 virtio_gpu_primary_plane_update(plane, state)
 ```
 
-`virtio_gpu_primary_plane_update()` 是 KMS plane state 變成 virtio-gpu display commands 的位置。 以下片段來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_plane.c:235`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_plane.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n235)，用來區分 dumb 與 non-dumb buffers，並顯示 `SET_SCANOUT` 和 `RESOURCE_FLUSH` 的送出條件：
+`virtio_gpu_primary_plane_update()` 是 KMS plane state 變成 virtio-gpu Display commands 的位置。 以下片段來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_plane.c:235`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_plane.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n235)，用來區分 dumb 與 non-dumb buffers，並顯示 `SET_SCANOUT` 和 `RESOURCE_FLUSH` 的送出條件：
 
 ```c
 // [Linux: drivers/gpu/drm/virtio/virtgpu_plane.c:235]
@@ -5508,7 +5937,7 @@ display state 仍然 active 時，`drm_atomic_helper_damage_merged()` 會讀取 
 
 ### vGPU 2D：software renderer 為什麼讓交付路徑更直接
 
-VirGL 3D 主線會讓 guest Mesa 建立 commands，再由 host renderer 執行 rendering。 vGPU 2D 的 software-rendering 路徑則讓 CPU 直接算出 pixels，接著把 pixels 交給 Xorg。 這條對照路徑少了跨越 VM boundary 的 3D command stream，卻仍會經過 X11 drawable、screen Pixmap、KMS 與 virtio-gpu display commands
+VirGL 3D 主線會讓 guest Mesa 建立 commands，再由 host renderer 執行 rendering。 vGPU 2D 的 software-rendering 路徑則讓 CPU 直接算出 pixels，接著把 pixels 交給 Xorg。 這條對照路徑少了跨越 VM boundary 的 3D command stream，卻仍會經過 X11 drawable、screen Pixmap、KMS 與 virtio-gpu Display commands
 
 為了建立這條對照路徑，application 會以 `LIBGL_ALWAYS_SOFTWARE=true` 選擇 software rendering，再以 `GALLIUM_DRIVER=softpipe` 固定使用 softpipe。 Xorg modesetting driver 會改用 `AccelMethod=none`，讓 screen Pixmap 接到可供 CPU mapping 的 dumb front BO。 virtio-gpu 顯示裝置則使用 2D resources 與 commands，不需要協商 VirGL 3D
 
