@@ -1934,13 +1934,42 @@ ScrnInfoRec::ScreenInit(...)
 
 前一節已經說明 Xorg 需要從 Linux 顯示裝置取得 X Screen 的組態。 modesetting driver 執行在 Xorg 行程中，實際的顯示裝置則由 Linux kernel 管理。 要知道兩邊如何交換顯示資訊與操作要求，我們需要先從 Linux 在這條邊界提供的 DRM 介面開始看起
 
-DRM 會把圖形裝置（如 GPU）公開成 `/dev/dri/card0` 這類位於 `/dev/dri/` 底下的 DRM device node。 Userspace 程式可以用 `open()` 開啟其中一個 node，取得之後用來操作該 DRM device 的 file descriptor（fd）
+#### Xorg 與 Mesa 透過不同 DRM device nodes 使用同一個 virtio-gpu device
 
-取得 DRM device fd 後，Xorg 的 modesetting driver 會呼叫 userspace 函式庫 libdrm，向 kernel 查詢顯示資訊或提交顯示狀態。 libdrm 會依照 DRM 的 userspace API（UAPI）準備 ioctl，再透過前面的 fd 將要求送往對應的 DRM device
+DRM 會將圖形裝置公開成 `/dev/dri/` 底下的 device nodes。 Device node 是 userspace 開啟 kernel 裝置的入口，同一個 DRM device 可以依用途提供不同 node。 本文會用到其中兩種：
+
+- `/dev/dri/cardN` 是 primary node。 它提供顯示控制與 rendering 介面，能夠改變 KMS display state 的 ioctl 還要求這條 DRM connection 持有該裝置的顯示控制權。 本文 single-device guest 使用的節點是 `/dev/dri/card0`，Xorg modesetting driver 會用它查詢輸出並設定 scanout
+- `/dev/dri/renderD<N>` 是 render node。 它提供 rendering 與 resource management 所需的 ioctl，但不提供 KMS display control。 本文對應的節點是 `/dev/dri/renderD128`，`glxgears` 行程內的 Mesa VirGL driver 會使用它提交 3D work
+
+[Linux DRM UAPI 文件](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/Documentation/gpu/drm-uapi.rst?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n127)定義了兩種 nodes 的用途。 每個 [DRM ioctl descriptor](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/drm/drm_ioctl.h?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n80) 會以 `DRM_MASTER` 與 `DRM_RENDER_ALLOW` 標示需要的權限
+
+DRM core 的 [`drm_ioctl_permit()`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_ioctl.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n599) 會按照目前 fd 的 node 類型與狀態檢查這些 flags
+
+透過這兩種 nodes 取得的 file descriptors 都指向同一個 Linux `virtio_gpu` DRM device，但 DRM core 會依 node 類型與 ioctl 權限限制可執行的操作。 在本文固定路徑中，Xorg 會由 [`glamor_egl_init()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/glamor/glamor_egl.c#L1150-L1158) 找出同一個裝置的 render node，application 行程內的 Mesa GLX backend 再由 [`dri3_create_screen()`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/dri3_glx.c#L461-492) 取得該 fd。 這段 fd 交付會在後面的 application rendering path 展開
+
+以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_drv.c:227`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_drv.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n227)，用來顯示 `virtio_gpu` 同時宣告 KMS 與 render-node support：
+
+```c
+// [Linux: drivers/gpu/drm/virtio/virtgpu_drv.c:227-236]
+static const struct drm_driver driver = {
+    ...
+    .driver_features = DRIVER_MODESET | DRIVER_GEM |
+                       DRIVER_RENDER | DRIVER_ATOMIC |
+                       DRIVER_SYNCOBJ | DRIVER_SYNCOBJ_TIMELINE |
+                       DRIVER_CURSOR_HOTSPOT,
+    ...
+};
+```
+
+`DRIVER_MODESET` 表示這個 DRM driver 提供 KMS 介面，`DRIVER_RENDER` 則讓 DRM core 為它建立專用的 render node。 是否能透過 render node 提交 VirGL 3D commands，還取決於 guest 與 semu 是否已協商 `VIRTIO_GPU_F_VIRGL`
+
+Xorg 以 `open()` 開啟 primary node 後，會取得代表這次 open instance 的 file descriptor（fd）。 modesetting driver 接著呼叫 userspace 函式庫 libdrm，向 kernel 查詢顯示資訊或提交顯示狀態。 libdrm 會依照 DRM 的 userspace API（UAPI）準備 ioctl，再透過這個 fd 將要求送往對應的 DRM device
 
 DRM UAPI 定義了 userspace 與 kernel 共同使用的 ioctl request numbers、argument structures 與回傳格式。 每個 request number 都表示著一項固定操作，對應的 UAPI structure 則用來傳入查詢條件、更新內容或接收 kernel 回傳的結果
 
 libdrm 發出的 ioctl 進入 kernel 後，會由 DRM core 接住。 DRM core 是 DRM 內由各個裝置 drivers 共用的 kernel 程式碼，位於 ioctl 入口與裝置專屬 DRM driver 之間。 它會處理 ioctl 的分派與呼叫權限檢查，也會管理共用的 DRM objects。 `virtio_gpu`、`amdgpu` 與 `i915` 等裝置專屬的 DRM drivers 會建立各自裝置的 objects 並登記 callbacks，再把共用操作轉成該裝置能夠執行的工作
+
+#### KMS 將 pixel storage 接到顯示輸出
 
 因此，modesetting driver 想知道的是 kernel 提供了哪些顯示輸出，以及每個輸出可以使用哪些 display modes。 而 DRM 中負責保存與更新這些顯示狀態的部分稱為 KMS（Kernel Mode Setting）
 
@@ -1953,7 +1982,48 @@ KMS 執行的核心工作稱為 mode setting。 它會選擇並套用一個 disp
 - Linux kernel 的 mode setting 是 KMS 執行的顯示模式設定工作
 :::
 
-下方 callgraph 會把剛才定義的各層放回同一條資料流，從 DIX 需要的 X Screen 組態開始，沿著 XFree86 DDX、modesetting、libdrm 與 DRM／KMS 走到 `virtio_gpu`，再把查詢結果帶回 Xorg
+要讓一份 pixel storage 成為 display controller 的掃描來源，KMS 會用多種 objects 分別保存 pixels、scanout layout、畫面位置、掃描狀態與輸出路由。 先從 scanout 生效時的 object 關係來看。 這張圖描述的是 pixels 如何成為顯示來源，不是 kernel 配置 objects 的函式呼叫順序：
+
+```callgraph
+保存 pixels 的 buffer object
+  │
+  │  提供實際像素儲存區
+  ↓
+DRM/KMS framebuffer
+  │
+  │  引用 BO，並描述 format、尺寸與 pitch
+  ↓
+primary plane state
+  │
+  │  選擇 framebuffer
+  │  保存 source rectangle 與 CRTC 上的目的位置
+  ↓
+CRTC state
+  │
+  │  保存 active state、display mode 與掃描時序
+  ↓
+encoder compatibility
+  │
+  │  表示這個 CRTC 可以路由到哪些 connectors
+  ↓
+connector state
+  │
+  │  表示 userspace 可查詢狀態與 modes 的顯示端點
+  ↓
+虛擬顯示輸出
+```
+
+Buffer object 與 DRM/KMS framebuffer 位於同一份 pixels 的兩個不同層次。 BO 保存像素儲存區，DRM/KMS framebuffer 則保存 scanout layout metadata，讓 plane 能引用該 BO。 建立 framebuffer 不會複製 pixels，也不會另外配置第二份 image storage
+
+Plane 會選擇一個 DRM/KMS framebuffer 作為 pixel source。 Plane state 還會保存要讀取的 source rectangle，以及這個 rectangle 在 CRTC 畫面中的目的位置。 Primary plane 用來承載主要桌面畫面，cursor plane 則讓滑鼠指標能以另一份 image 與位置獨立更新
+
+CRTC 這個名稱源自 Cathode Ray Tube Controller。 在 DRM／KMS object model 中，它代表保存 active state、display mode 與掃描狀態的 display pipeline abstraction，不要求 VM 裡存在實體 CRT controller
+
+Encoder 表示 CRTC 到 connector 之間允許的 routing。 它的 `possible_crtcs` bitmask 會指出能與哪些 CRTCs 配對。 Connector 則表示 userspace 可查詢 connection state 與 display modes 的輸出端點。 `drm_connector_attach_encoder()` 只會登記 connector 可以選擇哪些 encoders，不會在初始化時選定 active routing，也不會負責搬運每一幀 pixels
+
+本文將 plane、CRTC、encoder、connector 與它們允許的連接關係稱為 KMS display topology。 Connector 的 EDID 與 output metadata 會由後續 Display commands 更新，可用 display modes 則要等 userspace 查詢 connector 時才建立。 Linux 建立 topology 時，Xorg 尚未建立 GBM desktop BO，也沒有引用該 BO 的 DRM/KMS framebuffer 與 active scanout state
+
+下方 callgraph 會把剛才定義的各層放回同一條查詢路徑。 DIX 需要 X Screen 的顯示組態，XFree86 DDX 與 modesetting 會經過 libdrm、DRM core 與 `virtio_gpu` 取得資料，再將結果交給後面的 `PreInit()`
 
 ```callgraph
 DIX 定義並負責管理 X server 共用的 object model
@@ -1970,7 +2040,7 @@ XFree86 DDX 框架
   ↓
 Xorg modesetting display driver
   │
-  │  以 DRM device fd 呼叫 drmMode*() KMS API
+  │  以 DRM primary-node fd 呼叫 drmMode*() KMS API
   ↓
 libdrm
   │
@@ -1991,15 +2061,332 @@ virtio_gpu DRM driver 與其建立的 KMS objects
 DRM core 將查詢結果寫回 ioctl argument structures
   ↓
 libdrm 將結果整理後交回 Xorg modesetting driver
-  ↓
-Xorg modesetting driver 與 XFree86 DDX 的共用 screen 初始化程式碼
   │
-  │  建立 X11 depths／visuals，並填入 ScreenRec callbacks
-  ↓
-DIX 使用完成初始化的 ScreenRec 管理 X Screen
+  │  供後面的 PreInit() 建立 Xorg output／CRTC records
+  │  並選擇初始顯示組態
 ```
 
-這張圖先把建立 `ScreenRec` 時會經過的各層，以及顯示資訊往返 userspace 與 kernel 的方向排在一起。 接下來沿 Xorg 子行程實際執行的順序，看 `InitOutput()` 如何列舉 DRM devices、選出 modesetting 要管理的裝置，再建立後續 `PreInit()` 使用的 `ScrnInfoRec`
+這張圖先把 Xorg 查詢 Linux 顯示組態時經過的 userspace／kernel boundary 排在一起。 `ScreenRec` 要等 `PreInit()` 選好組態，再由後面的 `ScreenInit()` 完成。 Xorg 開始查詢以前，Linux `virtio_gpu` driver 則必須先建立一組可供 DRM core 管理的 KMS objects
+
+#### Linux virtio-gpu 先建立可供 Xorg 查詢的 KMS topology
+
+接下來依 semu 登記 virtual scanout、Linux 建立 topology、Display commands 更新 output metadata，以及 Xorg 查詢 connector 的順序展開。 這四個時間點會使用同一組 KMS objects，但各自完成不同工作
+
+##### semu 先公布 virtual scanout 的數量與尺寸
+
+在 guest 開始探測 virtio-gpu 以前，semu 會先建立 VM window，再為同一個寬度與高度登記一個 virtual scanout。 以下程式碼來自 [`semu: main.c:866`](https://github.com/Mes0903/Mes-semu-dev/blob/288d75407f2526eb78b610dfa84f0c3eec763554/main.c#L866-L1052) 的 `semu_init()`，用來顯示 scanout 在裝置初始化階段的建立位置：
+
+```c
+// [semu: main.c:866-1052]
+static int
+semu_init(emu_state_t *emu, int argc, char **argv)
+{
+    ...
+    g_window.window_init(headless, SCREEN_WIDTH, SCREEN_HEIGHT);
+    ...
+    virtio_gpu_init(&(emu->vgpu));
+    uint32_t scanout_id =
+        virtio_gpu_register_scanout(&(emu->vgpu),
+                                    SCREEN_WIDTH, SCREEN_HEIGHT);
+    vgpu_display_set_scanout_count(scanout_id + 1U);
+    ...
+}
+```
+
+固定組態中的 `SCREEN_WIDTH` 與 `SCREEN_HEIGHT` 分別是 1024 與 768，定義位於 [`semu: device.h:15`](https://github.com/Mes0903/Mes-semu-dev/blob/288d75407f2526eb78b610dfa84f0c3eec763554/device.h#L15-L16)。 `virtio_gpu_register_scanout()` 會將 width、height 與 enabled state 存進 semu 的 scanout record，並增加 `num_scanouts`
+
+Scanout 數量與每個 scanout 的詳細狀態經過兩條不同介面。 `virtio_gpu_config::num_scanouts` 讓 Linux 先知道需要建立幾組 KMS output objects。 稍後的 `GET_DISPLAY_INFO` response 才會以 `pmodes[i]` 傳回 scanout `i` 的 enabled state 與 rectangle
+
+##### Linux 依 num_scanouts 建立 planes、CRTC、connector 與 encoder
+
+Linux `virtio_gpu_init()` 先從 virtio config 讀取 `num_scanouts`，再呼叫 `virtio_gpu_modeset_init()`。 裝置要等這個函式完成 KMS topology，才會進入 ready state 並發出 display-info requests。 以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_kms.c:118`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_kms.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n118)，用來標出三個階段的實際先後順序：
+
+```c
+// [Linux: drivers/gpu/drm/virtio/virtgpu_kms.c:118-268]
+int
+virtio_gpu_init(struct virtio_device *vdev, struct drm_device *dev)
+{
+    ...
+    virtio_cread_le(vgdev->vdev, struct virtio_gpu_config,
+                    num_scanouts, &num_scanouts);
+    vgdev->num_scanouts = min_t(uint32_t, num_scanouts,
+                                VIRTIO_GPU_MAX_SCANOUTS);
+    ...
+    ret = virtio_gpu_modeset_init(vgdev);
+    ...
+    virtio_device_ready(vgdev->vdev);
+    ...
+    if (vgdev->num_scanouts) {
+        if (vgdev->has_edid)
+            virtio_gpu_cmd_get_edids(vgdev);
+        virtio_gpu_cmd_get_display_info(vgdev);
+        virtio_gpu_notify(vgdev);
+        ...
+    }
+    return 0;
+}
+```
+
+`virtio_gpu_modeset_init()` 會先建立共用的 DRM mode configuration，再為每個 scanout 呼叫一次 `vgdev_output_init()`。 一組 virtual output 會由 `struct virtio_gpu_output` 保存，以下定義來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_drv.h:177`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_drv.h?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n177)，只保留本節使用的 members：
+
+```c
+// [Linux: drivers/gpu/drm/virtio/virtgpu_drv.h:177-188]
+struct virtio_gpu_output {
+    int index;
+    struct drm_crtc crtc;
+    struct drm_connector conn;
+    struct drm_encoder enc;
+    struct virtio_gpu_display_one info;
+    ...
+    bool needs_modeset;
+};
+```
+
+`index` 是 virtio-gpu protocol 使用的 scanout ID。 `info` 保存虛擬輸出的 enabled state 與 rectangle，CRTC、connector 與 encoder 則直接內嵌在這筆 output record。 Primary 與 cursor planes 由 `virtio_gpu_plane_init()` 分別配置，再接進這筆 output 的 CRTC
+
+以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_display.c:359`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_display.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n359)，用來顯示 `num_scanouts` 如何決定要建立幾組 outputs：
+
+```c
+// [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:359-389]
+int
+virtio_gpu_modeset_init(struct virtio_gpu_device *vgdev)
+{
+    ...
+    ret = drmm_mode_config_init(vgdev->ddev);
+    ...
+    for (i = 0; i < vgdev->num_scanouts; ++i)
+        vgdev_output_init(vgdev, i);
+    ...
+    drm_mode_config_reset(vgdev->ddev);
+    return 0;
+}
+```
+
+以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_display.c:274`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_display.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n274)，用來顯示一組 output 的實際建立順序：
+
+```c
+// [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:274-315]
+static int
+vgdev_output_init(struct virtio_gpu_device *vgdev, int index)
+{
+    struct drm_device *dev = vgdev->ddev;
+    struct virtio_gpu_output *output = vgdev->outputs + index;
+    struct drm_connector *connector = &output->conn;
+    struct drm_encoder *encoder = &output->enc;
+    struct drm_crtc *crtc = &output->crtc;
+    struct drm_plane *primary, *cursor;
+    ...
+
+    output->index = index;
+    if (index == 0) {
+        output->info.enabled = cpu_to_le32(true);
+        output->info.r.width = cpu_to_le32(XRES_DEF);
+        output->info.r.height = cpu_to_le32(YRES_DEF);
+    }
+
+    primary = virtio_gpu_plane_init(vgdev,
+                                    DRM_PLANE_TYPE_PRIMARY, index);
+    ...
+    cursor = virtio_gpu_plane_init(vgdev,
+                                   DRM_PLANE_TYPE_CURSOR, index);
+    ...
+    ret = drm_crtc_init_with_planes(dev, crtc, primary, cursor,
+                                    &virtio_gpu_crtc_funcs, NULL);
+    ...
+    drm_connector_init(dev, connector, &virtio_gpu_connector_funcs,
+                       DRM_MODE_CONNECTOR_VIRTUAL);
+    ...
+    drm_simple_encoder_init(dev, encoder, DRM_MODE_ENCODER_VIRTUAL);
+    ...
+    encoder->possible_crtcs = 1 << index;
+
+    drm_connector_attach_encoder(connector, encoder);
+    drm_connector_register(connector);
+    return 0;
+}
+```
+
+Output 0 會先取得 driver 的預設 enabled state 與 `XRES_DEF`／`YRES_DEF` 尺寸，後面的 device response 再更新同一筆 `output->info`
+
+建立順序是 primary plane、cursor plane、CRTC、virtual connector 與 virtual encoder，最後才將 connector 接到 encoder
+
+`virtio_gpu_plane_init()` 建立 primary／cursor planes 時，會以 `1 << index` 設定兩者可使用的 CRTC mask。 `drm_crtc_init_with_planes()` 再將這兩個 plane pointers 保存到 CRTC。 Active plane state 要等後續 modeset 才會建立
+
+`encoder->possible_crtcs` 與 `drm_connector_attach_encoder()` 則建立 CRTC、encoder 與 connector 之間允許的 routing 關係
+
+`vgdev_output_init()` 末尾雖然呼叫了 `drm_connector_register()`，但此時整個 `drm_device` 尚未完成 registration，因此 [`drm_connector_register()`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_connector.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n819) 會直接回傳
+
+等外層 probe 進入 [`drm_dev_register()`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_drv.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n1059) 後，DRM core 才會透過 `drm_modeset_register_all()` 將這些 static KMS objects 公開給 userspace
+
+##### Display commands 更新已建立的 output metadata
+
+Topology 建立完成後，Linux 還需要取得每個虛擬顯示端點提供的能力與目前狀態。 EDID（Extended Display Identification Data）是顯示端點提供的能力資料，其中可以列出支援的 display modes。 Linux 將 virtio device 標成 ready 後，會透過 controlq 送出 `GET_EDID` 與 `GET_DISPLAY_INFO`。 這兩個 commands 不會建立新的 KMS topology，而是補上既有 connector 與 output records 所需的顯示資訊
+
+固定的 semu VirGL backend 會將這兩個 Display commands 交給共用的 virtio-gpu handlers，對應的 delegation 位於 [`semu: virtio-gpu-virgl.c:642`](https://github.com/Mes0903/Mes-semu-dev/blob/288d75407f2526eb78b610dfa84f0c3eec763554/virtio-gpu-virgl.c#L642-L653)。 它們屬於 virtio-gpu Display protocol，不會被編碼成送往 virglrenderer 的 VirGL command stream。 [`semu: virtio-gpu.c:582`](https://github.com/Mes0903/Mes-semu-dev/blob/288d75407f2526eb78b610dfa84f0c3eec763554/virtio-gpu.c#L582-L635) 的 `virtio_gpu_get_display_info_handler()` 會把先前登記的 scanout records 寫進 `pmodes[]`：
+
+```c
+// [semu: virtio-gpu.c:582-635]
+void
+virtio_gpu_get_display_info_handler(virtio_gpu_state_t *vgpu,
+                                    struct virtq_desc *vq_desc,
+                                    uint32_t *plen)
+{
+    ...
+    response->hdr.type = VIRTIO_GPU_RESP_OK_DISPLAY_INFO;
+
+    int scanout_num = PRIV(vgpu)->num_scanouts;
+    for (int i = 0; i < scanout_num; i++) {
+        response->pmodes[i].r.width = PRIV(vgpu)->scanouts[i].width;
+        response->pmodes[i].r.height = PRIV(vgpu)->scanouts[i].height;
+        response->pmodes[i].enabled = PRIV(vgpu)->scanouts[i].enabled;
+    }
+    ...
+}
+```
+
+固定的 semu 會在 [`virtio_gpu_init()`](https://github.com/Mes0903/Mes-semu-dev/blob/288d75407f2526eb78b610dfa84f0c3eec763554/virtio-gpu.c#L1286-L1290) 公布 `VIRTIO_GPU_F_EDID`。 `GET_EDID` 走過相同的 controlq boundary，但會交給 [`semu: virtio-gpu.c:961`](https://github.com/Mes0903/Mes-semu-dev/blob/288d75407f2526eb78b610dfa84f0c3eec763554/virtio-gpu.c#L961-L1010) 的 `virtio_gpu_get_edid_handler()`。 這個 handler 會使用對應 scanout 的 width 與 height 產生 EDID
+
+Response 回到 guest 後，[`Linux: drivers/gpu/drm/virtio/virtgpu_vq.c:907`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_vq.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n907) 的 `virtio_gpu_cmd_get_edid_cb()` 會解析這份資料，更新既有 connector 的 EDID，再將結果存進對應的 `virtio_gpu_output`
+
+`GET_DISPLAY_INFO` response 回到 guest 後，[`Linux: drivers/gpu/drm/virtio/virtgpu_vq.c:819`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_vq.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n819) 的 callback 會用 `pmodes[i]` 更新已存在的 `outputs[i].info`，再送出 KMS hotplug event：
+
+```c
+// [Linux: drivers/gpu/drm/virtio/virtgpu_vq.c:819-845]
+static void
+virtio_gpu_cmd_get_display_info_cb(struct virtio_gpu_device *vgdev,
+                                   struct virtio_gpu_vbuffer *vbuf)
+{
+    struct virtio_gpu_resp_display_info *resp =
+        (struct virtio_gpu_resp_display_info *)vbuf->resp_buf;
+    ...
+    for (i = 0; i < vgdev->num_scanouts; i++)
+        vgdev->outputs[i].info = resp->pmodes[i];
+    ...
+    if (!drm_helper_hpd_irq_event(vgdev->ddev))
+        drm_kms_helper_hotplug_event(vgdev->ddev);
+}
+```
+
+`GET_DISPLAY_INFO` 提供 enabled state 與 rectangle，`GET_EDID` 則讓 Linux 更新 connector 的 EDID。 Callback 最後送出的 KMS hotplug event 會通知 DRM／KMS userspace 顯示端點狀態可能已改變，使 userspace 重新查詢 connectors 與 modes
+
+##### Xorg 查詢 connector 時，`get_modes()` 讀取既有 metadata
+
+Linux 已經建立 topology，並以兩個 Display commands 更新 output metadata。 Xorg 現在需要取得 connector 可用的 mode list，才能從中選擇 X Screen 的初始 display mode
+
+本文的 semu 會根據 1024×768 scanout 產生 EDID，因此 Xorg 查詢 connector modes 時，driver 會優先從 EDID 建立 mode list。 只有沒有可用 EDID modes 時，才會使用 `outputs[i].info` 裡的 width 與 height 建立 preferred mode
+
+以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_display.c:182`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_display.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n182)，用來顯示 connector mode query 的兩個來源：
+
+```c
+// [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:182-210]
+static int
+virtio_gpu_conn_get_modes(struct drm_connector *connector)
+{
+    struct virtio_gpu_output *output =
+        drm_connector_to_virtio_gpu_output(connector);
+    ...
+    count = drm_edid_connector_add_modes(connector);
+    if (count)
+        return count;
+
+    width = le32_to_cpu(output->info.r.width);
+    height = le32_to_cpu(output->info.r.height);
+    ...
+}
+```
+
+`virtio_gpu_conn_get_modes()` 在 topology 初始化時只被登記成 connector helper callback。 等 Xorg 經由 libdrm 查詢 connector，DRM core 才會從 [`Linux: drivers/gpu/drm/drm_connector.c:3326`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_connector.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n3326) 的 `drm_mode_getconnector()` 呼叫 connector 的 `fill_modes()`
+
+`fill_modes()` 會再經 [`Linux: drivers/gpu/drm/drm_probe_helper.c:559`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_probe_helper.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n559) 的 probe helper 進入 `virtio_gpu_conn_get_modes()`，產生這次查詢要回傳的 mode list
+
+```callgraph
+semu 建立 virtual scanout
+=================================================
+[semu: main.c:866] semu_init(...)
+  │
+  └─ [semu: main.c:1050] virtio_gpu_register_scanout(1024, 768)
+       ├─ 保存 width、height 與 enabled state
+       └─ num_scanouts++
+            ↓
+
+Linux virtio-gpu probe：建立 KMS topology
+=================================================
+[Linux: drivers/gpu/drm/virtio/virtgpu_kms.c:118]
+virtio_gpu_init(vdev, dev)
+  │
+  ├─ 讀取 virtio_gpu_config::num_scanouts
+  └─ [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:359]
+     virtio_gpu_modeset_init(vgdev)
+       └─ for each scanout：
+          [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:274]
+          vgdev_output_init(vgdev, index)
+            ├─ [Linux: drivers/gpu/drm/virtio/virtgpu_plane.c:582]
+            │  virtio_gpu_plane_init(PRIMARY)
+            ├─ virtio_gpu_plane_init(CURSOR)
+            ├─ drm_crtc_init_with_planes(...)
+            ├─ drm_connector_init(..., VIRTUAL)
+            ├─ drm_simple_encoder_init(..., VIRTUAL)
+            ├─ encoder->possible_crtcs = 1 << index
+            ├─ drm_connector_attach_encoder(...)
+            └─ drm_connector_register(...)
+                 // drm_device 尚未 register，此時不會公開 connector
+                 ↓
+
+Linux 與 semu：補上既有 outputs 的顯示資訊
+=================================================
+virtio_device_ready(vgdev->vdev)
+  │
+  ├─ GET_EDID
+  │    ↓
+  │  [semu: virtio-gpu.c:961]
+  │  virtio_gpu_get_edid_handler(...)
+  │    └─ 依 scanout 尺寸產生 RESP_OK_EDID
+  │         ↓
+  │       [Linux: drivers/gpu/drm/virtio/virtgpu_vq.c:907]
+  │       virtio_gpu_cmd_get_edid_cb(...)
+  │         └─ 更新既有 connector 的 EDID
+  │
+  └─ GET_DISPLAY_INFO
+       ↓
+     [semu: virtio-gpu.c:582]
+     virtio_gpu_get_display_info_handler(...)
+       │
+       └─ RESP_OK_DISPLAY_INFO.pmodes[]
+            ↓
+          [Linux: drivers/gpu/drm/virtio/virtgpu_vq.c:819]
+          virtio_gpu_cmd_get_display_info_cb(...)
+            ├─ outputs[i].info = resp->pmodes[i]
+            └─ 發出 KMS hotplug event
+                 ↓
+
+Xorg 查詢 connector modes
+=================================================
+Xorg modesetting → libdrm → DRM_IOCTL_MODE_GETCONNECTOR
+  │
+  ↓
+[Linux: drivers/gpu/drm/drm_connector.c:3326]
+drm_mode_getconnector(...)
+  │
+  ↓
+[Linux: drivers/gpu/drm/drm_probe_helper.c:559]
+drm_helper_probe_single_connector_modes(...)
+  │
+  ↓
+[Linux: drivers/gpu/drm/drm_probe_helper.c:420]
+connector helper get_modes(...)
+  │
+  ↓
+[Linux: drivers/gpu/drm/virtio/virtgpu_display.c:182]
+virtio_gpu_conn_get_modes(connector)
+  ├─ 優先從 EDID 建立 modes
+  └─ 沒有 EDID modes 時，使用 outputs[i].info 的尺寸
+```
+
+Linux `virtio_gpu_probe()` 會等 `virtio_gpu_init()` 完成上述 topology 與初始 display-info exchange 後，才呼叫 `drm_dev_register()` 將 DRM device nodes 與 KMS objects 公開給 userspace。 因此 Xorg 能開啟 primary node 時，這組初始查詢資料已經準備完成。 這段外層順序可對照 [`Linux: drivers/gpu/drm/virtio/virtgpu_drv.c:74`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_drv.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n74)
+
+到這裡，Linux 已有 primary／cursor planes、CRTC、virtual connector、virtual encoder，以及 semu 回傳的 output information。 Xorg 使用的 GBM desktop BO、引用它的 DRM/KMS framebuffer 與 active scanout binding 都還沒有建立。 接下來回到 Xorg 子行程，看 `InitOutput()` 如何找到這個 DRM device，再建立後續 `PreInit()` 使用的 `ScrnInfoRec`
+
+#### Xorg 列舉 primary nodes，並讓 modesetting 接管顯示裝置
 
 前面已經知道 `InitOutput()` 的目標是先完成 `ScrnInfoRec`，再建立相應的 `ScreenRec`。 不過 Xorg 此時還面臨兩個不同的問題：它必須先知道系統裡有哪些 DRM devices，之後才能讓已載入的 display driver 從中選出自己要管理的裝置
 
@@ -2285,84 +2672,11 @@ ms_setup_scrn_hooks(ScrnInfoPtr scrn)
   └─ 下一步：xf86Screens[0]->PreInit(...)
 ```
 
-接下來的 `PreInit()` 會透過 KMS 找出 kernel 已建立的顯示輸出，以及每個輸出可以使用的 modes。 後續建立的像素儲存區會再透過 KMS framebuffer 接到同一條 display pipeline。 為了看清楚目前查詢的 objects 與稍後建立的 objects 分別位於哪裡，我們先沿 scanout 的引用與輸出關係將它們排在一起：
-
-```callgraph
-保存 pixels 的 buffer object
-  │
-  │  提供實際像素儲存區
-  ↓
-KMS framebuffer
-  │
-  │  描述 format、尺寸與每列 pixels 佔用的 bytes（pitch），並引用該 BO
-  ↓
-plane
-  │
-  │  選擇 framebuffer、source rectangle 與 CRTC 上的目的位置
-  ↓
-CRTC
-  │
-  │  保存 active mode 與掃描時序，產生一條顯示輸出資料流
-  ↓
-encoder
-  │
-  │  表示 CRTC 與 connector 之間的轉換／路由階段
-  │  宣告可以與哪些 CRTC 配對
-  ↓
-connector
-  │
-  │  列出可使用的 encoders
-  │  並表示 userspace 可查詢狀態與 modes 的顯示端點
-  ↓
-顯示裝置
-```
-
-CRTC 這個名稱源自 Cathode Ray Tube Controller。 在 DRM／KMS object model 中，它代表一條依 display mode 與掃描時序輸出畫面的 pipeline，不要求底下真的是 CRT 顯示器。 本文把上述 objects、可用 display modes 與它們允許的連接關係合稱為 KMS display topology
-
-Kernel driver 探測裝置時會先建立 plane、CRTC、encoder 與 connector，並宣告哪些連接方式可用。 Xorg 啟動後查詢這組既有 topology，再選擇相容的 connector、CRTC 與 mode。 實際像素儲存區與引用它的 KMS framebuffer 會在下一階段建立，因此 `PreInit()` 主要完成顯示能力查詢與初始組態選擇，尚未提交桌面的第一次 scanout
-
-本文使用 virtio-gpu 2D。 Linux `virtio_gpu` driver 會在 Xorg 啟動前，為每個 virtual scanout，也就是一個可供 guest 使用的虛擬顯示輸出，建立 primary plane、cursor plane、CRTC、virtual encoder 與 virtual connector。 Primary plane 稍後承載整個桌面，cursor plane 則能讓滑鼠指標獨立更新
-
-以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_display.c:274`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_display.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n274)：
-
-```c
-// [Linux: drivers/gpu/drm/virtio/virtgpu_display.c:274]
-static int
-vgdev_output_init(struct virtio_gpu_device *vgdev, int index)
-{
-    struct drm_device *dev = vgdev->ddev;
-    struct virtio_gpu_output *output = vgdev->outputs + index;
-    struct drm_connector *connector = &output->conn;
-    struct drm_encoder *encoder = &output->enc;
-    struct drm_crtc *crtc = &output->crtc;
-    struct drm_plane *primary, *cursor;
-    ...
-
-    primary = virtio_gpu_plane_init(vgdev, DRM_PLANE_TYPE_PRIMARY, index);
-    ...
-    cursor = virtio_gpu_plane_init(vgdev, DRM_PLANE_TYPE_CURSOR, index);
-    ...
-    ret = drm_crtc_init_with_planes(dev, crtc, primary, cursor,
-                                    &virtio_gpu_crtc_funcs, NULL);
-    ...
-    drm_connector_init(dev, connector, &virtio_gpu_connector_funcs,
-                       DRM_MODE_CONNECTOR_VIRTUAL);
-    ...
-    drm_simple_encoder_init(dev, encoder, DRM_MODE_ENCODER_VIRTUAL);
-    ...
-    drm_connector_attach_encoder(connector, encoder);
-    drm_connector_register(connector);
-    return 0;
-}
-```
-
-`struct virtio_gpu_output` 保存這個 virtual scanout 的 CRTC、encoder、connector 與 metadata。 `virtio_gpu_plane_init()` 另外配置 primary／cursor planes，`drm_crtc_init_with_planes()` 再將它們登記為該 CRTC 的 primary／cursor planes
-
-`drm_connector_attach_encoder()` 登記 connector 可使用的 encoder。 這些都是 kernel DRM objects，`index` 則會成為 virtio-gpu protocol 內辨識 virtual scanout 的 ID
-
 ### `PreInit()` 選擇 X Screen 使用的初始顯示組態
 
-探測階段建立 `ScrnInfoRec` 並登記 callbacks 後，XFree86 DDX 會呼叫 modesetting 的 `PreInit()`。 這個函式會取得並持有可用的 DRM device fd，再從 kernel 查詢 X Screen 可以使用的顯示資源，最後將選定的尺寸與 display mode 存回 `ScrnInfoRec`
+這一節的輸入是 modesetting 已接管的 DRM primary-node fd，以及 Linux `virtio_gpu` driver 先前建立的 KMS topology。 探測階段建立 `ScrnInfoRec` 並登記 callbacks 後，XFree86 DDX 會呼叫 modesetting 的 `PreInit()`，讓它查詢既有 connectors、encoders、CRTCs、planes 與 display modes
+
+`PreInit()` 會將查詢結果建立成 Xorg 自己的 output／CRTC records，再選出 X Screen 使用的初始 output、CRTC 與 display mode。 選定的尺寸、color depth 與 mode 會存回 `ScrnInfoRec`，供後面的 `ScreenInit()` 建立 `ScreenRec` 與 desktop storage
 
 Xorg modesetting 會透過前面介紹的 libdrm 查詢這些 KMS resources。 Kernel 內的 KMS objects 無法直接以 pointer 交給 Xorg，因此 libdrm 會把查詢結果複製成 userspace 記錄。 `PreInit()` 再將這些記錄組織成 XFree86 DDX 能用來選擇初始顯示組態的資料
 
@@ -3294,7 +3608,7 @@ NotifyParentProcess(void)
 
 ##### 第一輪 BlockHandler 把 front BO 接到 virtual scanout
 
-Xorg 已送出 `SIGUSR1` 通知，但使用者仍看不到桌面 clients。 Xorg 接著要把 front BO 包成 KMS framebuffer，並綁進 kernel driver 探測裝置時已建立的 plane、CRTC、encoder 與 connector topology
+Xorg 已送出 `SIGUSR1` 通知，但使用者仍看不到桌面 clients。 Xorg 接著要把 front BO 包成 DRM/KMS framebuffer，並綁進前面由 Linux 建立、再由 `PreInit()` 選定的 KMS topology
 
 前面的 `modesetCreateScreenResources()` 已保存 Xorg 想要套用的 mode、rotation 與座標，`InitRootWindow()` 也已在 screen Pixmap 寫入全螢幕背景並累積 Damage Region。 第一輪 BlockHandler 接著包含三項工作：建立 KMS framebuffer、對新的 `fb_id` 送出第一筆 `DIRTYFB`，以及以 `SETCRTC` 建立實際的 scanout 繫結
 
