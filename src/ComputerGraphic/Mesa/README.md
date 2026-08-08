@@ -2678,6 +2678,125 @@ ms_setup_scrn_hooks(ScrnInfoPtr scrn)
 
 `PreInit()` 會將查詢結果建立成 Xorg 自己的 output／CRTC records，再選出 X Screen 使用的初始 output、CRTC 與 display mode。 選定的尺寸、color depth 與 mode 會存回 `ScrnInfoRec`，供後面的 `ScreenInit()` 建立 `ScreenRec` 與 desktop storage
 
+#### `PreInit()` 先建立 Xorg 使用的 glamor 繪圖環境
+
+Xorg 後面不只要管理 display modes，也要執行 Window、Pixmap 與 screen Pixmap 之間的 drawing operations。 前面固定的 glamor 路徑會把可加速的 X11 drawing operations 轉成 OpenGL work，而 modesetting driver 會在這個時間點嘗試啟用它
+
+本文固定使用 `AccelMethod=glamor`。 modesetting `PreInit()` 解析完 options 後，會呼叫 `try_enable_glamor()`。 這個函式載入 glamor module，再把 Xorg 持有的 DRM primary-node fd 交給 `glamor_egl_init()`：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1090-1131]
+static void
+try_enable_glamor(ScrnInfoPtr pScrn)
+{
+    modesettingPtr ms = modesettingPTR(pScrn);
+    const char *accel_method_str = xf86GetOptValString(
+        ms->drmmode.Options, OPTION_ACCEL_METHOD);
+    Bool do_glamor = (!accel_method_str ||
+                      strcmp(accel_method_str, "glamor") == 0);
+
+    ms->drmmode.glamor = FALSE;
+    ...
+    if (load_glamor(pScrn)) {
+        if (ms->glamor.egl_init(pScrn, ms->fd)) {
+            ...
+            ms->drmmode.glamor = TRUE;
+        }
+        ...
+    }
+    ...
+}
+
+// [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1235,1330]
+static Bool
+PreInit(ScrnInfoPtr pScrn, int flags)
+{
+    ...
+    try_enable_glamor(pScrn);
+    ...
+    if (drmmode_pre_init(pScrn, &ms->drmmode,
+                         pScrn->bitsPerPixel / 8) == FALSE) {
+        ...
+    }
+    ...
+}
+```
+
+`load_glamor()` 取得的 `egl_init` function pointer 會進入 XFree86 glamor EGL wrapper。 以下兩段程式碼來自 [`Xorg: hw/xfree86/glamor_egl/glamor_xf86_egl.c:56`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/glamor_egl/glamor_xf86_egl.c#L56-L104) 與 [`Xorg: glamor/glamor_egl.c:1279`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/glamor/glamor_egl.c#L1279-L1372)，用來顯示 Xorg 如何以這個 DRM fd 建立 GBM device、EGL display 與 OpenGL context：
+
+```c
+// [Xorg: hw/xfree86/glamor_egl/glamor_xf86_egl.c:56-104]
+Bool
+glamor_egl_init(ScrnInfoPtr scrn, int fd)
+{
+    glamor_egl_priv_t *glamor_egl;
+    ...
+    glamor_egl->fd = fd;
+
+    if (glamor_egl_init_internal(glamor_egl)) {
+        ...
+        return TRUE;
+    }
+    ...
+    return FALSE;
+}
+
+// [Xorg: glamor/glamor_egl.c:1279-1372]
+Bool
+glamor_egl_init_internal(glamor_egl_priv_t *glamor_egl)
+{
+    const GLubyte *renderer;
+    ...
+    glamor_egl->gbm = gbm_create_device(glamor_egl->fd);
+    ...
+    glamor_egl->display = glamor_egl_get_display(
+        EGL_PLATFORM_GBM_MESA, glamor_egl->gbm);
+    ...
+    if (!glamor_egl->force_es) {
+        if (!glamor_egl_try_big_gl_api(glamor_egl))
+            goto error;
+    }
+    ...
+    renderer = glGetString(GL_RENDERER);
+    ...
+    return TRUE;
+error:
+    ...
+    return FALSE;
+}
+```
+
+這一步建立的是 Xorg 自己使用的 glamor 繪圖環境。 `gbm_device`、EGL display 與 OpenGL context 都會保存在 glamor 的 private state，`drmmode.glamor` 則記錄 modesetting driver 已選定這條加速路徑。 此時 `ScreenRec` 尚未建立，因此 glamor 還不能安裝 X Screen 的 drawing hooks。 `ScreenInit()` 建立 `ScreenRec` 後，才會把這套環境接到 X Screen
+
+```callgraph
+[Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1235] PreInit()
+  │
+  │  本文固定使用 AccelMethod=glamor
+  ↓
+[Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1090]
+try_enable_glamor(...)
+  ├─ load_glamor(...)
+  │    └─ 載入 glamor module 與 EGL entrypoints
+  ↓
+[Xorg: hw/xfree86/glamor_egl/glamor_xf86_egl.c:56]
+glamor_egl_init(..., DRM primary-node fd)
+  ↓
+[Xorg: glamor/glamor_egl.c:1279]
+glamor_egl_init_internal(...)
+  ├─ gbm_create_device(fd)
+  ├─ 建立 EGL display
+  ├─ 建立 OpenGL／OpenGL ES context
+  └─ 確認 renderer 與必要 extensions
+       ↓
+     drmmode.glamor = TRUE
+       │
+       │  Xorg 已有自己的 glamor 繪圖環境
+       ↓
+     drmmode_pre_init(...)
+```
+
+#### `PreInit()` 查詢 KMS topology 並選出初始顯示組態
+
 Xorg modesetting 會透過前面介紹的 libdrm 查詢這些 KMS resources。 Kernel 內的 KMS objects 無法直接以 pointer 交給 Xorg，因此 libdrm 會把查詢結果複製成 userspace 記錄。 `PreInit()` 再將這些記錄組織成 XFree86 DDX 能用來選擇初始顯示組態的資料
 
 XFree86 DDX 會在 `ScrnInfoRec` 旁保存三層資料。 `xf86CrtcConfigRec` 是最外層的組態記錄，集中管理這個 X Screen 查到的 outputs 與 CRTCs。 每一筆 `xf86OutputRec` 表示一個可查詢 modes 的顯示端點，每一筆 `xf86CrtcRec` 則表示一條可設定 mode 與畫面位置的顯示 pipeline
@@ -2703,39 +2822,11 @@ InitOutput(int argc, char **argv)
 }
 ```
 
-接著進入 modesetting `PreInit()`。 它會將 `ScrnInfoRec` 與 modesetting private state 交給 `drmmode_pre_init()`。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1235`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1235-L1450)：
+glamor 繪圖環境建立完成後，執行流程會回到同一個 modesetting `PreInit()`，再將 `ScrnInfoRec` 與 modesetting private state 交給 `drmmode_pre_init()`。 外層 `PreInit()` 會在查詢完成後確認 `pScrn->modes` 已有可用 mode，並把第一筆 mode 設成 `pScrn->currentMode`
 
-```c
-// [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1235,1433]
-static Bool
-PreInit(ScrnInfoPtr pScrn, int flags)
-{
-    modesettingPtr ms;
-    ...
+`drmmode_pre_init()` 會先檢查 DRM device 的 dumb-buffer capability，讓 modesetting driver 保留一條 CPU 可寫的 fallback path，再建立 `xf86CrtcConfigRec`
 
-    ms = modesettingPTR(pScrn);
-    ...
-    if (drmmode_pre_init(pScrn, &ms->drmmode,
-                         pScrn->bitsPerPixel / 8) == FALSE) {
-        ...
-        goto fail;
-    }
-    ...
-    if (!(pScrn->is_gpu && connector_count == 0) &&
-        pScrn->modes == NULL) {
-        ...
-        return FALSE;
-    }
-
-    pScrn->currentMode = pScrn->modes;
-    ...
-    return TRUE;
-fail:
-    return FALSE;
-}
-```
-
-`drmmode_pre_init()` 會先確認 DRM device 支援後續建立 CPU 可寫線性 buffer 所需的 dumb-buffer capability，再建立 `xf86CrtcConfigRec`。 接著，它會以 `drmModeGetResources()` 取得 connector 與 CRTC IDs，逐一呼叫 `drmmode_output_init()` 與 `drmmode_crtc_init()`，最後由 `xf86InitialConfiguration()` 嘗試建立初始 output、CRTC 與 mode 組合。 外層 `PreInit()` 隨後會檢查 `pScrn->modes` 是否已有可用 mode
+接著，它會以 `drmModeGetResources()` 取得 connector 與 CRTC IDs，逐一呼叫 `drmmode_output_init()` 與 `drmmode_crtc_init()`，最後由 `xf86InitialConfiguration()` 嘗試建立初始 output、CRTC 與 mode 組合。 外層 `PreInit()` 隨後會檢查 `pScrn->modes` 是否已有可用 mode。 本例的 GBM desktop BO 會等到 `ScreenInit()` 再依 rendering 與 scanout usages 建立
 
 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4129`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L4129-L4182)，用來顯示 `drmmode_pre_init()` 安排這些查詢與組態選擇的順序：
 
@@ -3003,28 +3094,31 @@ xf86ScreenToScrn(ScreenPtr pScreen)
 
 此時 DIX 已配置並登記 `ScreenRec`，`ScrnInfoRec` 也已保存選定的 depth、virtual size 與 display mode。 接下來，modesetting `ScreenInit()` 要為這個 X Screen 建立像素儲存區，並將 X server 共用的繪圖與顯示管理功能接進 `ScreenRec`
 
-X server 會用一個 `PixmapRec` 表示整個 X Screen 的內容，本文將它稱為 screen Pixmap。 modesetting driver 還要建立 front BO（front buffer object），作為整個 X Screen 像素儲存區的底層 buffer。 Xorg 會把 front BO 的 `struct gbm_bo *` pointer 保存到 `drmmode_rec::front_bo`
+X server 會用一個 `PixmapRec` 表示整個 X Screen 的內容，本文將它稱為 screen Pixmap。 `PixmapRec` 保存 X Screen image 的尺寸、depth 與 pitch 等 metadata，實際的桌面 pixels 則要放在另一份底層 storage。 modesetting 原始程式碼以 `drmmode_rec::front_bo` 保存這份 storage 的 `struct gbm_bo *`，本文在 3D 主線中將它稱為 GBM desktop BO
 
-GBM 的全名是 Generic Buffer Manager，是 Mesa 提供的 userspace buffer 配置 API 與 `libgbm` 函式庫。 呼叫端會先以 DRM fd 建立 `gbm_device`，再交入尺寸、pixel format 與 usage flags 來配置 buffer，最後取得只能透過 GBM API 操作的 `struct gbm_bo *`。 本例的 front BO 由 Xorg 行程中的 `libgbm` 建立，並能供 KMS scanout 使用
+GBM 的全名是 Generic Buffer Manager，是 Mesa 提供的 userspace buffer 配置 API 與 `libgbm` 函式庫。 呼叫端會交入 GBM device、尺寸、pixel format 與 usage flags 來建立 buffer，再取得只能透過 GBM API 操作的 `struct gbm_bo *`。 本例的 GBM device 已由前面的 glamor 繪圖環境建立，`ScreenInit()` 會沿用它來配置能供 OpenGL rendering 與 KMS scanout 使用的 GBM desktop BO
 
 fb 是 X server 的 framebuffer layer，提供以像素儲存區實作 Window、Pixmap、image 與 2D drawing operations 的共用程式碼。 mi 是 machine-independent layer，負責不依賴特定 framebuffer layout 的 Screen、Window、region、視窗移動與重新露出處理。 modesetting 會把裝置組態交給這兩層，讓它們完成 `ScreenRec` 中的大部分共用欄位與 callbacks
 
 RandR 是 X11 用來查詢與設定 outputs、CRTCs、display modes、rotation 與 X Screen 尺寸的 extension。 `ScreenInit()` 會把 `PreInit()` 建立的 output／CRTC 組態接進這套 X11 介面
 
-依照實際執行順序，`ScreenInit()` 會完成四項工作：
+依照實際執行順序，`ScreenInit()` 會完成五項工作：
 
-1. 建立能保存完整桌面的底層 buffer
+1. 取得 glamor 建立的 GBM device，再建立能供 rendering 與 scanout 使用的 GBM desktop BO
 2. 準備 X Screen 可用的 visuals 與 depths
 3. 透過 fb／mi layers 填入 `ScreenRec` 的尺寸與共用 callbacks
-4. 登記後續建立 screen Pixmap 與提交首次 modeset 所需的 callbacks，再依 `PreInit()` 保存的 output／CRTC 組態初始化 RandR state
+4. 讓 glamor 將 X11 drawing hooks 接進這筆 `ScreenRec`
+5. 登記後續建立 screen Pixmap 與提交首次 modeset 所需的 callbacks，再依 `PreInit()` 保存的 output／CRTC 組態初始化 RandR state
 
 接下來會沿著這個順序展開，最後再回到 `ScreenInit()` 的回傳路徑
 
-`struct gbm_bo`、screen Pixmap、kernel buffer object 與稍後建立的 KMS framebuffer 分屬不同層級。 `ScreenInit()` 會先建立 front BO，並登記 `CreateScreenResources` callback。 等 `ScreenInit()` 回傳後，DIX 才呼叫這個 callback，建立 screen Pixmap 並完成這份 Pixmap 所需的 storage association
+`struct gbm_bo`、screen Pixmap、kernel buffer object 與稍後建立的 KMS framebuffer 分屬不同層級。 `ScreenInit()` 會先建立 GBM desktop BO，並登記 `CreateScreenResources` callback。 等 `ScreenInit()` 回傳後，DIX 才呼叫這個 callback，建立 screen Pixmap 並透過 glamor private state 接上底層 storage
 
-以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1994`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1994-L2152)
+#### `ScreenInit()` 沿用 glamor 的 GBM device，並將繪圖環境接到 X Screen
 
-這個函式包含上述四個階段。 我們先從完整片段確認它們的實際順序：
+`PreInit()` 已建立 Xorg 使用的 GBM device 與 OpenGL context。 `ScreenInit()` 進入 glamor branch 時，會先由 `egl_get_gbm_device()` 取回同一個 GBM device，再建立初始 BOs。 fb／mi layers 填入 `ScreenRec` 後，`drmmode_init()` 才會呼叫 glamor 的 X Screen initialization entrypoint
+
+以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1994`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1994-L2152)，用來顯示 GBM device、desktop BO、fb／mi 與 glamor X Screen initialization 的先後順序：
 
 ```c
 // [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1994-2152]
@@ -3034,10 +3128,15 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
     ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
     modesettingPtr ms = modesettingPTR(pScrn);
     ...
-    ms->drmmode.gbm = gbm_create_device(ms->drmmode.fd);
-    if (!ms->drmmode.gbm)
-        ms->drmmode.gbm =
-            gbm_create_device_by_name(ms->drmmode.fd, "dumb");
+#ifdef GLAMOR
+    if (ms->drmmode.glamor) {
+        ms->drmmode.gbm = ms->glamor.egl_get_gbm_device(pScreen);
+    } else
+#endif
+    {
+        ms->drmmode.gbm = gbm_create_device(ms->drmmode.fd);
+        ...
+    }
     if (!ms->drmmode.gbm)
         return FALSE;
     ...
@@ -3058,6 +3157,9 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
                       pScrn->displayWidth, pScrn->bitsPerPixel))
         return FALSE;
     ...
+    if (drmmode_init(pScrn, &ms->drmmode) == FALSE)
+        return FALSE;
+    ...
     pScreen->CreateScreenResources = modesetCreateScreenResources;
     ...
     ms->BlockHandler = pScreen->BlockHandler;
@@ -3067,6 +3169,190 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
         return FALSE;
     ...
 }
+```
+
+`drmmode_init()` 會在 `drmmode.glamor` 為 true 時呼叫 `glamor_init(..., GLAMOR_USE_EGL_SCREEN)`。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4188`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L4188-L4205) 與 [`Xorg: glamor/glamor.c:642`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/glamor/glamor.c#L642-L690)，用來顯示 glamor 如何在已存在的 `ScreenRec` 上建立 screen private 與 Pixmap private storage：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4188-4205]
+Bool
+drmmode_init(ScrnInfoPtr pScrn, drmmode_ptr drmmode)
+{
+    ...
+    if (drmmode->glamor) {
+        if (!ms->glamor.init(pScreen, GLAMOR_USE_EGL_SCREEN))
+            return FALSE;
+        ...
+    }
+    return TRUE;
+}
+
+// [Xorg: glamor/glamor.c:642-690]
+Bool
+glamor_init(ScreenPtr screen, unsigned int flags)
+{
+    glamor_screen_private *glamor_priv;
+    ...
+    glamor_set_screen_private(screen, glamor_priv);
+
+    if (!dixRegisterPrivateKey(&glamor_pixmap_private_key,
+                               PRIVATE_PIXMAP,
+                               sizeof(struct glamor_pixmap_private))) {
+        ...
+        goto fail;
+    }
+    ...
+    if (flags & GLAMOR_USE_EGL_SCREEN)
+        glamor_egl_screen_init2(screen, &glamor_priv->ctx);
+    ...
+}
+```
+
+glamor screen private 保存這個 X Screen 的 acceleration state，以及一筆 `glamor_context`。 EGL backend 會將 EGL display 與 EGL context handles 填入這筆 context record
+
+每一筆 Pixmap 配置時則會多出一個 `glamor_pixmap_private`。 EGLImage 是 EGL 用來讓既有 buffer storage 可被 OpenGL texture 引用的 image handle
+
+以下程式碼來自 [`Xorg: glamor/glamor_priv.h:384`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/glamor/glamor_priv.h#L384-L405)，用來顯示這筆 private state 如何直接保存 EGLImage，並透過 `fbo` 指向 OpenGL texture 與 framebuffer object：
+
+```c
+// [Xorg: glamor/glamor_priv.h:384-405]
+typedef struct glamor_pixmap_private {
+    glamor_pixmap_type_t type;
+    enum glamor_fbo_state gl_fbo;
+    ...
+    glamor_pixmap_fbo *fbo;
+    ...
+#ifdef GLAMOR_HAS_GBM
+    EGLImageKHR image;
+    Bool used_modifiers;
+#endif
+    ...
+} glamor_pixmap_private;
+```
+
+這筆 keyed private state 位於 `PixmapRec::devPrivates`，用來保存各 extension 或 DDX layer 的 per-Pixmap metadata。 它與 fb layer 用來保存 raw pixel pointer 的 `PixmapRec::devPrivate.ptr` 是兩個不同欄位。 這個階段先完成 private slot 的配置，等 `InitOutput()` 回傳後，Xorg 才會建立 screen Pixmap，並透過 glamor private 將它接到 GBM desktop BO
+
+#### Xorg 透過 libgbm 建立 GBM desktop BO
+
+GBM desktop BO 要同時服務兩個方向。 glamor 需要把它當成 OpenGL rendering destination，KMS 則要把它當成 scanout storage。 modesetting 因此會先嘗試包含 `GBM_BO_USE_RENDERING | GBM_BO_USE_SCANOUT` 的 usage 組合
+
+以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4838`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L4838-L4860) 與 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:196`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_bo.c#L196-L229)，用來顯示 `drmmode->glamor` 如何決定 mapping requirement，以及原始程式碼欄位 `front_bo` 實際使用的 usage 順序：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4838-4860]
+Bool
+drmmode_create_initial_bos(ScrnInfoPtr pScrn, drmmode_ptr drmmode)
+{
+    ...
+    width = pScrn->virtualX;
+    height = pScrn->virtualY;
+
+    drmmode->front_bo = gbm_create_best_bo(
+        drmmode, !drmmode->glamor,
+        width, height, DRMMODE_FRONT_BO);
+    ...
+}
+
+// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:196-229]
+static inline struct gbm_bo *
+gbm_create_front_bo(drmmode_ptr drmmode, Bool do_map,
+                    bo_priv_t *data,
+                    unsigned width, unsigned height)
+{
+    ...
+    static const uint32_t front_flag_list[] = {
+        GBM_BO_USE_RENDERING | GBM_BO_USE_SCANOUT |
+            GBM_BO_USE_FRONT_RENDERING,
+        GBM_BO_USE_RENDERING | GBM_BO_USE_SCANOUT,
+        GBM_BO_USE_LINEAR | GBM_BO_USE_SCANOUT |
+            GBM_BO_USE_FRONT_RENDERING,
+        GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT,
+    };
+    ...
+    return gbm_bo_create_and_map_with_flag_list(
+        drmmode->gbm, data, do_map,
+        width, height, format,
+        modifiers, num_modifiers,
+        front_flag_list, ARRAY_SIZE(front_flag_list));
+}
+```
+
+本文固定追蹤 `try_enable_glamor()` 成功後的 branch，所以 `!drmmode->glamor` 是 false，Xorg 不要求為 GBM desktop BO 建立長期 CPU mapping。 `gbm_create_front_bo()` 會依序嘗試四組 flags，本文接著沿前兩組 rendering／scanout usage 其中一組成功建立 BO 的路徑往下看
+
+Xorg helper 會把這組尺寸、format 與 usage 交給公開的 `gbm_bo_create_with_modifiers2()` 或 `gbm_bo_create()`。 Mesa 的 GBM core 再透過目前 `gbm_device` 安裝的 backend operation 建立 BO。 以下程式碼來自 [`Mesa: src/gbm/main/gbm.c:489`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.c#L489-498)，用來顯示 public API 與 backend 的交接點：
+
+```c
+// [Mesa: src/gbm/main/gbm.c:489-498]
+GBM_EXPORT struct gbm_bo *
+gbm_bo_create(struct gbm_device *gbm,
+              uint32_t width, uint32_t height,
+              uint32_t format, uint32_t flags)
+{
+    ...
+    return gbm->v0.bo_create(gbm, width, height,
+                             format, flags, NULL, 0);
+}
+```
+
+本文的 GBM device 使用 Mesa DRI backend。 在固定追蹤的 branch 中，VirGL driver 能匯出 dma-buf，而且 usage 不含 `GBM_BO_USE_WRITE`，因此 backend 不會進入 `CREATE_DUMB` branch。 以下程式碼來自 [`Mesa: src/gbm/backends/dri/gbm_dri.c:886`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/backends/dri/gbm_dri.c#L886-L931)，用來顯示這個 backend branch 的選擇條件：
+
+```c
+// [Mesa: src/gbm/backends/dri/gbm_dri.c:886-931]
+static struct gbm_bo *
+gbm_dri_bo_create(struct gbm_device *gbm,
+                  uint32_t width, uint32_t height,
+                  uint32_t format, uint32_t usage,
+                  const uint64_t *modifiers,
+                  const unsigned int count)
+{
+    struct gbm_dri_device *dri = gbm_dri_device(gbm);
+    unsigned dri_use = 0;
+    ...
+    if (usage & GBM_BO_USE_WRITE || !dri->has_dmabuf_export)
+        return create_dumb(gbm, width, height, format, usage);
+    ...
+    if (usage & GBM_BO_USE_SCANOUT)
+        dri_use |= __DRI_IMAGE_USE_SCANOUT;
+    ...
+    dri_use |= __DRI_IMAGE_USE_SHARE;
+    ...
+}
+```
+
+DRI backend 會把建立結果包成 `struct gbm_bo *` 回傳給 Xorg。 沿著本文固定的 branch 繼續進入 VirGL winsys，會使用 [`DRM_IOCTL_VIRTGPU_RESOURCE_CREATE`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/winsys/virgl/drm/virgl_drm_winsys.c#L249-L310) 建立 classic VirGL resource。 因此這筆 GBM desktop BO 不是 2D 對照路徑的 dumb BO，也沒有使用 resource blob
+
+```callgraph
+[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4838]
+drmmode_create_initial_bos(...)
+  │
+  │  do_map = !drmmode->glamor = false
+  ↓
+[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:196]
+gbm_create_front_bo(...)
+  │
+  │  優先要求 GBM_BO_USE_RENDERING | GBM_BO_USE_SCANOUT
+  ↓
+[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:134]
+gbm_bo_create_and_map(...)
+  │
+  │  gbm_bo_create_with_modifiers2(...) 或 gbm_bo_create(...)
+  ↓
+[Mesa: src/gbm/main/gbm.c:489] gbm_bo_create(...)
+  │
+  │  gbm->v0.bo_create(...)
+  ↓
+[Mesa: src/gbm/backends/dri/gbm_dri.c:886] gbm_dri_bo_create(...)
+  │
+  ├─ usage 沒有 GBM_BO_USE_WRITE
+  ├─ VirGL 支援 dma-buf export
+  └─ 由 DRI backend 建立可供 rendering／scanout 的 BO
+       ↓
+     struct gbm_bo *
+       │
+       │  Xorg 保存為 drmmode_rec::front_bo
+       │  底層引用 classic VirGL resource
+       ↓
+     GBM desktop BO
 ```
 
 #### `ScreenInit()` 填入 X Screen 尺寸、depths 與 visuals
@@ -3213,7 +3499,7 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
 第一個 callback 將 `pScreen->CreateScreenResources` 登記為 `modesetCreateScreenResources()`，第二個則把 `pScreen->BlockHandler` 換成 `msBlockHandler_oneshot()`。 `BlockHandler` 是 Xorg event loop 每輪準備進入等待以前執行的 callback。 第一次執行 `msBlockHandler_oneshot()` 時，它會將後續呼叫切換到一般的 `msBlockHandler()`，再提交第一次 display mode
 
-`ScreenInit()` 結束時，front BO 已經是可供 Xorg 使用的 GBM／GEM storage。 後面的 `modesetCreateScreenResources()` 會建立 screen Pixmap 並完成 storage association，第一次 `msBlockHandler_oneshot()` 則會建立 KMS framebuffer 並將它接進 display pipeline
+`ScreenInit()` 結束時，GBM desktop BO 已經建立完成。 後面的 `modesetCreateScreenResources()` 會建立 screen Pixmap，再透過 glamor private state 讓它引用這份 storage。 第一次 `msBlockHandler_oneshot()` 則會建立 KMS framebuffer，並將 GBM desktop BO 接進 display pipeline
 
 [`Xorg: hw/xfree86/modes/xf86Crtc.c:803`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/modes/xf86Crtc.c#L803-L839) 的 `xf86CrtcScreenInit()` 會把前面介紹的 RandR 介面接到這個 X Screen。 它會依據與 `ScrnInfoRec` 關聯的 output／CRTC 組態，初始化目前 `ScreenRec` 的 RandR state 與 hooks
 
@@ -3237,9 +3523,9 @@ ScreenInit() 回傳 TRUE
      InitOutput() 完成，回到 dix_main()
 ```
 
-#### `InitOutput()` 回傳後：建立 screen Pixmap 並登記 Damage tracking
+#### `InitOutput()` 回傳後：建立 screen Pixmap、接上 GBM desktop BO 並登記 Damage tracking
 
-`InitOutput()` 回傳時，`ScreenRec` 已保存 X Screen 的尺寸、depths、visuals 與 drawing callbacks，front BO 也已配置完成。 Xorg 接下來需要建立一個代表整個 X Screen 內容的 Pixmap，再讓後續的 Window drawing 經這個 object 找到相應的 desktop storage
+`InitOutput()` 回傳時，`ScreenRec` 已保存 X Screen 的尺寸、depths、visuals 與 drawing callbacks，GBM desktop BO 也已配置完成。 Xorg 接下來需要建立一個代表整個 X Screen 內容的 Pixmap，再讓後續的 Window drawing 經這個 object 找到相應的 desktop storage
 
 這一步安排在 extensions 初始化完成後，因為各個 extension 可能先要求在 Pixmap 裡保留自己的 private data slot。 等這些要求都登記完，Xorg 才能建立欄位配置完整的 screen Pixmap。 以下程式碼來自 [`Xorg: dix/main.c:190`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/main.c#L190-L220)，用來標出 `InitOutput()` 回傳後到建立 Root Window 以前的執行順序：
 
@@ -3290,7 +3576,135 @@ dixScreenRaiseCreateResources(ScreenPtr pScreen)
 }
 ```
 
-`dixScreenRaiseCreateResources()` 確定了 `CreateScreenResources` callback 的執行時機。 `modesetCreateScreenResources()` 建立 screen resources 後，還會在 screen Pixmap 上登記 Damage tracking，讓 3D 與 2D 兩種組態都能累積後續需要發布的 dirty rectangles
+`dixScreenRaiseCreateResources()` 確定了 `CreateScreenResources` callback 的執行時機。 `modesetCreateScreenResources()` 接下來要先建立 screen Pixmap，讓它透過 glamor 引用 GBM desktop BO，再登記 Damage tracking
+
+##### screen Pixmap 透過 glamor private state 引用 GBM desktop BO
+
+`miCreateScreenResources()` 會先建立 screen Pixmap object。 此時這筆 `PixmapRec` 已有 X Screen 的尺寸、depth 與 pitch，還沒有指向 GBM desktop BO。 `modesetCreateScreenResources()` 隨後呼叫 `drmmode_glamor_handle_new_screen_pixmap()`，把 screen Pixmap 與前面建立的 `drmmode->front_bo` 交給 glamor
+
+以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1722-L1756)，用來顯示 screen Pixmap 建立、glamor association 與 CPU-mapping branch 的先後順序：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722-1756]
+static Bool
+modesetCreateScreenResources(ScreenPtr pScreen)
+{
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
+    modesettingPtr ms = modesettingPTR(pScrn);
+    PixmapPtr rootPixmap;
+    void *pixels = NULL;
+    ...
+    Bool ret = miCreateScreenResources(pScreen);
+
+    if (!drmmode_set_desired_modes(pScrn, &ms->drmmode,
+                                   pScrn->is_gpu, FALSE))
+        return FALSE;
+
+    if (!drmmode_glamor_handle_new_screen_pixmap(&ms->drmmode))
+        return FALSE;
+    ...
+    if (!ms->drmmode.glamor)
+        pixels = gbm_bo_get_map(ms->drmmode.front_bo);
+
+    rootPixmap = pScreen->GetScreenPixmap(pScreen);
+    ...
+    if (!pScreen->ModifyPixmapHeader(rootPixmap,
+                                     -1, -1, -1, -1, -1, pixels))
+        FatalError("Couldn't adjust screen pixmap\n");
+    ...
+}
+```
+
+本文的 `drmmode.glamor` 是 true，因此 `pixels` 保持 `NULL`。 `ModifyPixmapHeader()` 仍會更新既有的 Pixmap metadata，但不會把 GBM desktop BO 的 CPU mapping 寫進 `PixmapRec::devPrivate.ptr`
+
+`drmmode_glamor_handle_new_screen_pixmap()` 會取出 screen Pixmap，再由 `drmmode_set_pixmap_bo()` 呼叫 glamor 的 GBM-BO entrypoint。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:3860`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L3860-L3892)，用來顯示 screen Pixmap 與 `drmmode->front_bo` 的交接點：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:3860-3892]
+static Bool
+drmmode_set_pixmap_bo(drmmode_ptr drmmode,
+                      PixmapPtr pixmap, struct gbm_bo *bo)
+{
+    ...
+    if (!drmmode->glamor)
+        return TRUE;
+
+    if (!ms->glamor.egl_create_textured_pixmap_from_gbm_bo(
+            pixmap, bo, gbm_bo_get_used_modifiers(bo))) {
+        ...
+        return FALSE;
+    }
+    ...
+    return TRUE;
+}
+
+Bool
+drmmode_glamor_handle_new_screen_pixmap(drmmode_ptr drmmode)
+{
+    ScreenPtr screen = xf86ScrnToScreen(drmmode->scrn);
+    PixmapPtr screen_pixmap = screen->GetScreenPixmap(screen);
+
+    if (!drmmode_set_pixmap_bo(drmmode, screen_pixmap,
+                               drmmode->front_bo))
+        return FALSE;
+    return TRUE;
+}
+```
+
+glamor 收到 GBM desktop BO 後，會由它建立 EGLImage，再把 EGLImage 接到 OpenGL texture。 texture 與 EGLImage 會保存在前面登記的 `glamor_pixmap_private`，讓後續 glamor drawing operations 能把 screen Pixmap 當成 OpenGL rendering destination。 以下程式碼來自 [`Xorg: glamor/glamor_egl.c:200`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/glamor/glamor_egl.c#L200-L327)，用來顯示這份 private association 的建立點：
+
+```c
+// [Xorg: glamor/glamor_egl.c:200-327]
+Bool
+glamor_egl_create_textured_pixmap_from_gbm_bo(PixmapPtr pixmap,
+                                              struct gbm_bo *bo,
+                                              Bool used_modifiers)
+{
+    ...
+    image = eglCreateImageKHR(...);
+    if (image == EGL_NO_IMAGE_KHR) {
+        ...
+        goto done;
+    }
+
+    glamor_create_texture_from_image(screen, image, &texture);
+    glamor_set_pixmap_type(pixmap, GLAMOR_TEXTURE_DRM);
+    glamor_set_pixmap_texture(pixmap, texture);
+    glamor_egl_set_pixmap_image(pixmap, image, used_modifiers);
+    ret = TRUE;
+    ...
+    return ret;
+}
+```
+
+到這裡，screen Pixmap 是 Xorg 管理的桌面 image object，GBM desktop BO 是保存桌面 pixels 的 storage，glamor Pixmap private 則保存兩者之間的 EGLImage／texture association
+
+```callgraph
+[Xorg: dix/screen_hooks.c:89]
+dixScreenRaiseCreateResources(...)
+  ↓
+[Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722]
+modesetCreateScreenResources(...)
+  ├─ miCreateScreenResources(...)
+  │    └─ 建立 screen Pixmap object 與 metadata
+  ↓
+[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:3881]
+drmmode_glamor_handle_new_screen_pixmap(...)
+  │
+  │  drmmode_set_pixmap_bo(screen Pixmap, drmmode->front_bo)
+  ↓
+[Xorg: glamor/glamor_egl.c:200]
+glamor_egl_create_textured_pixmap_from_gbm_bo(...)
+  ├─ GBM desktop BO → EGLImage
+  ├─ EGLImage → OpenGL texture
+  └─ 將 EGLImage／texture 保存到 glamor Pixmap private
+       ↓
+     screen Pixmap
+       │
+       │  Xorg image metadata 經 glamor private 引用 desktop storage
+       ↓
+     GBM desktop BO
+```
 
 ##### 為 screen Pixmap 登記 Damage tracking
 
@@ -3354,7 +3768,7 @@ drm_mode_dirtyfb_ioctl(struct drm_device *dev,
 
 ### Xorg 建立 Root Window 與 connection setup reply
 
-到目前為止，Xorg 已經建立 `ScreenRec`、front BO 與 screen Pixmap。 這些都是 Xorg 行程內的 objects，`xinit` 的 `XOpenDisplay()` 無法直接讀取它們的 pointers。 Xorg 還需要建立 Root Window，並把 X11 client 在 connection setup 時需要的資料序列化成 protocol reply
+到目前為止，Xorg 已經建立 `ScreenRec`、GBM desktop BO 與 screen Pixmap。 這些都是 Xorg 行程內的 objects，`xinit` 的 `XOpenDisplay()` 無法直接讀取它們的 pointers。 Xorg 還需要建立 Root Window，並把 X11 client 在 connection setup 時需要的資料序列化成 protocol reply
 
 ##### 建立覆蓋 X Screen 的 Root Window
 
@@ -3604,11 +4018,11 @@ NotifyParentProcess(void)
 
 到這裡，Xorg 已準備好 listening endpoint 與 setup reply template。 X Screen 已完成初始化，像素儲存區與 Root Window 也已建立。 不過 `xinit` 的 `XOpenDisplay()` 仍要等 Xorg 接受 transport connection、讀取 setup request，並送回 reply 才能完成
 
-`Dispatch()` 會開始反覆執行 X server 的 event loop。 本文的第一輪會先透過 `BlockHandler` 將 front BO 接到 virtual scanout，接著才等待 fd events。 Listening fd 變成可讀時，Xorg 會接受 `xinit` 的 connection，建立 client state，再完成 setup exchange。 接下來會依照這個執行順序分成兩段來看
+`Dispatch()` 會開始反覆執行 X server 的 event loop。 本文的第一輪會先透過 `BlockHandler` 將 GBM desktop BO 接到 virtual scanout，接著才等待 fd events。 Listening fd 變成可讀時，Xorg 會接受 `xinit` 的 connection，建立 client state，再完成 setup exchange。 接下來會依照這個執行順序分成兩段來看
 
-##### 第一輪 BlockHandler 把 front BO 接到 virtual scanout
+##### 第一輪 BlockHandler 把 GBM desktop BO 接到 virtual scanout
 
-Xorg 已送出 `SIGUSR1` 通知，但使用者仍看不到桌面 clients。 Xorg 接著要把 front BO 包成 DRM/KMS framebuffer，並綁進前面由 Linux 建立、再由 `PreInit()` 選定的 KMS topology
+Xorg 已送出 `SIGUSR1` 通知，但使用者仍看不到桌面 clients。 Xorg 接著要以 GBM desktop BO 建立 DRM/KMS framebuffer，並綁進前面由 Linux 建立、再由 `PreInit()` 選定的 KMS topology
 
 前面的 `modesetCreateScreenResources()` 已保存 Xorg 想要套用的 mode、rotation 與座標，`InitRootWindow()` 也已在 screen Pixmap 寫入全螢幕背景並累積 Damage Region。 第一輪 BlockHandler 接著包含三項工作：建立 KMS framebuffer、對新的 `fb_id` 送出第一筆 `DIRTYFB`，以及以 `SETCRTC` 建立實際的 scanout 繫結
 
@@ -3669,7 +4083,7 @@ dispatch_dirty(ScreenPtr pScreen)
 }
 ```
 
-目前的 `drmmode->fb_id` 是 0，所以 `drmmode_crtc_get_fb_id()` 會匯入 front BO，並建立 KMS framebuffer。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:655`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L655-L700)，用來顯示這個建立點：
+目前的 `drmmode->fb_id` 是 0，所以 `drmmode_crtc_get_fb_id()` 會匯入 `drmmode->front_bo` 指向的 GBM desktop BO，並建立 KMS framebuffer。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:655`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L655-L700)，用來顯示這個建立點：
 
 ```c
 // [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:655-700]
@@ -3795,7 +4209,7 @@ Xorg modesetting：設定 CRTC 與 display mode
 [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:845]
 static int drmmode_crtc_set_mode(xf86CrtcPtr crtc, Bool test_only)
   │
-  │  fb_id = front BO 對應的 KMS framebuffer
+  │  fb_id = GBM desktop BO 對應的 KMS framebuffer
   │  output_ids[] = 要接上的 connectors
   │  x／y = framebuffer 內的 source offset
   │  mode = CRTC 要採用的 display mode
@@ -3885,7 +4299,7 @@ virtio_gpu_primary_plane_update(...)
   └─ 有效 damage update：RESOURCE_FLUSH
 ```
 
-KMS framebuffer 保存 GEM object reference 與 scanout layout，不會因 `ADDFB` 再配置一份 guest 像素儲存區。 第一次 modeset 時，primary plane 從沒有 framebuffer 變成引用 front BO 對應的 framebuffer
+KMS framebuffer 保存 GEM object reference 與 scanout layout，不會因 `ADDFB` 再配置一份 guest 像素儲存區。 第一次 modeset 時，primary plane 從沒有 framebuffer 變成引用 GBM desktop BO 對應的 framebuffer
 
 `drm_atomic_helper_damage_merged()` 會將完整 plane source 視為這次需要更新的區域，再交給 `virtio_gpu_primary_plane_update()`。 Dumb BO 分支先以 `TRANSFER_TO_HOST_2D` 更新 host-side 2D resource，再以非零 resource ID 的 `SET_SCANOUT` 建立 virtual scanout 繫結，最後送出 `RESOURCE_FLUSH`
 
@@ -4411,7 +4825,7 @@ XOpenDisplay(register _Xconst char *display)
 - Xorg 行程中的 `screenInfo.screens[i]` 指向 X Screen `i` 的 `ScreenRec`，保存 server-side 狀態與 callbacks
 - 每個 libX11 `Display` 都有自己的 `screens[i]`，保存該 connection 從 setup reply 取得的 X Screen `i` 資料，供 application 查詢 Root Window XID、尺寸、depths、visuals 與預設 colormap
 
-兩側以相同的陣列索引 `i` 表示同一個 X Screen，但不是同一個 C struct instance，也沒有跨行程的 pointer 關係。 這些 `Screen` 記錄保存的是 X Screen metadata，整張桌面的 pixels 則位於前面建立的 X Screen 像素儲存區。 screen Pixmap 與 front BO 會從不同層級連到這份儲存區
+兩側以相同的陣列索引 `i` 表示同一個 X Screen，但不是同一個 C struct instance，也沒有跨行程的 pointer 關係。 這些 `Screen` 記錄保存的是 X Screen metadata，整張桌面的 pixels 則位於前面建立的 X Screen 像素儲存區。 screen Pixmap 與 GBM desktop BO 會從不同層級連到這份儲存區
 
 ##### X11 clients 可以選擇不同的 API 層級
 
