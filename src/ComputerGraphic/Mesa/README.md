@@ -2693,24 +2693,20 @@ X server 會用一個 `PixmapRec` 表示整個 X Screen 的內容，本文將它
 
 GBM 的全名是 Generic Buffer Manager，是 Mesa 提供的 userspace buffer 配置 API 與 `libgbm` 函式庫。 呼叫端會先以 DRM fd 建立 `gbm_device`，再交入尺寸、pixel format 與 usage flags 來配置 buffer，最後取得只能透過 GBM API 操作的 `struct gbm_bo *`。 本例的 front BO 由 Xorg 行程中的 `libgbm` 建立，並能供 KMS scanout 使用
 
-在本文固定追蹤的 dumb-buffer 分支中，這個 GBM object 會包裝 kernel 中可供 CPU mapping 的線性 buffer object，而 screen Pixmap 稍後會指向它的 CPU mapping
-
 fb 是 X server 的 framebuffer layer，提供以像素儲存區實作 Window、Pixmap、image 與 2D drawing operations 的共用程式碼。 mi 是 machine-independent layer，負責不依賴特定 framebuffer layout 的 Screen、Window、region、視窗移動與重新露出處理。 modesetting 會把裝置組態交給這兩層，讓它們完成 `ScreenRec` 中的大部分共用欄位與 callbacks
 
 RandR 是 X11 用來查詢與設定 outputs、CRTCs、display modes、rotation 與 X Screen 尺寸的 extension。 `ScreenInit()` 會把 `PreInit()` 建立的 output／CRTC 組態接進這套 X11 介面
 
 依照實際執行順序，`ScreenInit()` 會完成四項工作：
 
-1. 建立能保存完整桌面的 front BO
+1. 建立能保存完整桌面的底層 buffer
 2. 準備 X Screen 可用的 visuals 與 depths
 3. 透過 fb／mi layers 填入 `ScreenRec` 的尺寸與共用 callbacks
 4. 登記後續建立 screen Pixmap 與提交首次 modeset 所需的 callbacks，再依 `PreInit()` 保存的 output／CRTC 組態初始化 RandR state
 
 接下來會沿著這個順序展開，最後再回到 `ScreenInit()` 的回傳路徑
 
-`struct gbm_bo`、screen Pixmap、kernel buffer object 與稍後建立的 KMS framebuffer 分屬不同層級，但會透過 mapping 或 reference 接到同一份 X Screen 像素儲存區。 `ScreenInit()` 會先建立 front BO 與 CPU mapping，並登記 `CreateScreenResources` callback
-
-等 `ScreenInit()` 回傳後，DIX 才呼叫這個 callback，讓 screen Pixmap 指向該 mapping
+`struct gbm_bo`、screen Pixmap、kernel buffer object 與稍後建立的 KMS framebuffer 分屬不同層級。 `ScreenInit()` 會先建立 front BO，並登記 `CreateScreenResources` callback。 等 `ScreenInit()` 回傳後，DIX 才呼叫這個 callback，建立 screen Pixmap 並完成這份 Pixmap 所需的 storage association
 
 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1994`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1994-L2152)
 
@@ -2759,202 +2755,11 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 }
 ```
 
-#### `ScreenInit()` 建立 X Screen 使用的 front BO
-
-Xorg 將 DRM fd 交給 `gbm_create_device()` 後，GBM 會先選出一個 backend，讓後續的 `gbm_bo_create()` 能把尺寸、pixel format 與 usage flags 轉成實際的 buffer 配置。 不同 backend 與 capability 可能讓 front BO 經過不同建立路徑。 本節的目標是先看懂 Xorg 到 kernel 的分層，因此下方 callgraph 會選擇 Mesa DRI backend 直接建立 dumb BO 的分支
-
-DRI 的全名是 Direct Rendering Infrastructure，是一組銜接 Mesa loader、rendering driver 與視窗系統的介面。 `libgbm` 的 DRI backend 位於 `src/gbm/backends/dri/`，負責將單次 GBM buffer 建立要求交給可用的 driver 路徑。 在本節選定的分支中，`GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT` 會讓 DRI backend 進入 `create_dumb()`，向 DRM 建立基礎線性 buffer
-
-如果這次 device 建立失敗，Xorg 才會呼叫 `gbm_create_device_by_name(ms->drmmode.fd, "dumb")`。 這個 helper 會暫時將 `GBM_BACKEND` 設為 `dumb`，再重新呼叫 `gbm_create_device()`，形成另一次 fallback 嘗試
-
-DRM 的 dumb-buffer API 用來配置 layout 簡單、可供 CPU mapping 的線性 buffer，成功後會回傳 handle、pitch 與 size。 Kernel driver 會以 GEM buffer object 保存這份 storage。 GEM 的全名是 Graphics Execution Manager，是 DRM subsystem 用來表示與管理 buffer objects 的共用框架
-
-glamor 是 Xorg 使用 OpenGL 加速 X11 2D rendering 的 acceleration layer。 本文組態將 `AccelMethod` 設為 `none`，所以 `drmmode->glamor` 是 false。 `drmmode_create_initial_bos()` 傳入的 `!drmmode->glamor` 因而是 true，要求建立可供 CPU mapping 的 front BO
-
-Xorg 的 `gbm_bo_create_and_map_with_flag_list()` 會依序嘗試多組 usage flags，並在第一個能成功建立且完成 mapping 的 candidate 停下來。 下方選定 `GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT` 這一組，沿 DRI backend 的 `create_dumb()` 觀察 Xorg、Mesa GBM、DRM core 與 Linux `virtio_gpu` driver 各自負責的一段。 至於實際執行時由哪個 candidate 與 backend 分支成功，會在後面的 libgbm 章節保留完整分流
-
-這條呼叫路徑也會傳遞一組 `modifiers`。 modifier 是描述 buffer memory layout 的 metadata，例如 pixels 採用 linear、tiled 或 compressed layout。 本文選定的 dumb BO 分支會建立可供 CPU mapping 的 linear buffer，因此接下來先把 `modifiers` 視為 Xorg 傳到 GBM 的候選條件，等後文展開 DRI image 與 dma-buf sharing 時再看它如何影響實際配置
-
-這裡的 `drmIoctl()` 呼叫寫在 Mesa `libgbm` 原始程式碼中，API 則由 libdrm 提供。 執行這段程式碼的是載入兩個函式庫的 Xorg 行程。 DRM core 解析 `CREATE_DUMB` 後，透過 `drm_driver::dumb_create` 進入 virtio-gpu 實作
-
-下方 callgraph 中的 Xorg helpers 可對照 [`Xorg: drmmode_display.c:4838`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L4838-L4856) 與 [`Xorg: drmmode_bo.c:142`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_bo.c#L142-L298)
-
-GBM 公開入口與 DRI backend 分別來自 [`Mesa: gbm.c:489`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.c#L489-L501) 與 [`Mesa: gbm_dri.c:828`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/backends/dri/gbm_dri.c#L828-L903)
-
-Kernel 內的 ioctl 可對照 [`Linux: drm_dumb_buffers.c:194`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_dumb_buffers.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n194)
-
-virtio-gpu create 路徑可對照 [`Linux: virtgpu_gem.c:30`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_gem.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n30) 與 [`Linux: virtgpu_object.c:203`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_object.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n203)
-
-```callgraph
-Xorg modesetting：請求建立可 mapping 的 front BO
-=================================================
-[Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1994]
-static Bool
-ScreenInit(ScreenPtr pScreen, int argc, char **argv)
-  ↓
-[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4838]
-Bool drmmode_create_initial_bos(ScrnInfoPtr pScrn,
-                                drmmode_ptr drmmode)
-  │
-  │  width = pScrn->virtualX;
-  │  height = pScrn->virtualY;
-  │  drmmode->front_bo = gbm_create_best_bo(
-  │      drmmode, !drmmode->glamor, width, height, DRMMODE_FRONT_BO);
-  │  // AccelMethod none：glamor == false，do_map == true
-  ↓
-[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:272]
-struct gbm_bo *
-gbm_create_best_bo(drmmode_ptr drmmode, Bool do_map,
-                   uint32_t width, uint32_t height, int type)
-  │
-  │  type == DRMMODE_FRONT_BO
-  ↓
-[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:196]
-static inline struct gbm_bo *
-gbm_create_front_bo(drmmode_ptr drmmode, Bool do_map,
-                    bo_priv_t *data,
-                    unsigned width, unsigned height)
-  │
-  ↓
-[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:174]
-static inline struct gbm_bo *
-gbm_bo_create_and_map_with_flag_list(
-    struct gbm_device *gbm, bo_priv_t *data, Bool do_map,
-    uint32_t width, uint32_t height, uint32_t format,
-    const uint64_t *modifiers, const unsigned int count,
-    const uint32_t *flag_list, unsigned int flag_count)
-  │
-  │  依序嘗試 front_flag_list，本文追蹤的 dumb BO candidate 是：
-  │  GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT
-  ↓
-[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:142]
-static inline struct gbm_bo *
-gbm_bo_create_and_map(
-    struct gbm_device *gbm, bo_priv_t *data, Bool do_map,
-    uint32_t width, uint32_t height, uint32_t format,
-    const uint64_t *modifiers, const unsigned int count,
-    uint32_t flags)
-  │
-  └─ TRY_CREATE(gbm_bo_create, data, do_map,
-                gbm, width, height, format, flags)
-```
-
-Xorg 這一層把尺寸、format、usage flags 與 mapping 需求整理完後，最後呼叫公開的 `gbm_bo_create()`。 接下來執行流程離開 Xorg 原始程式碼，進入 Xorg 行程已載入的 Mesa `libgbm`
-
-```callgraph
-Mesa libgbm 公開 API：分派到 backend callback
-=================================================
-[Mesa: src/gbm/main/gbm.c:489]
-GBM_EXPORT struct gbm_bo *
-gbm_bo_create(struct gbm_device *gbm,
-              uint32_t width, uint32_t height,
-              uint32_t format, uint32_t flags)
-  │
-  └─ gbm->v0.bo_create(gbm, width, height, format,
-                       flags, NULL, 0)
-       ↓
-
-Mesa libgbm DRI backend：建立 dumb BO
-=================================================
-[Mesa: src/gbm/backends/dri/gbm_dri.c:886]
-static struct gbm_bo *
-gbm_dri_bo_create(struct gbm_device *gbm,
-                  uint32_t width, uint32_t height,
-                  uint32_t format, uint32_t usage,
-                  const uint64_t *modifiers,
-                  const unsigned int count)
-  │
-  │  if (usage & GBM_BO_USE_WRITE || !dri->has_dmabuf_export)
-  └─     return create_dumb(gbm, width, height, format, usage);
-       ↓
-[Mesa: src/gbm/backends/dri/gbm_dri.c:828]
-static struct gbm_bo *
-create_dumb(struct gbm_device *gbm,
-            uint32_t width, uint32_t height,
-            uint32_t format, uint32_t usage)
-  │
-  │  create_arg.bpp = 32;
-  │  create_arg.width = width;
-  │  create_arg.height = height;
-  │
-  ├─ drmIoctl(dri->base.v0.fd,
-  │             DRM_IOCTL_MODE_CREATE_DUMB, &create_arg)
-  │      // fd 對應 Xorg 開啟的 DRM device
-  │
-  ├─ bo->base.v0.stride = create_arg.pitch
-  ├─ bo->base.v0.handle.u32 = create_arg.handle
-  ├─ bo->size = create_arg.size
-  └─ gbm_dri_bo_map_dumb(bo)
-```
-
-`create_dumb()` 將 `DRM_IOCTL_MODE_CREATE_DUMB` 送到 Xorg 持有的 DRM device fd。 這裡的輸出是 ioctl request 與其 argument structure，下一階段再從 kernel 入口開始，看 DRM core 如何將它分派給 `virtio_gpu`
-
-```callgraph
-Linux DRM core：從 ioctl 分派到 driver callback
-=================================================
-[Linux: drivers/gpu/drm/drm_ioctl.c:696]
-DRM_IOCTL_MODE_CREATE_DUMB
-  ↓
-[Linux: drivers/gpu/drm/drm_dumb_buffers.c:233]
-int drm_mode_create_dumb_ioctl(struct drm_device *dev,
-                               void *data,
-                               struct drm_file *file_priv)
-  │
-  └─ drm_mode_create_dumb(dev, args, file_priv)
-       │
-       └─ dev->driver->dumb_create(file_priv, dev, args)
-            │  // virtio_gpu driver 註冊 virtio_gpu_mode_dumb_create
-            ↓
-
-Linux virtio-gpu 2D：建立 GEM object 與 virtio resource
-=================================================
-[Linux: drivers/gpu/drm/virtio/virtgpu_gem.c:61]
-int virtio_gpu_mode_dumb_create(struct drm_file *file_priv,
-                                struct drm_device *dev,
-                                struct drm_mode_create_dumb *args)
-  │
-  ├─ pitch = args->width * 4
-  ├─ params.dumb = true
-  └─ virtio_gpu_gem_create(..., &args->handle)
-       ↓
-[Linux: drivers/gpu/drm/virtio/virtgpu_gem.c:30]
-static int virtio_gpu_gem_create(
-    struct drm_file *file, struct drm_device *dev,
-    struct virtio_gpu_object_params *params,
-    struct drm_gem_object **obj_p, uint32_t *handle_p)
-  │
-  │  內部 create 路徑先配置 object，再建立此 DRM file 的 GEM handle
-  └─ virtio_gpu_object_create(vgdev, params, &obj, NULL)
-       ↓
-[Linux: drivers/gpu/drm/virtio/virtgpu_object.c:203]
-int virtio_gpu_object_create(
-    struct virtio_gpu_device *vgdev,
-    struct virtio_gpu_object_params *params,
-    struct virtio_gpu_object **bo_ptr,
-    struct virtio_gpu_fence *fence)
-  │
-  ├─ drm_gem_shmem_create(...)
-  ├─ virtio_gpu_resource_id_get(..., &bo->hw_res_handle)
-  ├─ virtio_gpu_object_shmem_init(..., &ents, &nents)
-  │
-  └─ 本文固定的 no-blob、no-VirGL 分支：
-       ├─ virtio_gpu_cmd_create_resource(...)
-       │    └─ VIRTIO_GPU_CMD_RESOURCE_CREATE_2D
-       └─ virtio_gpu_object_attach(...)
-            └─ VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING
-```
-
-`CREATE_DUMB` 成功後回傳的 `handle`、`pitch` 與 `size` 有不同用途。 `handle` 讓這個 DRM file 可以繼續引用 GEM object，`pitch` 表示每列 pixels 佔用的 bytes，`size` 則是實際配置大小
-
-GBM DRI backend 會將 `pitch` 與 `handle` 放入對外使用的 GBM object，並將 `size` 與 CPU mapping 保存在 backend private state。 Xorg 收到公開的 `struct gbm_bo *`，後續會透過 GBM API 查詢資料。 這兩層 object 的實際 layout 會在 screen Pixmap 取得 mapping 時一起對照
-
-Linux `virtio_gpu` driver 在同一次建立中配置 GEM shmem backing，並取得作為 virtio resource ID 的 `hw_res_handle`。 `virtio_gpu_cmd_create_resource()` 將 `RESOURCE_CREATE_2D` 排入 control virtqueue，也就是 guest driver 用來向 virtio-gpu device 傳送控制命令的 virtqueue。 Host device 會建立可由 resource ID 引用的 2D resource，`virtio_gpu_object_attach()` 接著以 `RESOURCE_ATTACH_BACKING` 將 guest pages 接給這個 resource
-
 #### `ScreenInit()` 填入 X Screen 尺寸、depths 與 visuals
 
-Front BO 已經建立，但 `ScreenRec` 還沒有足夠的資料來描述 clients 可以使用的 drawable。 Xorg 接著要填入 X Screen 的尺寸、depths 與 visuals，並安裝 Window、Pixmap 與 drawing operations 所需的 callbacks。 Clients 之後才能根據這組資料選擇相容的 pixel format 並建立 drawable
+底層 buffer 已經建立，但 `ScreenRec` 還沒有足夠的資料來描述 clients 可以使用的 drawable。 Xorg 接著要填入 X Screen 的尺寸、depths 與 visuals，並安裝 Window、Pixmap 與 drawing operations 所需的 callbacks。 Clients 之後才能根據這組資料選擇相容的 pixel format 並建立 drawable
 
-`miSetVisualTypes()` 與 `miSetPixmapDepths()` 準備可用 visuals／depths，`fbScreenInit()` 再用 `virtualX`、`virtualY` 與 bits per pixel 初始化 `ScreenRec` 的尺寸與 framebuffer callbacks。 這裡傳入的 pixel pointer 是 `NULL`，真正的 front BO mapping 會等後面的 `modesetCreateScreenResources()` 再交給 screen Pixmap
+`miSetVisualTypes()` 與 `miSetPixmapDepths()` 準備可用 visuals／depths，`fbScreenInit()` 再用 `virtualX`、`virtualY` 與 bits per pixel 初始化 `ScreenRec` 的尺寸與 framebuffer callbacks。 這裡傳入的 pixel pointer 是 `NULL`，screen Pixmap 與底層 storage 的關係會等後面的 `modesetCreateScreenResources()` 再建立
 
 為了讓 `ScreenRec` 同時取得 framebuffer operations 與 X Screen 基本資料，`fbScreenInit()` 會依序呼叫兩個函式。 以下程式碼來自 [`Xorg: fb/fbscreen.c:207`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/fb/fbscreen.c#L207-L217)，用來顯示這兩個階段的先後關係：
 
@@ -3068,7 +2873,7 @@ miScreenInit(ScreenPtr pScreen, void *pbits, int xsize, int ysize,
 
 #### `ScreenInit()` 登記 screen Pixmap 與首次 modeset 所需的 callbacks
 
-`ScreenRec` 的基本欄位與 drawing callbacks 已經填好，但 screen Pixmap 的 CPU mapping 與第一次 modeset 都必須等 `ScreenInit()` 回傳後才能執行。 modesetting 因此會在 `ScreenRec` 登記兩個稍後才由 DIX 或 event loop 呼叫的 callbacks
+`ScreenRec` 的基本欄位與 drawing callbacks 已經填好，但 screen Pixmap 的 storage association 與第一次 modeset 都必須等 `ScreenInit()` 回傳後才能執行。 modesetting 因此會在 `ScreenRec` 登記兩個稍後才由 DIX 或 event loop 呼叫的 callbacks
 
 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1994`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1994-L2152)，用來顯示 `ScreenInit()` 如何依序登記 `CreateScreenResources` 與一次性的 `BlockHandler`：
 
@@ -3094,7 +2899,7 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
 第一個 callback 將 `pScreen->CreateScreenResources` 登記為 `modesetCreateScreenResources()`，第二個則把 `pScreen->BlockHandler` 換成 `msBlockHandler_oneshot()`。 `BlockHandler` 是 Xorg event loop 每輪準備進入等待以前執行的 callback。 第一次執行 `msBlockHandler_oneshot()` 時，它會將後續呼叫切換到一般的 `msBlockHandler()`，再提交第一次 display mode
 
-`ScreenInit()` 結束時，front BO 已經是可供 Xorg 使用的 GBM／GEM storage。 後面的 `modesetCreateScreenResources()` 會把 CPU mapping 交給 screen Pixmap，第一次 `msBlockHandler_oneshot()` 則會建立 KMS framebuffer 並將它接進 display pipeline
+`ScreenInit()` 結束時，front BO 已經是可供 Xorg 使用的 GBM／GEM storage。 後面的 `modesetCreateScreenResources()` 會建立 screen Pixmap 並完成 storage association，第一次 `msBlockHandler_oneshot()` 則會建立 KMS framebuffer 並將它接進 display pipeline
 
 [`Xorg: hw/xfree86/modes/xf86Crtc.c:803`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/modes/xf86Crtc.c#L803-L839) 的 `xf86CrtcScreenInit()` 會把前面介紹的 RandR 介面接到這個 X Screen。 它會依據與 `ScrnInfoRec` 關聯的 output／CRTC 組態，初始化目前 `ScreenRec` 的 RandR state 與 hooks
 
@@ -3118,9 +2923,9 @@ ScreenInit() 回傳 TRUE
      InitOutput() 完成，回到 dix_main()
 ```
 
-#### `InitOutput()` 回傳後：建立 screen Pixmap、接上 mapped front BO 並登記 Damage tracking
+#### `InitOutput()` 回傳後：建立 screen Pixmap 並登記 Damage tracking
 
-`InitOutput()` 回傳時，`ScreenRec` 已保存 X Screen 的尺寸、depths、visuals 與 drawing callbacks，front BO 也已配置完成。 Xorg 接下來需要建立一個實際代表整個 X Screen 內容的 Pixmap，讓後續的 Window drawing 能透過這個 object 找到 front BO 的 CPU mapping
+`InitOutput()` 回傳時，`ScreenRec` 已保存 X Screen 的尺寸、depths、visuals 與 drawing callbacks，front BO 也已配置完成。 Xorg 接下來需要建立一個代表整個 X Screen 內容的 Pixmap，再讓後續的 Window drawing 經這個 object 找到相應的 desktop storage
 
 這一步安排在 extensions 初始化完成後，因為各個 extension 可能先要求在 Pixmap 裡保留自己的 private data slot。 等這些要求都登記完，Xorg 才能建立欄位配置完整的 screen Pixmap。 以下程式碼來自 [`Xorg: dix/main.c:190`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/main.c#L190-L220)，用來標出 `InitOutput()` 回傳後到建立 Root Window 以前的執行順序：
 
@@ -3171,183 +2976,11 @@ dixScreenRaiseCreateResources(ScreenPtr pScreen)
 }
 ```
 
-我們會依這個順序回答三個問題：
-
-1. `CreateScreenResources` callback 如何建立代表整個 X Screen 的 screen Pixmap
-2. screen Pixmap 如何取得 front BO 的 CPU mapping
-3. Xorg 如何在這個 Pixmap 上登記後續追蹤 dirty rectangles 所需的資料
-
-![Xorg 的 X Screen 像素儲存區與稍後 KMS scanout 的 object 關係](./image/glx-object-stage-1-xorg-display-storage.png)
-
-##### 建立 screen Pixmap，再讓它借用 front BO 的 CPU mapping
-
-`dixScreenRaiseCreateResources()` 進入 modesetting callback 後，第一個動作是呼叫 MI layer 的 `miCreateScreenResources()`。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1722-L1735)，用來標出建立 Pixmap、保存 desired display state 與接上 mapping 的順序：
-
-```c
-// [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722-1735]
-static Bool
-modesetCreateScreenResources(ScreenPtr pScreen)
-{
-    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
-    modesettingPtr ms = modesettingPTR(pScrn);
-    ...
-
-    Bool ret = miCreateScreenResources(pScreen);
-
-    if (!drmmode_set_desired_modes(pScrn, &ms->drmmode,
-                                   pScrn->is_gpu, FALSE))
-        return FALSE;
-    ...
-}
-```
-
-本文的主要 X Screen 具有 `pScrn->is_gpu == FALSE`，所以 `drmmode_set_desired_modes()` 會先把選定的 mode、rotation 與座標保存成 Xorg-side CRTC state。 它在這個階段不會送出 KMS modeset，真正提交給 kernel 的操作要等 `Dispatch()` 第一輪執行 `BlockHandler`
-
-在此之前，`miCreateScreenResources()` 會先配置 screen Pixmap。 以下程式碼來自 [`Xorg: mi/miscrinit.c:145`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/mi/miscrinit.c#L145-L188)，用來顯示它如何建立 Pixmap，再讓 `ScreenRec` 保存這個 object：
-
-```c
-// [Xorg: mi/miscrinit.c:145-188]
-Bool
-miCreateScreenResources(ScreenPtr pScreen)
-{
-    miScreenInitParmsPtr pScrInitParms;
-    void *value;
-
-    pScrInitParms = (miScreenInitParmsPtr) pScreen->devPrivate;
-    ...
-    if (pScrInitParms->width) {
-        PixmapPtr pPixmap;
-
-        pPixmap = (*pScreen->CreatePixmap)(
-            pScreen, 0, 0, pScreen->rootDepth, 0);
-        if (!pPixmap)
-            return FALSE;
-
-        if (!(*pScreen->ModifyPixmapHeader)(
-                pPixmap,
-                pScrInitParms->xsize,
-                pScrInitParms->ysize,
-                pScreen->rootDepth,
-                BitsPerPixel(pScreen->rootDepth),
-                PixmapBytePad(pScrInitParms->width,
-                              pScreen->rootDepth),
-                pScrInitParms->pbits))
-            return FALSE;
-        value = (void *) pPixmap;
-    }
-    ...
-    free(pScreen->devPrivate);
-    pScreen->devPrivate = value;
-    return TRUE;
-}
-```
-
-`CreatePixmap` 先配置一個 `PixmapRec`，`ModifyPixmapHeader` 再填入 X Screen 的尺寸、color depth 與 pitch。 `fbScreenInit()` 先前傳入的 pixel pointer 是 `NULL`，所以這時已經有代表整個 X Screen 的 Pixmap object，尚未接上 front BO 的 CPU mapping。 最後，`pScreen->devPrivate` 會改為保存這個 screen Pixmap
-
-前文已將這個代表整個 X Screen 內容的 storage object 稱為 screen Pixmap。 以下程式碼來自 [`Xorg: include/pixmapstr.h:75`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/pixmapstr.h#L75-L86) 的 `PixmapRec` 定義，用來確認這個 object 如何描述 X Screen 像素儲存區：
-
-```c
-// [Xorg: include/pixmapstr.h:75-86]
-typedef struct _Pixmap {
-    DrawableRec drawable;
-    PrivateRec *devPrivates;
-    int refcnt;
-    int devKind;                /* This is the pitch of the pixmap, typically width*bpp/8. */
-    DevUnion devPrivate;        /* When !NULL, devPrivate.ptr points to the raw pixel data. */
-    ...
-} PixmapRec;
-```
-
-其中 `drawable` 用來記錄這份 Pixmap 的尺寸、color depth 與所屬 Screen，`devKind` 用來記錄每一列 pixels 的 pitch。 在本文的組態中，`devPrivate.ptr` 最後會指向 front BO 的 CPU mapping，讓 X server 能透過 `PixmapRec` 找到 X Screen 像素儲存區
-
-接著是 Xorg 透過 GBM 持有的 mapped front BO。 它在 Xorg 端的型態是 `struct gbm_bo *`，指向 Mesa `libgbm` 建立的 userspace object。 其中的 GBM base object 保存 buffer 的寬度、高度、format、stride 與 handle，並連回建立這份 buffer 的 `gbm_device`
-
-Xorg 會 include Mesa 安裝的公開 `gbm.h`，也會在建置與執行期 link `libgbm`。 公開 header 只把 `struct gbm_device`、`struct gbm_bo` 與 `struct gbm_surface` 宣告成 opaque types。 Xorg 可以保存 pointer，並透過 `gbm_bo_get_*()`、`gbm_bo_map()` 與 `gbm_bo_destroy()` 操作它，實際欄位與 backend-specific object layout 則由 `libgbm` 管理
-
-以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.h:9`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_bo.h#L9)，用來顯示 modesetting driver 會 include GBM 公開 header：
-
-```c
-// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.h:9]
-#include <gbm.h>
-```
-
-這個公開 header 由 Mesa 安裝。 以下程式碼來自 [`Mesa: src/gbm/main/gbm.h:46`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.h#L46-48)，用來顯示 Xorg 在編譯時看到的是三個 opaque 宣告：
-
-```c
-// [Mesa: src/gbm/main/gbm.h:46]
-struct gbm_device;
-struct gbm_bo;
-struct gbm_surface;
-```
-
-:::tip
-[`Mesa: src/gbm/main/gbm.h:41`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.h#L41-58) 將 GBM 定義為向平台底層 memory manager 請求 buffer 的抽象。 GBM backend 也位於 userspace
-
-Linux kernel 公開 DRM device node 與 UAPI。 Xorg 開啟 device node 取得 fd，GBM backend 透過這個 fd 配置、匯入、匯出或 mapping buffer。 Xorg 另外透過 libdrm 與同一個 DRM device fd 建立 KMS framebuffer，並設定 display state
-
-呼叫端會將 DRM fd、尺寸、pixel format 與 `GBM_BO_USE_SCANOUT`、`GBM_BO_USE_WRITE` 等用途交給 GBM。 GBM backend 會配置符合需求的 buffer，再回傳 `struct gbm_bo`。 呼叫端可透過 GBM API 查詢 stride、handle 與 modifier。 modifier 是描述 buffer 使用 linear、tiled 或 compressed 等 memory layout 的 metadata
-
-GBM 也能提供 CPU mapping，或將 buffer 匯出成 dma-buf fd，讓另一個支援 dma-buf 的 userspace 元件透過 file descriptor 引用同一份 buffer。 後文「libgbm：Xorg 建立 front BO」會再沿原始程式碼詳細展開 `gbm_device`、`gbm_bo` 與 `gbm_surface`
-:::
-
-Xorg 的 modesetting driver 會把這個 pointer 保存在 `drmmode_rec::front_bo`。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.h:78`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.h#L78-L94)，用來顯示同一筆 driver state 也保存 GBM device 與 DRM fd：
-
-```c
-// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.h:78]
-typedef struct {
-    int fd;
-    ...
-    struct gbm_device *gbm; // 型態宣告來自 Mesa 的 gbm.h
-    ...
-    struct gbm_bo *front_bo;
-    ...
-} drmmode_rec, *drmmode_ptr;
-```
-
-`miCreateScreenResources()` 回傳後，執行流程會回到 `modesetCreateScreenResources()`。 函式先以 `drmmode_set_desired_modes(..., FALSE, FALSE)` 保存 Xorg-side display state，接著取出 front BO 的 CPU mapping。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1722-L1756)，用來顯示 mapping 如何交給剛建立的 screen Pixmap：
-
-```c
-// [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722]
-static Bool
-modesetCreateScreenResources(ScreenPtr pScreen)
-{
-    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
-    modesettingPtr ms = modesettingPTR(pScrn);
-    PixmapPtr rootPixmap;
-    void *pixels = NULL;
-    ...
-
-    if (!ms->drmmode.glamor)
-        pixels = gbm_bo_get_map(ms->drmmode.front_bo);
-
-    rootPixmap = pScreen->GetScreenPixmap(pScreen);
-    ...
-    pScreen->ModifyPixmapHeader(rootPixmap, -1, -1, -1, -1, -1, pixels);
-    ...
-}
-```
-
-`GetScreenPixmap()` 取回 `miCreateScreenResources()` 剛建立的 `PixmapRec`，`ModifyPixmapHeader()` 則將 `pixels` 傳給 Pixmap 實作。 本文會進入 MI 的 `miModifyPixmapHeader()`。 以下程式碼來自 [`Xorg: mi/miscrinit.c:64`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/mi/miscrinit.c#L64-L120)，用來顯示 mapping 位址最後會寫入哪個欄位：
-
-```c
-// [Xorg: mi/miscrinit.c:64]
-Bool
-miModifyPixmapHeader(PixmapPtr pPixmap, int width, int height, int depth,
-                     int bitsPerPixel, int devKind, void *pPixData)
-{
-    ...
-    if (pPixData)
-        pPixmap->devPrivate.ptr = pPixData;
-    ...
-    return TRUE;
-}
-```
-
-Xorg modesetting 保存 `drmmode_rec::front_bo` pointer，並負責在關閉 Screen 時呼叫 `gbm_bo_destroy()`。 Pointer 指向的是 Mesa `libgbm` 配置的 userspace wrapper，不會直接傳入 kernel。 Wrapper 內的 GEM handle 屬於 Xorg 開啟的 DRM file namespace，kernel 會透過這個 handle 找到並持有相應的 GEM object
+`dixScreenRaiseCreateResources()` 確定了 `CreateScreenResources` callback 的執行時機。 `modesetCreateScreenResources()` 建立 screen resources 後，還會在 screen Pixmap 上登記 Damage tracking，讓 3D 與 2D 兩種組態都能累積後續需要發布的 dirty rectangles
 
 ##### 為 screen Pixmap 登記 Damage tracking
 
-screen Pixmap 已經能透過 `devPrivate.ptr` 寫入 front BO，但 Xorg 還需要記錄 event loop 的這一輪改寫了哪些矩形範圍，後續才能只把這些 dirty rectangles 交給 kernel。 同一個 `modesetCreateScreenResources()` 會先送出一筆不含 rectangles 的 `DIRTYFB` request，再把一筆 Damage 記錄掛到 screen Pixmap，以便累積後續的 Damage Region
+screen Pixmap 已經建立，但 Xorg 還需要記錄 event loop 的這一輪改寫了哪些矩形範圍，後續才能只把這些 dirty rectangles 交給 kernel。 同一個 `modesetCreateScreenResources()` 會先送出一筆不含 rectangles 的 `DIRTYFB` request，再把一筆 Damage 記錄掛到 screen Pixmap，以便累積後續的 Damage Region
 
 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1722-L1756) 的 `modesetCreateScreenResources()`，用來確認 `DIRTYFB` 回傳值與 Damage 登記的判斷方式：
 
@@ -3402,33 +3035,6 @@ drm_mode_dirtyfb_ioctl(struct drm_device *dev,
 
 `DamageRegister()` 會將 Damage 記錄掛到 screen Pixmap。 後面任何經 Xorg drawing operations 寫入 screen Pixmap 的區域，都會累積成 `ms->damage` 裡的 Damage Region。 執行期的 `msBlockHandler()` 會把這個 Region 轉成 `DIRTYFB` clips，再交給 kernel
 
-Screen Pixmap、GBM BO 與 KMS framebuffer 會以不同方式連到同一個 guest GEM backing：
-
-```callgraph
-Xorg modesetting：drmmode_rec::front_bo
-  │
-  │  pointer 指向 libgbm userspace wrapper
-  ↓
-Mesa libgbm：struct gbm_bo
-  │
-  │  保存 Xorg DRM file namespace 內的 GEM handle
-  ↓
-Linux DRM：GEM dumb BO 與 guest shmem backing
-  ↑
-  ├─ screen Pixmap
-  │    └─ devPrivate.ptr 借用同一個 GEM BO 的 CPU mapping
-  │
-  └─ KMS framebuffer
-       └─ base.obj[0] 另外持有一筆 GEM object reference
-```
-
-這些 objects 沒有各自保存一份 pixels。 Screen `PixmapRec` 透過 mapping 存取 guest GEM backing，GBM BO 透過 GEM handle 引用它，KMS framebuffer 則保存供 scanout 使用的 format／layout 與 GEM reference。 後面加入的 Mesa client-side color buffer 才是另一份獨立 storage
-
-`virtio_gpu` 另外為這個 GEM object 建立 host-side 2D resource ID，並以 `RESOURCE_ATTACH_BACKING` 登記可供 transfer 使用的 guest pages。 Host resource 內的 pixels 要等後續 `TRANSFER_TO_HOST_2D` 才會更新
-
-由於本文將 `AccelMethod` 設為 `none`，所以 `gbm_create_best_bo()` 會要求一份可供 CPU mapping 的 front BO。 Xorg 自己定義的 `gbm_bo_get_map()` helper 取出先前由公開 `gbm_bo_map()` 建立的 mapping 位址，`miModifyPixmapHeader()` 再將這個位址寫入 screen `PixmapRec` 的 `devPrivate.ptr`。 後面不論哪個 Window 產生新內容，X server 最後都要讓這份 X Screen 像素儲存區反映可見結果
-
-稍後建立的 KMS framebuffer 會引用同一個 GEM BO。 此時 Xorg 已經準備好 X Screen 像素儲存區，KMS 尚未把它選成 scanout source
 
 `modesetCreateScreenResources()` 回傳後，`dixScreenRaiseCreateResources()` 會繼續執行 post-create hooks。 `xf86CrtcScreenInit()` 先前登記的 RandR hook 會依目前 CRTC mode 完成 X Screen 尺寸與 RandR resources，接著執行流程才回到 `dix_main()` 建立 Root Window
 
@@ -5005,121 +4611,13 @@ application Window 進入桌面後，Xorg 已經知道它的 parent、geometry �
 
 ### Xorg 將 GBM desktop BO 的更新發布到既有 scanout
 
-### vGPU 2D：software renderer 為什麼讓交付路徑更直接
+#### Damage Region 經 `DIRTYFB` 抵達 primary-plane update
 
-`glxgears` 的 application Window 現在已經進入 viewable state。 為了讓使用者看見齒輪，Xorg 接著要接收一幀 pixels，將它們寫到這個 Window 的可見範圍，再把 front BO 的變動送到既有 scanout
-
-本節以 `PutImage`／`ShmPutImage` request 作為 Display 路徑的輸入，依序追蹤 Xorg 收到 request 後執行的兩項工作：
-
-1. 套用 Window origin 與 composite clip，將仍然可見的 pixels 寫進 screen Pixmap，並記錄被修改的區域
-2. 以 `DIRTYFB` 將 front BO 的變動交給既有的 KMS 與 virtio-gpu scanout 繫結
-
-下一個 Rendering 章節會回到 application 行程，補上 Mesa 如何算出 pixels，以及 `drisw` 如何把它們組成 `PutImage`／`ShmPutImage` request
-
-#### Xorg 將 image request 的可見 pixels 寫入 screen Pixmap
-
-完整一幀的 pixels 可以直接放進 core `PutImage` request，也可以先放在 client 與 X server 共用的 shared-memory segment，再讓 request 指出 pixels 所在的位置。 後一種方法由 MIT-SHM（MIT Shared Memory）extension 提供，對應的 request 是 `ShmPutImage`
-
-兩種 requests 都會指定一個 Graphics Context（GC）。 GC 是 Xorg 用來保存 drawing operation state 的 object，其中包含 raster operation、subwindow mode 與 client clip。 當目標是 Window 時，Xorg 會把 Window 目前可見的 `clipList` 與 GC 的 client clip 合成 `pCompositeClip`，後續的 pixel write 便以這個 Region 作為可寫範圍
-
-以下程式碼來自 [`Xorg: mi/migc.c:99`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/mi/migc.c#L99-L154)，用來顯示一般 `ClipByChildren` 路徑如何從 application Window 的 `clipList` 建立 composite clip：
-
-```c
-// [Xorg: mi/migc.c:99-154]
-void
-miComputeCompositeClip(GCPtr pGC, DrawablePtr pDrawable)
-{
-    if (pDrawable->type == DRAWABLE_WINDOW) {
-        WindowPtr pWin = (WindowPtr) pDrawable;
-        RegionPtr pregWin;
-        ...
-
-        if (pGC->subWindowMode == IncludeInferiors)
-            pregWin = NotClippedByChildren(pWin);
-        else
-            pregWin = &pWin->clipList;
-
-        if (!pGC->clientClip) {
-            pGC->pCompositeClip = pregWin;
-            ...
-        } else {
-            ...
-            RegionIntersect(..., pregWin, pGC->clientClip);
-            ...
-        }
-    }
-    ...
-}
-```
-
-兩種 requests 抵達 Xorg 後，最後都要改寫同一個 X11 drawable。 Xorg 也要同時記住這次修改涵蓋哪些區域，稍後才能把這些座標交給 `DIRTYFB`。 因此，core `PutImage` 與 MIT-SHM `ShmPutImage` 會匯合到 GC 的 `PutImage` operation，再由 Damage wrapper 記錄變動範圍，最後交給 framebuffer 實作寫入 X Screen 像素儲存區：
-
-![Window update 套用 origin 與 composite clip，更新 screen Pixmap／front BO](./image/glx-action-stage-3-window-server-update.png)
-
-X server 在處理 image request 時，會加入 Window drawable 的 screen origin，再套用 GC composite clip。 可寫的 pixels 會在這次 request 處理期間直接更新 screen Pixmap／front BO
-
-```callgraph
-Xorg：在 server event loop 處理 X11 image request
-=================================================
-core PutImage request
-  │
-  ↓
-[Xorg: dix/dispatch.c:2161]
-int ProcPutImage(ClientPtr client)
-  │
-  ├─ VALIDATE_DRAWABLE_AND_GC(...)
-  ├─ 驗證 format、depth 與 request length
-  └─ pGC->ops->PutImage(pDraw, pGC, ..., tmpImage)
-
-MIT-SHM ShmPutImage request
-  │
-  ↓
-[Xorg: Xext/shm.c:484]
-static int ShmPutImage(ClientPtr client,
-                       xShmPutImageReq *stuff)
-  │
-  ├─ VALIDATE_DRAWABLE_AND_GC(...)
-  ├─ 本例交付完整 image，使用直接 PutImage 分支
-  └─ pGC->ops->PutImage(pDraw, pGC, ...,
-                         shmdesc->addr + offset)
-
-兩條 request 路徑都進入 GC PutImage operation
-  │
-  ↓
-[Xorg: miext/damage/damage.c:721]
-static void damagePutImage(DrawablePtr pDrawable, GCPtr pGC, ...)
-  │
-  ├─ 以 pGC->pCompositeClip->extents 修剪 bounding box
-  ├─ damageDamageBox(...)
-  ├─ pGC->ops->PutImage(...)
-  │    ↓
-  │  [Xorg: fb/fbimage.c:30]
-  │  void fbPutImage(DrawablePtr pDrawable, GCPtr pGC, ...)
-  │    ├─ x += pDrawable->x，y += pDrawable->y
-  │    └─ fbPutZImage(..., fbGetCompositeClip(pGC), ...)
-  │         // 只寫入 composite clip 允許的範圍
-  └─ damageRegionProcessPending(pDrawable)
-```
-
-Xorg 會以 Window origin 將 Window-local 座標轉成 X Screen 座標，套用 composite clip，再將仍然可見的矩形寫入 screen Pixmap 與 mapped front BO 共用的 X Screen 像素儲存區。 這個 server-side request 處理完成後，下一個問題是如何讓正在 scanout 的 virtio-gpu 2D resource 取得這些新 pixels
-
-#### Xorg 以 `DIRTYFB` 將 front BO 的變動發布到既有 scanout
-
-此時 Xorg 已經持有 front BO，對應的既有 KMS framebuffer 也正綁在 active primary plane 上。 本節從這組持續使用中的 display state 開始，追蹤 Xorg 如何以 `DIRTYFB` 將 Damage Region 交給 kernel display 路徑
-
-前一節的 Damage wrapper 會在 Xorg 改寫 screen Pixmap 時記錄需要發布的變動範圍。 `damagePutImage()` 先以 GC composite clip 的 extents 縮小 PutImage bounding box，再透過 `damageDamageBox()` 與 `damageRegionAppend()` 將結果併入 Damage Region
-
-本文的 application Window 使用 `backingStore == NotUseful` 與一般 `ClipByChildren` 路徑，`damageRegionAppend()` 會再將上述範圍與完整 `clipList` 取交集。 當 GC 沒有另外的多矩形 client clip 時，Damage Region 會保留 request 範圍與 Window 可見 `clipList` 相交後的實際 Region。 若 client clip 本身由多個矩形組成，前面先取 extents 的做法才可能讓 Damage Region 比真正寫入的 pixels 稍大
+此時 GBM desktop BO 對應的 KMS framebuffer 已經綁在 active primary plane 上。 Xorg 改寫 screen Pixmap 時，Damage tracking 會累積這一輪需要發布的矩形範圍。 本節從這份既有的 Damage Region 開始，追蹤 Xorg 如何把更新交給 kernel display 路徑
 
 Damage tracking 啟用時，`msBlockHandler()` 會呼叫 `dispatch_dirty()`。 後面的 `dispatch_damages()` 會先將 Damage Region 轉成目前 CRTC 可使用的 clip rectangles，只有至少留下一個 rectangle 時才呼叫 `drmModeDirtyFB()`
 
-`DIRTYFB` request 傳遞的是 damage coordinates，不會攜帶 pixels。 這個 ioctl 讓既有 KMS framebuffer 進入 atomic dirty update，再由 virtio-gpu primary plane 將 pixels 傳給 host-side 2D resource：
-
-![Scanout update 先搬移 pixels，再發布更新](./image/glx-action-stage-4-scanout-update.png)
-
-這次 scanout update 會先以 `TRANSFER_TO_HOST_2D` 把 dirty rectangle 的 pixels 從 guest backing 搬進 host-side 2D resource，再用 `RESOURCE_FLUSH` 要求 host 發布更新。 `SET_SCANOUT` 則在 framebuffer／source rectangle 改變，或 mode／routing 更新令 `output->needs_modeset` 成立時重新送出
-
-以下 callgraph 從 Xorg 已經收到 pixels 開始。 它固定追蹤 virtio-gpu framebuffer 實作的 `dirty` callback，並看到 DRM atomic helper 如何把 dirty rectangles 放進 primary plane state：
+`DIRTYFB` request 傳遞的是 damage coordinates，不會攜帶 pixels。 這個 ioctl 會為既有 KMS framebuffer 建立一次只更新 plane damage state 的 atomic commit，最後進入 virtio-gpu primary-plane update。 以下 callgraph 從 Xorg 已經收到 pixels 開始。 它固定追蹤 virtio-gpu framebuffer 實作的 `dirty` callback，並看到 DRM atomic helper 如何把 dirty rectangles 放進 primary plane state：
 
 ```callgraph
 Xorg modesetting：將 Damage Region 轉成 DIRTYFB clips
@@ -5210,7 +4708,7 @@ drm_atomic_helper_commit_tail(state)
 virtio_gpu_primary_plane_update(plane, state)
 ```
 
-`virtio_gpu_primary_plane_update()` 是 KMS plane state 真正變成 virtio-gpu 2D commands 的位置。 以下片段來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_plane.c:235`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_plane.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n235)，用來區分每次的 pixel transfer，以及只在 scanout state 變更時才會重新發出的 `SET_SCANOUT`：
+`virtio_gpu_primary_plane_update()` 是 KMS plane state 變成 virtio-gpu display commands 的位置。 以下片段來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_plane.c:235`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_plane.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n235)，用來區分 dumb 與 non-dumb buffers，並顯示 `SET_SCANOUT` 和 `RESOURCE_FLUSH` 的送出條件：
 
 ```c
 // [Linux: drivers/gpu/drm/virtio/virtgpu_plane.c:235]
@@ -5276,9 +4774,529 @@ virtio_gpu_primary_plane_update(struct drm_plane *plane,
 
 display state 仍然 active 時，`drm_atomic_helper_damage_merged()` 會讀取 plane state 上的 damage clips，將多個 rectangles 合併成單一 bounding rectangle `rect`，再限制於有效 source 範圍內。 沒有提供 damage clips 時，helper 會改用完整的 plane source。 只有 plane 不可見、沒有 CRTC／framebuffer，或所有 clips 都沒有和有效 source 相交時，才會結束這次 update
 
-因為本例的 GEM object 是 dumb BO，`virtio_gpu_update_dumb_bo()` 會將 `TRANSFER_TO_HOST_2D` 排入 control virtqueue，要求 host 把這個矩形的 guest backing pixels 複製到 host-side 2D resource
-
 同一個 framebuffer、source rectangle 與 CRTC 持續使用，而且沒有新的 modeset 要求時，`if` 條件不成立，因此通常不會每幀重送 `SET_SCANOUT`。 這個 command 在初次 modeset、framebuffer 切換、source rectangle 改變，或 mode／routing 更新時改寫 resource-to-scanout 繫結。 `RESOURCE_FLUSH` 則在每次有效 damage update 的尾端發出，通知 host 把已更新的 resource 內容發布到目前繫結的 scanout
+
+`virtio_gpu_primary_plane_update()` 對 non-dumb GBM desktop BO 不會呼叫 `virtio_gpu_update_dumb_bo()`，因此不會執行 `TRANSFER_TO_HOST_2D`。 不論 buffer 是否為 dumb BO，只要這次 update 具有有效 damage，函式尾端仍會送出 `RESOURCE_FLUSH`。 Dumb BO 額外執行的 2D pixel transfer 與 semu 發布流程，留到下一節接著展開
+
+### vGPU 2D：software renderer 為什麼讓交付路徑更直接
+
+VirGL 3D 主線會讓 guest Mesa 建立 commands，再由 host renderer 執行 rendering。 vGPU 2D 的 software-rendering 路徑則讓 CPU 直接算出 pixels，接著把 pixels 交給 Xorg。 這條對照路徑少了跨越 VM boundary 的 3D command stream，卻仍會經過 X11 drawable、screen Pixmap、KMS 與 virtio-gpu display commands
+
+為了建立這條對照路徑，application 會以 `LIBGL_ALWAYS_SOFTWARE=true` 選擇 software rendering，再以 `GALLIUM_DRIVER=softpipe` 固定使用 softpipe。 Xorg modesetting driver 會改用 `AccelMethod=none`，讓 screen Pixmap 接到可供 CPU mapping 的 dumb front BO。 virtio-gpu 顯示裝置則使用 2D resources 與 commands，不需要協商 VirGL 3D
+
+#### softpipe／llvmpipe 負責算出 pixels，drisw 負責交給 X11 drawable
+
+softpipe 與 llvmpipe 都是 Mesa 的 Gallium software drivers。 它們接住相同的 Gallium operations，並使用 CPU 完成 vertex processing、rasterization 與 fragment processing，再把結果寫進 system memory 中的 color buffer。 softpipe 採用較直接的同步實作，適合用來理解 Gallium driver contract。 llvmpipe 會使用 LLVM JIT 與多個 worker threads 提高 throughput，也會以真正的 fence 表示非同步工作何時完成
+
+drisw 負責的是另一段工作。 softpipe 或 llvmpipe 決定「怎麼算出 pixels」，drisw 則銜接 Mesa software-rendering path 與 X11 loader callbacks，決定「怎麼把算好的 pixels 交給 X11 drawable」。 在這條 2D 對照路徑中，這次交付最後會形成 `PutImage` 或 `ShmPutImage` request
+
+Software renderer 並不是只為舊硬體保留的 legacy path。 它在下列情境仍然有明確用途：
+
+- CI 與可重現測試需要避開不同 GPU、firmware 與 kernel driver 帶來的環境差異
+- 系統沒有可用的硬體 userspace driver，或目前 GPU 無法提供 application 所需功能時，需要 software fallback
+- headless、container 或受限環境沒有可直接提交 GPU work 的裝置，但程式仍需要 OpenGL rendering
+- driver 開發與除錯需要一條容易觀察的參考實作，協助比較 state、resource 與 rendering 結果
+
+後文的「Gallium driver 如何實作共用介面」會分別展開 softpipe 與 llvmpipe 的 callbacks、workers 與 fences。 drisw 如何透過 loader callbacks 交付 pixels，則會留到「Loader 與 DRI」再展開。 本節只沿 Display 這一側確認 pixels 進入 Xorg 後的路徑
+
+接下來沿著 2D 對照組態的執行順序追蹤三個階段：
+
+1. 回到 Xorg 初始化，建立可供 CPU mapping 的 dumb front BO，再讓 screen Pixmap 借用它的 mapping
+2. 等 `glxgears` 的 application Window 進入 viewable state，讓 drisw 以 `PutImage` 或 `ShmPutImage` 交付 pixels。 Xorg 會套用 Window origin 與 composite clip，將仍然可見的 pixels 寫進 screen Pixmap
+3. Damage Region 經過前一節共用的 `DIRTYFB` 路徑後，從 `virtio_gpu_primary_plane_update()` 的 dumb branch 進入 `TRANSFER_TO_HOST_2D`，最後由 semu 發布更新
+
+#### `ScreenInit()` 建立可 mapping 的 dumb front BO
+
+Xorg 將 DRM fd 交給 `gbm_create_device()` 後，GBM 會先選出一個 backend，讓後續的 `gbm_bo_create()` 能把尺寸、pixel format 與 usage flags 轉成實際的 buffer 配置。 不同 backend 與 capability 可能讓 front BO 經過不同建立路徑。 本節的目標是先看懂 Xorg 到 kernel 的分層，因此下方 callgraph 會選擇 Mesa DRI backend 直接建立 dumb BO 的分支
+
+DRI 的全名是 Direct Rendering Infrastructure，是一組銜接 Mesa loader、rendering driver 與視窗系統的介面。 `libgbm` 的 DRI backend 位於 `src/gbm/backends/dri/`，負責將單次 GBM buffer 建立要求交給可用的 driver 路徑。 在本節選定的分支中，`GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT` 會讓 DRI backend 進入 `create_dumb()`，向 DRM 建立基礎線性 buffer
+
+如果這次 device 建立失敗，Xorg 才會呼叫 `gbm_create_device_by_name(ms->drmmode.fd, "dumb")`。 這個 helper 會暫時將 `GBM_BACKEND` 設為 `dumb`，再重新呼叫 `gbm_create_device()`，形成另一次 fallback 嘗試
+
+DRM 的 dumb-buffer API 用來配置 layout 簡單、可供 CPU mapping 的線性 buffer，成功後會回傳 handle、pitch 與 size。 Kernel driver 會以 GEM buffer object 保存這份 storage。 GEM 的全名是 Graphics Execution Manager，是 DRM subsystem 用來表示與管理 buffer objects 的共用框架
+
+glamor 是 Xorg 使用 OpenGL 加速 X11 2D rendering 的 acceleration layer。 這條 2D 對照組態將 `AccelMethod` 設為 `none`，所以 `drmmode->glamor` 是 false。 `drmmode_create_initial_bos()` 傳入的 `!drmmode->glamor` 因而是 true，要求建立可供 CPU mapping 的 front BO
+
+Xorg 的 `gbm_bo_create_and_map_with_flag_list()` 會依序嘗試多組 usage flags，並在第一個能成功建立且完成 mapping 的 candidate 停下來。 下方選定 `GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT` 這一組，沿 DRI backend 的 `create_dumb()` 觀察 Xorg、Mesa GBM、DRM core 與 Linux `virtio_gpu` driver 各自負責的一段。 至於實際執行時由哪個 candidate 與 backend 分支成功，會在後面的 libgbm 章節保留完整分流
+
+這條呼叫路徑也會傳遞一組 `modifiers`。 modifier 是描述 buffer memory layout 的 metadata，例如 pixels 採用 linear、tiled 或 compressed layout。 本文選定的 dumb BO 分支會建立可供 CPU mapping 的 linear buffer，因此接下來先把 `modifiers` 視為 Xorg 傳到 GBM 的候選條件，等後文展開 DRI image 與 dma-buf sharing 時再看它如何影響實際配置
+
+這裡的 `drmIoctl()` 呼叫寫在 Mesa `libgbm` 原始程式碼中，API 則由 libdrm 提供。 執行這段程式碼的是載入兩個函式庫的 Xorg 行程。 DRM core 解析 `CREATE_DUMB` 後，透過 `drm_driver::dumb_create` 進入 virtio-gpu 實作
+
+下方 callgraph 中的 Xorg helpers 可對照 [`Xorg: drmmode_display.c:4838`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.c#L4838-L4856) 與 [`Xorg: drmmode_bo.c:142`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_bo.c#L142-L298)
+
+GBM 公開入口與 DRI backend 分別來自 [`Mesa: gbm.c:489`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.c#L489-L501) 與 [`Mesa: gbm_dri.c:828`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/backends/dri/gbm_dri.c#L828-L903)
+
+Kernel 內的 ioctl 可對照 [`Linux: drm_dumb_buffers.c:194`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_dumb_buffers.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n194)
+
+virtio-gpu create 路徑可對照 [`Linux: virtgpu_gem.c:30`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_gem.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n30) 與 [`Linux: virtgpu_object.c:203`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_object.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n203)
+
+```callgraph
+Xorg modesetting：請求建立可 mapping 的 front BO
+=================================================
+[Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1994]
+static Bool
+ScreenInit(ScreenPtr pScreen, int argc, char **argv)
+  ↓
+[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4838]
+Bool drmmode_create_initial_bos(ScrnInfoPtr pScrn,
+                                drmmode_ptr drmmode)
+  │
+  │  width = pScrn->virtualX;
+  │  height = pScrn->virtualY;
+  │  drmmode->front_bo = gbm_create_best_bo(
+  │      drmmode, !drmmode->glamor, width, height, DRMMODE_FRONT_BO);
+  │  // AccelMethod none：glamor == false，do_map == true
+  ↓
+[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:272]
+struct gbm_bo *
+gbm_create_best_bo(drmmode_ptr drmmode, Bool do_map,
+                   uint32_t width, uint32_t height, int type)
+  │
+  │  type == DRMMODE_FRONT_BO
+  ↓
+[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:196]
+static inline struct gbm_bo *
+gbm_create_front_bo(drmmode_ptr drmmode, Bool do_map,
+                    bo_priv_t *data,
+                    unsigned width, unsigned height)
+  │
+  ↓
+[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:174]
+static inline struct gbm_bo *
+gbm_bo_create_and_map_with_flag_list(
+    struct gbm_device *gbm, bo_priv_t *data, Bool do_map,
+    uint32_t width, uint32_t height, uint32_t format,
+    const uint64_t *modifiers, const unsigned int count,
+    const uint32_t *flag_list, unsigned int flag_count)
+  │
+  │  依序嘗試 front_flag_list，本文追蹤的 dumb BO candidate 是：
+  │  GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT
+  ↓
+[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:142]
+static inline struct gbm_bo *
+gbm_bo_create_and_map(
+    struct gbm_device *gbm, bo_priv_t *data, Bool do_map,
+    uint32_t width, uint32_t height, uint32_t format,
+    const uint64_t *modifiers, const unsigned int count,
+    uint32_t flags)
+  │
+  └─ TRY_CREATE(gbm_bo_create, data, do_map,
+                gbm, width, height, format, flags)
+```
+
+Xorg 這一層把尺寸、format、usage flags 與 mapping 需求整理完後，最後呼叫公開的 `gbm_bo_create()`。 接下來執行流程離開 Xorg 原始程式碼，進入 Xorg 行程已載入的 Mesa `libgbm`
+
+```callgraph
+Mesa libgbm 公開 API：分派到 backend callback
+=================================================
+[Mesa: src/gbm/main/gbm.c:489]
+GBM_EXPORT struct gbm_bo *
+gbm_bo_create(struct gbm_device *gbm,
+              uint32_t width, uint32_t height,
+              uint32_t format, uint32_t flags)
+  │
+  └─ gbm->v0.bo_create(gbm, width, height, format,
+                       flags, NULL, 0)
+       ↓
+
+Mesa libgbm DRI backend：建立 dumb BO
+=================================================
+[Mesa: src/gbm/backends/dri/gbm_dri.c:886]
+static struct gbm_bo *
+gbm_dri_bo_create(struct gbm_device *gbm,
+                  uint32_t width, uint32_t height,
+                  uint32_t format, uint32_t usage,
+                  const uint64_t *modifiers,
+                  const unsigned int count)
+  │
+  │  if (usage & GBM_BO_USE_WRITE || !dri->has_dmabuf_export)
+  └─     return create_dumb(gbm, width, height, format, usage);
+       ↓
+[Mesa: src/gbm/backends/dri/gbm_dri.c:828]
+static struct gbm_bo *
+create_dumb(struct gbm_device *gbm,
+            uint32_t width, uint32_t height,
+            uint32_t format, uint32_t usage)
+  │
+  │  create_arg.bpp = 32;
+  │  create_arg.width = width;
+  │  create_arg.height = height;
+  │
+  ├─ drmIoctl(dri->base.v0.fd,
+  │             DRM_IOCTL_MODE_CREATE_DUMB, &create_arg)
+  │      // fd 對應 Xorg 開啟的 DRM device
+  │
+  ├─ bo->base.v0.stride = create_arg.pitch
+  ├─ bo->base.v0.handle.u32 = create_arg.handle
+  ├─ bo->size = create_arg.size
+  └─ gbm_dri_bo_map_dumb(bo)
+```
+
+`create_dumb()` 將 `DRM_IOCTL_MODE_CREATE_DUMB` 送到 Xorg 持有的 DRM device fd。 這裡的輸出是 ioctl request 與其 argument structure，下一階段再從 kernel 入口開始，看 DRM core 如何將它分派給 `virtio_gpu`
+
+```callgraph
+Linux DRM core：從 ioctl 分派到 driver callback
+=================================================
+[Linux: drivers/gpu/drm/drm_ioctl.c:696]
+DRM_IOCTL_MODE_CREATE_DUMB
+  ↓
+[Linux: drivers/gpu/drm/drm_dumb_buffers.c:233]
+int drm_mode_create_dumb_ioctl(struct drm_device *dev,
+                               void *data,
+                               struct drm_file *file_priv)
+  │
+  └─ drm_mode_create_dumb(dev, args, file_priv)
+       │
+       └─ dev->driver->dumb_create(file_priv, dev, args)
+            │  // virtio_gpu driver 註冊 virtio_gpu_mode_dumb_create
+            ↓
+
+Linux virtio-gpu 2D：建立 GEM object 與 virtio resource
+=================================================
+[Linux: drivers/gpu/drm/virtio/virtgpu_gem.c:61]
+int virtio_gpu_mode_dumb_create(struct drm_file *file_priv,
+                                struct drm_device *dev,
+                                struct drm_mode_create_dumb *args)
+  │
+  ├─ pitch = args->width * 4
+  ├─ params.dumb = true
+  └─ virtio_gpu_gem_create(..., &args->handle)
+       ↓
+[Linux: drivers/gpu/drm/virtio/virtgpu_gem.c:30]
+static int virtio_gpu_gem_create(
+    struct drm_file *file, struct drm_device *dev,
+    struct virtio_gpu_object_params *params,
+    struct drm_gem_object **obj_p, uint32_t *handle_p)
+  │
+  │  內部 create 路徑先配置 object，再建立此 DRM file 的 GEM handle
+  └─ virtio_gpu_object_create(vgdev, params, &obj, NULL)
+       ↓
+[Linux: drivers/gpu/drm/virtio/virtgpu_object.c:203]
+int virtio_gpu_object_create(
+    struct virtio_gpu_device *vgdev,
+    struct virtio_gpu_object_params *params,
+    struct virtio_gpu_object **bo_ptr,
+    struct virtio_gpu_fence *fence)
+  │
+  ├─ drm_gem_shmem_create(...)
+  ├─ virtio_gpu_resource_id_get(..., &bo->hw_res_handle)
+  ├─ virtio_gpu_object_shmem_init(..., &ents, &nents)
+  │
+  └─ 本文固定的 no-blob、no-VirGL 分支：
+       ├─ virtio_gpu_cmd_create_resource(...)
+       │    └─ VIRTIO_GPU_CMD_RESOURCE_CREATE_2D
+       └─ virtio_gpu_object_attach(...)
+            └─ VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING
+```
+
+`CREATE_DUMB` 成功後回傳的 `handle`、`pitch` 與 `size` 有不同用途。 `handle` 讓這個 DRM file 可以繼續引用 GEM object，`pitch` 表示每列 pixels 佔用的 bytes，`size` 則是實際配置大小
+
+GBM DRI backend 會將 `pitch` 與 `handle` 放入對外使用的 GBM object，並將 `size` 與 CPU mapping 保存在 backend private state。 Xorg 收到公開的 `struct gbm_bo *`，後續會透過 GBM API 查詢資料。 這兩層 object 的實際 layout 會在 screen Pixmap 取得 mapping 時一起對照
+
+Linux `virtio_gpu` driver 在同一次建立中配置 GEM shmem backing，並取得作為 virtio resource ID 的 `hw_res_handle`。 `virtio_gpu_cmd_create_resource()` 將 `RESOURCE_CREATE_2D` 排入 control virtqueue，也就是 guest driver 用來向 virtio-gpu device 傳送控制命令的 virtqueue。 Host device 會建立可由 resource ID 引用的 2D resource，`virtio_gpu_object_attach()` 接著以 `RESOURCE_ATTACH_BACKING` 將 guest pages 接給這個 resource
+
+
+![Xorg 的 X Screen 像素儲存區與稍後 KMS scanout 的 object 關係](./image/glx-object-stage-1-xorg-display-storage.png)
+
+##### 建立 screen Pixmap，再讓它借用 front BO 的 CPU mapping
+
+`dixScreenRaiseCreateResources()` 進入 modesetting callback 後，第一個動作是呼叫 MI layer 的 `miCreateScreenResources()`。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1722-L1735)，用來標出建立 Pixmap、保存 desired display state 與接上 mapping 的順序：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722-1735]
+static Bool
+modesetCreateScreenResources(ScreenPtr pScreen)
+{
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
+    modesettingPtr ms = modesettingPTR(pScrn);
+    ...
+
+    Bool ret = miCreateScreenResources(pScreen);
+
+    if (!drmmode_set_desired_modes(pScrn, &ms->drmmode,
+                                   pScrn->is_gpu, FALSE))
+        return FALSE;
+    ...
+}
+```
+
+本文的主要 X Screen 具有 `pScrn->is_gpu == FALSE`，所以 `drmmode_set_desired_modes()` 會先把選定的 mode、rotation 與座標保存成 Xorg-side CRTC state。 它在這個階段不會送出 KMS modeset，真正提交給 kernel 的操作要等 `Dispatch()` 第一輪執行 `BlockHandler`
+
+在此之前，`miCreateScreenResources()` 會先配置 screen Pixmap。 以下程式碼來自 [`Xorg: mi/miscrinit.c:145`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/mi/miscrinit.c#L145-L188)，用來顯示它如何建立 Pixmap，再讓 `ScreenRec` 保存這個 object：
+
+```c
+// [Xorg: mi/miscrinit.c:145-188]
+Bool
+miCreateScreenResources(ScreenPtr pScreen)
+{
+    miScreenInitParmsPtr pScrInitParms;
+    void *value;
+
+    pScrInitParms = (miScreenInitParmsPtr) pScreen->devPrivate;
+    ...
+    if (pScrInitParms->width) {
+        PixmapPtr pPixmap;
+
+        pPixmap = (*pScreen->CreatePixmap)(
+            pScreen, 0, 0, pScreen->rootDepth, 0);
+        if (!pPixmap)
+            return FALSE;
+
+        if (!(*pScreen->ModifyPixmapHeader)(
+                pPixmap,
+                pScrInitParms->xsize,
+                pScrInitParms->ysize,
+                pScreen->rootDepth,
+                BitsPerPixel(pScreen->rootDepth),
+                PixmapBytePad(pScrInitParms->width,
+                              pScreen->rootDepth),
+                pScrInitParms->pbits))
+            return FALSE;
+        value = (void *) pPixmap;
+    }
+    ...
+    free(pScreen->devPrivate);
+    pScreen->devPrivate = value;
+    return TRUE;
+}
+```
+
+`CreatePixmap` 先配置一個 `PixmapRec`，`ModifyPixmapHeader` 再填入 X Screen 的尺寸、color depth 與 pitch。 `fbScreenInit()` 先前傳入的 pixel pointer 是 `NULL`，所以這時已經有代表整個 X Screen 的 Pixmap object，尚未接上 front BO 的 CPU mapping。 最後，`pScreen->devPrivate` 會改為保存這個 screen Pixmap
+
+前文已將這個代表整個 X Screen 內容的 storage object 稱為 screen Pixmap。 以下程式碼來自 [`Xorg: include/pixmapstr.h:75`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/include/pixmapstr.h#L75-L86) 的 `PixmapRec` 定義，用來確認這個 object 如何描述 X Screen 像素儲存區：
+
+```c
+// [Xorg: include/pixmapstr.h:75-86]
+typedef struct _Pixmap {
+    DrawableRec drawable;
+    PrivateRec *devPrivates;
+    int refcnt;
+    int devKind;                /* This is the pitch of the pixmap, typically width*bpp/8. */
+    DevUnion devPrivate;        /* When !NULL, devPrivate.ptr points to the raw pixel data. */
+    ...
+} PixmapRec;
+```
+
+其中 `drawable` 用來記錄這份 Pixmap 的尺寸、color depth 與所屬 Screen，`devKind` 用來記錄每一列 pixels 的 pitch。 在這條 2D 對照組態中，`devPrivate.ptr` 最後會指向 front BO 的 CPU mapping，讓 X server 能透過 `PixmapRec` 找到 X Screen 像素儲存區
+
+接著是 Xorg 透過 GBM 持有的 mapped front BO。 它在 Xorg 端的型態是 `struct gbm_bo *`，指向 Mesa `libgbm` 建立的 userspace object。 其中的 GBM base object 保存 buffer 的寬度、高度、format、stride 與 handle，並連回建立這份 buffer 的 `gbm_device`
+
+Xorg 會 include Mesa 安裝的公開 `gbm.h`，也會在建置與執行期 link `libgbm`。 公開 header 只把 `struct gbm_device`、`struct gbm_bo` 與 `struct gbm_surface` 宣告成 opaque types。 Xorg 可以保存 pointer，並透過 `gbm_bo_get_*()`、`gbm_bo_map()` 與 `gbm_bo_destroy()` 操作它，實際欄位與 backend-specific object layout 則由 `libgbm` 管理
+
+以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.h:9`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_bo.h#L9)，用來顯示 modesetting driver 會 include GBM 公開 header：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.h:9]
+#include <gbm.h>
+```
+
+這個公開 header 由 Mesa 安裝。 以下程式碼來自 [`Mesa: src/gbm/main/gbm.h:46`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.h#L46-48)，用來顯示 Xorg 在編譯時看到的是三個 opaque 宣告：
+
+```c
+// [Mesa: src/gbm/main/gbm.h:46]
+struct gbm_device;
+struct gbm_bo;
+struct gbm_surface;
+```
+
+:::tip
+[`Mesa: src/gbm/main/gbm.h:41`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.h#L41-58) 將 GBM 定義為向平台底層 memory manager 請求 buffer 的抽象。 GBM backend 也位於 userspace
+
+Linux kernel 公開 DRM device node 與 UAPI。 Xorg 開啟 device node 取得 fd，GBM backend 透過這個 fd 配置、匯入、匯出或 mapping buffer。 Xorg 另外透過 libdrm 與同一個 DRM device fd 建立 KMS framebuffer，並設定 display state
+
+呼叫端會將 DRM fd、尺寸、pixel format 與 `GBM_BO_USE_SCANOUT`、`GBM_BO_USE_WRITE` 等用途交給 GBM。 GBM backend 會配置符合需求的 buffer，再回傳 `struct gbm_bo`。 呼叫端可透過 GBM API 查詢 stride、handle 與 modifier。 modifier 是描述 buffer 使用 linear、tiled 或 compressed 等 memory layout 的 metadata
+
+GBM 也能提供 CPU mapping，或將 buffer 匯出成 dma-buf fd，讓另一個支援 dma-buf 的 userspace 元件透過 file descriptor 引用同一份 buffer。 後文「libgbm：Xorg 建立 front BO」會再沿原始程式碼詳細展開 `gbm_device`、`gbm_bo` 與 `gbm_surface`
+:::
+
+Xorg 的 modesetting driver 會把這個 pointer 保存在 `drmmode_rec::front_bo`。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.h:78`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.h#L78-L94)，用來顯示同一筆 driver state 也保存 GBM device 與 DRM fd：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.h:78]
+typedef struct {
+    int fd;
+    ...
+    struct gbm_device *gbm; // 型態宣告來自 Mesa 的 gbm.h
+    ...
+    struct gbm_bo *front_bo;
+    ...
+} drmmode_rec, *drmmode_ptr;
+```
+
+`miCreateScreenResources()` 回傳後，執行流程會回到 `modesetCreateScreenResources()`。 函式先以 `drmmode_set_desired_modes(..., FALSE, FALSE)` 保存 Xorg-side display state，接著取出 front BO 的 CPU mapping。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/driver.c#L1722-L1756)，用來顯示 mapping 如何交給剛建立的 screen Pixmap：
+
+```c
+// [Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722]
+static Bool
+modesetCreateScreenResources(ScreenPtr pScreen)
+{
+    ScrnInfoPtr pScrn = xf86ScreenToScrn(pScreen);
+    modesettingPtr ms = modesettingPTR(pScrn);
+    PixmapPtr rootPixmap;
+    void *pixels = NULL;
+    ...
+
+    if (!ms->drmmode.glamor)
+        pixels = gbm_bo_get_map(ms->drmmode.front_bo);
+
+    rootPixmap = pScreen->GetScreenPixmap(pScreen);
+    ...
+    pScreen->ModifyPixmapHeader(rootPixmap, -1, -1, -1, -1, -1, pixels);
+    ...
+}
+```
+
+`GetScreenPixmap()` 取回 `miCreateScreenResources()` 剛建立的 `PixmapRec`，`ModifyPixmapHeader()` 則將 `pixels` 傳給 Pixmap 實作。 本文會進入 MI 的 `miModifyPixmapHeader()`。 以下程式碼來自 [`Xorg: mi/miscrinit.c:64`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/mi/miscrinit.c#L64-L120)，用來顯示 mapping 位址最後會寫入哪個欄位：
+
+```c
+// [Xorg: mi/miscrinit.c:64]
+Bool
+miModifyPixmapHeader(PixmapPtr pPixmap, int width, int height, int depth,
+                     int bitsPerPixel, int devKind, void *pPixData)
+{
+    ...
+    if (pPixData)
+        pPixmap->devPrivate.ptr = pPixData;
+    ...
+    return TRUE;
+}
+```
+
+Xorg modesetting 保存 `drmmode_rec::front_bo` pointer，並負責在關閉 Screen 時呼叫 `gbm_bo_destroy()`。 Pointer 指向的是 Mesa `libgbm` 配置的 userspace wrapper，不會直接傳入 kernel。 Wrapper 內的 GEM handle 屬於 Xorg 開啟的 DRM file namespace，kernel 會透過這個 handle 找到並持有相應的 GEM object
+
+Screen Pixmap、GBM BO 與 KMS framebuffer 會以不同方式連到同一個 guest GEM backing：
+
+```callgraph
+Xorg modesetting：drmmode_rec::front_bo
+  │
+  │  pointer 指向 libgbm userspace wrapper
+  ↓
+Mesa libgbm：struct gbm_bo
+  │
+  │  保存 Xorg DRM file namespace 內的 GEM handle
+  ↓
+Linux DRM：GEM dumb BO 與 guest shmem backing
+  ↑
+  ├─ screen Pixmap
+  │    └─ devPrivate.ptr 借用同一個 GEM BO 的 CPU mapping
+  │
+  └─ KMS framebuffer
+       └─ base.obj[0] 另外持有一筆 GEM object reference
+```
+
+這些 objects 沒有各自保存一份 pixels。 Screen `PixmapRec` 透過 mapping 存取 guest GEM backing，GBM BO 透過 GEM handle 引用它，KMS framebuffer 則保存供 scanout 使用的 format／layout 與 GEM reference。 後面加入的 Mesa client-side color buffer 才是另一份獨立 storage
+
+`virtio_gpu` 另外為這個 GEM object 建立 host-side 2D resource ID，並以 `RESOURCE_ATTACH_BACKING` 登記可供 transfer 使用的 guest pages。 Host resource 內的 pixels 要等後續 `TRANSFER_TO_HOST_2D` 才會更新
+
+由於這條 2D 對照組態將 `AccelMethod` 設為 `none`，所以 `gbm_create_best_bo()` 會要求一份可供 CPU mapping 的 front BO。 Xorg 自己定義的 `gbm_bo_get_map()` helper 取出先前由公開 `gbm_bo_map()` 建立的 mapping 位址，`miModifyPixmapHeader()` 再將這個位址寫入 screen `PixmapRec` 的 `devPrivate.ptr`。 後面不論哪個 Window 產生新內容，X server 最後都要讓這份 X Screen 像素儲存區反映可見結果
+
+稍後建立的 KMS framebuffer 會引用同一個 GEM BO。 此時 Xorg 已經準備好 X Screen 像素儲存區，KMS 尚未把它選成 scanout source
+
+##### 未 redirect 的 X11 Windows 如何連到 mapped screen Pixmap
+
+screen Pixmap 接上 mapped front BO 後，未被 Composite redirect 的 X11 Windows 會透過 `GetWindowPixmap()` 解析到這個共同的 Pixmap。 Window objects 保存各自的位置與可見範圍，pixels 則位於 screen Pixmap 接上的 dumb BO：
+
+![X11 Window／Drawable 與 screen Pixmap storage mapping](./image/glx-object-stage-2-x11-window-storage.png)
+
+圖中的 Windows 各自保存 hierarchy、geometry、origin 與可見範圍，但 `GetWindowPixmap()` 最後都解析到已安裝的 screen Pixmap。 Screen `PixmapRec::devPrivate.ptr` 又指向 mapped front BO，因此這些 Windows 描述的是同一份 X Screen 像素儲存區中的不同區域，而不是各自配置一份 pixels
+
+#### Xorg 將 image request 的可見 pixels 寫入 screen Pixmap
+
+完整一幀的 pixels 可以直接放進 core `PutImage` request，也可以先放在 client 與 X server 共用的 shared-memory segment，再讓 request 指出 pixels 所在的位置。 後一種方法由 MIT-SHM（MIT Shared Memory）extension 提供，對應的 request 是 `ShmPutImage`
+
+兩種 requests 都會指定一個 Graphics Context（GC）。 GC 是 Xorg 用來保存 drawing operation state 的 object，其中包含 raster operation、subwindow mode 與 client clip。 當目標是 Window 時，Xorg 會把 Window 目前可見的 `clipList` 與 GC 的 client clip 合成 `pCompositeClip`，後續的 pixel write 便以這個 Region 作為可寫範圍
+
+以下程式碼來自 [`Xorg: mi/migc.c:99`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/mi/migc.c#L99-L154)，用來顯示一般 `ClipByChildren` 路徑如何從 application Window 的 `clipList` 建立 composite clip：
+
+```c
+// [Xorg: mi/migc.c:99-154]
+void
+miComputeCompositeClip(GCPtr pGC, DrawablePtr pDrawable)
+{
+    if (pDrawable->type == DRAWABLE_WINDOW) {
+        WindowPtr pWin = (WindowPtr) pDrawable;
+        RegionPtr pregWin;
+        ...
+
+        if (pGC->subWindowMode == IncludeInferiors)
+            pregWin = NotClippedByChildren(pWin);
+        else
+            pregWin = &pWin->clipList;
+
+        if (!pGC->clientClip) {
+            pGC->pCompositeClip = pregWin;
+            ...
+        } else {
+            ...
+            RegionIntersect(..., pregWin, pGC->clientClip);
+            ...
+        }
+    }
+    ...
+}
+```
+
+兩種 requests 抵達 Xorg 後，最後都要改寫同一個 X11 drawable。 Xorg 也要同時記住這次修改涵蓋哪些區域，稍後才能把這些座標交給 `DIRTYFB`。 因此，core `PutImage` 與 MIT-SHM `ShmPutImage` 會匯合到 GC 的 `PutImage` operation，再由 Damage wrapper 記錄變動範圍，最後交給 framebuffer 實作寫入 X Screen 像素儲存區：
+
+![Window update 套用 origin 與 composite clip，更新 screen Pixmap／front BO](./image/glx-action-stage-3-window-server-update.png)
+
+X server 在處理 image request 時，會加入 Window drawable 的 screen origin，再套用 GC composite clip。 可寫的 pixels 會在這次 request 處理期間直接更新 screen Pixmap／front BO
+
+```callgraph
+Xorg：在 server event loop 處理 X11 image request
+=================================================
+core PutImage request
+  │
+  ↓
+[Xorg: dix/dispatch.c:2161]
+int ProcPutImage(ClientPtr client)
+  │
+  ├─ VALIDATE_DRAWABLE_AND_GC(...)
+  ├─ 驗證 format、depth 與 request length
+  └─ pGC->ops->PutImage(pDraw, pGC, ..., tmpImage)
+
+MIT-SHM ShmPutImage request
+  │
+  ↓
+[Xorg: Xext/shm.c:484]
+static int ShmPutImage(ClientPtr client,
+                       xShmPutImageReq *stuff)
+  │
+  ├─ VALIDATE_DRAWABLE_AND_GC(...)
+  ├─ 本例交付完整 image，使用直接 PutImage 分支
+  └─ pGC->ops->PutImage(pDraw, pGC, ...,
+                         shmdesc->addr + offset)
+
+兩條 request 路徑都進入 GC PutImage operation
+  │
+  ↓
+[Xorg: miext/damage/damage.c:721]
+static void damagePutImage(DrawablePtr pDrawable, GCPtr pGC, ...)
+  │
+  ├─ 以 pGC->pCompositeClip->extents 修剪 bounding box
+  ├─ damageDamageBox(...)
+  ├─ pGC->ops->PutImage(...)
+  │    ↓
+  │  [Xorg: fb/fbimage.c:30]
+  │  void fbPutImage(DrawablePtr pDrawable, GCPtr pGC, ...)
+  │    ├─ x += pDrawable->x，y += pDrawable->y
+  │    └─ fbPutZImage(..., fbGetCompositeClip(pGC), ...)
+  │         // 只寫入 composite clip 允許的範圍
+  └─ damageRegionProcessPending(pDrawable)
+```
+
+Xorg 會以 Window origin 將 Window-local 座標轉成 X Screen 座標，套用 composite clip，再將仍然可見的矩形寫入 screen Pixmap 與 mapped front BO 共用的 X Screen 像素儲存區。 這個 server-side request 處理完成後，下一個問題是如何讓正在 scanout 的 virtio-gpu 2D resource 取得這些新 pixels
+
+#### Dumb BO 多出的 `TRANSFER_TO_HOST_2D` 與 semu 2D 發布流程
+
+前一節已經追到 `virtio_gpu_primary_plane_update()`，並確認 `DIRTYFB` 只把 damage coordinates 帶到 primary-plane update。 現在從 source fence 裡的 `if (bo->dumb)` 分支接著往下看。 Dumb BO 的 pixels 位於 guest backing，因此 `RESOURCE_FLUSH` 以前還要先把 damaged rectangle 搬進 host-side 2D resource：
+
+![Scanout update 先搬移 pixels，再發布更新](./image/glx-action-stage-4-scanout-update.png)
+
+這次 scanout update 會先以 `TRANSFER_TO_HOST_2D` 把 dirty rectangle 的 pixels 從 guest backing 搬進 host-side 2D resource，再用 `RESOURCE_FLUSH` 要求 host 發布更新。 `SET_SCANOUT` 則在 framebuffer／source rectangle 改變，或 mode／routing 更新令 `output->needs_modeset` 成立時重新送出
+
+因為本例的 GEM object 是 dumb BO，`virtio_gpu_update_dumb_bo()` 會將 `TRANSFER_TO_HOST_2D` 排入 control virtqueue，要求 host 把這個矩形的 guest backing pixels 複製到 host-side 2D resource
 
 最後跨出 guest kernel 邊界，semu 的 2D device backend 會依三種 commands 各自完成一項工作：
 
@@ -5550,10 +5568,6 @@ RegionRects(RegionPtr reg)
 前面 `compCreateWindow()` 與 `compReparentWindow()` 完成 redirect 檢查後，本文 application Window 的 `redirectDraw` 維持 `RedirectDrawNone`。 `ScreenRec::GetWindowPixmap()` 會直接讀出保存在 Window private storage 內的 Pixmap pointer
 
 在未 redirect 的分支中，`compCreateWindow()` 與 `compReparentWindow()` 會讓這個 pointer 和 parent 使用的 Pixmap 相同，因此 Root Window、frame、title 與 application Windows 最後都會取得 screen Pixmap。 每個 Window 描述共同 storage 中不同的位置與可見範圍。 Application Window 的 `backingStore` 設為 `NotUseful`，因此沒有另一份 storage 保留被遮住的 pixels
-
-![X11 Window／Drawable 與 screen Pixmap storage mapping](./image/glx-object-stage-2-x11-window-storage.png)
-
-圖中的 Windows 各自保存 hierarchy、geometry、origin 與可見範圍，但 `GetWindowPixmap()` 最後都解析到已安裝的 screen Pixmap。 Screen `PixmapRec::devPrivate.ptr` 又指向 mapped front BO，因此這些 Windows 描述的是同一份 X Screen 像素儲存區中的不同區域，而不是各自配置一份 pixels
 
 `xterm` 遮住齒輪時，screen Pixmap 的那塊區域已經改為保存 `xterm` 的 pixels。 `glxgears` 又沒有自己的 off-screen backing Pixmap，因此 Xorg 無法直接從另一份既有 storage 還原齒輪內容，application 必須在收到 `Expose` 後重新產生該區域
 
