@@ -34,6 +34,7 @@ Mesa 位在這段路徑的 userspace。 本文選擇 OpenGL 與 X11 作為具體
 - X server（X11Libre）：`a6a8bc9464f7d787e91f63957357547e7c85c81f`
 - Linux：`0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53`
 - virglrenderer：`dc35e4db03144f81637c5ad061f61d3334b078fe`
+- semu：branch `Mes/vgpu-3D-before-multicore`，commit `288d75407f2526eb78b610dfa84f0c3eec763554`
 
 ## Big picture of Mesa & X11
 
@@ -866,92 +867,176 @@ main(int argc, char *argv[])
 
 #### 齒輪轉動一格，需要 rendering 與 display 兩條路徑
 
-首先我們需要把 rendering 與 display 區分開來。 application 準備畫出下一幀時，會透過 OpenGL 提供幾何資料、顏色與 rendering state。 rendering 路徑負責把這些 OpenGL operations 轉成可執行的工作，再由 CPU 或 GPU 算出 pixels。 display 路徑則由視窗系統與 Linux display subsystem 選出目前要顯示的 buffer，決定畫面位於桌面的哪裡，再讓 display controller 持續讀取該 buffer
+首先我們需要把 rendering 與 display 區分開來。 application 準備畫出下一幀時，會透過 OpenGL 提供幾何資料、顏色與 rendering state。 rendering 路徑負責把這些 OpenGL operations 轉成可執行的工作，再由 CPU 或 GPU 算出 pixels，並將結果保存在一份 application image 中
 
-Application 發出的 OpenGL calls 必須由一套具體的 userspace 程式碼執行，本文將這套實作稱為 OpenGL vendor 實作。 Mesa 可以擔任這個角色，NVIDIA 等廠商也能提供自己的 OpenGL 函式庫。 OpenGL context 是保存 current OpenGL state 與 object 繫結的 rendering environment。 後續 callgraph 中的 OpenGL vendor 實作，就是建立這個 context 並實際接收 API calls 的那一套程式碼
+Application image 只包含這個視窗畫出的內容，還沒有說明它在桌面上的位置。 display 路徑會把這份 image 對到一個 X11 Window，套用 Window 的位置與可見範圍，再將可見內容放進保存整個桌面的 pixel storage。 Linux display subsystem 接著讓顯示裝置持續讀取這份桌面內容，使用者才會在正確位置看見新的一幀
 
-在本文討論的情境中，我們可以將 GPU driver 堆疊分成 userspace 與 kernel 兩個部分。 Linux DRM（Direct Rendering Manager）是 kernel 的圖形子系統。 `ioctl()` 是 userspace 用來向 kernel driver 發出 request 的 system call。 以 AMD GPU 為例：
+Application 發出的 OpenGL calls 必須由一套具體的 userspace 程式碼執行，本文將這套程式碼稱為 OpenGL vendor 實作。 Mesa 可以擔任這個角色，其他 GPU 廠商也能提供自己的 OpenGL 函式庫。 OpenGL context 則是這套實作為 application 建立的 rendering environment，用來保存 current OpenGL state 與 object 繫結
 
-- userspace 部分會以共享函式庫的形式載入至 application 行程。 以 Mesa 的 AMD 路徑為例，OpenGL frontend 會先接收並驗證 API operations，接著 State Tracker 再把 OpenGL state 轉成 driver 可以處理的形式，最後由 radeonsi 建立 AMD GPU commands。 這一側會透過 DRM ioctl 將 resource-management 與 command 提交 requests 送進 kernel
-- kernel 部分由 Linux 的 DRM driver 實作。 在這個例子中，`amdgpu` 負責管理 DRM buffer objects、GPU 虛擬位址、command 提交、排程、同步、interrupt 與 reset
+當 GPU 負責執行 rendering 時，GPU driver 堆疊會分成 userspace 與 kernel 兩部分：
 
-DRM 中負責管理 display state 的部分稱為 KMS（Kernel Mode Setting）。 在這張 Big picture 裡，KMS 會以 scanout framebuffer 引用 display controller 持續讀取的顯示 storage。 Framebuffer 之後如何接上完整的 display topology，我們會等 Xorg 子行程進入裝置初始化後再展開
+- userspace driver 位於 application 行程。 它會接住 OpenGL operations，保存 API state、編譯 shader，並將 rendering work 轉成 GPU 或虛擬 GPU 能執行的 commands。 Mesa 內的 radeonsi、iris 與 VirGL 都屬於這一側
+- kernel driver 位於 Linux kernel。 它會管理 GPU resources、command 提交、排程與同步，並將 userspace 的 requests 交給實際裝置。 Linux DRM（Direct Rendering Manager）提供 userspace 與這些 kernel drivers 交換 requests 的介面
 
-X server 會將一組具有固定尺寸與桌面座標範圍的顯示資源呈現為 X Screen。 本文只有一個 X Screen，因此下面的「X Screen 像素儲存區」可以先理解為 Xorg 用來保存整個可見桌面內容的 storage。 後面進入 Xorg 初始化時，我們再查看對應的 `ScreenRec`、Root Window 與 Window tree
+DRM 中負責管理 display state 的部分稱為 KMS（Kernel Mode Setting）。 Xorg 需要 KMS 選定用於 scanout 的桌面 storage，display controller 才知道要從哪裡持續讀取 pixels。 KMS framebuffer 與完整 display topology 會等 Display 章進入 Linux 顯示裝置後再展開
 
-一幀畫面的 rendering 與 display 路徑大致如下：
+因此，一幀畫面會先在 application image 中形成，再進入整個桌面的 pixel storage：
 
-```
-rendering 路徑：產生這一幀的內容
+```callgraph
+Rendering：產生 glxgears 的下一幀
 =================================================
 Application 更新齒輪角度並發出 OpenGL operations
   │
   │  geometry、color、transform 與 framebuffer state
   ↓
-OpenGL vendor 實作
+OpenGL vendor 實作與 userspace rendering driver
   │
-  │  驗證 API state，執行 CPU rendering
-  │  或準備 GPU 可以執行的 commands
+  │  驗證 API state，再由 CPU 或 GPU 執行 rendering
   ↓
-存有 rendering 結果的 color buffer
+application image
   │
+  │  保存完整的齒輪畫面
   ↓
-畫面交付與 display 路徑：讓這一幀出現在桌面的正確位置
+
+Display：把 application image 放進桌面的正確位置
 =================================================
-存有 rendering 結果的 color buffer
-  │
-  │  GLX 將完成的一幀畫面對到一個 X11 Window
-  ↓
-X server
+X server 將 application image 對到 X11 Window
   │
   │  套用 Window 的位置與可見範圍
   ↓
-X server 管理的 X Screen 像素儲存區
+保存整個可見桌面的 pixel storage
   │
-  │  DRM／KMS 選擇 scanout framebuffer
+  │  DRM／KMS 讓 scanout 引用這份 storage
   ↓
-display controller 週期性讀取 pixels
+display controller 持續讀取 pixels
   ↓
 使用者看見齒輪轉到下一個角度
 ```
 
 ### 固定後續追蹤的 rendering 與 display 組態
 
-前面已經把齒輪轉動一格拆成 Rendering 與 Display 兩條路徑。 兩條路徑各自都有多種實作方式，接下來若同時切換 software rendering、hardware rendering、視窗系統與虛擬顯示裝置，讀者會很難判斷目前追蹤的是哪一條分支。 因此，我們先把同一個齒輪視窗放進一組固定的測試環境，後文再沿著這組條件逐層展開
+前面已經把齒輪轉動一格拆成 Rendering 與 Display 兩條路徑。 接下來我們把同一個齒輪視窗放進 semu VM，固定追蹤一條 VirGL 3D 路徑。 本文將 VM 內執行 Linux、Xorg 與 Mesa 的一側稱為 guest，將執行 semu、virglrenderer 與 SDL2 display backend 的外層系統稱為 host。 semu 是建立這台 VM 的 VMM（Virtual Machine Monitor），而 virtio-gpu 則是它提供給 guest 的虛擬 GPU
 
-這組環境是一台由 semu 提供的 VM。 本文將 VM 內執行 Linux、Xorg 與 Mesa 的一側稱為 guest，將執行 semu 與 SDL2 display backend 的外層系統稱為 host。 guest CPU 與 guest memory 因此分別表示 VM 看見的 CPU 執行環境與記憶體
+為了讓 Mesa 內的 OpenGL 實作能接到不同 drivers，State Tracker 會先整理 OpenGL state，Gallium 再提供 State Tracker 與 drivers 共用的介面
 
-rendering 這一側我們會用到 GLX、Gallium、softpipe 與 `drisw`。 GLX 負責連接 OpenGL 與 X11 Window，讓 Mesa 知道算好的畫面要交給哪一個視窗。 Gallium 是 Mesa frontend 與 rendering drivers 之間共用的介面。 本文選擇的 softpipe 會用 guest CPU 算出 pixels，`drisw` 則負責在 swap 時把 pixels 交給 X server
+本文選用的 VirGL driver 會接住 Gallium rendering work，將它編碼成 VirGL commands，再透過 Linux DRM render node 提交給 `virtio_gpu` kernel driver。 Render node 是 DRM 提供給 rendering clients 的裝置入口，不授予 KMS 顯示控制權。 `virtio_gpu` driver 會把 requests 放進 virtio-gpu 的 controlq，也就是 guest 與 semu 傳遞控制與 3D commands 的 shared queue
 
-這個範例固定使用下列目標組態：
+Guest 會跨越 VM boundary 傳送 commands、resource references 與同步資訊。 semu 從 controlq 取出 requests 後，會把其中的 VirGL command stream 交給 virglrenderer。 virglrenderer 再使用 host OpenGL 實作執行 rendering。 Host OpenGL 可以由實體 GPU driver 執行，也可以由 software driver 執行，兩者都位於 guest 看見的虛擬 GPU 之外
 
-- 使用者以 `startx`／`xinit` 啟動 Xorg、`twm`、`xclock` 與 `xterm`。 `twm` 擔任 window manager。 這組桌面程式中不啟動負責合成各視窗內容的 compositor
-- OpenGL 使用 Mesa 的 direct software GLX 路徑。 direct 表示 OpenGL calls 由載入 application 行程的 Mesa userspace 實作執行，而不是編碼成 indirect GLX rendering requests 交給 X server。 software 表示 rendering 固定由 Gallium softpipe driver 使用 guest CPU 完成
-- GLX source-reading 主線從 Mesa 自己提供的公開 `libGL` 入口開始，也就是 Mesa 建置時的 `with_glvnd=false` 分支。 GLVND 是可選的 vendor-neutral dispatch layer，後文會另開比較支線，查看 Mesa 在 `with_glvnd=true` 時提供的 vendor ABI
-- Xorg 使用自己的 userspace modesetting display driver 管理顯示裝置。 這個 driver 會透過 Linux DRM／KMS 查詢可用的顯示輸出，並要求 kernel 套用解析度、顯示用 buffer 與 scanout state。 各視窗不會被重新導向各自的 off-screen storage，可見 pixels 會直接寫進 Xorg 管理的 X Screen 像素儲存區
-- `libgbm` 是 Mesa 提供的 userspace buffer API。 Xorg 會透過它配置一份可由 CPU 寫入、也能供 KMS scanout 的整桌線性 buffer，Display 章節會固定沿著這條配置路徑往下追蹤
-- Guest 顯示裝置使用 virtio-gpu 2D。 Guest 與裝置沒有協商 VirGL 3D 或 blob resource 功能，因此 display 路徑會使用傳統 2D resource，並將 guest 記憶體接成該 resource 的 backing storage
-- Host emulator 使用 SDL2 display backend。 後文將這個終點稱為「本例的 SDL window」
+為了讓 Xorg 在每幀 rendering 完成時能使用 application image，Mesa 與 Xorg 會先建立共享關係。 DRI3 是負責在 direct-rendering client 與 Xorg 之間傳遞 dma-buf fd 的 X11 extension。 dma-buf fd 讓另一個行程可以匯入並引用同一份 buffer storage。 Xorg 會為這份 storage 建立 Pixmap，再由 Present 以 X11 Window 表示更新目的地，以 Pixmap 表示來源 image，安排這次 Window 更新
 
-Xorg 的裝置設定如下：
+Xorg 會用 glamor 執行這次 copy。 glamor 是 Xorg 透過 OpenGL 加速 X11 drawing 的元件，它會把 application image 的可見區域寫進 screen Pixmap 引用的 GBM desktop BO。 GBM desktop BO 是 Xorg 透過 Mesa `libgbm` 建立的整桌 pixel storage，也是 KMS scanout 使用的來源
+
+Display 這一側由 Xorg 的 modesetting display driver 管理 Linux KMS 顯示狀態。 它會使用 DRM primary node，也就是具備 KMS 控制能力的裝置入口，將 GBM desktop BO 接到顯示輸出
+
+這個範例固定使用下列組態：
+
+- 前述 semu source 以 `ENABLE_VIRGL=1` 建置。 這會讓 semu 公布 `VIRTIO_GPU_F_VIRGL`，啟用 VirGL 3D device path
+- guest image 選入 Mesa VirGL driver、GBM、GLX、Xorg 與 glamor。 Mesa application context 透過 DRM render node 提交 3D work，Xorg modesetting display driver 則透過 DRM primary node 查詢與更新 KMS display state
+- OpenGL 使用 Mesa 的 direct GLX 路徑。 direct 路徑讓載入 application 行程的 Mesa userspace 程式碼執行 OpenGL calls。 indirect 路徑則會將 rendering requests 交給 X server
+- GLX source-reading 主線從 Mesa 自己提供的公開 `libGL` 入口開始，也就是 Mesa 建置時的 `with_glvnd=false` 分支。 後文會另開比較支線，查看 `with_glvnd=true` 時由 GLVND 提供的 vendor-neutral dispatch 與 Mesa vendor ABI
+- 使用者在受控 guest 的文字終端執行 `startx`，由 `xinit` 啟動 Xorg、`twm`、`xclock` 與 `xterm`。 `twm` 擔任 window manager，這組桌面程式不啟動 compositing manager
+- Xorg 使用 modesetting display driver 與 glamor acceleration layer。 一般大小的 `glxgears` Window 不符合 full-screen Present flip 的條件，因此後文固定追蹤 Present copy branch
+- Host 端由 virglrenderer 執行 VirGL commands，再由 SDL2 display backend 將最後的桌面內容放進本例的 SDL window
+
+受控 guest 會為 Xorg 明確安裝下列裝置設定。 `AccelMethod=glamor` 會啟用前述 OpenGL acceleration layer。 這個 Xorg 版本預設開啟 `TearFree`，本文明確將它設為 `off`，排除額外的 TearFree buffers 與 flips
+
+`PageFlip=on` 會保留在條件符合時使用 page flip 的能力，普通大小的 `glxgears` Window 則固定走 Present copy branch。 `Atomic=off` 讓 Xorg userspace 透過 legacy `drmModeSetCrtc()` 提交初始顯示狀態，request 進入 kernel 後仍可由 DRM atomic helper 接手。 Display 章會再展開這兩層的關係：
 
 ```conf
 Section "Device"
     Identifier "virtio-gpu"
     Driver "modesetting"
-    Option "AccelMethod" "none"
-    Option "ShadowFB" "off"
+    Option "AccelMethod" "glamor"
+    Option "TearFree" "off"
+    Option "PageFlip" "on"
+    Option "Atomic" "off"
 EndSection
 ```
 
-Application 啟動時固定設定：
+在這組環境中，`glxgears` 的 draw calls 會先累積要寫進 application image 的 rendering work。 Application 呼叫 `glXSwapBuffers()` 時，Mesa 會 flush 目前的 drawable 與 context，讓待處理的 work 形成一筆或多筆 VirGL submissions。 GLX DRI3 路徑也會送出 Present request，以 X11 Window 指定更新目的地，再以先前建立的 Pixmap 指定來源 image
 
-```bash
-export LIBGL_ALWAYS_SOFTWARE=true
-export GALLIUM_DRIVER=softpipe
+Xorg 收到這項更新後，會透過自己的 Mesa／VirGL context 執行 glamor copy，把來源 image 的可見區域寫進 GBM desktop BO
+
+這裡會出現兩組不同來源的 VirGL rendering work。 第一組來自 `glxgears` 的 Mesa context，負責將齒輪畫進 application image，並透過 render node fd 提交
+
+第二組來自 Xorg glamor 使用的 Mesa context，負責將 application image 的可見區域寫進 GBM desktop BO，並沿用 Xorg 持有的 primary node fd
+
+每組 work 都可能形成一筆或多筆 submissions，最後都會進入 Linux `virtio_gpu`，再經 controlq、semu 與 virglrenderer 交給 host 執行
+
+下面的 callgraph 會同時呈現這兩組 rendering work 與 Display 路徑。 後續章節再沿著每個交界逐層展開：
+
+```callgraph
+建立 application image 與 Xorg Pixmap 的關係
+=================================================
+[guest Mesa／GLX DRI3] 準備 application image
+  │
+  │  DRI3 將 dma-buf fd 傳給 Xorg
+  ↓
+[guest Xorg] Pixmap 引用同一份 application image storage
+  │
+  │  application image 成為 OpenGL rendering target
+  ↓
+
+第一組 VirGL work：產生 application image 的 pixels
+=================================================
+[guest application] glxgears 發出 draw calls
+  │
+  │  Mesa 對目前的 drawable 與 context 累積待提交的 rendering work
+  ↓
+[guest application] glXSwapBuffers()
+  │
+  ├─ flush drawable／context，形成一筆或多筆 application VirGL submissions
+  └─ 送出 Present(Window, Pixmap)
+       └─ Window 指定更新目的地，Pixmap 指定來源 image
+  ↓
+[guest Mesa] 透過 render node fd 提交 application VirGL work
+  │
+  ↓
+[guest kernel] Linux virtio_gpu driver
+  │
+  │  以一或多次 EXECBUFFER 將 VirGL commands 放進 controlq
+  ↓
+[host VMM] semu → virglrenderer → host OpenGL implementation
+  │
+  │  host GPU 或 host software driver 完成 application rendering
+  │  application image 更新完成
+  ↓
+
+Display 接手 application image
+=================================================
+[guest Xorg] Present 處理 Window 與 Pixmap
+  │
+  │  Window 指定目的地，Pixmap 指定來源
+  │  普通大小的 glxgears Window 走 copy branch
+  ↓
+
+第二組 VirGL work：更新整個桌面的 storage
+=================================================
+[Xorg] glamor 準備可見區域的 copy
+  │
+  │  Xorg 的 Mesa／VirGL context 產生一筆或多筆 submissions
+  ↓
+[guest Xorg／Mesa] DRM primary node fd → Linux virtio_gpu driver
+  │
+  │  以一或多次 EXECBUFFER 將 VirGL commands 放進 controlq
+  ↓
+[host VMM] semu → virglrenderer → host OpenGL implementation
+  │
+  │  將可見的 application pixels 寫進 GBM desktop BO 對應的 host storage
+  ↓
+[guest Xorg] screen Pixmap 引用的 GBM desktop BO 已更新
+  │
+  │  既有 KMS scanout binding 已選定這份 GBM desktop BO
+  ↓
+[guest kernel] Linux virtio_gpu driver 送出 RESOURCE_FLUSH
+  │
+  │  controlq 將更新範圍交給 semu
+  ↓
+[host VMM] semu 將更新後的桌面發布到 SDL window
+  ↓
+使用者看見齒輪轉到下一個角度
 ```
-
-這組條件會把 application 的 OpenGL work 留在 guest CPU 上執行，算好的 pixels 再經 X server、DRM／KMS 與 virtio-gpu 走到本例的 SDL window
 
 ## Display：從 `startx` 建立 X Screen 到 scanout 更新
 
