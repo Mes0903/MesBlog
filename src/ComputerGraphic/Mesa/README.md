@@ -1260,7 +1260,7 @@ XINIT "$client" $clientargs -- "$server" $display $serverargs
 
 建置完成時，`XINIT` 會展開成 `xinit`。 此時 `client` 指向系統的 `xinitrc`，`server` 指向會啟動 Xorg 的 server 入口，`display` 則是剛才選出的 `:0`。 `startx` 到這裡便把啟動所需的命令與 display name 整理完成了，接下來由 `xinit` 控制兩側的啟動順序
 
-### `xinit` 建立 Xorg 子行程，並等待它接受 X11 connection
+### `xinit` 建立 Xorg 子行程，並等待 X server 就緒
 
 前面 `startx` 已經把啟動 Xorg 的 server 命令、系統的 `xinitrc` 與 display name `:0` 交給了 `xinit`。 接下來我們想知道 `xinit` 該如何確保 X server 會先完成啟動，再執行會連到這個 server 的桌面 clients
 
@@ -1444,20 +1444,18 @@ static pid_t startServer(char *server_argv[])
 
 到這裡，`xinit` 父行程的流程已經完整了。 `startServer()` 會等待 Xorg，並以 `XOpenDisplay(":0")` 確認它已能接受 connection，成功後再讓 `main()` 繼續呼叫 `startClient()`。 下一節會回到 `fork()` 建立的子行程，追蹤 `Execute(server_argv)` 啟動 Xorg 後需要完成哪些初始化，才能讓這次 `XOpenDisplay()` 成功
 
-### Xorg 子行程：讓 `xinit` 成功建立第一條 X11 connection
+### Xorg 建立 X11 clients 可以連線的 endpoint
 
 現在回到 `fork()` 剛建立子行程的時間點。 `Execute(server_argv)` 會將這個子行程換成 Xorg，`xinit` 父行程則在另一條分支等待 `XOpenDisplay(":0")` 成功。 `XOpenDisplay()` 會先透過 UNIX domain socket 建立 transport connection，再進行 X11 connection setup，交換 byte order、protocol version 與授權資料，並取得 X server 與各個 X Screens 的基本資料
 
-因此，本節要回答的是，剛啟動的 Xorg 必須準備哪些資料並進入哪一段 event loop，才能接受這條 connection 並送回 setup reply
-
-我們會依序追蹤四個階段：
+要讓這次 `XOpenDisplay()` 完成，Xorg 會依序經過四個階段：
 
 1. 建立 X11 clients 可以連線的 endpoint，並記住後面要通知的 `xinit` 父行程
 2. 從 Linux 顯示裝置取得組態，建立 X Screen 與桌面像素儲存區
 3. 建立 Root Window，並把 X Screen 資料序列化成 connection setup reply
 4. 通知 `xinit` 後進入 `Dispatch()`，提交首次 modeset 並建立 scanout 繫結，再接受 `xinit` 的 connection 並送出 reply
 
-我們會從 Xorg 剛被 `Execute()` 啟動的地方開始，一路追到它接受 `xinit` 發起的 connection、送回 X11 connection setup 所需的資料，讓 `XOpenDisplay(":0")` 成功取得 `Display *`。 後續 `twm`、`xclock` 與 `xterm` 也會透過相同的流程建立各自的 X11 connection
+本節先從 Xorg 剛被 `Execute()` 啟動的地方開始，追蹤它如何取得 display number、建立 listening sockets，再把接受新 connection 的 callback 登記進 event loop。 接下來幾節會繼續建立 X Screen、Root Window 與 setup reply，最後進入 `Dispatch()` 接受 `xinit` 發起的 connection
 
 接下來的各項初始化工作都由 `dix_main()` 依序安排，所以我們先在這裡列出 Xorg 子行程的主幹。 `Execute()` 啟動 Xorg 可執行檔後，程式會先進入 `main()`。 以下程式碼來自 [`Xorg: dix/stubmain.c:31`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/dix/stubmain.c#L31-L35)，用來顯示這個入口會將啟動參數交給 `dix_main()`：
 
@@ -1518,7 +1516,7 @@ dix_main(int argc, char *argv[], char *envp[])
 
 這份主幹同時標出了初始化與執行期的邊界。 `Dispatch()` 以前的工作會準備連線入口、X Screen、Root Window 與 setup reply。 進入 `Dispatch()` 後，Xorg 才會開始從 event loop 處理 listening socket 上的 connection 與後續 X11 requests
 
-#### 建立 X11 clients 可以連線的 endpoint
+#### 從 display number 建立 listening sockets，並登記 connection callback
 
 首先，剛啟動的 Xorg 需要建立一個讓 X11 clients 可以連線的 endpoint。 為了達成這件事，Xorg 必須先從啟動參數取得這次使用的 display number，再建立對應的 listening socket，並將 socket fd 登記進 event loop
 
@@ -1634,7 +1632,7 @@ InitParentProcess(void)
 
 `CreateWellKnownSockets()` 回傳後，執行流程會回到 `dix_main()`。 它完成其餘的共用初始化後，接著呼叫 `InitOutput()` 取得顯示裝置組態
 
-#### 進入 `InitOutput()` 前：先區分 `ScreenRec`、`WindowRec` 與 `ScrnInfoRec`
+### `InitOutput()` 要建立哪些 Xorg objects
 
 要讓 `XOpenDisplay()` 完成 X11 setup，Xorg 必須先準備一個可讓 clients 建立視窗的桌面座標範圍，並確定這個範圍的寬度、高度與可用的 pixel formats。 X11 將這一組顯示資源稱為 X Screen
 
@@ -1642,7 +1640,7 @@ InitParentProcess(void)
 
 接下來我們先來看 Xorg 會用什麼 object 表示 X Screen，再回頭追蹤 Xorg 是如何從 Linux 顯示裝置取得所需資料來建立 X Screen 的
 
-##### `ScreenRec` 與 `WindowRec` 如何保存 X Screen 與 Window tree
+#### `ScreenRec`、`WindowRec` 與 Window tree
 
 在本文追蹤的 Xorg 原始程式碼中，一個 X Screen 會由一個 `ScreenRec` instance 保存 server-side 的狀態。 它記錄了 X Screen 的編號、座標範圍、可用 depths／visuals、Root Window pointer，以及 Xorg 操作這個 X Screen 時使用的 callbacks
 
@@ -1816,7 +1814,7 @@ ScreenInfo screenInfo;
 
 由於本文只建立一個 X Screen，所以完成初始化後，`screenInfo.numScreens` 是 1，`screenInfo.screens[0]` 會指向 X Screen 0 的 `ScreenRec`。 後面在初始化 X Screen 像素儲存區、建立 Root Window 與 connection setup reply 的時候，都會從這筆 server-side 記錄取出所需資料
 
-##### DIX、XFree86 DDX 與 modesetting 如何分工
+#### DIX、XFree86 DDX 與 modesetting 的分工
 
 上一節先介紹了完成初始化後的 object model：Xorg 會以一筆 `ScreenRec` 保存 X Screen 0 的 server-side 狀態，再透過 Root Window 管理 Window tree。 現在回到 Xorg 子行程的顯示初始化時間線。 此時全域的 `screenInfo` 已經存在，但 `screenInfo.numScreens` 仍是 0，`screenInfo.screens[]` 裡也還沒有第一筆 `ScreenRec`
 
@@ -1837,76 +1835,9 @@ Xorg 將第一類共用工作交給了 DIX（Device Independent X）。 DIX 負�
 
 本文的 `Driver "modesetting"` 組態會讓 XFree86 DDX 選擇 Xorg 的 modesetting display driver。 XFree86 DDX 會沿著上述共用流程呼叫 modesetting driver 的 callbacks，由 modesetting 完成裝置相依的工作，再把結果接到 DIX 管理的 `ScreenRec`
 
-modesetting driver 執行在 Xorg 行程中，實際的顯示裝置則由 Linux kernel 管理。 要知道兩邊如何交換顯示資訊與操作要求，我們需要先從 Linux 在這條邊界提供的 DRM 介面開始看起
+接下來先看 XFree86 DDX 用來保存裝置組態的 `ScrnInfoRec`，再沿著 `InitOutput()` 的執行順序追蹤 Xorg 如何取得並填入這些資料
 
-DRM 會把圖形裝置（如 GPU）公開成 `/dev/dri/card0` 這類位於 `/dev/dri/` 底下的 DRM device node。 Userspace 程式可以用 `open()` 開啟其中一個 node，取得之後用來操作該 DRM device 的 file descriptor（fd）
-
-取得 DRM device fd 後，Xorg 的 modesetting driver 會呼叫 userspace 函式庫 libdrm，向 kernel 查詢顯示資訊或提交顯示狀態。 libdrm 會依照 DRM 的 userspace API（UAPI）準備 ioctl，再透過前面的 fd 將要求送往對應的 DRM device
-
-DRM UAPI 定義了 userspace 與 kernel 共同使用的 ioctl request numbers、argument structures 與回傳格式。 每個 request number 都表示著一項固定操作，對應的 UAPI structure 則用來傳入查詢條件、更新內容或接收 kernel 回傳的結果
-
-libdrm 發出的 ioctl 進入 kernel 後，會由 DRM core 接住。 DRM core 是 DRM 內由各個裝置 drivers 共用的 kernel 程式碼，位於 ioctl 入口與裝置專屬 DRM driver 之間。 它會處理 ioctl 的分派與呼叫權限檢查，也會管理共用的 DRM objects。 `virtio_gpu`、`amdgpu` 與 `i915` 等裝置專屬的 DRM drivers 會建立各自裝置的 objects 並登記 callbacks，再把共用操作轉成該裝置能夠執行的工作
-
-因此，modesetting driver 想知道的是 kernel 提供了哪些顯示輸出，以及每個輸出可以使用哪些 display modes。 而 DRM 中負責保存與更新這些顯示狀態的部分稱為 KMS（Kernel Mode Setting）
-
-KMS 執行的核心工作稱為 mode setting。 它會選擇並套用一個 display mode，再決定要掃描哪份像素儲存區，以及這份畫面要送往哪個顯示輸出。 KMS 會以一組 kernel objects 保存顯示輸出、可用 modes、目前使用的 mode，以及像素儲存區與顯示輸出的連接關係，讓 userspace 可以查詢或更新這些資料
-
-:::tip
-本文後面會同時使用兩種相近的用語：
-
-- Xorg 的 `modesetting` 是 userspace display driver 的名稱，由 `Driver "modesetting"` 選取，原始程式碼位於 `hw/xfree86/drivers/video/modesetting/`
-- Linux kernel 的 mode setting 是 KMS 執行的顯示模式設定工作
-:::
-
-現在回到 Xorg 的顯示初始化流程。 下方 callgraph 會把剛才定義的各層放回同一條資料流，從 DIX 需要的 X Screen 組態開始，沿著 XFree86 DDX、modesetting、libdrm 與 DRM／KMS 走到 `virtio_gpu`，再把查詢結果帶回 Xorg
-
-```callgraph
-DIX 定義並負責管理 X server 共用的 object model
-  │
-  ├─ ScreenInfo／ScreenRec 的資料結構與操作入口
-  ├─ WindowRec／Window tree 的資料結構與操作入口
-  └─ ScreenRec callback slots
-       │
-       │  還需要建立 X Screen 的顯示組態與具體 callback 實作
-       ↓
-XFree86 DDX 框架
-  │
-  │  選擇 display driver，安排裝置初始化
-  ↓
-Xorg modesetting display driver
-  │
-  │  以 DRM device fd 呼叫 drmMode*() KMS API
-  ↓
-libdrm
-  │
-  ├─ 將函式參數填入 DRM UAPI structures
-  └─ 向 DRM device fd 發出對應的 ioctl
-  ↓
-Linux DRM core／KMS
-  │
-  ├─ 依 ioctl 編號選擇 KMS 處理函式
-  ├─ 檢查 arguments 與呼叫權限
-  ├─ 查詢時讀取已登記的 KMS objects 與目前狀態
-  └─ 更新時呼叫裝置專屬 driver callbacks
-  ↓
-virtio_gpu DRM driver 與其建立的 KMS objects
-  │
-  │  提供顯示輸出、modes、formats 與更新 display state 的實作
-  ↓
-DRM core 將查詢結果寫回 ioctl argument structures
-  ↓
-libdrm 將結果整理後交回 Xorg modesetting driver
-  ↓
-Xorg modesetting driver 與 XFree86 DDX 的共用 screen 初始化程式碼
-  │
-  │  建立 X11 depths／visuals，並填入 ScreenRec callbacks
-  ↓
-DIX 使用完成初始化的 ScreenRec 管理 X Screen
-```
-
-這張圖先把建立 `ScreenRec` 時會經過的各層，以及顯示資訊往返 userspace 與 kernel 的方向排在一起。 接下來，我們會按照 Xorg 子行程實際執行的順序，依序追蹤 `ScrnInfoRec` 的建立、`PreInit()` 查詢、`AddScreen()` 配置 `ScreenRec`，以及 `ScreenInit()` 填入具體內容。 現在先從 XFree86 DDX 用來保存查詢結果的 `ScrnInfoRec` 開始
-
-##### `ScrnInfoRec` 如何保存 display driver 選出的組態
+#### `ScrnInfoRec` 保存 display driver 組態
 
 在 DIX 配置相應的 `ScreenRec` 以前，XFree86 DDX 需要先保存 display driver 查詢到的組態。 它使用 `ScrnInfoRec` 記錄預設的 color depth、virtual size、每個 pixel 使用的 bits、可用的 display modes、driver private data 與初始化 callbacks
 
@@ -1999,7 +1930,76 @@ ScrnInfoRec::ScreenInit(...)
 
 現在我們已知道 `ScrnInfoRec` 保存哪些資料，也知道兩個 callbacks 分別在哪個階段執行。 接下來沿 Xorg 的啟動順序，看 modesetting 如何建立這筆記錄並登記 callbacks
 
-#### `InitOutput()` 前半：探測顯示裝置，並以 `PreInit()` 完成 `ScrnInfoRec`
+### Xorg 透過 DRM 查詢 Linux 顯示裝置
+
+前一節已經說明 Xorg 需要從 Linux 顯示裝置取得 X Screen 的組態。 modesetting driver 執行在 Xorg 行程中，實際的顯示裝置則由 Linux kernel 管理。 要知道兩邊如何交換顯示資訊與操作要求，我們需要先從 Linux 在這條邊界提供的 DRM 介面開始看起
+
+DRM 會把圖形裝置（如 GPU）公開成 `/dev/dri/card0` 這類位於 `/dev/dri/` 底下的 DRM device node。 Userspace 程式可以用 `open()` 開啟其中一個 node，取得之後用來操作該 DRM device 的 file descriptor（fd）
+
+取得 DRM device fd 後，Xorg 的 modesetting driver 會呼叫 userspace 函式庫 libdrm，向 kernel 查詢顯示資訊或提交顯示狀態。 libdrm 會依照 DRM 的 userspace API（UAPI）準備 ioctl，再透過前面的 fd 將要求送往對應的 DRM device
+
+DRM UAPI 定義了 userspace 與 kernel 共同使用的 ioctl request numbers、argument structures 與回傳格式。 每個 request number 都表示著一項固定操作，對應的 UAPI structure 則用來傳入查詢條件、更新內容或接收 kernel 回傳的結果
+
+libdrm 發出的 ioctl 進入 kernel 後，會由 DRM core 接住。 DRM core 是 DRM 內由各個裝置 drivers 共用的 kernel 程式碼，位於 ioctl 入口與裝置專屬 DRM driver 之間。 它會處理 ioctl 的分派與呼叫權限檢查，也會管理共用的 DRM objects。 `virtio_gpu`、`amdgpu` 與 `i915` 等裝置專屬的 DRM drivers 會建立各自裝置的 objects 並登記 callbacks，再把共用操作轉成該裝置能夠執行的工作
+
+因此，modesetting driver 想知道的是 kernel 提供了哪些顯示輸出，以及每個輸出可以使用哪些 display modes。 而 DRM 中負責保存與更新這些顯示狀態的部分稱為 KMS（Kernel Mode Setting）
+
+KMS 執行的核心工作稱為 mode setting。 它會選擇並套用一個 display mode，再決定要掃描哪份像素儲存區，以及這份畫面要送往哪個顯示輸出。 KMS 會以一組 kernel objects 保存顯示輸出、可用 modes、目前使用的 mode，以及像素儲存區與顯示輸出的連接關係，讓 userspace 可以查詢或更新這些資料
+
+:::tip
+本文後面會同時使用兩種相近的用語：
+
+- Xorg 的 `modesetting` 是 userspace display driver 的名稱，由 `Driver "modesetting"` 選取，原始程式碼位於 `hw/xfree86/drivers/video/modesetting/`
+- Linux kernel 的 mode setting 是 KMS 執行的顯示模式設定工作
+:::
+
+下方 callgraph 會把剛才定義的各層放回同一條資料流，從 DIX 需要的 X Screen 組態開始，沿著 XFree86 DDX、modesetting、libdrm 與 DRM／KMS 走到 `virtio_gpu`，再把查詢結果帶回 Xorg
+
+```callgraph
+DIX 定義並負責管理 X server 共用的 object model
+  │
+  ├─ ScreenInfo／ScreenRec 的資料結構與操作入口
+  ├─ WindowRec／Window tree 的資料結構與操作入口
+  └─ ScreenRec callback slots
+       │
+       │  還需要建立 X Screen 的顯示組態與具體 callback 實作
+       ↓
+XFree86 DDX 框架
+  │
+  │  選擇 display driver，安排裝置初始化
+  ↓
+Xorg modesetting display driver
+  │
+  │  以 DRM device fd 呼叫 drmMode*() KMS API
+  ↓
+libdrm
+  │
+  ├─ 將函式參數填入 DRM UAPI structures
+  └─ 向 DRM device fd 發出對應的 ioctl
+  ↓
+Linux DRM core／KMS
+  │
+  ├─ 依 ioctl 編號選擇 KMS 處理函式
+  ├─ 檢查 arguments 與呼叫權限
+  ├─ 查詢時讀取已登記的 KMS objects 與目前狀態
+  └─ 更新時呼叫裝置專屬 driver callbacks
+  ↓
+virtio_gpu DRM driver 與其建立的 KMS objects
+  │
+  │  提供顯示輸出、modes、formats 與更新 display state 的實作
+  ↓
+DRM core 將查詢結果寫回 ioctl argument structures
+  ↓
+libdrm 將結果整理後交回 Xorg modesetting driver
+  ↓
+Xorg modesetting driver 與 XFree86 DDX 的共用 screen 初始化程式碼
+  │
+  │  建立 X11 depths／visuals，並填入 ScreenRec callbacks
+  ↓
+DIX 使用完成初始化的 ScreenRec 管理 X Screen
+```
+
+這張圖先把建立 `ScreenRec` 時會經過的各層，以及顯示資訊往返 userspace 與 kernel 的方向排在一起。 接下來沿 Xorg 子行程實際執行的順序，看 `InitOutput()` 如何列舉 DRM devices、選出 modesetting 要管理的裝置，再建立後續 `PreInit()` 使用的 `ScrnInfoRec`
 
 前面已經知道 `InitOutput()` 的目標是先完成 `ScrnInfoRec`，再建立相應的 `ScreenRec`。 不過 Xorg 此時還面臨兩個不同的問題：它必須先知道系統裡有哪些 DRM devices，之後才能讓已載入的 display driver 從中選出自己要管理的裝置
 
@@ -2285,11 +2285,7 @@ ms_setup_scrn_hooks(ScrnInfoPtr scrn)
   └─ 下一步：xf86Screens[0]->PreInit(...)
 ```
 
-##### modesetting `PreInit()` 查詢 DRM／KMS，填入 `ScrnInfoRec`
-
-探測階段建立 `ScrnInfoRec` 並登記 callbacks 後，XFree86 DDX 會呼叫 modesetting 的 `PreInit()`。 這個函式會取得並持有可用的 DRM device fd，再從 kernel 查詢 X Screen 可以使用的顯示資源，最後將選定的尺寸與 display mode 存回 `ScrnInfoRec`
-
-`PreInit()` 此時要透過 KMS 找出 kernel 已建立的顯示輸出，以及每個輸出可以使用的 modes。 後續建立的像素儲存區會再透過 KMS framebuffer 接到同一條 display pipeline。 為了看清楚目前查詢的 objects 與稍後建立的 objects 分別位於哪裡，我們先沿 scanout 的引用與輸出關係將它們排在一起：
+接下來的 `PreInit()` 會透過 KMS 找出 kernel 已建立的顯示輸出，以及每個輸出可以使用的 modes。 後續建立的像素儲存區會再透過 KMS framebuffer 接到同一條 display pipeline。 為了看清楚目前查詢的 objects 與稍後建立的 objects 分別位於哪裡，我們先沿 scanout 的引用與輸出關係將它們排在一起：
 
 ```callgraph
 保存 pixels 的 buffer object
@@ -2363,6 +2359,10 @@ vgdev_output_init(struct virtio_gpu_device *vgdev, int index)
 `struct virtio_gpu_output` 保存這個 virtual scanout 的 CRTC、encoder、connector 與 metadata。 `virtio_gpu_plane_init()` 另外配置 primary／cursor planes，`drm_crtc_init_with_planes()` 再將它們登記為該 CRTC 的 primary／cursor planes
 
 `drm_connector_attach_encoder()` 登記 connector 可使用的 encoder。 這些都是 kernel DRM objects，`index` 則會成為 virtio-gpu protocol 內辨識 virtual scanout 的 ID
+
+### `PreInit()` 選擇 X Screen 使用的初始顯示組態
+
+探測階段建立 `ScrnInfoRec` 並登記 callbacks 後，XFree86 DDX 會呼叫 modesetting 的 `PreInit()`。 這個函式會取得並持有可用的 DRM device fd，再從 kernel 查詢 X Screen 可以使用的顯示資源，最後將選定的尺寸與 display mode 存回 `ScrnInfoRec`
 
 Xorg modesetting 會透過前面介紹的 libdrm 查詢這些 KMS resources。 Kernel 內的 KMS objects 無法直接以 pointer 交給 Xorg，因此 libdrm 會把查詢結果複製成 userspace 記錄。 `PreInit()` 再將這些記錄組織成 XFree86 DDX 能用來選擇初始顯示組態的資料
 
@@ -2546,7 +2546,7 @@ drmmode_pre_init(...)
 
 `PreInit()` 完成後，`ScrnInfoRec` 已保存建立 X Screen 所需的 depth、virtual size、display modes 與 driver private state
 
-#### `InitOutput()` 後半：`AddScreen()` 建立 `ScreenRec`，`ScreenInit()` 再完成內容
+### `ScreenInit()` 建立 X Screen、glamor 與 GBM desktop BO
 
 現在回到同一次 `InitOutput()`。 顯示裝置探測、display driver 選擇、`PreInit()` 與組態驗證完成後，它會為每筆保留下來的 `ScrnInfoRec` 呼叫 `AddScreen(xf86ScreenInit, ...)`，建立相應的 `ScreenRec`
 
@@ -2759,7 +2759,7 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 }
 ```
 
-##### `ScreenInit()` 建立 X Screen 使用的 front BO
+#### `ScreenInit()` 建立 X Screen 使用的 front BO
 
 Xorg 將 DRM fd 交給 `gbm_create_device()` 後，GBM 會先選出一個 backend，讓後續的 `gbm_bo_create()` 能把尺寸、pixel format 與 usage flags 轉成實際的 buffer 配置。 不同 backend 與 capability 可能讓 front BO 經過不同建立路徑。 本節的目標是先看懂 Xorg 到 kernel 的分層，因此下方 callgraph 會選擇 Mesa DRI backend 直接建立 dumb BO 的分支
 
@@ -2950,7 +2950,7 @@ GBM DRI backend 會將 `pitch` 與 `handle` 放入對外使用的 GBM object，�
 
 Linux `virtio_gpu` driver 在同一次建立中配置 GEM shmem backing，並取得作為 virtio resource ID 的 `hw_res_handle`。 `virtio_gpu_cmd_create_resource()` 將 `RESOURCE_CREATE_2D` 排入 control virtqueue，也就是 guest driver 用來向 virtio-gpu device 傳送控制命令的 virtqueue。 Host device 會建立可由 resource ID 引用的 2D resource，`virtio_gpu_object_attach()` 接著以 `RESOURCE_ATTACH_BACKING` 將 guest pages 接給這個 resource
 
-##### `ScreenInit()` 填入 X Screen 尺寸、depths 與 visuals
+#### `ScreenInit()` 填入 X Screen 尺寸、depths 與 visuals
 
 Front BO 已經建立，但 `ScreenRec` 還沒有足夠的資料來描述 clients 可以使用的 drawable。 Xorg 接著要填入 X Screen 的尺寸、depths 與 visuals，並安裝 Window、Pixmap 與 drawing operations 所需的 callbacks。 Clients 之後才能根據這組資料選擇相容的 pixel format 並建立 drawable
 
@@ -3066,7 +3066,7 @@ miScreenInit(ScreenPtr pScreen, void *pbits, int xsize, int ysize,
 
 等 `glxgears` 後面要求建立 application Window，DIX 的 `dixCreateWindow()` 便會呼叫這個 callback slot。 在 client 連入以前，Xorg 還會由 Composite extension 包裝這個 slot。 實際的 Window request 路徑會等故事走到 `glxgears` 時再沿程式碼展開
 
-##### `ScreenInit()` 登記 screen Pixmap 與首次 modeset 所需的 callbacks
+#### `ScreenInit()` 登記 screen Pixmap 與首次 modeset 所需的 callbacks
 
 `ScreenRec` 的基本欄位與 drawing callbacks 已經填好，但 screen Pixmap 的 CPU mapping 與第一次 modeset 都必須等 `ScreenInit()` 回傳後才能執行。 modesetting 因此會在 `ScreenRec` 登記兩個稍後才由 DIX 或 event loop 呼叫的 callbacks
 
@@ -3098,7 +3098,7 @@ ScreenInit(ScreenPtr pScreen, int argc, char **argv)
 
 [`Xorg: hw/xfree86/modes/xf86Crtc.c:803`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/modes/xf86Crtc.c#L803-L839) 的 `xf86CrtcScreenInit()` 會把前面介紹的 RandR 介面接到這個 X Screen。 它會依據與 `ScrnInfoRec` 關聯的 output／CRTC 組態，初始化目前 `ScreenRec` 的 RandR state 與 hooks
 
-##### `ScreenInit()` 回傳後，`InitOutput()` 連接 `ScrnInfoRec` 與 `ScreenRec`
+#### `ScreenInit()` 回傳後，`InitOutput()` 連接 `ScrnInfoRec` 與 `ScreenRec`
 
 `ScreenInit()` 成功回傳後，先前暫停的 `AddScreen()` 與 `InitOutput()` 會繼續連接同一個 X Screen 的 `ScrnInfoRec` 與 `ScreenRec`。 `dixSetPrivate()` 將 `ScrnInfoRec *` 寫入 `ScreenRec::devPrivates` 的 `xf86ScreenKey` slot，`ScrnInfoRec::pScreen` 則再次指向相同的 `ScreenRec`：
 
@@ -3432,7 +3432,7 @@ Linux DRM：GEM dumb BO 與 guest shmem backing
 
 `modesetCreateScreenResources()` 回傳後，`dixScreenRaiseCreateResources()` 會繼續執行 post-create hooks。 `xf86CrtcScreenInit()` 先前登記的 RandR hook 會依目前 CRTC mode 完成 X Screen 尺寸與 RandR resources，接著執行流程才回到 `dix_main()` 建立 Root Window
 
-#### 建立 Root Window 與 connection setup reply，再通知 `xinit`
+### Xorg 建立 Root Window 與 connection setup reply
 
 到目前為止，Xorg 已經建立 `ScreenRec`、front BO 與 screen Pixmap。 這些都是 Xorg 行程內的 objects，`xinit` 的 `XOpenDisplay()` 無法直接讀取它們的 pointers。 Xorg 還需要建立 Root Window，並把 X11 client 在 connection setup 時需要的資料序列化成 protocol reply
 
@@ -3680,7 +3680,7 @@ NotifyParentProcess(void)
 
 這時 `ConnectionInfo` template 已保存 connection setup reply 共用的資料。 父行程仍停在 `sigsuspend()` 時，這個 signal 會將它喚醒。 父行程若已因 alarm 到期而進入 `waitforserver()`，則會繼續嘗試 `XOpenDisplay()`。 Xorg 自己接著進入 `Dispatch()`，在 event loop 裡提交首次 modeset 並排入 scanout 繫結，再接受等待中的 connection 並處理 setup exchange
 
-#### 進入 `Dispatch()`：先提交首次 modeset，再回應 `XOpenDisplay()`
+### Xorg 進入 `Dispatch()`，建立初始 scanout 並接受第一條 connection
 
 到這裡，Xorg 已準備好 listening endpoint 與 setup reply template。 X Screen 已完成初始化，像素儲存區與 Root Window 也已建立。 不過 `xinit` 的 `XOpenDisplay()` 仍要等 Xorg 接受 transport connection、讀取 setup request，並送回 reply 才能完成
 
@@ -4248,11 +4248,12 @@ libX11 收到 reply 後，`XOpenDisplay()` 會回傳 `Display *`。 這個 objec
 
 上一節的終點是 Xorg 接受 `waitforserver()` 建立的 connection，讓 `XOpenDisplay(displayNum)` 成功取得 setup reply。 `xinit` 父行程因此可以離開 `startServer()`，建立子行程執行系統的 `xinitrc`
 
-本節會沿著三個階段，走到桌面準備接收新的 application Window：
+本節會沿著兩個階段，讓第一批桌面 clients 取得各自的 X11 connection state：
 
 1. `xinitrc` 啟動 `twm`、`xclock` 與 `xterm`
 2. 這些 clients 各自建立 X11 connection。 本文以 `twm` 為代表，查看 libX11 如何把 setup reply 整理成 client-side `Display` 與 `Screen[]`
-3. `twm` 從 `Screen[]` 取得 Root Window XID，再登記管理 Root Window 子視窗所需的 events
+
+完成 connection setup 後，`twm` 便能從 `Screen[]` 取得 Root Window XID。 下一節會從這個 XID 繼續追蹤 `twm` 如何登記 window-management events
 
 #### `xinit` 執行系統的 `xinitrc`，啟動 `twm`、`xclock` 與 `xterm`
 
@@ -4502,7 +4503,7 @@ XOpenDisplay(register _Xconst char *display)
 
 這些選擇可以共存。 [`libX11: configure.ac:81`](https://gitlab.freedesktop.org/xorg/lib/libx11/-/blob/libX11-1.8.7/configure.ac#L78-82) 顯示 libX11 1.8.7 本身就把 `xcb` 列為必要相依項。 本文接著回到固定的 Xt／Xlib 主線。 `twm` 經 Xt 進入 Xlib，`glxgears` 稍後則會直接呼叫 Xlib，兩者都由 libX11 建立 connection state
 
-#### `twm` 在 Root Window 登記管理子視窗所需的 events
+### `twm` 在 Root Window 登記 window-management events
 
 在本文的 X11 session 中，`twm` 會比使用者稍後啟動的 `glxgears` 更早完成上述 connection setup，並透過自己的 libX11 `Display` 取得 X Screen 與 Root Window 資料。 不過，一條普通的 X11 connection 還不足以管理其他 clients 的 Windows。 `twm` 還要在 Root Window 上選取特定 events，取得這個 X Screen 的 window manager 角色
 
@@ -4600,7 +4601,7 @@ X11 error 或同步結果回到等待中的 XSync()
   └─ 沒有 error：twm 取得這個 Root Window 下方 application Windows 的管理角色
 ```
 
-##### Window manager 可以採用不同的管理政策
+#### Window manager 可以採用不同的管理政策
 
 Window manager 也可以採用不同的視窗安排政策：
 
@@ -4612,7 +4613,7 @@ Window manager 負責 placement、move／resize、restack 與 focus，compositor
 
 到這裡，`twm` 已取得 window manager 角色。 下一個尚未受管理的 application Window 要求 map 時，Xorg 會先送出 `MapRequest`，讓 `twm` 決定如何管理它
 
-### `glxgears` 建立 application Window，`twm` 加上外框並顯示
+### `glxgears` 建立 X11 Window，`twm` 加上 frame 並顯示
 
 `twm` 已經準備好接收 Root Window 子視窗的管理要求。 使用者從 `xterm` 啟動 `glxgears` 後，這個新 client 會先建立一個尚未顯示的 application Window。 Xorg 將它接進 Window tree，並讓它使用本文既有的 screen Pixmap。 `glxgears` 接著要求顯示 Window，這項要求會先交給 `twm`，直到 frame、title 與 application Window 全部進入可見狀態
 
@@ -4998,7 +4999,13 @@ Application Window 的 map request 先設定 `mapped`，但 frame 尚未 realize
 
 application Window 進入桌面後，Xorg 已經知道它的 parent、geometry 與 stacking。 接下來還需要把 `glxgears` 產生的一幀 pixels 寫進這個 Window 對應的 X Screen 像素儲存區，再將變動送到既有 scanout
 
-### Xorg 收到 image request 後，將畫面更新送到既有 scanout
+### DRI3 讓 Mesa 與 Xorg 引用同一份 application image
+
+### Present 與 glamor 將 application image 寫進 GBM desktop BO
+
+### Xorg 將 GBM desktop BO 的更新發布到既有 scanout
+
+### vGPU 2D：software renderer 為什麼讓交付路徑更直接
 
 `glxgears` 的 application Window 現在已經進入 viewable state。 為了讓使用者看見齒輪，Xorg 接著要接收一幀 pixels，將它們寫到這個 Window 的可見範圍，再把 front BO 的變動送到既有 scanout
 
@@ -5332,7 +5339,7 @@ Xorg 完成這次 dirty update 後，長時間存在的 screen Pixmap、front BO
 
 第一幀出現在桌面後，使用者接著把 `xterm` 移到 `glxgears` 前方。 Window 的 geometry 與 stacking 隨之改變，Xorg 也要重新計算齒輪視窗目前仍可顯示的範圍
 
-### 視窗遮擋改變時，Xorg 重算可見範圍並通知 application 重畫
+### 視窗遮擋改變時，Xorg 重算可見範圍並通知 application
 
 `glxgears` 的 Window 現在已經出現在桌面上。 當使用者把 `xterm` 移到它前方時，`twm` 會把新的位置與 stacking 交給 Xorg。 Xorg 接著重算 `clipList`，也就是由目前可見矩形組成的 Region。 等 `xterm` 再次移開，Xorg 會以 `Expose` event 通知 `glxgears` 重畫剛露出的區域
 
