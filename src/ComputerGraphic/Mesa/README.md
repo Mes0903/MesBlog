@@ -5950,9 +5950,13 @@ GBM desktop BO
 
 #### Mesa 建立 application image，再以 dma-buf fd 分享 storage
 
-Mesa 會在 application 開始 rendering 以前，先為 GLX drawable 準備一組可輪替使用的 images。 Application 正在寫入、尚未交給 Xorg 呈現的那一筆稱為 back buffer，管理這些 images 的集合則稱為 buffer pool
+GLX 以 GLX drawable 表示 OpenGL 在 X11 window system 中使用的 rendering target，本文這筆 drawable 對應 `glxgears` 的 application Window
 
-當 GLX drawable 需要 back buffer 時，DRI3 loader 會進入 `dri3_alloc_render_buffer()`，為 buffer pool 配置 application image。 因此 DRI3 storage association 會在 draw calls 與 swap 以前建立，Mesa 與 Xorg 也會各自持有引用同一份 storage 的 objects。 後面的 Rendering 章節再從 OpenGL framebuffer validation 往下追，找出這個 loader callback 如何被觸發
+Mesa 會先為這筆 GLX drawable 建立 loader state，其中的 `loader_dri3_drawable::buffers[]` 會管理可輪替使用的 image buffers。 本文將這組 buffer bookkeeping 與其後續管理的 images 統稱為 DRI3 buffer pool
+
+Application 正在寫入、尚未交給 Xorg 呈現的那一筆則稱為 back buffer
+
+當 framebuffer validation 第一次需要 back-buffer attachment 時，DRI3 loader 才會延後選擇可重用的 image，或進入 `dri3_alloc_render_buffer()` 配置新的 application image。 DRI3 storage association 會在 renderer 真正寫入該 attachment 與 swap 以前成立，Mesa 與 Xorg 也會各自持有引用同一份 storage 的 objects。 後面的 Rendering 章節再從 framebuffer validation 往下追，找出這個 loader callback 如何被觸發
 
 本文的 Mesa rendering 與 Xorg display 使用同一個 `virtio_gpu` DRM device。 `dri3_alloc_render_buffer()` 會先查詢 Xorg 接受的 modifiers，再要求 driver 建立可供 sharing、scanout 與 back-buffer 用途使用的 image。 這裡的 modifier 就是前面建立 GBM desktop BO 時介紹過的 storage-layout metadata
 
@@ -7674,7 +7678,7 @@ Linux DRM：GEM dumb BO 與 guest shmem backing
        └─ base.obj[0] 另外持有一筆 GEM object reference
 ```
 
-這些 objects 沒有各自保存一份 pixels。 Screen `PixmapRec` 透過 mapping 存取 guest GEM backing，GBM BO 透過 GEM handle 引用它，KMS framebuffer 則保存供 scanout 使用的 format／layout 與 GEM reference。 後面加入的 Mesa client-side color buffer 才是另一份獨立 storage
+這些 objects 沒有各自保存一份 pixels。 Screen `PixmapRec` 透過 mapping 存取 guest GEM backing，GBM BO 透過 GEM handle 引用它，KMS framebuffer 則保存供 scanout 使用的 format／layout 與 GEM reference。 後面的 vGPU 2D／drisw 比較支線會另外建立一份由 `sw_displaytarget` 表示的 Mesa client-side storage
 
 `virtio_gpu` 另外為這個 GEM object 建立 host-side 2D resource ID，並以 `RESOURCE_ATTACH_BACKING` 登記可供 transfer 使用的 guest pages。 Host resource 內的 pixels 要等後續 `TRANSFER_TO_HOST_2D` 才會更新
 
@@ -8141,7 +8145,7 @@ Handler 會讀取前述 `valueMask` 與各個 requested values。 尚未由 `twm
 
 ## Rendering：Application 如何進入 Mesa
 
-前面的 Display 章節已經準備好 X Screen、application Window 與 scanout 路徑，也確認 Xorg 收到 image request 後會如何更新畫面。 現在回到使用者啟動 `glxgears` 的時間點，沿著 application 這一側查看 OpenGL context 如何接到 X11 drawable、Mesa 如何產生 pixels，以及 `glXSwapBuffers()` 如何走到 Xlib 的 image request 入口
+前面的 Display 章節已經準備好 X Screen、application Window 與 scanout 路徑，也確認 Xorg 如何把 application image 放進 GBM desktop BO。 現在回到使用者啟動 `glxgears` 的時間點，沿著 application 這一側查看 OpenGL context 如何接到 X11 drawable、Mesa 如何透過 VirGL 產生 application image，以及 `glXSwapBuffers()` 如何 flush 這一幀的 rendering work，再向 Xorg 送出 Present request
 
 ### `glxgears` 選擇 visual 並建立 OpenGL context
 
@@ -8338,7 +8342,9 @@ glXMakeCurrent(Display *dpy, GLXDrawable draw, GLXContext gc)
 
 `bind()` 讓 backend 為這個 context 接上 `win` 對應的 rendering buffers。 `currentDpy`、`currentDrawable` 與 `currentReadable` 記錄 context 當下繫結的 X11 connection 與 drawable。 `__glXSetCurrentContext()` 則讓呼叫 `glXMakeCurrent()` 的執行緒取得 current context。 完整的執行緒區域儲存（thread-local storage，TLS）dispatch 與 loader callback 路徑會在後文的 GLX 章節展開
 
-當 `glXMakeCurrent()` 成功後，OpenGL default framebuffer 便會對應到 application Window 的 rendering buffers。 後續 `glClear()` 與其他 OpenGL operations 會使用這個 current context 與 rendering target。 等 application 完成一幀，`glXSwapBuffers(dpy, win)` 才會再次進入 GLX，要求交付這個 drawable 的 back buffer
+當 `glXMakeCurrent()` 成功後，OpenGL default framebuffer 便會接到這筆 GLX drawable。 實際的 back buffer 會等 framebuffer validation 第一次需要 color attachment 時再延後選擇或配置。 這些 buffers 所屬的 DRI3 buffer pool 已在前面的 Display 章節介紹
+
+後續 `glClear()` 與其他 OpenGL operations 會使用這個 current context 與 rendering target。 等 application 完成一幀，`glXSwapBuffers(dpy, win)` 才會再次進入 GLX，要求交付這個 drawable 的 back buffer
 
 ### 從 `glClear()` 看 OpenGL 呼叫需要哪些 object 與角色
 
@@ -8375,13 +8381,121 @@ AMD 的 radeonsi、Intel 的 iris、軟體 drivers softpipe 與 llvmpipe，以�
 
 而如果 OpenGL vendor 是 NVIDIA proprietary OpenGL 堆疊，API 呼叫則會由 NVIDIA 的 userspace 函式庫接住，再配合 NVIDIA kernel module。 這條路徑就不會經過 Mesa OpenGL frontend、State Tracker 或 Gallium。 因此，系統有沒有安裝 Mesa，與該 OpenGL context 是否由 Mesa 實作，是兩個不同的問題
 
-本文固定的 vGPU 2D 組態使用 Mesa `drisw` 與 softpipe。 `glClear()` 與後續的齒輪 draw calls 會由 softpipe 在 `glxgears` 行程中執行
+本文固定的 vGPU 3D 組態使用 Mesa DRI3 loader 與 VirGL Gallium driver。 `glClear()` 與後續的齒輪 draw calls 會經過 Mesa OpenGL frontend、State Tracker 與 Gallium，再由 VirGL 編碼成 host renderer 可以執行的 commands
 
-一輪 rendering 完成後，新的齒輪 pixels 會先留在 application 行程內。 接下來要確認這份 storage 由誰建立，以及它和 Xorg screen Pixmap 之間的關係
+這些 commands 會以 GLX drawable 的 rendering buffer 為 target。 接下來要先確認 Mesa 在什麼時點取得這份 buffer，再追蹤 VirGL 如何將 rendering work 導向它
 
-### Mesa client-side color buffer
+### DRI3 drawable 如何取得 back image
 
-Display 這一側已經知道 application Window 對應到哪一份 X Screen 像素儲存區，也知道它在 `twm` frame 底下的位置。 Application 這一側還需要一份供軟體 renderer 寫入的 color buffer。 下一張圖會在既有的 display objects 之外，加入第二份 guest 端像素儲存區
+前面的 Display 章節已將 `glxgears` 的 GLX drawable 對應到 application Window，並介紹了 DRI3 buffer pool。 現在回到 application，查看 OpenGL default framebuffer 第一次需要 color attachment 時，Mesa 如何從 pool 選擇 back buffer
+
+`glXMakeCurrent()` 建立並繫結 drawable state，不會立即配置所有 image buffers。 等 framebuffer validation 需要 attachments 時，DRI frontend 才透過 image loader 取得 buffers。 DRI3 loader 會以 `loader_dri3_drawable::buffers[]` 找出可重用的槽位，無可用 image 時再呼叫 `dri3_alloc_render_buffer()` 配置新的 back buffer
+
+```callgraph
+OpenGL default framebuffer 需要 color attachment
+  │
+  │  framebuffer validation 要求 drawable buffers
+  ↓
+Mesa DRI frontend image loader
+  │
+  └─ [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:2192]
+       loader_dri3_get_buffers(...)
+         ↓
+       [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:2027]
+       dri3_get_buffer(...)
+         │
+         ├─ 重用 loader_dri3_drawable::buffers[] 裡可用的 image
+         └─ 沒有可用 image
+              ↓
+            [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:1416]
+            dri3_alloc_render_buffer(...)
+              └─ 建立 DRI image／Gallium pipe_resource 所引用的 back buffer
+```
+
+這裡的 back buffer 是 DRI3 buffer pool 裡的一筆 entry，DRI image 與 Gallium `pipe_resource` 則是 Mesa 從不同層級引用它的 objects。 Xorg application Pixmap 如何經 DRI3 引用同一份 application image storage，以及這份 storage 為什麼不是 GBM desktop BO，已由 Display 章節完成定義
+
+### Rendering 與 swap 如何把 application image 交給 Xorg
+
+#### VirGL 建立以 application image 為 target 的 rendering work
+
+Application 對 current OpenGL context 發出 `glClear()` 與齒輪 draw calls 後，Mesa OpenGL frontend 會驗證 API state，State Tracker 再將 OpenGL operations 轉成 Gallium operations。 VirGL driver 把這些 operations 編碼進 command stream，並將 current back image 對應的 VirGL resource 設為 rendering target
+
+Mesa flush 這批 work 後，command stream 會經 Linux `virtio_gpu` driver、semu 與 virglrenderer 交給 host renderer。 VirGL 負責建立 commands，最後由 host renderer 執行它們，將齒輪 pixels 寫入 application image storage
+
+```callgraph
+glxgears 發出 OpenGL operations
+  │
+  │  current context 指出 OpenGL state
+  │  current GLX drawable 指向 DRI3 buffer pool
+  ↓
+Mesa OpenGL frontend
+  │
+  │  驗證 API state 與 objects
+  ↓
+Mesa State Tracker／Gallium
+  │
+  │  轉成 driver 可接收的 state、resources 與 operations
+  ↓
+Mesa VirGL driver
+  │
+  │  編碼以 application image 為 target 的 VirGL command stream
+  ↓
+Linux virtio_gpu driver
+  │
+  │  經 virtio-gpu 3D protocol 提交 commands
+  ↓
+semu／virglrenderer
+  │
+  │  將 guest command stream 交給 host renderer
+  ↓
+host renderer
+  │
+  └─ 將齒輪 pixels 寫入 application image storage
+```
+
+這裡先把 Linux `virtio_gpu`、semu 與 virglrenderer 視為連接 Mesa 與 host renderer 的完整 submission path。 後面的 VirGL 與 virglrenderer 章節會再展開 context、resource、command submission 與 fence
+
+#### `glXSwapBuffers()` 進入 DRI3 swap callback
+
+一幀 draw calls 建立完成後，`glxgears` 會呼叫 `glXSwapBuffers(dpy, win)`。 Mesa GLX 會以 application Window XID 找回 DRI3 drawable，再進入 GLX screen 初始化時登記的 DRI3 swap callback
+
+```callgraph
+Mesa GLX：從 glXSwapBuffers() 進入 DRI3 loader
+=================================================
+[Mesa: src/glx/glxcmds.c:654] glXSwapBuffers(dpy, drawable)
+  │
+  └─ gc->vtable->swap_buffers(dpy, drawable)
+       │
+       │  dri3_context_vtable.swap_buffers = __glXSwapBuffers
+       ↓
+[Mesa: src/glx/glxcmds.c:669] __glXSwapBuffers(...)
+  │
+  ├─ pdraw = GetGLXDRIDrawable(dpy, drawable)
+  └─ pdraw->psc->driScreen.swapBuffers(...)
+       │
+       │  dri3_create_screen() 將 callback 登記成 dri3_swap_buffers
+       ↓
+[Mesa: src/glx/dri3_glx.c:362] dri3_swap_buffers(...)
+  │
+  └─ loader_dri3_swap_buffers_msc(...)
+       │
+       │  從這裡開始的 flush、back-buffer selection 與 Present request
+       │  已在 Display 章節展開
+       ↓
+     X11 Present request 邊界
+```
+
+Display 章節已經追蹤 `loader_dri3_swap_buffers_msc()` 如何先 flush application rendering，再以 application Window XID 與 application Pixmap XID 發出 Present request。 Request 進入 Xorg 後，Present 與 glamor 會將 application image 寫進 GBM desktop BO。 Rendering 主線在此接回 Display 已完成的 server-side 路徑
+
+### vGPU 2D 比較：softpipe 與 drisw 如何產生並交付 pixels
+
+VirGL 3D 主線會經過 DRI3 buffer sharing、host rendering 與 Present。 為了建立 vGPU 2D 對照，前面已以 `LIBGL_ALWAYS_SOFTWARE=true` 選擇 software rendering，再以 `GALLIUM_DRIVER=softpipe` 固定由 guest CPU 執行 OpenGL。 這條路徑不需要 application VirGL submission，也不需要用 DRI3 將 application image 分享給 Xorg
+
+Software renderer 不只用在舊系統，也可用於 CI、headless 測試、缺少可用硬體 driver 的環境、除錯，以及需要可重現 rendering 結果的工作。 接下來保留原本的 vGPU 2D 分析，對照兩條路徑在 storage 與 pixel 交付方式上的差異
+
+#### Mesa client-side color buffer
+
+在這條 vGPU 2D 比較路徑中，Display 這一側仍然知道 application Window 對應到哪一份 X Screen 像素儲存區，也知道它在 `twm` frame 底下的位置。 Application 這一側則需要一份供 software renderer 寫入的 color buffer。 下一張圖會在既有的 display objects 之外，加入第二份 guest 端像素儲存區
 
 接下來要回答兩個問題：
 
@@ -8404,9 +8518,7 @@ Mesa client-side color buffer 在 swap 時保存要交付的 `glxgears` pixel ra
 
 現在可以對照兩份 storage 與交付目的地的關係：application Window 與既有的 origin／clip state 決定目標、位置與可寫範圍，Mesa client-side color buffer 保存尚未交付的 rendering 結果，screen `PixmapRec`／front BO 則保存 X Screen 的可見結果。 下一節改追一幀畫面如何在兩份 storage 之間移動
 
-### Rendering 結果如何抵達 X11 request 邊界
-
-Mesa client-side color buffer 已經保存這一幀的 pixels。 接下來先用兩張圖確認 rendering 與 swap 各自完成的工作，再沿原始程式碼追蹤 `glXSwapBuffers()` 如何進入 `drisw`，最後呼叫 `XPutImage()` 或 `XShmPutImage()`。 從 Xorg event loop 取出 request 開始的處理流程，已在前面的 Display 章節展開
+Mesa client-side color buffer 已經保存這一幀的 pixels。 接下來先用兩張圖確認 software rendering 與 swap 各自完成的工作，再沿原始程式碼追蹤 `glXSwapBuffers()` 如何進入 `drisw`，最後呼叫 `XPutImage()` 或 `XShmPutImage()`。 從 Xorg event loop 取出 request 開始的處理流程，已在前面的 Display 章節展開
 
 #### rendering：在 Mesa client-side color buffer 產生 pixels
 
@@ -8432,11 +8544,11 @@ application 呼叫 `glXSwapBuffers()` 後，`drisw` 會取出要交付的 pixel 
 
 Core `PutImage` request 會攜帶 inline pixel bytes、目標 drawable、座標與尺寸。 MIT-SHM `ShmPutImage` request 則攜帶 shared-memory segment 與 offset reference，再由 X server 讀取對應的 pixels
 
-硬體 direct-rendering 路徑常用 DRI3 extension 取得 DRM device fd，並在 client 與 X server 之間分享 buffers 與 fences。 Present extension 則讓 client 將 Pixmap 與呈現時點交給 X server。 本文的 drisw 軟體路徑不經過這兩個 extensions，因此本節只追蹤 `PutImage`／`ShmPutImage` 的 pixel 交付
+本文固定的 VirGL 3D 主線會使用 DRI3 取得 DRM device fd，並在 application 與 X server 之間分享 application image 與 fences。 Present extension 則讓 application 將 Pixmap 與呈現時點交給 X server。 目前比較的 drisw software path 不經過這兩個 extensions，因此本節只追蹤 `PutImage`／`ShmPutImage` 的 pixel 交付
 
 兩條 request 都把 client rendering 結果交到 X server 邊界，但 wire payload 不同。 request 抵達 Xorg 後，前面 Display 章節介紹的 window update 會依 drawable mapping、Window origin 與 composite clip 決定實際寫入的 screen 區域
 
-#### `glXSwapBuffers()` 讓 DRI／`drisw` 將 pixels 交給 Xorg
+#### `glXSwapBuffers()` 讓 `drisw` 將 pixels 交給 Xorg
 
 這一幀已經留在 Mesa client-side color buffer。 `glxgears` 呼叫 `glXSwapBuffers(dpy, win)` 時，`win` 仍是 `twm` reparent 以前建立的 application Window XID。 Swap 會沿用 setup 階段建立的 drawable、Mesa client-side color buffer 與 X Screen 像素儲存區，把已經算好的 pixels 交給該 X11 drawable
 
@@ -8567,17 +8679,28 @@ X11 PutImage／ShmPutImage request 進入 Xorg
 
 Mesa 呼叫 `XPutImage()` 或 `XShmPutImage()` 時，已經把 color buffer 交到 X11 協定邊界。 一般 `XPutImage()` 只把 request 排入 connection。 XShm 路徑後面的 `XSync()` 會等待 X server 處理同步 request，但不會把後續 `DIRTYFB`、virtio-gpu commands 與 SDL present 變成 `glXSwapBuffers()` 內的同步函式鏈
 
-到這裡，我們先沿著 application 的呼叫順序，從 context setup 走到一幀 pixels 抵達 X11 request 邊界。 接下來將相同路徑逐層展開，時間點回到 `glxgears` 完成 `XOpenDisplay()` 之後，從它呼叫的第一個 GLX API `glXChooseVisual()` 開始進入 Mesa GLX 實作
+到這裡，vGPU 2D 比較支線已經從 software context setup 走到 pixels 抵達 X11 request 邊界。 接下來回到本文的 DRI3／VirGL 固定主線，將時間點拉回 `glxgears` 完成 `XOpenDisplay()` 之後，從它呼叫的第一個 GLX API `glXChooseVisual()` 開始進入 Mesa GLX 實作
 
-本章先確認 Mesa 在 GLVND 關閉與開啟時分別會產生哪些執行期產物，再沿固定的 Mesa `libGL` 主線建立 client-side context，並查看 DRI 如何接上 State Tracker。 可選的 GL Vendor-Neutral Dispatch（GLVND）路徑會另外示範 Mesa vendor ABI 與 object mapping，不會混進固定主線的完成條件
+本章先確認 Mesa 在 GLVND 關閉與開啟時分別會產生哪些執行期產物，再沿固定的 Mesa `libGL`、DRI3 與 VirGL 主線建立 client-side context，並查看 DRI 如何接上 State Tracker。 可選的 GL Vendor-Neutral Dispatch（GLVND）路徑會另外示範 Mesa vendor ABI 與 object mapping，不會混進固定主線的完成條件
 
 `glxgears` 的固定主線呼叫 legacy `glXCreateContext()`。 這裡的 legacy 表示函式以 `XVisualInfo` 與一組固定參數建立 context，相對地，較新的 `glXCreateContextAttribsARB()` 會以 FBConfig 與 attribute list 描述建立條件。 GLVND 比較支線會使用 Mesa generated `glXCreateContextAttribsARB()` wrapper，因為它同時展示 FBConfig、screen attribute 與新 context mapping
 
-進入 Mesa GLX 後，legacy 與 ARB 入口最後都會合流到 `dri_create_context_attribs()`。 後文會先標出這個合流點，再沿固定的 drisw／softpipe 路徑建立 context，並把 DRI3／VirGL 保留為比較支線
+進入 Mesa GLX 後，legacy 與 ARB 入口最後都會合流到 `dri_create_context_attribs()`。 後文會先標出這個合流點，再沿固定的 DRI3／VirGL 路徑建立 context，並將 drisw／softpipe 保留為 vGPU 2D 比較支線
 
 ### Mesa 建置後產生哪些執行期產物
 
-Application 呼叫 `glXChooseVisual()` 時，函式名稱本身不會告訴我們 Mesa 是直接以 `libGL` 提供入口，還是作為 GLVND 載入的 vendor 函式庫，也看不出 DRI 實作已經連進該 shared object，還是要等後面的 loader 依 driver name 另外載入。 在追蹤函式呼叫以前，我們要先回答兩個問題：
+Application 呼叫 `glXChooseVisual()` 時，函式名稱本身不會告訴我們 Mesa 是直接以 `libGL` 提供入口，還是作為 GLVND 載入的 vendor 函式庫，也看不出 DRI 實作已經連進該 shared object，還是要等後面的 loader 依 driver name 另外載入。 在追蹤函式呼叫以前，我們先確認 application 會載入哪些 Mesa 執行期元件
+
+這些元件會在不同層級建立數個名稱帶有 screen 的 objects。 為了對應每個建置產物將提供的程式碼，先將這些 objects 的層級分開：
+
+- X Screen 是 X11 協定公開的顯示資源與座標範圍
+- Mesa `glx_screen` 是 GLX client 針對一個 X Screen 建立的 wrapper，保存 GLX configurations 與 backend callbacks
+- DRI `dri_screen` 是 Mesa DRI frontend 的 per-screen state，用來把 window-system loader 接到 Gallium
+- Gallium `pipe_screen` 是特定 rendering driver 提供的 device-level 介面，負責 capability queries、resource 建立與 context 建立
+
+DRI3 主線還會出現 `dri3_screen`。 它是 Mesa GLX 的 DRI3 backend wrapper，內部再連到 DRI `dri_screen` 與 Gallium `pipe_screen`
+
+根據這組 object map，建置產物接下來要回答兩個問題：
 
 1. `with_glvnd` 關閉與開啟時，Mesa 分別會安裝哪一個 GLX shared object
 2. 這個 shared object 會透過什麼方式取得建立 DRI screen 與 context 所需的程式碼
@@ -9173,13 +9296,254 @@ AllocAndFetchScreenConfigs(Display *dpy, struct glx_display *priv,
 
 因此 libX11 `Display::screens[i]` 與 Mesa `glx_display::screens[i]` 都以 `i` 作為 X Screen 的陣列索引。 前者保存 X11 Screen 資料，後者在初始化成功後保存 GLX 組態與 backend state
 
-#### 固定的 drisw／softpipe 路徑如何建立 GLX screen
+Backend 的嘗試順序也在這個迴圈中決定。 本文固定組態會成功建立 DRI3 screen，再讓 DRM rendering device fd 導向 VirGL。 接下來先沿這條主線建立 GLX screen，再以前面明確選擇 softpipe 的 vGPU 2D 組態進行同層對照
 
-本文固定的 vGPU 2D 組態會讓 `AllocAndFetchScreenConfigs()` 進入 `driswCreateScreen()`。 Softpipe 由 application 行程中的 CPU 執行 rendering，因此這條路徑不需要先向 Xorg 取得 GPU rendering fd。 GLX 仍要建立 DRI screen，讓後續 context 與 drawable 可以使用 DRI frontend、State Tracker 和 Gallium callbacks
+#### 固定的 DRI3／VirGL 路徑如何建立 GLX screen
 
-以下程式碼來自 [`Mesa: src/glx/drisw_glx.c:628`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/drisw_glx.c#L628-685) 的 `driswCreateScreen()`，用來追蹤固定路徑如何選擇 swrast loader extensions、以 `fd = -1` 建立 DRI screen，再安裝 drawable 與 swap callbacks：
+`AllocAndFetchScreenConfigs()` 會先嘗試為每個 X Screen 建立 DRI3 screen。 本文固定的 VirGL 3D 組態會走進 `dri3_create_screen()`。 此時呼叫端只有代表 X11 connection 的 client-side object 與目標 X Screen 的編號。 在後續建立 DRI screen 與 renderer context 以前，Mesa 必須先透過這條 connection 向 Xorg 取得該 X Screen 使用的 DRM device fd
+
+這筆 server-provided fd 還不一定是 application 最後用來 rendering 的 fd。 `loader_get_user_preferred_fd()` 會再處理 PRIME render offload，將 Xorg 給予的 display-side fd 與最後的 rendering fd 分開
+
+本文未設定 `DRI_PRIME`，因此 `fd_display_gpu` 與 `fd_render_gpu` 會指向同一個 `virtio_gpu` DRM device。 若使用 PRIME offload，前者保留 display GPU，後者則會改指向 application 選定的 render node
+
+最後的 `fd_render_gpu` 會成為選擇 driver、建立 DRI screen 與配置 rendering resource 的入口。 以下從 `dri3_create_screen()` 追蹤 Xorg 給予的 fd 如何被保存，再經 PRIME selection 得到最後的 rendering fd
+
+以下程式碼來自 [`Mesa: src/glx/dri3_glx.c:461`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/dri3_glx.c#L459-490) 的 `dri3_create_screen()`，用來顯示 Mesa 以既有 X11 connection 與 Root Window 向 Xorg 取得 DRM fd，再將它交給 PRIME device selection：
 
 ```c
+// [Mesa: src/glx/dri3_glx.c:461-490]
+struct glx_screen *
+dri3_create_screen(int screen, struct glx_display * priv, bool driver_name_is_inferred, bool *return_zink)
+{
+   xcb_connection_t *c = XGetXCBConnection(priv->dpy);
+   const struct dri_config **driver_configs;
+   struct dri3_screen *psc;
+   __GLXDRIscreen *psp;
+   char *driverName, *driverNameDisplayGPU;
+   *return_zink = false;
+
+   psc = calloc(1, sizeof *psc);
+   if (psc == NULL)
+      return NULL;
+
+   psc->fd_display_gpu = -1;
+
+   psc->fd_render_gpu = x11_dri3_open(c, RootWindow(priv->dpy, screen), None);
+   if (psc->fd_render_gpu < 0) {
+      int conn_error = xcb_connection_has_error(c);
+
+      glx_screen_cleanup(&psc->base);
+      free(psc);
+...
+   }
+
+   loader_get_user_preferred_fd(&psc->fd_render_gpu,
+                                &psc->fd_display_gpu);
+...
+}
+```
+
+函式的輸入已經把責任邊界說得很清楚。 `priv->dpy` 指向代表既有 X11 connection 的 libX11 `Display`，`screen` 保存目標 X Screen 在這個 `Display` 內的編號。 `RootWindow(priv->dpy, screen)` 則提供一個屬於該 Screen 的 X resource identity
+
+`dri3_create_screen()` 會以 Root Window 發出 DRI3 open request，取得 Xorg 為該 X Screen 提供的 DRM fd。 程式先暫時把它存入 `fd_render_gpu`，接著才由 `loader_get_user_preferred_fd()` 決定 render GPU 與 display GPU 是否相同，並填入最後的 `fd_render_gpu` 與 `fd_display_gpu`
+
+若無法取得 `fd_render_gpu`，Mesa 會清理已初始化的 `glx_screen` base 並釋放 `dri3_screen`，接著讓外層依目前的 `glx_driver` flags 決定是否嘗試其他 backend。 成功時，`loader_get_driver_for_fd()` 會辨識 fd 對應的 DRM driver，`dri_screen_init()` 再以 `DRI_SCREEN_DRI3` 建立 DRI screen
+
+以下程式碼接續前一段的 `dri3_create_screen()`，來自 [`Mesa: src/glx/dri3_glx.c:492`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/dri3_glx.c#L492-L538)，用來顯示 rendering fd 如何導向 DRI screen，以及 GLX screen 最後如何登記 context、drawable 與 swap callbacks：
+
+```c
+// [Mesa: src/glx/dri3_glx.c:492-538]
+struct glx_screen *
+dri3_create_screen(int screen, struct glx_display *priv,
+                   bool driver_name_is_inferred, bool *return_zink)
+{
+   ...
+   driverName = loader_get_driver_for_fd(psc->fd_render_gpu);
+   if (!driverName) {
+      ErrorMessageF("No driver found\n");
+      goto handle_error;
+   }
+   psc->base.driverName = driverName;
+   ...
+   priv->driver = GLX_DRIVER_DRI3;
+
+   if (!dri_screen_init(&psc->base, priv, screen,
+                        psc->fd_render_gpu, loader_extensions,
+                        driver_name_is_inferred)) {
+      ErrorMessageF("glx: failed to create dri3 screen\n");
+      goto handle_error;
+   }
+   ...
+   psc->base.context_vtable = &dri3_context_vtable;
+   psp = &psc->base.driScreen;
+   psp->deinitScreen = dri3_deinit_screen;
+   psp->createDrawable = dri3_create_drawable;
+   psp->swapBuffers = dri3_swap_buffers;
+   ...
+}
+```
+
+`dri_screen_init()` 會把 GLX backend type 轉成 `DRI_SCREEN_DRI3`，再交給 DRI frontend 建立 `dri_screen`。 DRI frontend 以 rendering fd 探測 DRM device，本文的 fd 對應 `virtio_gpu`。 Mesa 的 pipe-loader 會以 `virtio_gpu_driver_descriptor` 建立 VirGL `pipe_screen`，因此同一條 fd chain 會從 GLX DRI3 screen 接到 Gallium VirGL screen
+
+現在可以把前述步驟串成一條呼叫路徑，查看 X Screen 編號與 Root Window XID 如何導向 DRM rendering device fd，再建立 VirGL `pipe_screen`
+
+```callgraph
+Mesa GLX screen 初始化
+=================================================
+[Mesa: src/glx/glxext.c:850] AllocAndFetchScreenConfigs()
+  │
+  │  for (i = 0; i < ScreenCount(dpy); i++)
+  │  if (glx_driver & GLX_DRIVER_DRI3)
+  │      psc = dri3_create_screen(i, priv, ...);
+  │  // 以既有 Display 的每個 X Screen 建立 client-side screen wrapper
+  ↓
+[Mesa: src/glx/dri3_glx.c:461] dri3_create_screen()
+  │
+  ├─ psc = calloc(1, sizeof *psc)
+  │    └─ 配置失敗：return NULL
+  │
+  └─ psc->fd_render_gpu = x11_dri3_open(
+         XGetXCBConnection(priv->dpy),
+         RootWindow(priv->dpy, screen), None);
+       // 交接：XCB connection + Root Window XID
+       ↓
+[Mesa: src/x11/x11_dri3.c:40] x11_dri3_open()
+  │
+  ├─ DRI3 extension absent：return -1
+  ├─ reply == NULL || reply->nfd != 1：free(reply); return -1
+  └─ fd = xcb_dri3_open_reply_fds(conn, reply)[0]
+       │  fcntl(fd, F_SETFD, ... | FD_CLOEXEC)
+       └─ return fd
+            // Xorg 為這個 X Screen 提供的 DRM device fd
+       ↓
+[Mesa: src/glx/dri3_glx.c:477] dri3_create_screen() 失敗／成功分流
+  │
+  ├─ fd_render_gpu < 0
+  │    └─ glx_screen_cleanup(&psc->base); free(psc); return NULL
+  └─ fd_render_gpu >= 0
+       ↓
+[Mesa: src/glx/dri3_glx.c:490]
+loader_get_user_preferred_fd(&fd_render_gpu, &fd_display_gpu)
+  │
+  ├─ 本文未設定 DRI_PRIME
+  │    └─ fd_render_gpu 與 fd_display_gpu 使用同一筆 fd
+  └─ 若 DRI_PRIME 選擇另一個 GPU
+       ├─ fd_display_gpu 保留 Xorg 給予的 fd
+       └─ fd_render_gpu 改為選定 GPU 的 render-node fd
+  ↓
+[Mesa: src/glx/dri3_glx.c:492] 使用最後的 fd_render_gpu
+  ├─ loader_get_driver_for_fd(fd_render_gpu)
+  ├─ priv->driver = GLX_DRIVER_DRI3
+  └─ dri_screen_init(..., fd_render_gpu, ...)
+            ↓
+          [Mesa: src/glx/dri_common.c:943] dri_screen_init(...)
+            ├─ type = DRI_SCREEN_DRI3
+            └─ driCreateNewScreen3(..., fd, loader_extensions, type, ...)
+                 ↓
+               [Mesa: src/gallium/frontends/dri/dri_util.c:99]
+               driCreateNewScreen3(...)
+                 └─ dri2_init_screen(screen, ...)
+                      ↓
+                    [Mesa: src/gallium/frontends/dri/dri2.c:1754]
+                    dri2_init_screen(...)
+                      ├─ pipe_loader_drm_probe_fd(..., fd, ...)
+                      └─ pipe_loader_create_screen(...)
+                           └─ virtio_gpu driver descriptor
+                                ↓
+                              VirGL pipe_screen
+  ↓
+[Mesa: src/glx/dri3_glx.c:534-538] 安裝 GLX／DRI callbacks
+  ├─ context_vtable = dri3_context_vtable
+  ├─ createDrawable = dri3_create_drawable
+  └─ swapBuffers = dri3_swap_buffers
+```
+
+成功取得 rendering fd 後，client wrapper 仍要保存 backend callbacks、X11 connection 與目標 X Screen 的編號。 以下程式碼來自 [`Mesa: src/glx/glxclient.h:516`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/glxclient.h#L516-540) 的 `struct glx_screen`，用來確認三組 vtable、`Display *` 與 `scr` 都位於同一份 screen wrapper
+
+```c
+struct glx_screen
+{
+   const struct glx_screen_vtable *vtable;
+   const struct glx_context_vtable *context_vtable;
+   const struct glx_drawable_vtable *drawable_vtable;
+...
+   const char *serverGLXexts;
+   const char *serverGLXvendor;
+   const char *serverGLXversion;
+...
+   char *effectiveGLXexts;
+
+   struct glx_display *display;
+
+   Display *dpy;
+   int scr;
+...
+};
+```
+
+`glx_screen` 同時保存 server 回報的 GLX capability 與 client 最後能使用的 `effectiveGLXexts`。 Mesa 會把 server 字串、client 建置時啟用的功能、direct backend、loader 與 driver capability 合併成實際可用的 extension 集合。 `dpy` 與 `scr` 則把這份 client-side screen wrapper 固定到一條 X connection 與其中一個 Screen
+
+三個 vtable 把 screen、context 與 drawable 的操作分開。 後面建立 direct context 時會走 `glx_screen_vtable::create_context_attribs`，make-current 會走 context vtable 的 bind，swap 則由 drawable 所在 screen 的 DRI hooks 處理。 這些 callback 所選 backend 可以不同，公開 GLX object 的外形仍保持一致
+
+Xorg 的 display state 先成立，GLX client 才利用 `Display *` 與 Root Window 找到正確的 X Screen 與 rendering device。 這條主線建立的 `dri3_screen` 會讓後續 context 使用 VirGL `pipe_screen`，並讓 drawable setup 與 swap 進入 DRI3 callbacks
+
+Display 章節已經區分 application image 與 GBM desktop BO。 從 GLX client 這一側來看，application image 屬於 GLX drawable 的 DRI3 buffer pool。 被選為 back buffer 的 image 會成為 OpenGL framebuffer attachment，swap 時再成為 Present request 的來源。 GBM desktop BO 則屬於 Xorg 的 X Screen，並由 DRM／KMS framebuffer 引用
+
+GLX context 可以先建立，等 `glXMakeCurrent()` 第一次把它綁到 application Window 時，Mesa 才為這個 XID 找出或建立 DRI3 drawable。 以下程式碼來自 [`Mesa: src/glx/dri3_glx.c:172`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/dri3_glx.c#L172-L210) 的 `dri3_create_drawable()`，用來顯示 GLX drawable identity 如何接到 DRI3 loader state：
+
+```c
+// [Mesa: src/glx/dri3_glx.c:172-210]
+static __GLXDRIdrawable *
+dri3_create_drawable(struct glx_screen *base, XID xDrawable,
+                     GLXDrawable drawable, int type,
+                     struct glx_config *config_base)
+{
+   struct dri3_drawable *pdraw;
+   struct dri3_screen *psc = (struct dri3_screen *) base;
+   __GLXDRIconfigPrivate *config = (__GLXDRIconfigPrivate *) config_base;
+   ...
+
+   pdraw = calloc(1, sizeof(*pdraw));
+   if (!pdraw)
+      return NULL;
+
+   pdraw->base.xDrawable = xDrawable;
+   pdraw->base.drawable = drawable;
+   pdraw->base.psc = &psc->base;
+
+   if (loader_dri3_drawable_init(
+          XGetXCBConnection(base->dpy), xDrawable,
+          glx_to_loader_dri3_drawable_type(type),
+          psc->base.frontend_screen,
+          psc->driScreenDisplayGPU,
+          has_multibuffer,
+          psc->prefer_back_buffer_reuse,
+          config->driConfig,
+          &glx_dri3_vtable,
+          &pdraw->loader_drawable)) {
+      free(pdraw);
+      return NULL;
+   }
+
+   pdraw->base.dri_drawable = pdraw->loader_drawable.dri_drawable;
+   return &pdraw->base;
+}
+```
+
+`xDrawable` 與 `drawable` 保存 X11／GLX namespace 中的 identity。 `loader_dri3_drawable_init()` 則接收 XCB connection、DRI render／display screens、DRI framebuffer config 與 loader vtable，建立管理 geometry、present events、front／back images 與 buffer reuse 的 `loader_dri3_drawable`。 回傳後，外層 `dri3_drawable` 也會保存 DRI frontend 建立的 `dri_drawable`，讓 make-current、framebuffer validation 與 swap 可以沿相同的 drawable chain 取得 back image
+
+固定主線的 DRI3 screen 與 drawable chain 已經建立。 在繼續追蹤這些 objects 如何建立 direct context 以前，先在相同的 GLX screen 層級比較 vGPU 2D 組態會略過哪些步驟
+
+#### vGPU 2D 比較：drisw／softpipe 如何建立 GLX screen
+
+前面定義的 vGPU 2D 組態會以 `LIBGL_ALWAYS_SOFTWARE=true` 選擇 software GLX，再以 `GALLIUM_DRIVER=softpipe` 將 Gallium driver 固定成 softpipe。 `AllocAndFetchScreenConfigs()` 在這組輸入下會走進 `driswCreateScreen()`
+
+Softpipe 由 application 行程中的 CPU 執行 rendering，因此這條路徑不需要先向 Xorg 取得 GPU rendering fd。 GLX 仍要建立 DRI screen，讓後續 context 與 drawable 可以使用 DRI frontend、State Tracker 和 Gallium callbacks
+
+以下程式碼來自 [`Mesa: src/glx/drisw_glx.c:628`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/drisw_glx.c#L628-L685) 的 `driswCreateScreen()`，用來追蹤 vGPU 2D 比較路徑如何選擇 swrast loader extensions、以 `fd = -1` 建立 DRI screen，再安裝 drawable 與 swap callbacks：
+
+```c
+// [Mesa: src/glx/drisw_glx.c:628-685]
 struct glx_screen *
 driswCreateScreen(int screen, struct glx_display *priv,
                   enum glx_driver glx_driver,
@@ -9188,8 +9552,9 @@ driswCreateScreen(int screen, struct glx_display *priv,
    __GLXDRIscreen *psp;
    struct drisw_screen *psc;
    const __DRIextension **loader_extensions_local;
-   ...
+   bool kopper_disable = debug_get_bool_option("LIBGL_KOPPER_DISABLE", false);
 
+   glx_driver &= (GLX_DRIVER_ZINK_INFER | GLX_DRIVER_ZINK_YES);
    const char *driver = glx_driver && !kopper_disable ? "zink" : "swrast";
 
    psc = calloc(1, sizeof *psc);
@@ -9224,16 +9589,17 @@ driswCreateScreen(int screen, struct glx_display *priv,
 }
 ```
 
-`driver` 在固定路徑中是 `swrast`。 Loader 會依 X11 connection 是否支援 MIT-SHM，選擇帶有 SHM callbacks 或只提供一般 image callbacks 的 extension table。 `dri_screen_init(..., -1, ...)` 接著建立 `DRI_SCREEN_SWRAST` screen，並沿 DRI 軟體探測路徑選到 softpipe
+
+`driswCreateScreen()` 會先只保留 Zink 相關 flags。 這條明確選擇 software GLX 的比較支線沒有設定這些 bits，因此 `driver` 是 `swrast`。 Loader 會依 X11 connection 是否支援 MIT-SHM，選擇帶有 SHM callbacks 或只提供一般 image callbacks 的 extension table。 `dri_screen_init(..., -1, ...)` 接著建立 `DRI_SCREEN_SWRAST` screen，並沿 DRI 軟體路徑選到 softpipe
 
 成功後，`drisw_screen` 保存 context vtable，`driScreen` 則登記 `driswCreateDrawable()` 與 `driswSwapBuffers()`。 這些 callbacks 讓後續 GLX context 與 drawable 沿用同一個軟體 DRI screen
 
 ```callgraph
-本文固定的 GLX screen 建立路徑
+vGPU 2D 比較支線的 GLX screen 建立路徑
 =================================================
 [Mesa: src/glx/glxext.c:850] AllocAndFetchScreenConfigs(dpy, priv, glx_driver, ...)
   │
-  └─ DRI3 screen 未建立，且允許 software GLX
+  └─ software GLX 組態選擇 drisw
        ↓
      [Mesa: src/glx/drisw_glx.c:628] driswCreateScreen(screen, priv, ...)
        │
@@ -9247,133 +9613,16 @@ driswCreateScreen(int screen, struct glx_display *priv,
                  ↓
                [Mesa: src/gallium/frontends/dri/drisw.c:597] drisw_init_screen(...)
                  └─ 建立軟體 `pipe_screen`
-                      // 本文由 softpipe 接住 Gallium callbacks
+                      // 比較支線由 softpipe 接住 Gallium callbacks
 ```
 
-#### VirGL／DRI3 支線如何取得 rendering fd
+#### GLX object 先保存 X11 identity，再接 DRI object
 
-切換到本文後面要比較的 VirGL 3D 組態時，GLX screen 會走 DRI3。 此時呼叫端只有代表 X11 connection 的 client-side object 與目標 X Screen 的編號。 在後續建立 DRI screen 與 renderer context 以前，Mesa 必須先透過這條 connection 取得該 X Screen 使用的 rendering fd
-
-這個 fd 會成為後續選擇 driver、建立 DRI screen 與配置 rendering resource 的入口。 以下從 `dri3_create_screen()` 的 Root Window lookup 與提前回傳追蹤 fd 如何取得、由哪個 screen wrapper 保存，以及取得失敗時 Mesa 需要回收哪些 client-side object
-
-以下程式碼來自 [`Mesa: src/glx/dri3_glx.c:461`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/dri3_glx.c#L459-481) 的 `dri3_create_screen()`，用來證明 Mesa 以既有 X11 connection、screen 的 Root Window 與新配置的 `dri3_screen` 取得 rendering fd，並在 open 失敗時只回收 client-side wrapper
-
-```c
-struct glx_screen *
-dri3_create_screen(int screen, struct glx_display * priv, bool driver_name_is_inferred, bool *return_zink)
-{
-   xcb_connection_t *c = XGetXCBConnection(priv->dpy);
-   const struct dri_config **driver_configs;
-   struct dri3_screen *psc;
-   __GLXDRIscreen *psp;
-   char *driverName, *driverNameDisplayGPU;
-   *return_zink = false;
-
-   psc = calloc(1, sizeof *psc);
-   if (psc == NULL)
-      return NULL;
-
-   psc->fd_display_gpu = -1;
-
-   psc->fd_render_gpu = x11_dri3_open(c, RootWindow(priv->dpy, screen), None);
-   if (psc->fd_render_gpu < 0) {
-      int conn_error = xcb_connection_has_error(c);
-
-      glx_screen_cleanup(&psc->base);
-      free(psc);
-...
-   }
-...
-}
-```
-
-函式的輸入已經把責任邊界說得很清楚。 `priv->dpy` 指向代表既有 X11 connection 的 libX11 `Display`，`screen` 保存目標 X Screen 在這個 `Display` 內的編號。 `RootWindow(priv->dpy, screen)` 則提供一個屬於該 Screen 的 X resource identity
-
-connector、CRTC 與初始 scanout 都已在 Xorg display setup 階段成立，桌面 front storage 也已準備完成。 `dri3_create_screen()` 會以 Root Window 發出 DRI3 open request，取得 `fd_render_gpu`，讓 Mesa 能依序選擇 driver、建立 DRI screen 與配置 renderer resources
-
-`x11_dri3_open()` 透過 X11 端的協作取得 rendering 所需的 fd。 回到 Mesa 後，`fd_render_gpu` 會成為 loader 選 driver、建立 DRI screen 與配置 renderer resource 的入口。 `fd_display_gpu` 保存顯示裝置，因此資料模型可以表達 rendering device 與顯示裝置分屬不同 GPU。 在單 GPU 機器上，兩個欄位通常指向同一裝置
-
-失敗路徑也值得先看。 若無法取得 `fd_render_gpu`，Mesa 清理已初始化的 `glx_screen` base 並釋放 `dri3_screen`。 Xorg 的 display state 繼續由 X server 擁有。 X connection 是否已發生錯誤是另一項診斷資訊。 這項清理範圍顯示 Mesa GLX client 回收的是自己在 client 行程內配置的 wrapper
-
-因此，application 啟動時可以先採用下列責任圖。 圖中的「已存在」限定在 GLX context 建立當下，resize、hotplug 或桌面政策仍可在後續更新這些 object
-
-```callgraph
-Mesa GLX screen 初始化
-=================================================
-[Mesa: src/glx/glxext.c:850] AllocAndFetchScreenConfigs()
-  │
-  │  for (i = 0; i < ScreenCount(dpy); i++)
-  │  if (glx_driver & GLX_DRIVER_DRI3)
-  │      psc = dri3_create_screen(i, priv, ...);
-  │  // 以既有 Display 的每個 X Screen 建立 client-side screen wrapper
-  ↓
-[Mesa: src/glx/dri3_glx.c:461] dri3_create_screen()
-  │
-  ├─ psc = calloc(1, sizeof *psc)
-  │    └─ 配置失敗：return NULL
-  │
-  └─ psc->fd_render_gpu = x11_dri3_open(
-         XGetXCBConnection(priv->dpy),
-         RootWindow(priv->dpy, screen), None);
-       // 交接：XCB connection + Root Window XID
-       ↓
-[Mesa: src/x11/x11_dri3.c:40] x11_dri3_open()
-  │
-  ├─ DRI3 extension absent：return -1
-  ├─ reply == NULL || reply->nfd != 1：free(reply); return -1
-  └─ fd = xcb_dri3_open_reply_fds(conn, reply)[0]
-       │  fcntl(fd, F_SETFD, ... | FD_CLOEXEC)
-       │  // 先取得 rendering fd，再向 X server 回報 client 支援的 XFixes 版本
-       ├─ fixes_reply->major_version < 2
-       │    └─ close(fd); fd = -1
-       └─ fixes_reply->major_version >= 2
-            └─ return fd
-                 // 最終結果：FD_CLOEXEC rendering fd，或 XFixes 版本不足時的 -1
-       ↓
-[Mesa: src/glx/dri3_glx.c:477] dri3_create_screen() 失敗／成功分流
-  │
-  ├─ fd_render_gpu < 0
-  │    └─ glx_screen_cleanup(&psc->base); free(psc); return NULL
-  └─ fd_render_gpu >= 0
-       └─ screen 初始化成功後，繼續使用 psc 與 rendering fd
-```
-
-成功取得 rendering fd 後，client wrapper 仍要保存 backend callbacks、X11 connection 與目標 X Screen 的編號。 以下程式碼來自 [`Mesa: src/glx/glxclient.h:516`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/glxclient.h#L516-540) 的 `struct glx_screen`，用來確認三組 vtable、`Display *` 與 `scr` 都位於同一份 screen wrapper
-
-```c
-struct glx_screen
-{
-   const struct glx_screen_vtable *vtable;
-   const struct glx_context_vtable *context_vtable;
-   const struct glx_drawable_vtable *drawable_vtable;
-...
-   const char *serverGLXexts;
-   const char *serverGLXvendor;
-   const char *serverGLXversion;
-...
-   char *effectiveGLXexts;
-
-   struct glx_display *display;
-
-   Display *dpy;
-   int scr;
-...
-};
-```
-
-`glx_screen` 同時保存 server 回報的 GLX capability 與 client 最後能使用的 `effectiveGLXexts`。 Mesa 會把 server 字串、client 建置時啟用的功能、direct backend、loader 與 driver capability 合併成實際可用的 extension 集合。 `dpy` 與 `scr` 則把這份 client-side screen wrapper 固定到一條 X connection 與其中一個 Screen
-
-三個 vtable 把 screen、context 與 drawable 的操作分開。 後面建立 direct context 時會走 `glx_screen_vtable::create_context_attribs`，make-current 會走 context vtable 的 bind，swap 則由 drawable 所在 screen 的 DRI hooks 處理。 這些 callback 所選 backend 可以不同，公開 GLX object 的外形仍保持一致
-
-Xorg 的 display state 先成立，GLX client 才利用 `Display *` 與 Root Window 找到正確的 Screen 與 rendering device。 這條主線在 swap 時交出 drawable 與呈現 request，顯示端接手後的內部工作位於該公開交界另一側
-
-還要區分 front storage 與 application 將要畫的 resource。 Xorg 的 front BO 服務整個 X Screen 或目前顯示組態。 application 的 default framebuffer backing 則屬於某個 GLX drawable 的 buffer pool，可能在 swap 後成為 Present source，也可能先被複製或合成。 兩者有機會在特定組態中共享 storage，卻沒有固定的一對一生命週期
+vGPU 2D 比較支線到此完成 software GLX screen 的建立。 現在回到 DRI3／VirGL 固定主線，查看公開 GLX handles、client-side wrappers 與 DRI objects 如何連在一起
 
 `GLXFBConfig` 在 client 端可轉成 `glx_config`。 `GLXContext` 則是 `glx_context` wrapper 的公開 view，wrapper 內同時保存 X11 協定使用的 identity 與 backend 的私有 pointer
 
 drawable 也有兩層 identity。 GLX API 使用 `GLXDrawable`，其值落在 X11 XID namespace。 direct 路徑查找或建立 client-side DRI drawable wrapper，再由 wrapper 取得 backend drawable。 context 建立不需要先繫結 draw 或 read drawable，所以 context object 與 framebuffer 繫結的生命週期分開。 這個延後繫結正是 make-current 要負責的工作
-
-#### GLX object 先保存 X11 identity，再接 DRI object
 
 Mesa GLX 正要配置公開 `GLXContext` wrapper，呼叫端已有 `glx_screen`、`glx_config` 與 optional `share_list`。 要判斷後續 bind、server request 與 destroy 各使用哪個 identity，必須看 wrapper 同時保存的 XID、screen pointer、backend pointer 與 current-display 欄位。 以下從 `struct glx_context` 的欄位找出 protocol namespace 與 client pointer chain
 
@@ -9522,7 +9771,9 @@ dri_common_create_context(struct glx_screen *base,
                     // legacy 與 ARB 入口從這裡共用 DRI context 建立路徑
 ```
 
-合流後，Direct vtable 的選擇點、sharing restrictions 的驗證層，以及 GLX wrapper 與 DRI context 的交接，共同界定每個回傳點已建立哪些 objects。 下面從 attribute-based 共用路徑逐層追到 `st_api_create_context()` 的呼叫邊界
+固定的 legacy 入口至此已進入 `dri_create_context_attribs()`。 這個共同函式會完成 sharing restrictions 驗證，再建立 GLX wrapper 與 DRI context。 在展開共同路徑以前，先將較新的 ARB 入口如何選擇 direct 或 indirect backend 單獨列為比較
+
+##### 比較支線：ARB 入口如何選擇 direct 或 indirect backend
 
 direct 選擇點位於 attribute normalization 之後。 screen 可以要求把原本的 indirect request 強制改成 direct，接著透過 `psc` 的 `vtable.create_context_attribs` 建立 direct wrapper。 若仍是 indirect，則進入另一個建立函式
 
@@ -9564,6 +9815,10 @@ glXCreateContextAttribsARB(Display *dpy, GLXFBConfig config,
 ...
 }
 ```
+
+這條比較支線會依 `direct` 與 screen vtable 決定要走 `dri_create_context_attribs()` 還是 `indirect_create_context_attribs()`。 本文固定的 legacy direct 入口已在前一段合流到前者，接下來回到這條主線
+
+##### 固定主線：共同 DRI 路徑建立 renderer context
 
 screen vtable 的 direct 實作是 `dri_create_context_attribs`。 它先把 GLX attributes 轉成 DRI context attributes，並以 config 檢查 render type。 sharing context 若為 indirect 會立即失敗，因為 direct DRI context 無法直接共享 indirect server context。 no-error mode 也必須與 sharing context 相符
 
@@ -9705,19 +9960,8 @@ dri_create_context(struct dri_screen *screen,
 `st_api_create_context()` 成功回傳後，client 行程內的 `glx_context`、`dri_context`、`st_context`、`gl_context` 與 `pipe_context` 已經接起來，但 context 仍未 current。 draw 與 read framebuffer 要等 drawable lookup 與 make-current 繫結才會接上。 application 因此可以先建立多個 contexts，再選擇要在哪個執行緒與 drawable 上使用它們
 
 ```callgraph
-Mesa GLX 公開 context 的建立
+Mesa GLX：固定的 legacy direct context 進入共同 DRI 路徑
 =================================================
-[Mesa: src/glx/create_context.c:46] glXCreateContextAttribsARB()
-  │
-  │  cfg = (struct glx_config *)config;
-  │  share = (struct glx_context *)share_context;
-  │
-  ├─ if (!direct && psc->force_direct_context)：direct = true
-  ├─ direct && psc->vtable->create_context_attribs != NULL
-  │    └─ gc = psc->vtable->create_context_attribs(psc, cfg, share, ...)
-  └─ !direct：indirect_create_context_attribs(...)
-       // direct 分支交接：screen、DRI config、sharing wrapper、attributes
-       ↓
 [Mesa: src/glx/dri_common.c:795] dri_create_context_attribs()
   │
   ├─ dri_convert_glx_attribs(...) 失敗：goto error_exit
@@ -10068,7 +10312,7 @@ Mesa GLX current-state publication
             // 最終結果：new GLX wrapper 與 GLAPI state 對呼叫端執行緒可見
 ```
 
-#### Indirect bind 路徑
+#### 比較支線：Indirect bind 路徑
 
 若 `GLXContext` 的 vtable 指向 indirect backend，呼叫端執行緒手上仍有 context XID、old context tag 與 draw／read XIDs，但沒有 local `pipe_context`。 要判斷 GL 公開 stubs 之後會進 Mesa renderer 還是 protocol encoder，必須讀 `SendMakeCurrentRequest()` 的 request 分支、reply tag 與 `indirect_bind_context()` 安裝的 `IndirectAPI`
 
@@ -13456,7 +13700,7 @@ GLSL frontend 與通用 linker 到此已產生各 stage 的 `gl_program::nir`。
 
 以下沿 `glEnable()`、`glDrawArrays()`、clear 與 readback 的原始程式碼路徑放大同一幀，展開 setter、合法的提前回傳、error 路徑、dirty bit 與 draw callback
 
-Setter 先更新 API-visible state 與 dependencies。 Draw、clear 或 readback 真正消費 state 時，Mesa 才更新必要的 derived state 並交給 State Tracker。 2D 軟體路徑與 VirGL 3D 路徑都會先經過這段共同處理，直到 Gallium driver callback 才改變執行方式
+Setter 先更新 API-visible state 與 dependencies。 Draw、clear 或 readback 真正消費 state 時，Mesa 才更新必要的 derived state 並交給 State Tracker。 本文固定的 VirGL 3D 路徑與後面的 drisw software rendering comparison 都會先經過這段共同處理，直到 Gallium driver callback 才改變執行方式
 
 ### State-changing 入口、error 與 no-error context
 
@@ -14534,7 +14778,7 @@ State Tracker 如何執行 active dirty atoms、將 operations 送進 Gallium ca
 
 前兩章已經讓 GLSL program 完成 link，也讓 Mesa OpenGL frontend 把這一幀的 state、objects 與 draw arguments 整理完成。 齒輪 draw 接下來要跨進 driver-neutral 的 Gallium 介面。 State Tracker 位在這個轉換點：它從 `gl_context` 讀取目前使用中的 framebuffer、shader、texture 與 vertex state，只更新 dirty 且本次 draw 會用到的項目，再把它們整理成 `pipe_*` structures 與 callback arguments
 
-這一步要解決的是「OpenGL 已經知道要畫什麼，但不同 Gallium drivers 需要共同輸入」的問題。 2D drisw 基準路徑與 VirGL 3D 路徑此刻都會經過相同的 State Tracker。 我們先固定即將出現的 Gallium objects，再回到 context 建立階段，確認 `st_context` 如何接住 Mesa core 與 Gallium。 接著沿 program link 與 draw 兩條既有路徑，追蹤 NIR lowering、driver variant、state atoms、resources、draw、flush 與 finish
+這一步要解決的是「OpenGL 已經知道要畫什麼，但不同 Gallium drivers 需要共同輸入」的問題。 本文固定的 VirGL 3D 路徑與 drisw／softpipe 比較支線此刻都會經過相同的 State Tracker。 我們先固定即將出現的 Gallium objects，再回到 context 建立階段，確認 `st_context` 如何接住 Mesa core 與 Gallium。 接著沿 program link 與 draw 兩條既有路徑，追蹤 NIR lowering、driver variant、state atoms、resources、draw、flush 與 finish
 
 ### 先固定 State Tracker 使用的 Gallium objects
 
