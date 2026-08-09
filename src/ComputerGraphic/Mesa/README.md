@@ -1945,7 +1945,9 @@ DRM 會將圖形裝置公開成 `/dev/dri/` 底下的 device nodes。 Device nod
 
 DRM core 的 [`drm_ioctl_permit()`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_ioctl.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n599) 會按照目前 fd 的 node 類型與狀態檢查這些 flags
 
-透過這兩種 nodes 取得的 file descriptors 都指向同一個 Linux `virtio_gpu` DRM device，但 DRM core 會依 node 類型與 ioctl 權限限制可執行的操作。 在本文固定路徑中，Xorg 會由 [`glamor_egl_init()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/glamor/glamor_egl.c#L1150-L1158) 找出同一個裝置的 render node，application 行程內的 Mesa GLX backend 再由 [`dri3_create_screen()`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/dri3_glx.c#L461-492) 取得該 fd。 這段 fd 交付會在後面的 application rendering path 展開
+透過這兩種 nodes 取得的 file descriptors 都指向同一個 Linux `virtio_gpu` DRM device，但 DRM core 會依 node 類型與 ioctl 權限限制可執行的操作。 Xorg 建立 glamor 顯示環境時，[`glamor_egl_screen_init()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/glamor/glamor_egl.c#L1105-L1163) 會從既有 primary-node fd 找出同一個裝置的 render-node path，並保存這個 path
+
+Application 後來發出 DRI3 Open request 時，[`glamor_dri3_open_client()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/glamor/glamor_egl.c#L1044-L1094) 才會以 `open()` 開啟這個 render node。 Xorg 將新 fd 傳給 client 後，application 行程內的 Mesa [`dri3_create_screen()`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/dri3_glx.c#L461-L492) 會取得一個新的 fd number，該 fd 仍引用 Xorg 前一步 open 所建立的同一筆 kernel DRM file。 這段 request 與 fd 交付會在後面的 application rendering path 展開
 
 以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_drv.c:227`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_drv.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n227)，用來顯示 `virtio_gpu` 同時宣告 KMS 與 render-node support：
 
@@ -1963,7 +1965,9 @@ static const struct drm_driver driver = {
 
 `DRIVER_MODESET` 表示這個 DRM driver 提供 KMS 介面，`DRIVER_RENDER` 則讓 DRM core 為它建立專用的 render node。 是否能透過 render node 提交 VirGL 3D commands，還取決於 guest 與 semu 是否已協商 `VIRTIO_GPU_F_VIRGL`
 
-Xorg 以 `open()` 開啟 primary node 後，會取得代表這次 open instance 的 file descriptor（fd）。 modesetting driver 接著呼叫 userspace 函式庫 libdrm，向 kernel 查詢顯示資訊或提交顯示狀態。 libdrm 會依照 DRM 的 userspace API（UAPI）準備 ioctl，再透過這個 fd 將要求送往對應的 DRM device
+Xorg 以 `open()` 開啟 primary node 後，會取得代表這次 open instance 的 file descriptor（fd）。 Kernel 會同時建立一筆 `drm_file`，保存這次 open 專用的 DRM connection state。 後續建立的 GEM handles 會放在這筆 `drm_file` 的 handle table，primary node 取得的顯示控制權也會與這筆 connection state 相連
+
+modesetting driver 接著呼叫 userspace 函式庫 libdrm，向 kernel 查詢顯示資訊或提交顯示狀態。 libdrm 會依照 DRM 的 userspace API（UAPI）準備 ioctl，再透過這個 fd 將要求送往對應的 DRM device
 
 DRM UAPI 定義了 userspace 與 kernel 共同使用的 ioctl request numbers、argument structures 與回傳格式。 每個 request number 都表示著一項固定操作，對應的 UAPI structure 則用來傳入查詢條件、更新內容或接收 kernel 回傳的結果
 
@@ -3329,7 +3333,9 @@ gbm_create_front_bo(drmmode_ptr drmmode, Bool do_map,
 
 本文固定追蹤 `try_enable_glamor()` 成功後的 branch，所以 `!drmmode->glamor` 是 false，Xorg 不要求為 GBM desktop BO 建立長期 CPU mapping。 `gbm_create_front_bo()` 會依序嘗試四組 flags，本文接著沿前兩組 rendering／scanout usage 其中一組成功建立 BO 的路徑往下看
 
-Xorg helper 會把這組尺寸、format 與 usage 交給公開的 `gbm_bo_create_with_modifiers2()` 或 `gbm_bo_create()`。 Mesa 的 GBM core 再透過目前 `gbm_device` 安裝的 backend operation 建立 BO。 以下程式碼來自 [`Mesa: src/gbm/main/gbm.c:489`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.c#L489-498)，用來顯示 public API 與 backend 的交接點：
+Xorg helper 會把這組尺寸、format 與 usage 交給公開的 `gbm_bo_create_with_modifiers2()` 或 `gbm_bo_create()`。 Mesa `libgbm` 會根據目前的 GBM device 選出 backend，建立符合條件的 storage，再將公開的 `struct gbm_bo *` 回傳給 Xorg。 本文的 3D 主線取得由 DRI image 與 classic VirGL resource 支撐的 BO，Xorg 則把這個 object 保存到原始程式碼的 `drmmode_rec::front_bo` 欄位
+
+以下程式碼來自 [`Mesa: src/gbm/main/gbm.c:489`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.c#L489-498)，用來顯示 Xorg 呼叫的公開 API 如何將建立要求交給已選定的 backend：
 
 ```c
 // [Mesa: src/gbm/main/gbm.c:489-498]
@@ -3343,35 +3349,6 @@ gbm_bo_create(struct gbm_device *gbm,
                              format, flags, NULL, 0);
 }
 ```
-
-本文的 GBM device 使用 Mesa DRI backend。 DRI 在這裡是 Mesa driver 與 window-system loader 交換 screen、image 與 buffer handle 的 direct-rendering integration interface。 GBM backend 會經由這組介面，要求目前的 Mesa driver 建立或匯入 image
-
-在固定追蹤的 branch 中，VirGL driver 能匯出 dma-buf，而且 usage 不含 `GBM_BO_USE_WRITE`，因此 backend 不會進入 `CREATE_DUMB` branch。 以下程式碼來自 [`Mesa: src/gbm/backends/dri/gbm_dri.c:886`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/backends/dri/gbm_dri.c#L886-L931)，用來顯示這個 backend branch 的選擇條件：
-
-```c
-// [Mesa: src/gbm/backends/dri/gbm_dri.c:886-931]
-static struct gbm_bo *
-gbm_dri_bo_create(struct gbm_device *gbm,
-                  uint32_t width, uint32_t height,
-                  uint32_t format, uint32_t usage,
-                  const uint64_t *modifiers,
-                  const unsigned int count)
-{
-    struct gbm_dri_device *dri = gbm_dri_device(gbm);
-    unsigned dri_use = 0;
-    ...
-    if (usage & GBM_BO_USE_WRITE || !dri->has_dmabuf_export)
-        return create_dumb(gbm, width, height, format, usage);
-    ...
-    if (usage & GBM_BO_USE_SCANOUT)
-        dri_use |= __DRI_IMAGE_USE_SCANOUT;
-    ...
-    dri_use |= __DRI_IMAGE_USE_SHARE;
-    ...
-}
-```
-
-DRI backend 會把建立結果包成 `struct gbm_bo *` 回傳給 Xorg。 沿著本文固定的 branch 繼續進入 VirGL winsys，會使用 [`DRM_IOCTL_VIRTGPU_RESOURCE_CREATE`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/winsys/virgl/drm/virgl_drm_winsys.c#L249-L310) 建立 classic VirGL resource。 因此這筆 GBM desktop BO 不是 2D 對照路徑的 dumb BO，也沒有使用 resource blob
 
 ```callgraph
 [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4838]
@@ -3392,20 +3369,17 @@ gbm_bo_create_and_map(...)
 [Mesa: src/gbm/main/gbm.c:489] gbm_bo_create(...)
   │
   │  gbm->v0.bo_create(...)
+  │  // 從公開 GBM API 進入已選定的 backend
   ↓
-[Mesa: src/gbm/backends/dri/gbm_dri.c:886] gbm_dri_bo_create(...)
+struct gbm_bo *
   │
-  ├─ usage 沒有 GBM_BO_USE_WRITE
-  ├─ VirGL 支援 dma-buf export
-  └─ 由 DRI backend 建立可供 rendering／scanout 的 BO
-       ↓
-     struct gbm_bo *
-       │
-       │  Xorg 保存為 drmmode_rec::front_bo
-       │  底層引用 classic VirGL resource
-       ↓
-     GBM desktop BO
+  │  Xorg 保存為 drmmode_rec::front_bo
+  │  固定 3D 主線的底層 storage 是 classic VirGL resource
+  ↓
+GBM desktop BO
 ```
+
+這裡先停在 Xorg 與公開 GBM API 的邊界。 `libgbm` 如何選擇 backend、建立自己的 DRI screen，以及如何在 DRI image 與 dumb BO 之間分流，會留到後面的 libgbm 章統一展開
 
 #### `ScreenInit()` 填入 X Screen 尺寸、depths 與 visuals
 
@@ -7269,6 +7243,10 @@ semu SDL event loop：發布給使用者看到的 VM window
 
 到這裡，3D Display 主線已經將 application image 的可見區域寫進 GBM desktop BO，再沿著既有 DRM／KMS framebuffer 與 scanout binding 發布到 semu VM window。 長時間存在的 X11 Window、application Pixmap、screen Pixmap、GBM desktop BO、DRM／KMS framebuffer 與 scanout binding 都會留給下一幀重複使用
 
+本文的固定路徑會持續更新同一份 GBM desktop BO，再以 Damage Region 與 `RESOURCE_FLUSH` 發布變動。 其他顯示路徑也可能準備多份 scanout buffers，再以 page flip 讓 CRTC 在適當時機改選下一個 DRM/KMS framebuffer
+
+Atomic KMS 則能把 plane 的 framebuffer、CRTC 目的矩形、display mode 與 connector routing 組成一次先驗證、再整批提交的 state update。 這些方法改變 display state 的提交方式，不會改變前面建立的 framebuffer、plane、CRTC、encoder 與 connector 分層
+
 Dumb BO 額外執行的 2D pixel transfer 與 semu 2D 發布流程，放在下一節當作 software-rendering 對照路徑
 
 ### vGPU 2D：software renderer 為什麼讓交付路徑更直接
@@ -7600,7 +7578,7 @@ Linux kernel 公開 DRM device node 與 UAPI。 Xorg 開啟 device node 取得 f
 
 呼叫端會將 DRM fd、尺寸、pixel format 與 `GBM_BO_USE_SCANOUT`、`GBM_BO_USE_WRITE` 等用途交給 GBM。 GBM backend 會配置符合需求的 buffer，再回傳 `struct gbm_bo`。 呼叫端可透過 GBM API 查詢 stride、handle 與前文介紹過的 modifier
 
-GBM 也能提供 CPU mapping，或將 buffer 匯出成 dma-buf fd，讓另一個支援 dma-buf 的 userspace 元件透過 file descriptor 引用同一份 buffer。 後文「libgbm：Xorg 建立 front BO」會再沿原始程式碼詳細展開 `gbm_device`、`gbm_bo` 與 `gbm_surface`
+GBM 也能提供 CPU mapping，或將 buffer 匯出成 dma-buf fd，讓另一個支援 dma-buf 的 userspace 元件透過 file descriptor 引用同一份 buffer。 後文「libgbm：backend ABI、device 與 BO 生命週期」會再沿原始程式碼詳細展開 `gbm_device`、`gbm_bo` 與 `gbm_surface`
 :::
 
 Xorg 的 modesetting driver 會把這個 pointer 保存在 `drmmode_rec::front_bo`。 以下程式碼來自 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.h:78`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_display.h#L78-L94)，用來顯示同一筆 driver state 也保存 GBM device 與 DRM fd：
@@ -20107,17 +20085,13 @@ Mesa 軟體 DRI drawable 驗證
 
 軟體驗證以 GLX loader 的公開 callback 交出 drawable identity、矩形與 pixel data。 X server 接著擁有 clipping、Pixmap storage 與顯示排程，因此這組 callback 正是 Mesa 可驗證的 ownership 邊界
 
-## libgbm：Xorg 建立 front BO
+## libgbm：backend ABI、device 與 BO 生命週期
 
-前面的 Loader 與 DRI 路徑都位於 `glxgears` application 行程中。 現在回到 Xorg 啟動 Display 路徑時的行程。 Xorg modesetting driver 此時已持有一個屬於 Xorg file descriptor table 的 DRM fd，並將它交給 Mesa `libgbm` 建立顯示用的 front BO。 `glxgears` 的 DRI loader 也可能開啟同一個 DRM device，但它取得的是 application 行程中的另一個 fd
+Display 章已經沿 Xorg 的執行順序，說明 modesetting display driver 為什麼需要 GBM desktop BO，也追蹤了 Xorg 如何把尺寸、format 與 rendering／scanout usage 交給公開 GBM API。 前一章則從 GLX application 行程看過 DRI frontend 與 driver 的交界，Mesa 的 libgbm DRI backend 也會沿用這套交界來取得底層 storage。 本章接著從 `libgbm` 內部查看公開 objects 如何經 backend ABI、device selection 與 Mesa DRI backend 取得底層 storage
 
-GBM（Generic Buffer Management）是 Mesa 提供的 userspace 函式庫。 Xorg 透過它選擇 buffer backend、配置可供 scanout 的 storage，並取得格式、stride、mapping 與 handle 等資訊。 `gbm_device` 保存 backend 與 DRM fd，`gbm_bo` 表示一份已配置的 buffer object，`gbm_surface` 則保存可用來反覆建立 BO 的尺寸、format 與 usage 條件
+`gbm_device` 保存 backend 與呼叫端提供的 DRM fd，`gbm_bo` 表示一份已配置的 buffer object，`gbm_surface` 則保存日後建立 BO 時使用的尺寸、format 與 usage 條件。 本章會先建立這三種 objects 的關係，再沿 BO 的建立、mapping 與銷毀流程，確認每一層持有哪些 references
 
-接下來先看 GBM loader 如何選擇 backend，再追蹤本文 mapped front BO 可能經過的兩條建立路徑、KMS reference 與銷毀流程
-
-前面固定組態中的 Xorg `gbm_create_front_bo()` 會依序嘗試多組 usage flags。 Mesa GBM DRI backend 可以載入 `kms_swrast` DRI 軟體 driver，BO 配置則會依 usage 與 dma-buf export capability，在 `create_dumb()` 建立 dumb BO 與建立 DRI image 之間分流
-
-本例最後取得可 mapping 的 GBM front BO，而且底層 storage 建立抵達 `DRM_IOCTL_MODE_CREATE_DUMB`。 哪一組 candidate 成功，以及公開的 `gbm_bo` 是由 `create_dumb()` 直接建立 dumb BO，還是包住 DRI image，仍由當時可用的 backend 與 capability 決定
+本文的 vGPU 3D 主線會走 DRI image branch，底層由 VirGL driver 建立 classic VirGL resource。 `create_dumb()` 與 `kms_swrast` 路徑則保留作為 vGPU 2D／software rendering 的同層對照。 兩條路徑都回傳相同的 `struct gbm_bo *`，但 backend 私有 object 與底層 storage 不同
 
 ### 具有版本協商機制的 backend ABI
 
@@ -20348,9 +20322,9 @@ struct gbm_dri_bo {
 };
 ```
 
-### 直接建立 dumb BO 與長期保留的 mapping
+### 對照：直接建立 dumb BO 與長期保留的 mapping
 
-先看 `create_dumb()` 分支。 Xorg `gbm_create_front_bo()` 的 usage candidates 可能帶入 `GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT`。 以下程式碼來自 [`Mesa: src/gbm/backends/dri/gbm_dri.c:827`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/backends/dri/gbm_dri.c#L827)，用來追蹤 `create_dumb()` 如何先驗證用途與 format，接著建立 GEM dumb BO、填入公開／私有 BO state，最後啟動 CPU mapping
+vGPU 2D 對照路徑會要求能由 CPU 寫入並供 scanout 使用的 BO，因此可能讓 `gbm_dri_bo_create()` 進入 `create_dumb()` branch。 以下程式碼來自 [`Mesa: src/gbm/backends/dri/gbm_dri.c:827`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/backends/dri/gbm_dri.c#L827)，用來追蹤 `create_dumb()` 如何先驗證用途與 format，接著建立 GEM dumb BO、填入公開／私有 BO state，最後啟動 CPU mapping
 
 ```c
 static struct gbm_bo *
@@ -20439,10 +20413,9 @@ gbm_dri_bo_map_dumb(struct gbm_dri_bo *bo)
 }
 ```
 
-Xorg 稍後呼叫公開 map API 時，不必知道 BO 採用哪一種 backend 私有 object。 以下兩段程式碼分別來自 Mesa DRI backend 與 Xorg modesetting，用來追蹤 `create_dumb()` 分支如何回傳既有 mapping、DRI image 如何改走 resource mapping 路徑，以及 Xorg 最後保存哪些 mapping 結果
+GBM 呼叫端使用公開 map API 時，不必知道 BO 採用哪一種 backend 私有 object。 以下程式碼來自 [`Mesa: src/gbm/backends/dri/gbm_dri.c:1040`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/backends/dri/gbm_dri.c#L1040)，用來追蹤 `create_dumb()` branch 如何回傳既有 mapping，以及 DRI image branch 如何改走 resource mapping 路徑：
 
 ```c
-// [Mesa: src/gbm/backends/dri/gbm_dri.c:1040]
 static void *
 gbm_dri_bo_map(struct gbm_bo *_bo,
                uint32_t x, uint32_t y,
@@ -20464,39 +20437,15 @@ gbm_dri_bo_map(struct gbm_bo *_bo,
                          width, height, flags, (int *)stride,
                          map_data);
 }
-
-// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:101]
-static inline Bool
-gbm_bo_map_all(struct gbm_bo *bo, bo_priv_t *data)
-{
-   uint32_t stride = 0;
-   ...
-
-   data->map_data = NULL;
-   data->map_addr = gbm_bo_map(bo, 0, 0,
-                               gbm_bo_get_width(bo),
-                               gbm_bo_get_height(bo),
-                               GBM_BO_TRANSFER_READ_WRITE,
-                               &stride, &data->map_data);
-
-   return !!data->map_addr;
-}
 ```
 
-`data->map_addr` 是 Xorg 後來交給 screen `PixmapRec::devPrivate.ptr` 的 pixel 位址。 `data->map_data` 則是 opaque token，銷毀時必須原封不動傳回 `gbm_bo_unmap()`。 因此 screen Pixmap 與 mapped front BO 並不是兩份 pixel 副本。 Pixmap 透過這個位址存取 front BO 的底層 storage。 只有在 `create_dumb()` 分支中，這個位址才是 `gbm_dri_bo::map` 內的位址
+`create_dumb()` 建立的 BO 已保存長期 mapping，所以這個 branch 只需算出矩形起點並回傳既有位址。 DRI image branch 則把 map request 交給 DRI frontend，再由對應的 Gallium driver 與 winsys 決定如何取得 CPU mapping。 vGPU 2D 對照路徑中的 Xorg 如何把 mapping 接到 screen Pixmap，已在 Display 章沿 Xorg callback 展開
 
-把 Xorg 的 front BO 建立 helper、GBM 公開 dispatch、DRI backend 分支與 screen Pixmap 安裝接起來後，完整建立路徑如下。 兩條分支都可能產生可 mapping 的 GBM BO，也都可能在不同層抵達 `DRM_IOCTL_MODE_CREATE_DUMB`。 本文現有的執行期證據無法判定哪條分支成功，因此 callgraph 保留兩者，並在 Xorg 取得 BO mapping 的共同步驟重新匯合
+現在把公開 BO create 與 backend 內部的兩條 branch 放在同一張圖中。 這張圖停在 libgbm 與 Mesa driver 的邊界，不再重走 Xorg 的 screen Pixmap 與 KMS 流程：
 
 ```callgraph
-Xorg front BO 配置
+libgbm BO 配置
 =================================================
-[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:4838] drmmode_create_initial_bos(...)
-  └─ `drmmode->front_bo = gbm_create_best_bo(..., DRMMODE_FRONT_BO)`
-  ↓
-[Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:272] gbm_create_best_bo(...)
-  └─ [Xorg: drmmode_bo.c:196] gbm_create_front_bo(...)
-       └─ 依序嘗試 scanout usage candidates
-  ↓
 [Mesa: src/gbm/main/gbm.c:489/527] gbm_bo_create*()
   └─ `gbm->v0.bo_create(...)`
        // 實際 callback 由已選定的 GBM backend 提供
@@ -20514,90 +20463,19 @@ Xorg front BO 配置
        ↓
      [Mesa: src/gbm/backends/dri/gbm_dri.c:1015] gbm_dri_bo_create(...)
        └─ `dri_create_image_with_modifiers(...)`
-            // 這裡是呼叫點，不是 helper 的函式定義
-       ↓
-     [Mesa: src/gallium/frontends/dri/dri_helpers.c:834]
-     dri_create_image_with_modifiers(...)
-       ↓
-     [Mesa: src/gallium/frontends/dri/dri2.c:947] dri_create_image(...)
-       └─ `pipe_screen->resource_create(..., PIPE_BIND_SCANOUT, ...)`
             ↓
-          [Mesa: src/gallium/drivers/softpipe/sp_texture.c:155] softpipe_resource_create_front(...)
-            └─ `winsys->displaytarget_create(...)`
-                 ↓
-               [Mesa: src/gallium/winsys/sw/kms-dri/kms_dri_sw_winsys.c:165]
-               kms_sw_displaytarget_create(...)
-                 └─ `DRM_IOCTL_MODE_CREATE_DUMB`
-  ↓
-[Xorg: drmmode_bo.c:101] gbm_bo_map_all(...)
-  └─ `gbm_bo_map(...)`
-       ├─ `create_dumb()` 分支：回傳 `gbm_dri_bo::map` 內的位址
-       └─ DRI image 分支
+          [Mesa: src/gallium/frontends/dri/dri_helpers.c:834]
+          dri_create_image_with_modifiers(...)
             ↓
-          [Mesa: gbm_dri.c:1040] gbm_dri_bo_map(...)
-            └─ [Mesa: dri2.c:1597] dri2_map_image(...)
-                 └─ `pipe_texture_map(...)`
-                      ↓
-                    [Mesa: sp_texture.c:296] softpipe_transfer_map(...)
-                      └─ `winsys->displaytarget_map(...)`
-                           ↓
-                         [Mesa: kms_dri_sw_winsys.c:312] kms_sw_displaytarget_map(...)
-                           ├─ `DRM_IOCTL_MODE_MAP_DUMB`
-                           └─ `mmap(...)`
-  ↓
-[Xorg: drmmode_bo.c:296] gbm_bo_set_user_data(..., destroy_user_data)
-  ↓
-[Xorg: hw/xfree86/drivers/video/modesetting/driver.c:1722] modesetCreateScreenResources(...)
-  └─ 將 `gbm_bo_get_map(front_bo)` 安裝到 screen Pixmap
+          [Mesa: src/gallium/frontends/dri/dri2.c:947] dri_create_image(...)
+            └─ `pipe_screen->resource_create(..., PIPE_BIND_SCANOUT, ...)`
+                 // 固定 3D 主線進入 VirGL resource create
+                 // software／kms_swrast 對照則可能在更下層建立 dumb BO
 ```
 
-### KMS framebuffer 引用同一份 BO storage
+### 銷毀 BO 與 backend storage
 
-`gbm_bo` 建立 storage 後，KMS 還需要 framebuffer object，plane／CRTC 才能引用它。 以下兩段程式碼分別來自 Xorg modesetting 的 CRTC setup 與 BO import helper，用來確認 `fb_id` 尚未建立時，Xorg 如何把同一個 `front_bo` 的 handle 與 layout 交給 libdrm `drmModeAddFB*()`
-
-```c
-// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_display.c:654]
-Bool
-drmmode_crtc_get_fb_id(xf86CrtcPtr crtc,
-                       uint32_t *fb_id, int *x, int *y)
-{
-   ...
-   if (*fb_id == 0) {
-      ret = drmmode_bo_import(drmmode, drmmode->front_bo,
-                              &drmmode->fb_id);
-      if (ret < 0)
-         return FALSE;
-      *fb_id = drmmode->fb_id;
-   }
-
-   return TRUE;
-}
-
-// [Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:339]
-int
-drmmode_bo_import(drmmode_ptr drmmode, struct gbm_bo *bo,
-                  uint32_t *fb_id)
-{
-   uint32_t width = gbm_bo_get_width(bo);
-   uint32_t height = gbm_bo_get_height(bo);
-   ...
-
-   return drmModeAddFB(drmmode->fd, width, height,
-                       drmmode->scrn->depth, drmmode->kbpp,
-                       gbm_bo_get_stride(bo),
-                       gbm_bo_get_handle(bo).u32, fb_id);
-}
-```
-
-`drmmode_rec::front_bo` 保存 userspace BO reference，`drmmode->fb_id` 保存 KMS framebuffer ID
-
-`drmModeAddFB()` request 會帶入目前 DRM file namespace 中的 GEM handle。 Kernel 用它查出 GEM object，成功建立的 DRM framebuffer 再保存該 object 的 reference。 Handle 是 lookup key，不是 framebuffer 長期持有的 reference。 `drmModeRmFB()` 移除 framebuffer 時才釋放這一層 framebuffer reference
-
-screen Pixmap mapping、GBM BO、GEM object 與 KMS framebuffer 因此組成一條 ownership／reference chain，而不是四份 pixel data
-
-### 銷毀 front BO
-
-Xorg 關閉 screen 時先移除 KMS framebuffer reference，再銷毀 `front_bo`。 公開 `gbm_bo_destroy()` 會先執行 Xorg 註冊的 user-data 銷毀函式，然後才呼叫 backend `bo_destroy`
+GBM BO 的呼叫端要先移除其他層對這份 storage 的 references，再呼叫 `gbm_bo_destroy()`。 Xorg 關閉 X Screen 時，會先移除 Display 章建立的 DRM/KMS framebuffer，再銷毀 `drmmode_rec::front_bo`。 進入 libgbm 後，公開 destroy 入口會先執行呼叫端登記的 user-data 銷毀函式，然後才呼叫 backend `bo_destroy`
 
 ```callgraph
 Xorg screen 銷毀流程
@@ -20618,13 +20496,9 @@ Xorg screen 銷毀流程
   │    ↓
   │  [Mesa: src/gallium/frontends/dri/dri_helpers.c:311] dri2_destroy_image(...)
   │    └─ `pipe_resource_reference(&img->texture, NULL)`
-  │         ↓
-  │       [Mesa: src/gallium/drivers/softpipe/sp_texture.c:199] softpipe_resource_destroy(...)
-  │         └─ `winsys->displaytarget_destroy(...)`
-  │              ↓
-  │            [Mesa: src/gallium/winsys/sw/kms-dri/kms_dri_sw_winsys.c:275]
-  │            kms_sw_displaytarget_destroy(...)
-  │              └─ `DRM_IOCTL_MODE_DESTROY_DUMB`
+  │         └─ 最後一個 reference 消失時，由選定的 Gallium driver 銷毀 resource
+  │              // 固定 3D 主線由 VirGL resource lifecycle 接手
+  │              // kms_swrast 對照路徑則可能銷毀 dumb display target
   │
   └─ `create_dumb()` 建立的 dumb BO：
        ├─ `gbm_dri_bo_unmap_dumb(bo)` 執行 `munmap()`
@@ -20636,13 +20510,15 @@ Xorg screen 銷毀流程
 
 `create_dumb()` 分支的公開 `gbm_bo_unmap()` callback 只驗證 opaque pointer 位於長期保留的 mapping 範圍內，不會當場 `munmap()`。 真正解除 mapping 的時間是 backend destroy
 
-DRI image 分支會先釋放 image 持有的 `pipe_resource`。 若 resource 使用 `kms-dri` display target，resource destroy 會走到另一個 `DRM_IOCTL_MODE_DESTROY_DUMB` 呼叫端
+DRI image branch 會先釋放 image 持有的 `pipe_resource`。 固定 3D 主線會進入 VirGL resource lifecycle。 若 software／`kms_swrast` 對照路徑使用 `kms-dri` display target，resource destroy 才會走到另一個 `DRM_IOCTL_MODE_DESTROY_DUMB` 呼叫端
 
 兩條分支最後都刪除各自 DRM file 內的 GEM handle，底層 GEM object 則依 refcounting，在最後一個 reference 消失後回收
 
-### DRI image 分支底下也可能使用 dumb BO
+### 對照：DRI image branch 底下也可能使用 dumb BO
 
-若 DRI backend 沒有從 `create_dumb()` 提前回傳，就會進入 DRI image 分支。 以下程式碼來自 [`Mesa: src/gbm/backends/dri/gbm_dri.c:1015`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/backends/dri/gbm_dri.c#L1015)，用來追蹤 image 配置、公開 handle／stride query 與失敗清理
+若 DRI backend 沒有從 `create_dumb()` 提前回傳，就會進入 DRI image branch。 固定 3D 主線會讓 VirGL driver 建立 resource，但 DRI image 本身沒有規定底層 storage 必須是哪一種。 Software／`kms_swrast` 對照路徑仍可能在更下層建立 dumb BO
+
+以下程式碼來自 [`Mesa: src/gbm/backends/dri/gbm_dri.c:1015`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/backends/dri/gbm_dri.c#L1015)，用來追蹤 image 配置、公開 handle／stride query 與失敗清理：
 
 ```c
 static struct gbm_bo *
@@ -20678,7 +20554,7 @@ failed:
 }
 ```
 
-DRI image 並不決定底層 storage type。 `kms_swrast` 與 softpipe 的組合仍可能在更下層使用 DRM dumb BO。 以下程式碼來自 [`Mesa: src/gallium/frontends/dri/dri2.c:947`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/frontends/dri/dri2.c#L947-1038)，用來追蹤 DRI image use 如何轉成 Gallium bind flags，再透過 resource template 進入 `pipe_screen::resource_create()`：
+以下程式碼來自 [`Mesa: src/gallium/frontends/dri/dri2.c:947`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/frontends/dri/dri2.c#L947-1038)，用來追蹤 DRI image use 如何轉成 Gallium bind flags，再透過 resource template 進入 `pipe_screen::resource_create()`：
 
 ```c
 struct dri_image *
@@ -20851,7 +20727,7 @@ kms_sw_displaytarget_map(struct sw_winsys *ws,
 }
 ```
 
-DRI image handle 仍是 backend 對本地 storage 的 handle，不是 dma-buf fd，也不能直接拿到另一個 DRM file 使用。 需要匯出時，呼叫端必須經 `gbm_bo_get_fd*()` 取得 fd，並連同 plane、offset、stride、format 與 modifier metadata 一起傳遞。 對本文而言，`create_dumb()` 與 DRI image／`kms_swrast` 兩條路徑都符合目前的原始程式碼與觀察結果。 若要斷定實際執行採用哪一條，還需要記錄成功的 usage candidate 或執行期呼叫路徑
+DRI image handle 仍是 backend 對本地 storage 的 handle，不是 dma-buf fd，也不能直接拿到另一個 DRM file 使用。 需要匯出時，呼叫端必須經 `gbm_bo_get_fd*()` 取得 fd，並連同 plane、offset、stride、format 與 modifier metadata 一起傳遞。 固定 3D 主線與這條 software／`kms_swrast` 對照使用相同的 DRI image interface，差異要到選定的 Gallium driver 與 winsys 才出現
 
 ### Surface 只保存組態，Xorg 另行直接建立 BO
 
@@ -20901,7 +20777,7 @@ gbm_dri_surface_create(struct gbm_device *gbm,
 Xorg modesetting 另有一條直接建立 BO 的路徑。 [`Xorg: hw/xfree86/drivers/video/modesetting/drmmode_bo.c:142`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/hw/xfree86/drivers/video/modesetting/drmmode_bo.c#L142) 的 `gbm_bo_create_and_map()` 直接接收 GBM device、尺寸、format、modifier 與 flags，依序嘗試 `gbm_bo_create_with_modifiers2()`、相容介面與一般 `gbm_bo_create()`。 這段 Xorg 程式碼沒有先建立或消費 `gbm_surface`
 
 ```callgraph
-GBM 公開呼叫端與 DRI backend
+GBM surface 與 BO 是兩種不同的公開 objects
 =================================================
 GBM userspace 呼叫端
   │
@@ -20921,27 +20797,21 @@ GBM userspace 呼叫端
        └─ [Mesa: src/gbm/main/gbm.c:527] gbm_bo_create_with_modifiers2(...)
             ├─ 尺寸或 modifier／flags 組合無效：`errno = EINVAL; return NULL`
             └─ `gbm->v0.bo_create(..., modifiers, count)`
-                 ↓
-               [Mesa: src/gbm/backends/dri/gbm_dri.c:886] gbm_dri_bo_create(...)
-                 ├─ `GBM_BO_USE_WRITE` 或不支援 dma-buf export
-                 │    └─ `create_dumb(...)`
-                 │         ├─ 建立／mapping 失敗：銷毀 handle 並釋放 wrapper
-                 │         └─ 成功：`gbm_bo` 持有 mapped dumb BO state
-                 └─ 其他 usage／capability
-                      └─ [Mesa: gbm_dri.c:1015] dri_create_image_with_modifiers(...)
-                           ├─ DRI image 配置失敗：釋放 wrapper 與 modifier 陣列
-                           └─ 成功：`gbm_bo` 持有已配置的 DRI image
+                 └─ 回到前面的 BO 配置分流
+                      // 最終結果：`gbm_bo` 管理一份實際 storage
 ```
 
 `gbm_surface` 管理組態與 modifier 副本，GBM BO 則管理一份實際 storage，可能是 mapped dumb BO，也可能是 DRI image。 Xorg 的 BO 建立函式直接建立 `gbm_bo`。 這條 `gbm_surface` 路徑沒有建立 image，也沒有保存或管理 BO queue
 
+至此，libgbm 內部已將 Xorg 提供的 BO 條件交給選定的 Mesa driver。 `kms_swrast` 與 dumb BO 對照路徑也在這裡結束。 下一章回到本文固定的 VirGL 3D rendering 主線，追蹤 VirGL driver 如何建立 resources 並提交 commands
+
 ## VirGL guest driver 與 winsys
 
-現在將同一個 `glxgears` 視窗從 2D drisw 基準路徑切換成 3D VirGL。 Application 仍然建立 X11 Window、GLX context 並送出相同的 OpenGL rendering，使用者也仍看到齒輪轉動。 改變的是 Mesa 區域內接住 Gallium callbacks 的 driver，以及真正執行 rendering 的位置
+本文固定的 `glxgears` 主線會使用 3D VirGL。 Application 建立 X11 Window、GLX context 並送出 OpenGL rendering 後，Mesa 內接住 Gallium callbacks 的是 VirGL guest driver，rendering 則會經虛擬 GPU 路徑交給 host renderer 執行
 
 VirGL guest driver 會把齒輪這一幀的 Gallium resources、shader state 與 draw 編成 VirGL command stream，winsys 再準備 DRM BO handle list 與 fence information，最後以 `DRM_IOCTL_VIRTGPU_EXECBUFFER` 跨進 DRM／kernel。 Resource handle、GEM BO handle、DRM file context 與 Gallium context 分屬不同 namespaces 與生命週期，因此本章會沿 screen 建立、capset、context、resource、command encoding、transfer queue、command 提交與 fence，逐步確認每次交出的實際 object
 
-先把這項改變放回前面的 2D 基準案例。 軟體 rendering 會先產生算好的 pixels，再由 display 路徑發布內容
+作為對照，vGPU 2D 的 software-rendering 路徑會先在 guest CPU 產生算好的 pixels，再由 display 路徑發布內容
 
 VirGL 則在 rendering 階段產生 encoded renderer work、resource references 與 fence，交由後面的 guest winsys 提交
 
@@ -20949,7 +20819,7 @@ VirGL 則在 rendering 階段產生 encoded renderer work、resource references 
 
 相同的 Application、OpenGL frontend、State Tracker 與 Gallium callback 介面會一路走到 driver callback。 callback 之後，各條路徑才改由不同元件執行，使用不同的 resource backing，並以各自的 fence 或同步機制確認工作完成
 
-本文先在 guest 端追蹤 Mesa 流程，直到它呼叫 ioctl UAPI。 接著再從虛擬機器監視器（virtual machine monitor，VMM）擁有的呼叫端開始，沿 virglrenderer 公開 API 觀察 host 如何承接同一份 renderer work
+本文先在 guest 端追蹤 Mesa，直到 winsys 呼叫 ioctl UAPI。 接著沿 ioctl 進入 Linux `virtio_gpu` driver，確認 command submission 與 fence 如何跨過 guest kernel。 最後再進入虛擬機器監視器（virtual machine monitor，VMM）與 virglrenderer，觀察 host 如何承接同一份 renderer work
 
 ### DRI 如何選擇 driver 並建立 VirGL screen
 
@@ -21193,17 +21063,17 @@ Mesa Gallium pipe-loader
 
 VirGL guest driver 在編碼第一批 commands 前，必須先知道 host renderer 支援哪些 formats、shader stages 與 protocol features。 這些能力會決定 guest 可以建立哪些 resources、使用哪些 shader 功能，以及用哪一版 VirGL protocol 描述工作。 VirGL 將這組 renderer capabilities 稱為 capset（capability set）
 
-建立 screen／winsys 時，Mesa 會先查詢這份 DRM file 支援的 virtio-gpu capabilities，並選定要使用的 capset。 Kernel 支援 `CONTEXT_INIT` 時，winsys 也會在這個階段呼叫 `virgl_init_context()` 初始化 DRM file context。 Legacy UAPI 沒有這項 capability 時則略過該呼叫
+建立 screen／winsys 時，Mesa 會先查詢這份 DRM file 支援的 virtio-gpu capabilities，再取得 renderer capset。 本文固定的 semu 組態有公告 `VIRTIO_GPU_F_VIRGL`，但沒有公告 `VIRTIO_GPU_F_CONTEXT_INIT`，因此 Mesa 會略過 `DRM_IOCTL_VIRTGPU_CONTEXT_INIT`。 Linux `virtio_gpu` driver 等到第一次 resource-create 或 execbuffer request 時，才為這筆 DRM file 建立 virtio-gpu context
 
-Application 之後建立 OpenGL context 時，State Tracker 才會要求 VirGL 建立 Gallium `pipe_context`，用來保存該 rendering context 的 command buffer、state 與 callbacks。 DRM file context 服務 kernel／renderer protocol 初始化，`pipe_context` 則承接每個 OpenGL context 的 rendering state 與 commands，兩者位於不同層級
+Application 之後建立 OpenGL context 時，State Tracker 才會要求 VirGL 建立 Gallium `pipe_context`，用來保存該 rendering context 的 command buffer、state 與 callbacks。 Linux 為 DRM file 保存的 virtio-gpu context 負責 guest／host renderer protocol 使用的 `ctx_id`，`pipe_context` 則承接每個 OpenGL context 的 rendering state 與 commands。 兩者位於不同層級，也不是一對一的同一種 object
 
 Capset 結果會限制後續 resource 與 transfer 功能，context 銷毀流程則必須釋放 command buffer、transfer queue 與各項由 context 持有的 references
 
-#### DRM file context／capset 初始化
+#### Capset 查詢與可選的 explicit context 初始化
 
-DRM winsys 先逐一查詢 virtio-gpu GETPARAM。 `VIRTGPU_PARAM_3D_FEATURES` 不存在時不建立 VirGL winsys，version 與 `CONTEXT_INIT` 支援也在同一階段判斷。 這些值描述 fd 背後的 guest kernel UAPI 能力，尚未建立 Gallium `pipe_context`
+DRM winsys 先逐一查詢 virtio-gpu GETPARAM。 `VIRTGPU_PARAM_3D_FEATURES` 不存在時不建立 VirGL winsys，DRM version 與 `CONTEXT_INIT` 支援也在同一階段判斷。 這些值描述 fd 背後的 guest kernel UAPI 能力，尚未建立 Gallium `pipe_context`。 在本文的 semu 組態中，`params[param_context_init].value` 會是 0，所以下面的 `virgl_init_context()` branch 不會執行
 
-以下程式碼來自 [`Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.c:1225`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/winsys/virgl/drm/virgl_drm_winsys.c#L1225)，用來顯示 `virgl_drm_winsys_create()` 逐項以 `DRM_IOCTL_VIRTGPU_GETPARAM` 填 `params`，缺少 3D features 或有效 DRM version 就回傳 NULL，kernel 支援 context init 時另要求 `virgl_init_context()` 成功
+以下程式碼來自 [`Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.c:1225`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/winsys/virgl/drm/virgl_drm_winsys.c#L1225)，用來顯示 `virgl_drm_winsys_create()` 逐項以 `DRM_IOCTL_VIRTGPU_GETPARAM` 填 `params`，缺少 3D features 或有效 DRM version 就回傳 `NULL`，kernel 另有公告 context-init capability 時才要求 `virgl_init_context()` 成功
 
 ```c
 static struct virgl_winsys *
@@ -21239,7 +21109,7 @@ virgl_drm_winsys_create(int drmFD)
 }
 ```
 
-kernel 支援 explicit context 初始化時，`virgl_init_context()` 從 supported capset bitmask 選擇 VirGL 2，否則退回 VirGL 1，並以 `DRM_IOCTL_VIRTGPU_CONTEXT_INIT` 設到這份 DRM file context。 函式參數只有 fd，程式也沒有配置 `struct virgl_context`
+當 kernel 與虛擬裝置也支援 explicit context 初始化時，`virgl_init_context()` 會從 supported capset bitmask 選擇 VirGL 2，否則退回 VirGL 1，並以 `DRM_IOCTL_VIRTGPU_CONTEXT_INIT` 設到這份 DRM file context。 函式參數只有 fd，程式也沒有配置 `struct virgl_context`
 
 以下程式碼來自 [`Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.c:1176`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/winsys/virgl/drm/virgl_drm_winsys.c#L1176)，用來顯示 `virgl_init_context()` 從 supported capset bitmask 優先選 VirGL 2、否則選 VirGL 1，兩者都不存在時回傳 `-EINVAL`，選定值則以 `DRM_IOCTL_VIRTGPU_CONTEXT_INIT` 寫入 file context
 
@@ -21276,11 +21146,11 @@ static int virgl_init_context(int drmFD)
 }
 ```
 
-這裡的 context 由 kernel 依 open file description 管理。 同一 fd 在 compositor 先做其他 DRM 操作後可能得到 `EEXIST`，程式將其視為可接受的結果。 它會把選定的 capset 設定到這個 open DRM file 所屬的 virtio-gpu context，供之後透過同一個 DRM file 提交 commands。 framebuffer、shader 繫結與 draw state 不保存在這裡
+這條可選路徑會把選定的 capset 設到 open DRM file 所屬的 virtio-gpu context，供之後透過同一個 DRM file 提交 commands。 Framebuffer、shader 繫結與 draw state 不保存在這裡。 本文固定路徑不呼叫這個 ioctl，後面會沿 Linux resource-create 路徑查看 context 如何延後建立
 
 #### Renderer capability query
 
-完成 file context 初始化後，screen 仍要取得 renderer 支援的 formats、GLSL level、shader stage 與 feature bits。 以下程式碼來自 [`Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.c:1008`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/winsys/virgl/drm/virgl_drm_winsys.c#L1008)，用來追蹤 winsys 如何選擇 capset、退回 v1，以及各種失敗如何回傳給 `virgl_create_screen()`
+完成 winsys capability detection 後，screen 還要取得 renderer 支援的 formats、GLSL level、shader stage 與 feature bits。 以下程式碼來自 [`Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.c:1008`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/winsys/virgl/drm/virgl_drm_winsys.c#L1008)，用來追蹤 winsys 如何選擇 capset、退回 v1，以及各種失敗如何回傳給 `virgl_create_screen()`
 
 ```c
 static int virgl_drm_get_caps(struct virgl_winsys *vws,
@@ -21423,9 +21293,9 @@ virgl_context_create(struct pipe_screen *pscreen,
 }
 ```
 
-建立完成後，`vctx->base` 保存這一個 Gallium rendering context 專用的 `pipe_context` callback table。 每份 Gallium context 可以累積自己的 command dwords、shader 繫結、vertex array dirty state 與 object handles，底下仍共用 screen 所持有的 winsys 與 DRM file context
+建立完成後，`vctx->base` 保存這一個 Gallium rendering context 專用的 `pipe_context` callback table。 每份 Gallium context 可以累積自己的 command dwords、shader 繫結、vertex array dirty state 與 object handles，底下仍共用 screen 所持有的 winsys 與 DRM file
 
-兩個 context 名稱的差異可用建立位置判斷。 `virgl_init_context()` 出現在 DRM winsys 建立流程，輸出是 ioctl 對 fd state 的修改。 `virgl_context_create()` 出現在 Gallium screen callback，輸出是 `struct pipe_context *`。 後者可以建立多次，前者依 DRM file 初始化條件處理
+`virgl_init_context()` 是 DRM winsys 建立流程中的可選步驟，輸出是 ioctl 對 fd state 的修改，本文固定組態會略過它。 `virgl_context_create()` 則出現在 Gallium screen callback，每呼叫一次就建立一筆 `struct pipe_context *`。 Linux 延後建立的 virtio-gpu context 依然屬於 DRM file 層，與這些 Gallium contexts 不是同一種 object
 
 ```callgraph
 Mesa VirGL DRM winsys 初始化
@@ -23116,7 +22986,7 @@ static int virgl_fence_get_fd(struct virgl_winsys *vws,
 
 Gallium 呼叫端不需要判斷 `pipe_fence_handle` 內部使用 fd 或 resource busy state，只透過相同的 wait／reference callbacks 管理它。 支援 fence fd 時，userspace wrapper 持有 descriptor，descriptor 的 open-file reference 讓 kernel `sync_file` 保持有效。 Legacy 路徑則由 wrapper 持有 `hw_res` reference
 
-下一節 virglrenderer 公開 API 中的 client fence ID 位於 host 行程。 該 ID 由 VMM 呼叫端建立，virglrenderer 完成相應工作後，再透過 VMM 提供的 fence callback 回報
+下一章先沿 execbuffer ioctl 進入 Linux `virtio_gpu` driver，追蹤 kernel 如何建立 output fence，並在 controlq response 抵達時 signal 這筆 fence。 後面的 virglrenderer 章再處理 host 行程中的 client fence ID 與 VMM callback
 
 ```callgraph
 Mesa State Tracker to VirGL flush
@@ -23165,11 +23035,469 @@ Mesa VirGL DRM winsys
             // 成功結果是 work 已交給 Linux virtio-gpu UAPI
 ```
 
+## Linux DRM rendering：Mesa 的 VirGL work 如何進入 virtio-gpu 3D
+
+前一章停在 Mesa VirGL winsys 呼叫 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE` 與 `DRM_IOCTL_VIRTGPU_EXECBUFFER`。 對 application 而言，這些呼叫只是使用 render node fd 發出的 DRM ioctls。 要讓 VirGL command stream 跨過 guest userspace，Linux `virtio_gpu` driver 還要為這條 DRM connection 建立 context，把 userspace handles 解析成 kernel objects，處理 submission dependencies，再將 work 轉成 virtio-gpu 3D commands
+
+本章沿著 ioctl 進入 kernel 後的執行順序，依次查看 render node、DRM file context、resource、execbuffer 與 fence。 Display 章已完整追蹤 primary node、DRM/KMS framebuffer 與 display topology，因此這裡只處理 rendering。 本章的輸入是 Mesa 準備好的 VirGL command stream、BO handle list 與同步條件，輸出則是 controlq 上的 `VIRTIO_GPU_CMD_SUBMIT_3D`，以及完成後回到 Mesa 的 fence
+
+### Render node 將 rendering ioctls 交給 `virtio_gpu` driver
+
+前面的 GLX／DRI3 路徑中，Xorg 收到 DRI3 Open request 後會開啟 render node，kernel 也為這次 open 建立前面介紹的 DRM file。 Mesa 取得的 render node fd 指向同一筆 DRM file。 Mesa 對這個 fd 呼叫 `drmIoctl()` 時，DRM core 會依 request number 找到 `virtio_gpu` driver 登記的 handler。 Handler 具有 `DRM_RENDER_ALLOW` flag 時，render node client 才能呼叫它
+
+以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_ioctl.c:707`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/drivers/gpu/drm/virtio/virtgpu_ioctl.c#L707-L745)，用來顯示 context、resource、execbuffer、capset 與 wait operations 都能由 render node 使用：
+
+```c
+struct drm_ioctl_desc virtio_gpu_ioctls[DRM_VIRTIO_NUM_IOCTLS] = {
+   ...
+   DRM_IOCTL_DEF_DRV(VIRTGPU_EXECBUFFER,
+                     virtio_gpu_execbuffer_ioctl,
+                     DRM_RENDER_ALLOW),
+   DRM_IOCTL_DEF_DRV(VIRTGPU_GETPARAM,
+                     virtio_gpu_getparam_ioctl,
+                     DRM_RENDER_ALLOW),
+   DRM_IOCTL_DEF_DRV(VIRTGPU_RESOURCE_CREATE,
+                     virtio_gpu_resource_create_ioctl,
+                     DRM_RENDER_ALLOW),
+   ...
+   DRM_IOCTL_DEF_DRV(VIRTGPU_WAIT,
+                     virtio_gpu_wait_ioctl,
+                     DRM_RENDER_ALLOW),
+   DRM_IOCTL_DEF_DRV(VIRTGPU_GET_CAPS,
+                     virtio_gpu_get_caps_ioctl,
+                     DRM_RENDER_ALLOW),
+   ...
+   DRM_IOCTL_DEF_DRV(VIRTGPU_CONTEXT_INIT,
+                     virtio_gpu_context_init_ioctl,
+                     DRM_RENDER_ALLOW),
+};
+```
+
+這組 ioctl table 是 DRM core 與裝置 driver 的 dispatch boundary。 `DRM_RENDER_ALLOW` 只表示 request 可由 render node 發出，不會繞過 handler 內的 capability、handle、memory 與同步檢查。 KMS ioctls 沒有出現在這張 driver-private table 中，也不會由 render node 取得 display control
+
+```callgraph
+Guest Mesa VirGL winsys
+=================================================
+render node fd
+  │
+  │  DRM_IOCTL_VIRTGPU_RESOURCE_CREATE
+  │  DRM_IOCTL_VIRTGPU_EXECBUFFER
+  ↓
+Linux DRM core
+  │
+  │  依 ioctl descriptor 檢查 node 權限並選擇 handler
+  ↓
+Linux virtio_gpu DRM driver
+  ├─ [Linux: virtgpu_ioctl.c:134] virtio_gpu_resource_create_ioctl(...)
+  └─ [Linux: virtgpu_submit.c:475] virtio_gpu_execbuffer_ioctl(...)
+```
+
+Ioctl table 中也有可選的 `DRM_IOCTL_VIRTGPU_CONTEXT_INIT`，但本文的 semu 沒有公告對應 feature。 固定主線因此會由 resource-create 或 execbuffer handler 延後建立 context
+
+### DRM file 先保留 `ctx_id`，再由第一個 3D request 建立 context
+
+VirGL command 中的 resource state 與 renderer state 都必須屬於某個 3D context。 Linux driver 會將這個 context identity 保存在上一節確認的 DRM file，後續 resource-create 與 execbuffer requests 都會沿用這筆 per-connection state
+
+Render node 被開啟時，DRM core 會呼叫 `virtio_gpu_driver_open()`。 這個函式會配置 `virtio_gpu_fpriv`，分配 protocol 使用的 `ctx_id`，再將 pointer 放進 `drm_file::driver_priv`。 此時 kernel 只是保留 identity，尚未向 semu 送出 `CTX_CREATE`
+
+以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_kms.c:316`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/drivers/gpu/drm/virtio/virtgpu_kms.c#L316-L360)，用來顯示 DRM file 如何取得 private context state，以及關閉這筆 connection 時如何銷毀已建立的裝置 context：
+
+```c
+int virtio_gpu_driver_open(struct drm_device *dev, struct drm_file *file)
+{
+   struct virtio_gpu_device *vgdev = dev->dev_private;
+   struct virtio_gpu_fpriv *vfpriv;
+   int handle;
+
+   if (!vgdev->has_virgl_3d)
+      return 0;
+
+   vfpriv = kzalloc_obj(*vfpriv);
+   if (!vfpriv)
+      return -ENOMEM;
+
+   mutex_init(&vfpriv->context_lock);
+   handle = ida_alloc(&vgdev->ctx_id_ida, GFP_KERNEL);
+   ...
+   vfpriv->ctx_id = handle + 1;
+   file->driver_priv = vfpriv;
+   return 0;
+}
+
+void virtio_gpu_driver_postclose(struct drm_device *dev,
+                                 struct drm_file *file)
+{
+   ...
+   if (vfpriv->context_created) {
+      virtio_gpu_cmd_context_destroy(vgdev, vfpriv->ctx_id);
+      virtio_gpu_notify(vgdev);
+   }
+   ...
+}
+```
+
+`ctx_id` 位於 virtio-gpu protocol namespace，與 OpenGL context、Mesa `pipe_context` 及 DRM GEM handle 都不是同一種 ID。 `file->driver_priv` 將它綁在這筆 DRM file 上，所以另一個 application 即使開啟同一個 render node，也會取得不同的 private state 與 context ID
+
+本文固定的 semu 組態會公告 `VIRTIO_GPU_F_VIRGL`，但沒有公告 `VIRTIO_GPU_F_CONTEXT_INIT`。 Mesa 因此不會先發出 `DRM_IOCTL_VIRTGPU_CONTEXT_INIT`
+
+第一個 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE` 進入 kernel 後，`virtio_gpu_create_context()` 才會檢查 `context_created`，必要時以前面保留的 `ctx_id` 送出 `VIRTIO_GPU_CMD_CTX_CREATE`。 如果 application 先提交 execbuffer，該 handler 也會經過相同的 helper
+
+以下片段來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_ioctl.c:42`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/drivers/gpu/drm/virtio/virtgpu_ioctl.c#L42-L74) 與 [`Linux: drivers/gpu/drm/virtio/virtgpu_vq.c:1081`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/drivers/gpu/drm/virtio/virtgpu_vq.c#L1081-L1101)，用來顯示固定路徑如何延後建立 context：
+
+```c
+// [Linux: drivers/gpu/drm/virtio/virtgpu_ioctl.c:42-74]
+static void
+virtio_gpu_create_context_locked(struct virtio_gpu_device *vgdev,
+                                 struct virtio_gpu_fpriv *vfpriv)
+{
+   ...
+   virtio_gpu_cmd_context_create(vgdev, vfpriv->ctx_id,
+                                 vfpriv->context_init, ...);
+   vfpriv->context_created = true;
+}
+
+void
+virtio_gpu_create_context(struct drm_device *dev, struct drm_file *file)
+{
+   struct virtio_gpu_device *vgdev = dev->dev_private;
+   struct virtio_gpu_fpriv *vfpriv = file->driver_priv;
+
+   mutex_lock(&vfpriv->context_lock);
+   if (vfpriv->context_created)
+      goto out_unlock;
+
+   virtio_gpu_create_context_locked(vgdev, vfpriv);
+out_unlock:
+   mutex_unlock(&vfpriv->context_lock);
+}
+
+// [Linux: drivers/gpu/drm/virtio/virtgpu_vq.c:1081-1101]
+void virtio_gpu_cmd_context_create(struct virtio_gpu_device *vgdev,
+                                   uint32_t id,
+                                   uint32_t context_init,
+                                   uint32_t nlen,
+                                   const char *name)
+{
+   ...
+   cmd_p->hdr.type = cpu_to_le32(VIRTIO_GPU_CMD_CTX_CREATE);
+   cmd_p->hdr.ctx_id = cpu_to_le32(id);
+   cmd_p->context_init = cpu_to_le32(context_init);
+   ...
+   virtio_gpu_queue_ctrl_buffer(vgdev, vbuf);
+}
+```
+
+`vfpriv` 在本文路徑中沒有先收到 explicit context parameters，因此 `context_init` 保持 0。 `virtio_gpu_notify()` 通知 controlq 有新的 available buffer。 semu 取出 request 後，會以相同的 `ctx_id` 建立 host-side renderer context。 後面的 resource attach、transfer 與 `SUBMIT_3D` 都會使用這個 ID 找到同一份 context state
+
+```callgraph
+Xorg 開啟 render node，Mesa 取得指向同一 DRM file 的 fd
+  ↓
+[Linux: virtgpu_kms.c:316] virtio_gpu_driver_open(dev, file)
+  ├─ 配置 `virtio_gpu_fpriv`
+  ├─ 分配 `ctx_id`
+  └─ `file->driver_priv = vfpriv`
+       │
+       │  此時尚未送出 CTX_CREATE
+       ↓
+第一個 resource-create 或 execbuffer ioctl
+  ↓
+[Linux: virtgpu_ioctl.c:62] virtio_gpu_create_context(dev, file)
+  └─ [Linux: virtgpu_ioctl.c:42] virtio_gpu_create_context_locked(...)
+       └─ [Linux: virtgpu_vq.c:1081] virtio_gpu_cmd_context_create(...)
+            │
+            │  `ctx_id` + `context_init = 0`
+            ↓
+          VIRTIO_GPU_CMD_CTX_CREATE
+```
+
+### Resource create 回傳 renderer resource ID 與 GEM handle
+
+VirGL driver 建立 texture、render target 或 command 所引用的 storage 時，需要同時取得兩種 identity。 Renderer command stream 以 resource ID 指定 host renderer object，Mesa winsys 則以 GEM handle 在這筆 DRM file 中查找 kernel buffer object。 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE` 會在同一次 request 中建立這兩層關係
+
+以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_ioctl.c:134`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/drivers/gpu/drm/virtio/virtgpu_ioctl.c#L134-L203)，用來顯示 handler 如何建立 context、配置 `virtio_gpu_object`，再回傳兩種 handles：
+
+```c
+static int
+virtio_gpu_resource_create_ioctl(struct drm_device *dev, void *data,
+                                 struct drm_file *file)
+{
+   struct virtio_gpu_device *vgdev = dev->dev_private;
+   struct drm_virtgpu_resource_create *rc = data;
+   struct virtio_gpu_object *qobj;
+   struct drm_gem_object *obj;
+   uint32_t handle = 0;
+   ...
+
+   if (vgdev->has_virgl_3d) {
+      virtio_gpu_create_context(dev, file);
+      params.virgl = true;
+      params.target = rc->target;
+      params.bind = rc->bind;
+      ...
+   }
+   ...
+   ret = virtio_gpu_object_create(vgdev, &params, &qobj, fence);
+   ...
+   obj = &qobj->base.base;
+   ret = drm_gem_handle_create(file, obj, &handle);
+   ...
+   rc->res_handle = qobj->hw_res_handle;
+   rc->bo_handle = handle;
+   ...
+}
+```
+
+`qobj->hw_res_handle` 與 `bo_handle` 都從同一筆 `virtio_gpu_object` 產生，但分屬不同 namespace。 `hw_res_handle` 是 virtio-gpu protocol 使用的 resource ID，會寫入 `VIRTIO_GPU_CMD_RESOURCE_CREATE_3D` 與後續 VirGL commands
+
+`bo_handle` 則是這筆 DRM file 的 GEM handle，Mesa 在 execbuffer BO list、map、wait 與 resource-info requests 中使用它。 兩個值不能互換，`bo_handle` 也不能直接拿到另一筆 DRM file 使用
+
+Resource create 會建立 resource ID，也會連接 guest backing。 `virtio_gpu_object_create()` 先配置 guest GEM backing，接著送出 `VIRTIO_GPU_CMD_RESOURCE_CREATE_3D` 建立 host renderer 看得見的 resource，再以 `VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING` 把 guest memory entries 接到這個 resource。 實際的 draw operations 仍要等 execbuffer submission
+
+以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_object.c:203`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/drivers/gpu/drm/virtio/virtgpu_object.c#L203-L259)，用來顯示 classic VirGL resource 的 create 與 backing attach 順序：
+
+```c
+// [Linux: drivers/gpu/drm/virtio/virtgpu_object.c:203-259]
+int
+virtio_gpu_object_create(struct virtio_gpu_device *vgdev,
+                         struct virtio_gpu_object_params *params,
+                         struct virtio_gpu_object **bo_ptr,
+                         struct virtio_gpu_fence *fence)
+{
+   ...
+   shmem_obj = drm_gem_shmem_create(vgdev->ddev, params->size);
+   ...
+   ret = virtio_gpu_resource_id_get(vgdev, &bo->hw_res_handle);
+   ...
+   if (params->virgl) {
+      virtio_gpu_cmd_resource_create_3d(vgdev, bo, params,
+                                        objs, fence);
+      virtio_gpu_object_attach(vgdev, bo, ents, nents);
+   }
+   ...
+}
+```
+
+`drm_gem_handle_create()` 把這筆 object 登記到 DRM file 的 GEM handle table 時，DRM GEM core 還會呼叫 object 的 `.open` callback。 `virtio_gpu` 將它登記為 `virtio_gpu_gem_object_open()`，因此固定 3D 路徑會再送出 `VIRTIO_GPU_CMD_CTX_ATTACH_RESOURCE`，將 resource ID 加入前一節建立的 `ctx_id`
+
+以下片段分別來自 [`Linux: drivers/gpu/drm/drm_gem.c:480`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/drivers/gpu/drm/drm_gem.c#L480-L535) 與 [`Linux: drivers/gpu/drm/virtio/virtgpu_gem.c:102`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/drivers/gpu/drm/virtio/virtgpu_gem.c#L102-L132)，用來追蹤 GEM handle 建立時的 context attach：
+
+```c
+// [Linux: drivers/gpu/drm/drm_gem.c:480-535]
+int
+drm_gem_handle_create_tail(struct drm_file *file_priv,
+                           struct drm_gem_object *obj,
+                           u32 *handlep)
+{
+   ...
+   if (obj->funcs->open) {
+      ret = obj->funcs->open(obj, file_priv);
+      if (ret)
+         goto err_revoke;
+   }
+   ...
+}
+
+// [Linux: drivers/gpu/drm/virtio/virtgpu_gem.c:102-132]
+int
+virtio_gpu_gem_object_open(struct drm_gem_object *obj,
+                           struct drm_file *file)
+{
+   ...
+   if (!vgdev->has_context_init)
+      virtio_gpu_create_context(obj->dev, file);
+
+   if (vfpriv->context_created) {
+      objs = virtio_gpu_array_alloc(1);
+      ...
+      virtio_gpu_array_add_obj(objs, obj);
+      virtio_gpu_cmd_context_attach_resource(vgdev, vfpriv->ctx_id, objs);
+   }
+   ...
+}
+```
+
+```callgraph
+[Linux: virtgpu_ioctl.c:134] virtio_gpu_resource_create_ioctl(...)
+  │
+  ├─ virtio_gpu_create_context(dev, file)
+  │    └─ 必要時送出 VIRTIO_GPU_CMD_CTX_CREATE
+  │
+  ├─ virtio_gpu_object_create(...)
+  │    ├─ 配置 guest GEM backing
+  │    └─ [Linux: virtgpu_vq.c:1150] virtio_gpu_cmd_resource_create_3d(...)
+  │         └─ VIRTIO_GPU_CMD_RESOURCE_CREATE_3D
+  │              ↓
+  │            [Linux: virtgpu_vq.c:1270] virtio_gpu_object_attach(...)
+  │              └─ VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING
+  │
+  └─ drm_gem_handle_create(file, obj, &bo_handle)
+       └─ [Linux: drm_gem.c:480] drm_gem_handle_create_tail(...)
+            └─ [Linux: virtgpu_gem.c:102] virtio_gpu_gem_object_open(...)
+                 └─ VIRTIO_GPU_CMD_CTX_ATTACH_RESOURCE
+                      ↓
+                    回傳給 Mesa
+                      ├─ res_handle：VirGL／host renderer resource namespace
+                      └─ bo_handle：這筆 DRM file 的 GEM handle namespace
+```
+
+### Execbuffer 將 command stream 轉成 `SUBMIT_3D`
+
+Mesa flush 時會把 VirGL command bytes、所有被引用 resource 的 GEM handles，以及 input／output synchronization 要求放進 `drm_virtgpu_execbuffer`。 Kernel 必須先把 userspace pointers 複製進 kernel memory，解析 BO handles，等待外部 dependencies，再鎖定相關 buffer reservations。 這些步驟成功後，command stream 才能與正確的 context、resources 及 fence 一起放進 controlq
+
+以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_submit.c:475`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/drivers/gpu/drm/virtio/virtgpu_submit.c#L475-L543)，用來顯示 execbuffer handler 的主要執行順序：
+
+```c
+int virtio_gpu_execbuffer_ioctl(struct drm_device *dev, void *data,
+                                struct drm_file *file)
+{
+   ...
+   if (!vgdev->has_virgl_3d)
+      return -ENOSYS;
+   ...
+   virtio_gpu_create_context(dev, file);
+
+   ret = virtio_gpu_init_submit(&submit, exbuf, dev, file,
+                                fence_ctx, ring_idx);
+   if (ret)
+      goto cleanup;
+
+   ret = virtio_gpu_parse_post_deps(&submit);
+   ...
+   ret = virtio_gpu_parse_deps(&submit);
+   ...
+   ret = virtio_gpu_wait_in_fence(&submit);
+   ...
+   ret = virtio_gpu_lock_buflist(&submit);
+   ...
+   virtio_gpu_submit(&submit);
+
+   virtio_gpu_install_out_fence_fd(&submit);
+   virtio_gpu_process_post_deps(&submit);
+   virtio_gpu_complete_submit(&submit);
+cleanup:
+   virtio_gpu_cleanup_submit(&submit);
+   return ret;
+}
+```
+
+`virtio_gpu_init_submit()` 會複製 command stream，也會把 `num_bo_handles` 指定的 GEM handles 解析成持有 references 的 object array。 `virtio_gpu_parse_deps()` 與 `virtio_gpu_wait_in_fence()` 處理 syncobj 與 input `sync_file` dependencies
+
+`virtio_gpu_lock_buflist()` 鎖定 resources 的 reservation objects，並為每個 BO 預留 fence slot。 Request 放進 controlq 時，`virtio_gpu_queue_ctrl_sgs()` 會將 output fence 以 write fence 加到每筆 BO 的 `dma_resv`，再解開 reservation locks
+
+所有檢查完成後，`virtio_gpu_submit()` 把 kernel-owned command bytes、context ID、object array 與 output fence 交給 `virtio_gpu_cmd_submit()`。 以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_submit.c:353`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/drivers/gpu/drm/virtio/virtgpu_submit.c#L353-L358) 與 [`Linux: drivers/gpu/drm/virtio/virtgpu_vq.c:1247`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/drivers/gpu/drm/virtio/virtgpu_vq.c#L1247-L1268)，用來顯示 Linux 如何建立最後送往虛擬裝置的 request：
+
+```c
+// [Linux: drivers/gpu/drm/virtio/virtgpu_submit.c:353-358]
+static void virtio_gpu_submit(struct virtio_gpu_submit *submit)
+{
+   virtio_gpu_cmd_submit(submit->vgdev, submit->buf,
+                         submit->exbuf->size,
+                         submit->vfpriv->ctx_id,
+                         submit->buflist,
+                         submit->out_fence);
+   virtio_gpu_notify(submit->vgdev);
+}
+
+// [Linux: drivers/gpu/drm/virtio/virtgpu_vq.c:1247-1268]
+void virtio_gpu_cmd_submit(struct virtio_gpu_device *vgdev,
+                           void *data, uint32_t data_size,
+                           uint32_t ctx_id,
+                           struct virtio_gpu_object_array *objs,
+                           struct virtio_gpu_fence *fence)
+{
+   ...
+   vbuf->data_buf = data;
+   vbuf->data_size = data_size;
+   vbuf->objs = objs;
+
+   cmd_p->hdr.type = cpu_to_le32(VIRTIO_GPU_CMD_SUBMIT_3D);
+   cmd_p->hdr.ctx_id = cpu_to_le32(ctx_id);
+   cmd_p->size = cpu_to_le32(data_size);
+
+   virtio_gpu_queue_fenced_ctrl_buffer(vgdev, vbuf, fence);
+}
+```
+
+`VIRTIO_GPU_CMD_SUBMIT_3D` 的 payload 是 Mesa 已編碼好的 VirGL command stream。 Kernel 不重新解讀其中的 Gallium state，也不執行 rasterization。 它負責把 command bytes、context、referenced objects 與 completion fence 安全地交給 virtio transport
+
+```callgraph
+[Mesa: virgl_drm_winsys_submit_cmd(...)]
+  │
+  │  VirGL command bytes + BO handles + input／output sync
+  ↓
+[Linux: virtgpu_submit.c:475] virtio_gpu_execbuffer_ioctl(...)
+  │
+  ├─ virtio_gpu_init_submit(...)
+  │    ├─ 複製 command stream
+  │    ├─ 解析 BO handles
+  │    └─ 必要時建立 output dma_fence／sync_file
+  ├─ parse input／output syncobjs
+  ├─ wait input fence
+  └─ lock BO reservations
+       ↓
+[Linux: virtgpu_submit.c:353] virtio_gpu_submit(...)
+  ↓
+[Linux: virtgpu_vq.c:1247] virtio_gpu_cmd_submit(...)
+  │
+  │  VIRTIO_GPU_CMD_SUBMIT_3D
+  ↓
+virtio-gpu controlq
+  ↓
+semu virtio-gpu device model
+```
+
+### Fence completion 從 controlq 回到 Mesa
+
+Application 若要求 output fence，`virtio_gpu_init_submit()` 會配置 `virtio_gpu_fence`，以它的 `dma_fence` 建立 `sync_file`，再預留一個準備回傳給 userspace 的 fd。 `virtio_gpu_queue_fenced_ctrl_buffer()` 送出 request 前會配置 fence ID，並將 ID 寫進 virtio-gpu command header
+
+虛擬裝置完成這筆 fenced request 後，controlq response 會帶回相同的 fence ID。 以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_vq.c:225`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/drivers/gpu/drm/virtio/virtgpu_vq.c#L225-L274)，用來顯示 kernel 取回 response 後如何將 fence ID 交給 fence driver：
+
+```c
+void virtio_gpu_dequeue_ctrl_func(struct work_struct *work)
+{
+   ...
+   list_for_each_entry(entry, &reclaim_list, list) {
+      resp = (struct virtio_gpu_ctrl_hdr *)entry->resp_buf;
+      ...
+      if (resp->flags & cpu_to_le32(VIRTIO_GPU_FLAG_FENCE)) {
+         fence_id = le64_to_cpu(resp->fence_id);
+         virtio_gpu_fence_event_process(vgdev, fence_id);
+      }
+      ...
+   }
+   ...
+}
+```
+
+`virtio_gpu_fence_event_process()` 會在相同 fence context 中找出已完成的 fences，呼叫 `dma_fence_signal_locked()` 喚醒 waiters。 Userspace 持有的 output fd 指向同一筆 `sync_file`，所以 Mesa VirGL winsys 後續對 fd 執行 `sync_wait()` 時，便能觀察到這次 submission 已完成
+
+這條 fence 只描述 VirGL submission 的 completion。 Present 何時不再使用 application Pixmap，以及 desktop image 何時完成 display update，屬於 Display 章介紹的 X11 Present 與 KMS 邊界，不由這筆 execbuffer fence 取代
+
+```callgraph
+virtio-gpu device 完成 fenced SUBMIT_3D
+  │
+  │  controlq response：VIRTIO_GPU_FLAG_FENCE + fence_id
+  ↓
+[Linux: virtgpu_vq.c:225] virtio_gpu_dequeue_ctrl_func(...)
+  ↓
+[Linux: virtgpu_fence.c:110] virtio_gpu_fence_event_process(...)
+  │
+  │  dma_fence_signal_locked(...)
+  ↓
+Linux sync_file 變成 signaled
+  │
+  │  output fence fd
+  ↓
+Mesa VirGL winsys：sync_wait(...)
+```
+
+到這裡，Mesa 送出的 VirGL work 已經由 DRM render node 進入 Linux `virtio_gpu` driver，並轉成 controlq 上的 `SUBMIT_3D`。 下一章沿虛擬裝置另一側繼續往下看，確認 semu 如何把這批 commands 交給 virglrenderer
+
 ## virglrenderer：host 行程接收 VirGL commands
 
-前一章停在 guest Mesa 呼叫 `DRM_IOCTL_VIRTGPU_EXECBUFFER`，Linux `virtio_gpu` driver 接住這批 VirGL commands。 接下來的工作會離開 guest 行程與 Mesa 專案，經過 virtqueue 抵達 host 上的虛擬機監視器（VMM）。 VMM 的 virtio-gpu 裝置模型再呼叫另一個專案提供的 `virglrenderer` 函式庫，建立 host 端的 renderer state 並執行 commands
+前一章已經把 guest Mesa 的 execbuffer request 追到 Linux `virtio_gpu` driver，並確認 kernel 如何在 controlq 送出 `VIRTIO_GPU_CMD_SUBMIT_3D`。 接下來的工作會跨到 host 上的虛擬機監視器（virtual machine monitor，VMM）。 semu 的 virtio-gpu 裝置模型取得這批 commands 後，會呼叫另一個專案提供的 `virglrenderer` 函式庫，建立 host-side renderer state 並執行 commands
 
-這一章只觀察 VMM 與 virglrenderer 之間的公開函式庫介面。 我們會先看 VMM 如何初始化 renderer 並提供 host GL context callbacks，再看 context、resource、command、transfer 與 fence API。 Guest ioctl 如何穿過 kernel、virtqueue 與 VMM 裝置模型，會留給後續的 virtio-gpu 專文展開
+這一章觀察 VMM 與 virglrenderer 之間的公開函式庫介面。 我們會先看 VMM 如何初始化 renderer 並提供 host GL context callbacks，再看 context、resource、command、transfer 與 fence API。 semu 如何從 controlq 取出每一種 request、保存裝置狀態與安排 renderer thread，則會留給後續的 virtio-gpu 專文展開
 
 ### VMM 提供 callback 並初始化 renderer
 
@@ -23520,202 +23848,6 @@ VMM 稍後在 event loop 推進 fence completion
 ```
 
 VirGL 在 guest 與 host 有兩個可分別驗證的介面。 Guest 端從 Gallium map、unmap、排空 transfer queue 與 flush 走到 Linux virtio-gpu UAPI。 host 行程端從 VMM 擁有的呼叫端走到 virglrenderer 公開 API。 Kernel、virtqueue 與 VMM 的虛擬裝置模型串起中間 transport，也決定 guest 提交何時成為 host renderer 呼叫
-
-## DRM／KMS 如何接住 Mesa 與 Xorg
-
-前面的全貌章節已經沿固定的 vGPU 2D 組態，追蹤 front BO、KMS framebuffer、primary plane、`DIRTYFB` 與 virtual scanout。 後面的 VirGL 章節又加入了另一種 DRM request：Mesa 透過 `EXECBUFFER` 提交 rendering work。 本章改從 DRM UAPI、各類 object ID 與同步機制觀察兩條路徑
-
-使用者正在等待齒輪轉到下一個角度，application 則可能準備重用剛才的 buffer。 本章先分清 rendering request 與 display request 使用的 DRM 權限和 object namespace，再沿 ioctl 回傳值、fence、swap 與 KMS event，判斷 rendering work 何時完成、幀何時交給 display 路徑，以及 buffer 何時可以安全重用
-
-### DRM 同時承接 rendering 與 display request
-
-在前面的 VirGL／DRI3 分支中，Mesa client 與 Xorg 都會向 DRM 發出 request，但兩者需要的權限不同。 Mesa client 需要管理 rendering resources 並提交 GPU work。 Xorg 則要選擇 connector、mode 與 scanout framebuffer，會改變整台機器目前的 display state。 2D drisw 基準路徑的 application rendering 留在 CPU，只有 Xorg 的 display 路徑需要使用 DRM／KMS
-
-Linux 透過 render node 與 primary node 承接這兩類工作。 DRI3 client 通常取得 `/dev/dri/renderD*` 的 rendering fd，Xorg modesetting 則開啟 `/dev/dri/card*`，取得顯示控制權後管理 connector、CRTC、plane 與 KMS state
-
-`DRM_IOCTL_VIRTGPU_EXECBUFFER` 提交 renderer command、BO references，以及 `fence_fd` 與 in／out syncobj 欄位。 哪份 storage 成為 scanout source，則由 KMS ioctl family 透過 framebuffer 註冊、plane／CRTC 組態、dirty region、page flip 與 atomic property update 表達
-
-以下程式碼的前半段來自 [`Linux: include/uapi/drm/drm.h:1196`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/drm/drm.h?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n1196) 與 [`Linux: include/uapi/drm/drm.h:1223`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/drm/drm.h?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n1223)，列出 topology query、第一次 modeset、page flip 與 dirty update
-
-後半段來自 [`Linux: include/uapi/drm/drm.h:1251`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/drm/drm.h?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n1251)，列出 plane、framebuffer 與 atomic operations。 這三組 macros 用來辨認各類 KMS request 的公開 operation identity：
-
-```c
-#define DRM_IOCTL_MODE_GETRESOURCES	DRM_IOWR(0xA0, struct drm_mode_card_res)
-#define DRM_IOCTL_MODE_GETCRTC		DRM_IOWR(0xA1, struct drm_mode_crtc)
-#define DRM_IOCTL_MODE_SETCRTC		DRM_IOWR(0xA2, struct drm_mode_crtc)
-...
-#define DRM_IOCTL_MODE_PAGE_FLIP	DRM_IOWR(0xB0, struct drm_mode_crtc_page_flip)
-#define DRM_IOCTL_MODE_DIRTYFB		DRM_IOWR(0xB1, struct drm_mode_fb_dirty_cmd)
-...
-#define DRM_IOCTL_MODE_SETPLANE	DRM_IOWR(0xB7, struct drm_mode_set_plane)
-#define DRM_IOCTL_MODE_ADDFB2		DRM_IOWR(0xB8, struct drm_mode_fb_cmd2)
-...
-#define DRM_IOCTL_MODE_ATOMIC		DRM_IOWR(0xBC, struct drm_mode_atomic)
-```
-
-`GETRESOURCES`、`GETCRTC` 與相鄰 query operations 讓 X server 先取得裝置公開的 KMS objects。 `SETCRTC` 能建立 legacy display 組態。 `ADDFB2` 以既有 BO 建立一個引用該 storage 的 KMS framebuffer object，pixels 仍保存在原本的 buffer object
-
-後續 display update 有多種形式。 `DIRTYFB` 告知既有 framebuffer 的哪些區域已變更，`PAGE_FLIP` 為 CRTC 選擇下一個 framebuffer，`ATOMIC` 則用 object properties 表達一組要一起檢查與套用的 display state。 實際路徑由 Xorg backend、DRM driver capability 與當下組態決定
-
-### Buffer object 如何被 KMS framebuffer 引用
-
-Mesa 把 texture、render target、command buffer 與 drawable backing 落到 driver resource。 Linux DRM 在 UAPI 邊界以 buffer object 表示裝置可存取的 storage，並在每次 open 建立的 DRM file namespace 內用 GEM handle 找到它。 Handle 只回答「是哪份 storage」，尚未說明顯示引擎應如何讀取其中的 pixels
-
-KMS framebuffer 補上 scanout 所需的 format 與 memory-plane layout。 以下程式碼來自 [`Linux: include/uapi/drm/drm_mode.h:694`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/drm/drm_mode.h?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n694) 的 `struct drm_mode_fb_cmd2`，用來觀察 framebuffer ID 如何把尺寸、FourCC format 與每個 memory plane 的 GEM handle、pitch、offset 與 modifier 組在一起：
-
-```c
-struct drm_mode_fb_cmd2 {
-...
-	__u32 fb_id;
-...
-	__u32 width;
-...
-	__u32 height;
-...
-	__u32 pixel_format;
-...
-	__u32 flags;
-
-...
-	__u32 handles[4];
-...
-	__u32 pitches[4];
-...
-	__u32 offsets[4];
-...
-	__u64 modifier[4];
-};
-```
-
-呼叫端送出 `DRM_IOCTL_MODE_ADDFB2` 時，`handles[]` 由送出 request 的 DRM file namespace 解讀。 Kernel 解析對應 BO references，成功後把新的 KMS framebuffer object ID 寫回 `fb_id`。 後續 plane state 以 `fb_id` 引用這個 KMS object。 Mesa 的 `pipe_resource *`、CPU virtual 位址與 guest VirGL resource handle 各自留在原本的 namespace
-
-`width`、`height` 與 `pixel_format` 定義 framebuffer 的可見 layout。 `pitches[]` 表示每列資料跨越的 bytes，`offsets[]` 指出各 memory plane 在 BO 中的起點。 `flags` 啟用 `DRM_MODE_FB_MODIFIERS` 時，`modifier[]` 再表示 linear、tiled 或 compressed 等 layout，所有使用中的 memory planes 採用相同 modifier
-
-同一份 BO 可以有多種用途。 只有 KMS framebuffer 所描述的 format 與 memory-plane layout 符合顯示引擎限制時，該 BO 才能成為 scanout source
-
-Framebuffer 註冊會建立 KMS object 與 BO references，讓 display state 能穩定引用原本保存 rendering 結果的 storage。 Pixels 何時寫完，要檢查 renderer 產生的 fence 或其他同步機制。 哪個 framebuffer 何時成為 scanout source，則要檢查 KMS state update 以及 requested page-flip event
-
-### Framebuffer、plane、CRTC、encoder 與 connector
-
-KMS drivers 共同使用 framebuffer、plane、CRTC、encoder 與 connector 表示 display topology。 Xorg 要讓 framebuffer 出現在畫面上，還要把它放進這組 topology。 各個 objects 可沿資料離開 memory 的方向閱讀：
-
-```text
-Xorg modesetting
-  │
-  │  BO handle + format + pitch + offset
-  ↓
-DRM_IOCTL_MODE_ADDFB2
-  │
-  │  建立 framebuffer object，回傳 fb_id
-  ↓
-framebuffer
-  │
-  │  指定 scanout source 的 storage 與 pixel layout
-  ↓
-plane
-  │
-  │  從 framebuffer 選取 source 矩形
-  │  放到 CRTC 目的矩形
-  ↓
-CRTC
-  │
-  │  組合啟用的 planes，依 mode 產生 scanout timing
-  ↓
-encoder
-  │
-  │  把 CRTC output 接到可用的輸出路徑
-  ↓
-connector
-  │
-  │  表示可供 userspace 查詢的顯示輸出、連線狀態與可用 modes
-  ↓
-virtio-gpu virtual scanout／host display 邊界
-```
-
-Framebuffer 描述 scanout source 的 format、尺寸、pitch、offset 與所引用的 BO。 Plane 決定使用哪個 framebuffer、取其中哪一塊 source 矩形，以及把它放到哪個 CRTC 目的矩形。 Primary plane 通常承載整個桌面，cursor plane 與 overlay plane 則能提供額外的獨立圖層
-
-CRTC 保存目前 mode 與 scanout state，並依固定 timing 讀取已啟用 planes 的內容。 Encoder 描述 CRTC output 能接到哪類輸出路徑，connector 則表示 userspace 可查詢的顯示輸出、連線狀態與 modes。 Xorg 會從 driver 公開的相容組合中選出可成立的 topology
-
-以下程式碼來自 [`Linux: include/uapi/drm/drm_mode.h:286`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/drm/drm_mode.h?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n286) 的 `struct drm_mode_set_plane`，用來觀察 legacy plane request 如何同時引用 plane、CRTC、framebuffer，以及 framebuffer 取樣範圍與 CRTC 目的矩形：
-
-```c
-struct drm_mode_set_plane {
-	__u32 plane_id;
-	__u32 crtc_id;
-	__u32 fb_id; /* fb object contains surface format type */
-	__u32 flags; /* see above flags */
-
-...
-	__s32 crtc_x;
-	__s32 crtc_y;
-	__u32 crtc_w;
-	__u32 crtc_h;
-
-...
-	__u32 src_x;
-	__u32 src_y;
-	__u32 src_h;
-	__u32 src_w;
-};
-```
-
-`plane_id` 選擇要更新的 plane，`crtc_id` 指定目的 CRTC，`fb_id` 指向前一步建立的 framebuffer。 `src_*` 使用 16.16 fixed-point 座標描述 framebuffer 取樣範圍，`crtc_*` 則描述該內容在輸出畫面中的位置與大小，也就是 CRTC 目的矩形。 這個結構把 framebuffer 取樣範圍、CRTC 目的矩形與目標 CRTC 放進同一次 request
-
-Modern atomic KMS 以 object properties 一次表達這組關係。 Plane 的 `FB_ID`、`CRTC_ID`、framebuffer 取樣範圍與 CRTC 目的矩形 properties，分別回答「讀哪份 framebuffer」與「放到哪個 CRTC 區域」
-
-virtio-gpu 的 connector 表示 guest 可查詢的虛擬顯示輸出。 Guest kernel 提供 framebuffer、plane、CRTC、encoder 與 connector 的 KMS object model，因此 Xorg 可以沿相同 UAPI 管理 virtual display。 Driver 在 topology 的裝置端把 scanout update 轉成 virtio-gpu command，host emulator 再把結果發布到 host window
-
-### 第一次 modeset、dirty update、page flip 與 atomic update
-
-VM 開機與 `startx` 階段要先查詢 topology、選擇 mode，並把 framebuffer 接到 plane／CRTC 與 connector 路徑。 這是第一次 modeset。 它決定解析度、timing 與 scanout storage，application 開始 rendering 時已經能把 Window content 交給一個有效的 X Screen
-
-後續幀依 storage 與呈現策略選擇更新方式。 軟體 front-buffer 路徑可以持續修改同一份 framebuffer，再以 dirty region 告知 driver 哪些 pixels 已更新。 Double-buffered scanout 可以用 page flip 選擇下一個 framebuffer。 Atomic KMS 則把 framebuffer selection、CRTC 目的矩形、mode 與其他 properties 組成一次 state update
-
-本文的 vGPU 2D 基準組態使用第一種 front-buffer dirty update。 Page flip 與 userspace atomic update 則用來對照 DRI3／Present 與其他呈現策略
-
-以下程式碼來自 [`Linux: include/uapi/drm/drm_mode.h:1287`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/drm/drm_mode.h?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n1287) 與 [`Linux: include/uapi/drm/drm_mode.h:1332`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/drm/drm_mode.h?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n1332) 的 atomic flags 與 `struct drm_mode_atomic`。 這段用來觀察僅測試、不阻塞與允許 modeset 三種語意，以及 object／property 陣列如何描述一批更新：
-
-```c
-...
-#define DRM_MODE_ATOMIC_TEST_ONLY 0x0100
-...
-#define DRM_MODE_ATOMIC_NONBLOCK  0x0200
-...
-#define DRM_MODE_ATOMIC_ALLOW_MODESET 0x0400
-
-...
-#define DRM_MODE_ATOMIC_FLAGS (\
-		DRM_MODE_PAGE_FLIP_EVENT |\
-		DRM_MODE_PAGE_FLIP_ASYNC |\
-		DRM_MODE_ATOMIC_TEST_ONLY |\
-		DRM_MODE_ATOMIC_NONBLOCK |\
-		DRM_MODE_ATOMIC_ALLOW_MODESET)
-
-struct drm_mode_atomic {
-	__u32 flags;
-	__u32 count_objs;
-	__u64 objs_ptr;
-	__u64 count_props_ptr;
-	__u64 props_ptr;
-	__u64 prop_values_ptr;
-	__u64 reserved;
-	__u64 user_data;
-};
-```
-
-`objs_ptr` 指向要更新的 KMS object IDs，`count_props_ptr` 記錄每個 object 帶有多少 properties，`props_ptr` 與 `prop_values_ptr` 則形成 property ID／value pairs。 一次 request 因而可以同時描述多個 plane、CRTC 與 connector 的新 state
-
-`DRM_MODE_ATOMIC_TEST_ONLY` 只驗證 proposed state，不套用 display update。 正式提交也會先檢查完整 state。 Format、plane／CRTC routing、mode 或 resource 限制不成立時，request 回傳錯誤，現有 display state 維持不變
-
-`DRM_MODE_ATOMIC_NONBLOCK` 讓 ioctl 在 update 排入後回傳。 [`Linux: DRM_MODE_PAGE_FLIP_EVENT`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/include/uapi/drm/drm_mode.h?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n1084) 會在 page flip 完成時要求 `DRM_EVENT_FLIP_COMPLETE` event。 Atomic request 會為納入這次 commit 的每個 CRTC 送出一個 event
-
-同步 page flip 通常配合垂直消隱期（vblank）生效，`DRM_MODE_PAGE_FLIP_ASYNC` 則允許非同步 flip。 `DRM_EVENT_FLIP_COMPLETE` 會回報對應 CRTC 的 flip 已經生效。 Buffer 是否能夠重用，還要等待 rendering fence，並依 Present 的 idle／complete events 或相應 backend 的 wait API 判斷
-
-`DRM_MODE_ATOMIC_ALLOW_MODESET` 允許套用期間可能產生暫時可見瑕疵、且可能比 page flip 花費更久的 KMS update。 Driver 與硬體限制決定某項 update 是否需要這個 flag，mode 或 routing 變更是常見案例
-
-rendering fence 標記 producer 已完成 rendering work。 X server 或其 backend 會另外記錄幀是否已交付，以及 buffer 是否能夠重用。 呼叫端要求的 KMS event 則在指定 CRTC 的 page flip 生效後送回
-
-接下來的完整工作流程會按時間重走 context、draw、command 提交、swap 與銷毀流程
 
 ## 完整 OpenGL 工作流程
 
