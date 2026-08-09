@@ -878,7 +878,7 @@ Application 發出的 OpenGL calls 必須由一套具體的 userspace 程式碼�
 - userspace driver 位於 application 行程。 它會接住 OpenGL operations，保存 API state、編譯 shader，並將 rendering work 轉成 GPU 或虛擬 GPU 能執行的 commands。 Mesa 內的 radeonsi、iris 與 VirGL 都屬於這一側
 - kernel driver 位於 Linux kernel。 它會管理 GPU resources、command 提交、排程與同步，並將 userspace 的 requests 交給實際裝置。 Linux DRM（Direct Rendering Manager）提供 userspace 與這些 kernel drivers 交換 requests 的介面
 
-DRM 中負責管理 display state 的部分稱為 KMS（Kernel Mode Setting）。 Xorg 需要 KMS 選定用於 scanout 的桌面 storage，display controller 才知道要從哪裡持續讀取 pixels。 KMS framebuffer 與完整 display topology 會等 Display 章進入 Linux 顯示裝置後再展開
+DRM 中負責管理 display state 的部分稱為 KMS（Kernel Mode Setting）。 Xorg 需要 KMS 選定用於 scanout 的桌面 storage，display controller 才知道要從哪裡持續讀取 pixels。 DRM/KMS framebuffer 與完整 display topology 會等 Display 章進入 Linux 顯示裝置後再展開
 
 因此，一幀畫面會先在 application image 中形成，再進入整個桌面的 pixel storage：
 
@@ -923,9 +923,11 @@ display controller 持續讀取 pixels
 
 Guest 會跨越 VM boundary 傳送 commands、resource references 與同步資訊。 semu 從 controlq 取出 requests 後，會把其中的 VirGL command stream 交給 virglrenderer。 virglrenderer 再使用 host OpenGL 實作執行 rendering。 Host OpenGL 可以由實體 GPU driver 執行，也可以由 software driver 執行，兩者都位於 guest 看見的虛擬 GPU 之外
 
-為了讓 Xorg 在每幀 rendering 完成時能使用 application image，Mesa 與 Xorg 會先建立共享關係。 DRI3 是負責在 direct-rendering client 與 Xorg 之間傳遞 dma-buf fd 的 X11 extension。 dma-buf fd 讓另一個行程可以匯入並引用同一份 buffer storage。 Xorg 會為這份 storage 建立 Pixmap，再由 Present 以 X11 Window 表示更新目的地，以 Pixmap 表示來源 image，安排這次 Window 更新
+為了讓 Xorg 在每幀 rendering 完成時能使用 application image，Mesa 與 Xorg 會先建立共享關係。 DRI（Direct Rendering Infrastructure）負責銜接視窗系統與 Mesa rendering driver，本文使用的 DRI3 則是負責在 direct-rendering client 與 Xorg 之間傳遞 dma-buf fd 的 X11 extension。 dma-buf fd 讓另一個行程可以匯入並引用同一份 buffer storage
 
-Xorg 會用 glamor 執行這次 copy。 glamor 是 Xorg 透過 OpenGL 加速 X11 drawing 的元件，它會把 application image 的可見區域寫進 screen Pixmap 引用的 GBM desktop BO。 GBM desktop BO 是 Xorg 透過 Mesa `libgbm` 建立的整桌 pixel storage，也是 KMS scanout 使用的來源
+Xorg 會為這份 storage 建立 X Pixmap。 X Pixmap 是 X server 管理、能引用 pixel storage 的 image object。 Present 則是安排 Pixmap 內容在 X11 Window 中呈現的 X11 extension，它會以 X11 Window 表示更新目的地，以 Pixmap 表示來源 image
+
+X11 以 X Screen 表示一組桌面座標範圍、尺寸與 pixel formats，代表整個 X Screen 內容的 X Pixmap 稱為 screen Pixmap。 Xorg 會用 glamor 執行這次 copy。 glamor 是 Xorg 透過 OpenGL 加速 X11 drawing 的元件，它會把 application image 的可見區域寫進 screen Pixmap 引用的 GBM desktop BO。 GBM desktop BO 是 Xorg 透過 Mesa `libgbm` 建立的整桌 pixel storage，也是 KMS scanout 使用的來源
 
 Display 這一側由 Xorg 的 modesetting display driver 管理 Linux KMS 顯示狀態。 它會使用 DRM primary node，也就是具備 KMS 控制能力的裝置入口，將 GBM desktop BO 接到顯示輸出
 
@@ -1634,7 +1636,7 @@ InitParentProcess(void)
 
 ### `InitOutput()` 要建立哪些 Xorg objects
 
-要讓 `XOpenDisplay()` 完成 X11 setup，Xorg 必須先準備一個可讓 clients 建立視窗的桌面座標範圍，並確定這個範圍的寬度、高度與可用的 pixel formats。 X11 將這一組顯示資源稱為 X Screen
+要讓 `XOpenDisplay()` 完成 X11 setup，Xorg 必須先準備一個可讓 clients 建立視窗的桌面座標範圍，並確定這個範圍的寬度、高度與可用的 pixel formats。 這組顯示資源就是前面 Big picture 中使用的 X Screen
 
 每個 X Screen 都有自己的座標系統、寬度、高度、可用 color depths，以及用來解讀 pixel values 的 visuals。 X server 還會為它建立一個 Root Window，作為該 X Screen 的 Window tree 根節點。 由於本文只建立了一個 X Screen，因此稍後出現的整個桌面都位於 X Screen 0 的座標範圍內
 
@@ -1672,7 +1674,7 @@ typedef struct _Screen {
 } ScreenRec;
 ```
 
-在 X server 的 object model 中，drawable 是可以接收繪圖操作的 target。 `InputOutput` Window 與 Pixmap 是兩種主要的 drawable object：Window 會加入 Window tree，Pixmap 則是獨立保存 pixels 的 object，可以作為離螢幕繪圖目標或 X Screen 的儲存空間
+在 X server 的 object model 中，drawable 是可以接收繪圖操作的 target。 `InputOutput` Window 與 Pixmap 是兩種主要的 drawable object：Window 會加入 Window tree，Pixmap 則是獨立表示 pixel image 的 drawable object，並透過目前的實作連到實際 storage。 它可以作為離螢幕繪圖目標或 X Screen 的 image object
 
 `myNum` 是 X Screen 在 Xorg 內的編號。 `width`／`height` 表示座標範圍的寬度與高度，`x`／`y` 則是 Xorg 排列多個 X Screens 時使用的內部 offset。 `allowedDepths` 列出了 drawables 可使用的 color depths，`visuals` 描述了 pixel values 如何對應到 colors，`root` 則會指向該 X Screen 的 Root Window
 
@@ -1945,9 +1947,11 @@ DRM 會將圖形裝置公開成 `/dev/dri/` 底下的 device nodes。 Device nod
 
 DRM core 的 [`drm_ioctl_permit()`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/drm_ioctl.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n599) 會按照目前 fd 的 node 類型與狀態檢查這些 flags
 
-透過這兩種 nodes 取得的 file descriptors 都指向同一個 Linux `virtio_gpu` DRM device，但 DRM core 會依 node 類型與 ioctl 權限限制可執行的操作。 Xorg 建立 glamor 顯示環境時，[`glamor_egl_screen_init()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/glamor/glamor_egl.c#L1105-L1163) 會從既有 primary-node fd 找出同一個裝置的 render-node path，並保存這個 path
+透過這兩種 nodes 取得的 file descriptors 都指向同一個 Linux `virtio_gpu` DRM device，但 DRM core 會依 node 類型與 ioctl 權限限制可執行的操作。 Userspace 每次以 `open()` 開啟一個 DRM device node，kernel 都會建立一筆 `drm_file`，保存這次 open 專用的 DRM connection state
 
-Application 後來發出 DRI3 Open request 時，[`glamor_dri3_open_client()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/glamor/glamor_egl.c#L1044-L1094) 才會以 `open()` 開啟這個 render node。 Xorg 將新 fd 傳給 client 後，application 行程內的 Mesa [`dri3_create_screen()`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/dri3_glx.c#L461-L492) 會取得一個新的 fd number，該 fd 仍引用 Xorg 前一步 open 所建立的同一筆 kernel DRM file。 這段 request 與 fd 交付會在後面的 application rendering path 展開
+Xorg 建立 glamor 顯示環境時，[`glamor_egl_screen_init()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/glamor/glamor_egl.c#L1105-L1163) 會從既有 primary-node fd 找出同一個裝置的 render-node path，並保存這個 path
+
+Application 後來發出 DRI3 Open request 時，[`glamor_dri3_open_client()`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/glamor/glamor_egl.c#L1044-L1094) 才會以 `open()` 開啟這個 render node。 Xorg 將新 fd 傳給 client 後，application 行程內的 Mesa [`dri3_create_screen()`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/dri3_glx.c#L461-L492) 會取得一個新的 fd number，該 fd 仍引用 Xorg 前一步 open 所建立的同一筆 kernel `drm_file`。 這段 request 與 fd 交付會在後面的 application rendering path 展開
 
 以下程式碼來自 [`Linux: drivers/gpu/drm/virtio/virtgpu_drv.c:227`](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/gpu/drm/virtio/virtgpu_drv.c?id=0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53#n227)，用來顯示 `virtio_gpu` 同時宣告 KMS 與 render-node support：
 
@@ -1965,7 +1969,7 @@ static const struct drm_driver driver = {
 
 `DRIVER_MODESET` 表示這個 DRM driver 提供 KMS 介面，`DRIVER_RENDER` 則讓 DRM core 為它建立專用的 render node。 是否能透過 render node 提交 VirGL 3D commands，還取決於 guest 與 semu 是否已協商 `VIRTIO_GPU_F_VIRGL`
 
-Xorg 以 `open()` 開啟 primary node 後，會取得代表這次 open instance 的 file descriptor（fd）。 Kernel 會同時建立一筆 `drm_file`，保存這次 open 專用的 DRM connection state。 後續建立的 GEM handles 會放在這筆 `drm_file` 的 handle table，primary node 取得的顯示控制權也會與這筆 connection state 相連
+Xorg 以 `open()` 開啟 primary node 後，會取得代表這次 open instance 的 file descriptor（fd）。 後續建立的 GEM handles 會放在對應 `drm_file` 的 handle table，primary node 取得的顯示控制權也會與這筆 connection state 相連
 
 modesetting driver 接著呼叫 userspace 函式庫 libdrm，向 kernel 查詢顯示資訊或提交顯示狀態。 libdrm 會依照 DRM 的 userspace API（UAPI）準備 ioctl，再透過這個 fd 將要求送往對應的 DRM device
 
@@ -1975,7 +1979,7 @@ libdrm 發出的 ioctl 進入 kernel 後，會由 DRM core 接住。 DRM core �
 
 #### KMS 將 pixel storage 接到顯示輸出
 
-因此，modesetting driver 想知道的是 kernel 提供了哪些顯示輸出，以及每個輸出可以使用哪些 display modes。 而 DRM 中負責保存與更新這些顯示狀態的部分稱為 KMS（Kernel Mode Setting）
+因此，modesetting driver 想知道的是 kernel 提供了哪些顯示輸出，以及每個輸出可以使用哪些 display modes。 前面的 Big picture 已將 DRM 中負責保存與更新這些顯示狀態的部分稱為 KMS（Kernel Mode Setting），這裡接著展開它使用的 object model
 
 KMS 執行的核心工作稱為 mode setting。 它會選擇並套用一個 display mode，再決定要掃描哪份像素儲存區，以及這份畫面要送往哪個顯示輸出。 KMS 會以一組 kernel objects 保存顯示輸出、可用 modes、目前使用的 mode，以及像素儲存區與顯示輸出的連接關係，讓 userspace 可以查詢或更新這些資料
 
@@ -3098,11 +3102,11 @@ xf86ScreenToScrn(ScreenPtr pScreen)
 
 此時 DIX 已配置並登記 `ScreenRec`，`ScrnInfoRec` 也已保存選定的 depth、virtual size 與 display mode。 接下來，modesetting `ScreenInit()` 要為這個 X Screen 建立像素儲存區，並將 X server 共用的繪圖與顯示管理功能接進 `ScreenRec`
 
-X server 會用一個 `PixmapRec` 表示整個 X Screen 的內容，本文將它稱為 screen Pixmap。 `PixmapRec` 保存 X Screen image 的尺寸、depth 與 pitch 等 metadata，實際的桌面 pixels 則要放在另一份底層 storage。 modesetting 原始程式碼以 `drmmode_rec::front_bo` 保存這份 storage 的 `struct gbm_bo *`，本文在 3D 主線中將它稱為 GBM desktop BO
+前面概觀中的 screen Pixmap，在 X server 內由一個 `PixmapRec` 表示。 `PixmapRec` 保存 X Screen image 的尺寸、depth 與 pitch 等 metadata，實際的桌面 pixels 則要放在另一份底層 storage。 modesetting 原始程式碼以 `drmmode_rec::front_bo` 保存這份 storage 的 `struct gbm_bo *`，本文在 3D 主線中將它稱為 GBM desktop BO
 
 GBM 的全名是 Generic Buffer Manager，是 Mesa 提供的 userspace buffer 配置 API 與 `libgbm` 函式庫。 呼叫端會交入 GBM device、尺寸、pixel format 與 usage flags 來建立 buffer，再取得只能透過 GBM API 操作的 `struct gbm_bo *`。 本例的 GBM device 已由前面的 glamor 繪圖環境建立，`ScreenInit()` 會沿用它來配置能供 OpenGL rendering 與 KMS scanout 使用的 GBM desktop BO
 
-fb 是 X server 的 framebuffer layer，提供以像素儲存區實作 Window、Pixmap、image 與 2D drawing operations 的共用程式碼。 mi 是 machine-independent layer，負責不依賴特定 framebuffer layout 的 Screen、Window、region、視窗移動與重新露出處理。 modesetting 會把裝置組態交給這兩層，讓它們完成 `ScreenRec` 中的大部分共用欄位與 callbacks
+Xorg fb layer 是 X server 內的 framebuffer layer，提供以像素儲存區實作 Window、Pixmap、image 與 2D drawing operations 的共用程式碼。 mi 是 machine-independent layer，負責不依賴特定 framebuffer layout 的 Screen、Window、region、視窗移動與重新露出處理。 modesetting 會把裝置組態交給這兩層，讓它們完成 `ScreenRec` 中的大部分共用欄位與 callbacks
 
 RandR 是 X11 用來查詢與設定 outputs、CRTCs、display modes、rotation 與 X Screen 尺寸的 extension。 `ScreenInit()` 會把 `PreInit()` 建立的 output／CRTC 組態接進這套 X11 介面
 
@@ -3234,7 +3238,7 @@ typedef struct glamor_pixmap_private {
 } glamor_pixmap_private;
 ```
 
-這筆 keyed private state 位於 `PixmapRec::devPrivates`，用來保存各 extension 或 DDX layer 的 per-Pixmap metadata。 它與 fb layer 用來保存 raw pixel pointer 的 `PixmapRec::devPrivate.ptr` 是兩個不同欄位。 這個階段先完成 private slot 的配置，等 `InitOutput()` 回傳後，Xorg 才會建立 screen Pixmap，並透過 glamor private 將它接到 GBM desktop BO
+這筆 keyed private state 位於 `PixmapRec::devPrivates`，用來保存各 extension 或 DDX layer 的 per-Pixmap metadata。 它與 Xorg fb layer 用來保存 raw pixel pointer 的 `PixmapRec::devPrivate.ptr` 是兩個不同欄位。 這個階段先完成 private slot 的配置，等 `InitOutput()` 回傳後，Xorg 才會建立 screen Pixmap，並透過 glamor private 將它接到 GBM desktop BO
 
 ##### glamor 為 DRI3 登記 Pixmap import／export callbacks
 
@@ -3405,7 +3409,7 @@ fbScreenInit(ScreenPtr pScreen, void *pbits, int xsize, int ysize,
 }
 ```
 
-`fbSetupScreen()` 先安裝 fb layer 提供的 Window、Pixmap 與 drawing operations。 以下程式碼來自 [`Xorg: fb/fbscreen.c:94`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/fb/fbscreen.c#L94-L140)：
+`fbSetupScreen()` 先安裝 Xorg fb layer 提供的 Window、Pixmap 與 drawing operations。 以下程式碼來自 [`Xorg: fb/fbscreen.c:94`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/fb/fbscreen.c#L94-L140)：
 
 ```c
 // [Xorg: fb/fbscreen.c:94-140]
@@ -4073,7 +4077,7 @@ CreateConnectionBlock(void)
 
 `xWindowRoot` 內保存了 Root Window XID、Screen 尺寸、預設 root depth 與 root visual 等資料。 後續的 `xDepth` 與 `xVisualType` 記錄則列出了該 Screen 可用的 depths 與 visuals。 `numRoots` 會等於 X Screens 的數量，因為每個 X Screen 都有一個 Root Window
 
-因此結合 `dix_main()` 的內容可知，`CreateConnectionBlock()` 會在 `Dispatch()` 前先執行一次，按照 `screenInfo.screens[]` 既有的順序，將各個 X Screen 序列化至 `ConnectionInfo` template。 這份共用內容依賴的是已完成的 `ScreenRec`、Root Window、depths 與 visuals，不需要等待 active scanout，因此它早於 KMS framebuffer 的建立與第一次 modeset
+因此結合 `dix_main()` 的內容可知，`CreateConnectionBlock()` 會在 `Dispatch()` 前先執行一次，按照 `screenInfo.screens[]` 既有的順序，將各個 X Screen 序列化至 `ConnectionInfo` template。 這份共用內容依賴的是已完成的 `ScreenRec`、Root Window、depths 與 visuals，不需要等待 active scanout，因此它早於 DRM/KMS framebuffer 的建立與第一次 modeset
 
 ##### Xorg 以 `SIGUSR1` 通知等待中的 `xinit`
 
@@ -5016,7 +5020,7 @@ SendConnSetup(ClientPtr client, const char *reason)
   │
   ├─ BlockHandler(&timeout)
   │    └─ msBlockHandler_oneshot()
-  │         └─ 建立首次 KMS framebuffer 與 scanout state
+  │         └─ 建立首次 DRM/KMS framebuffer 與 scanout state
   │
   └─ ospoll_wait(server_poll, timeout)
        │
@@ -5651,7 +5655,7 @@ compCreateWindow(WindowPtr pWin)
 }
 ```
 
-本文這個 X Screen 原本的 callback 是 `fbCreateWindow()`。 因此 `ret = (*pScreen->CreateWindow)(pWin)` 會進入 fb layer，將 screen Pixmap 寫入新 Window 的 fb private storage。 以下程式碼來自 [`Xorg: fb/fbwindow.c:30`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/fb/fbwindow.c#L30-L36)：
+本文這個 X Screen 原本的 callback 是 `fbCreateWindow()`。 因此 `ret = (*pScreen->CreateWindow)(pWin)` 會進入 Xorg fb layer，將 screen Pixmap 寫入新 Window 的 fb private storage。 以下程式碼來自 [`Xorg: fb/fbwindow.c:30`](https://github.com/X11Libre/xserver/blob/a6a8bc9464f7d787e91f63957357547e7c85c81f/fb/fbwindow.c#L30-L36)：
 
 ```c
 // [Xorg: fb/fbwindow.c:30-36]
@@ -5900,12 +5904,12 @@ application Window 進入桌面後，Xorg 已經知道它的 parent、geometry �
 
 兩條執行路徑會在後面的 Present copy 交會。 Xorg 會以當時的 Window tree 與 clip metadata 決定 pixels 要放在桌面的哪個範圍，齒輪的 pixel values 則位於 Mesa／VirGL rendering path 建立的 application image。 為了把這份 image 放進 application Window，Xorg 必須先在自己的行程中取得一個可以引用同一份 storage 的 X11 image object。 這是 DRI3 在本節要解決的問題
 
-這個交接會同時出現四種角色。 其中 DRI image 是 Mesa DRI frontend 在 driver 與 window-system loader 之間傳遞的 image handle，底下會引用實際保存 storage 的 Gallium `pipe_resource`：
+這個交接會同時出現四種角色。 其中 DRI image 是 Mesa DRI frontend 與 GLX DRI3 loader 交換的 image handle。 GLX DRI3 loader 管理 X11 drawable 與 buffer pool，Mesa DRI frontend 則位於它與 Gallium driver 之間，會讓這筆 handle 引用實際保存 storage 的 Gallium `pipe_resource`：
 
 - application image storage 保存完整的齒輪 pixels。 Mesa DRI frontend 會以 DRI image 引用它，底下的 Gallium `pipe_resource` 則會作為 VirGL rendering target 的 backing resource
 - X11 Window 是齒輪在桌面上的目的地 object。 它保存 geometry、stacking 與 clip 等 metadata，不是保存完整齒輪 pixels 的 buffer
 - X Pixmap 是 Xorg 管理的 image object。 本節建立的 Pixmap 會引用 application image storage，讓 Xorg 可以用 Pixmap XID 取得這份來源 image。 後文將它簡稱為 application Pixmap
-- GBM desktop BO 保存整個可見桌面的 pixels。 它是後面 glamor copy 的目的地，也是既有 DRM／KMS framebuffer 引用的 scanout storage
+- GBM desktop BO 保存整個可見桌面的 pixels。 它是後面 glamor copy 的目的地，也是既有 DRM/KMS framebuffer 引用的 scanout storage
 
 ```text
 X11 Window
@@ -5917,7 +5921,7 @@ application image storage
 
 GBM desktop BO
   ├─ Xorg screen Pixmap 透過 glamor 引用
-  └─ DRM／KMS framebuffer 引用
+  └─ DRM/KMS framebuffer 引用
 ```
 
 這裡的兩條 Pixmap 關係對應兩份不同 storage。 DRI3 建立的 X Pixmap 引用 application image storage，screen Pixmap 則引用 GBM desktop BO。 後面的 Present／glamor copy 會從前者讀取 pixels，再寫入後者
@@ -6050,7 +6054,7 @@ dri3_alloc_render_buffer(struct loader_dri3_drawable *draw,
 
 兩種 protocol requests 傳遞的都是「如何引用這份 storage」，不會把整張 image 的 pixel values 複製進 X11 request body
 
-在本文的 VirGL driver path 中，`__DRI_IMAGE_ATTRIB_FD` 查詢會先轉成 `WINSYS_HANDLE_TYPE_FD`，再經 `pipe_screen::resource_get_handle()` 進入 VirGL driver 與 DRM winsys。 DRM winsys 最後以 `drmPrimeHandleToFD()` 將這筆 VirGL resource 的 GEM handle 匯出成 dma-buf fd：
+在本文的 VirGL driver path 中，`__DRI_IMAGE_ATTRIB_FD` 查詢會先轉成 `WINSYS_HANDLE_TYPE_FD`，再經 `pipe_screen::resource_get_handle()` 進入 VirGL driver 與 DRM winsys。 winsys 是 Gallium driver 用來對接作業系統或視窗系統的介面，VirGL DRM winsys 會將 VirGL resource 與 Linux DRM fd、GEM handle 及 dma-buf 交界接起來。 它最後以 `drmPrimeHandleToFD()` 將這筆 VirGL resource 的 GEM handle 匯出成 dma-buf fd：
 
 ```callgraph
 [Mesa: src/gallium/frontends/dri/dri2.c:1077]
@@ -6235,7 +6239,7 @@ DRI3 已經讓 Mesa 與 Xorg 建立了引用同一份 application image storage 
 
 `glXSwapBuffers()` 在這個邊界會引發兩項工作。 Mesa 會先 flush application drawable，將目前 context 為 application image 準備的 rendering work 交給 VirGL driver。 這是前面總圖中的第一組 VirGL work，本節先把它當成「application image 會被 rendering work 寫入」的 black box
 
-flush 之後，GLX DRI3 loader 會用 Present request 將 application Window 與剛剛 rendering 的 back-buffer Pixmap 交給 Xorg。 Present 是 X11 extension，用來表示「哪一張 Pixmap 要在哪一個 Window 中呈現」，並安排這次更新的時機與 buffer reuse
+flush 之後，GLX DRI3 loader 會用 Present request 將 application Window 與剛剛 rendering 的 back-buffer Pixmap 交給 Xorg。 前面的 Big picture 已將 Present 定義成安排 Pixmap 內容在 X11 Window 中呈現的 X11 extension。 在這個呼叫點，它還會安排更新時機與 buffer reuse
 
 #### `glXSwapBuffers()` 將 Window XID 與 Pixmap XID 交給 Present
 
@@ -6794,7 +6798,7 @@ Damage Region 保存這次 drawing 影響的可見矩形
 
 ### Xorg 將 GBM desktop BO 的更新發布到既有 scanout
 
-Present copy 已經將寫入齒輪可見區域的 work 交給 Xorg 的 Mesa／VirGL context，Damage wrapper 也已記錄這次 drawing 影響的矩形。 Xorg 前面建立的 DRM／KMS framebuffer 仍然引用這份 GBM desktop BO，primary plane、CRTC、encoder 與 connector 的連接關係也沒有改變。 因此這一幀不需要重新建立 framebuffer 或 display topology
+Present copy 已經將寫入齒輪可見區域的 work 交給 Xorg 的 Mesa／VirGL context，Damage wrapper 也已記錄這次 drawing 影響的矩形。 Xorg 前面建立的 DRM/KMS framebuffer 仍然引用這份 GBM desktop BO，primary plane、CRTC、encoder 與 connector 的連接關係也沒有改變。 因此這一幀不需要重新建立 framebuffer 或 display topology
 
 這個階段要解決的問題是：如何讓既有 scanout path 在寫入 GBM desktop BO 的 rendering 完成後，發布更新後的桌面。 Damage wrapper 已經把 Present copy 影響的可見矩形累積在 Damage Region 中。 Xorg 會將這些座標透過 `DIRTYFB` 交給 DRM／KMS，Linux `virtio_gpu` driver 再將有效範圍轉成 `RESOURCE_FLUSH`
 
@@ -6805,7 +6809,7 @@ screen Pixmap
   │
   └─ glamor private 引用 GBM desktop BO
        │
-       ├─ DRM／KMS framebuffer 已引用這份 BO
+       ├─ DRM/KMS framebuffer 已引用這份 BO
        ├─ primary plane 已選擇這筆 framebuffer
        └─ Damage Region 保存本次更新的可見矩形
   ↓
@@ -6827,11 +6831,11 @@ semu SDL display backend 發布新畫面
 
 #### Damage Region 經 `DIRTYFB` 抵達 primary-plane update
 
-此時 GBM desktop BO 對應的 DRM／KMS framebuffer 已經綁在 active primary plane 上。 前一節的 `damageCopyArea()` 將 Present copy 的目的地 rectangles 累積在 screen Pixmap 的 Damage Region。 接下來從這份 Region 開始，追蹤 Xorg 如何把更新交給 kernel display 路徑
+此時 GBM desktop BO 對應的 DRM/KMS framebuffer 已經綁在 active primary plane 上。 前一節的 `damageCopyArea()` 將 Present copy 的目的地 rectangles 累積在 screen Pixmap 的 Damage Region。 接下來從這份 Region 開始，追蹤 Xorg 如何把更新交給 kernel display 路徑
 
 Damage tracking 啟用時，`msBlockHandler()` 會呼叫 `dispatch_dirty()`。 後面的 `dispatch_damages()` 會先將 Damage Region 轉成目前 CRTC 可使用的 clip rectangles，只有至少留下一個 rectangle 時才呼叫 `drmModeDirtyFB()`
 
-`DIRTYFB` request 傳遞的是 damage coordinates，不會攜帶 pixels。 這個 ioctl 會為既有 DRM／KMS framebuffer 建立一次只更新 plane damage state 的 atomic commit，最後進入 virtio-gpu primary-plane update。 以下 callgraph 從 Xorg 已記錄的 Damage Region 開始，固定追蹤 virtio-gpu framebuffer 實作的 `dirty` callback，再看 DRM atomic helper 如何把 dirty rectangles 放進 primary plane state：
+`DIRTYFB` request 傳遞的是 damage coordinates，不會攜帶 pixels。 這個 ioctl 會為既有 DRM/KMS framebuffer 建立一次只更新 plane damage state 的 atomic commit，最後進入 virtio-gpu primary-plane update。 以下 callgraph 從 Xorg 已記錄的 Damage Region 開始，固定追蹤 virtio-gpu framebuffer 實作的 `dirty` callback，再看 DRM atomic helper 如何把 dirty rectangles 放進 primary plane state：
 
 ```callgraph
 Xorg modesetting：將 Damage Region 轉成 DIRTYFB clips
@@ -6863,7 +6867,7 @@ static int dispatch_damages(..., RegionPtr dirty, ..., int fb_id, ...)
                  // libdrm 已送出 DRM_IOCTL_MODE_DIRTYFB
 ```
 
-到這裡，Xorg 已經將 Damage Region 轉成 `drmModeClip[]`，並以既有 `fb_id` 送出 `DRM_IOCTL_MODE_DIRTYFB`。 Kernel 階段再以 `fb_id` 找回前面建立的 DRM／KMS framebuffer，將 clips 轉成 plane state 上的 damage property
+到這裡，Xorg 已經將 Damage Region 轉成 `drmModeClip[]`，並以既有 `fb_id` 送出 `DRM_IOCTL_MODE_DIRTYFB`。 Kernel 階段再以 `fb_id` 找回前面建立的 DRM/KMS framebuffer，將 clips 轉成 plane state 上的 damage property
 
 ```callgraph
 Linux DRM core：從 framebuffer ID 找到 dirty callback
@@ -7023,7 +7027,7 @@ display state 仍然 active 時，`drm_atomic_helper_damage_merged()` 會讀取 
 
 #### `RESOURCE_FLUSH` 透過既有 scanout binding 發布 desktop host texture
 
-`virtio_gpu_resource_flush()` 會從 primary plane 目前的 DRM／KMS framebuffer 找到 `virtio_gpu_object`，再把它的 hardware resource ID 與 damage bounding rectangle 放進 `VIRTIO_GPU_CMD_RESOURCE_FLUSH`。 上一段用來等待 desktop rendering 的是共用 `drm_plane_state::fence`。 下面程式中的 `virtio_gpu_plane_state::fence` 則是 virtio-gpu driver 的 private fence，用來追蹤 driver 交給 controlq 的 flush command
+`virtio_gpu_resource_flush()` 會從 primary plane 目前的 DRM/KMS framebuffer 找到 `virtio_gpu_object`，再把它的 hardware resource ID 與 damage bounding rectangle 放進 `VIRTIO_GPU_CMD_RESOURCE_FLUSH`。 上一段用來等待 desktop rendering 的是共用 `drm_plane_state::fence`。 下面程式中的 `virtio_gpu_plane_state::fence` 則是 virtio-gpu driver 的 private fence，用來追蹤 driver 交給 controlq 的 flush command
 
 固定的 classic VirGL 組態沒有 `VIRTIO_GPU_F_RESOURCE_BLOB`，GBM desktop BO 也不是 imported dma-buf，因此這筆 primary-plane state 不會配置 private fence。 `virtio_gpu_resource_flush()` 會進入下方的 `else` branch，將 resource ID 與 damage rectangle 交給 controlq
 
@@ -7241,7 +7245,7 @@ semu SDL event loop：發布給使用者看到的 VM window
 成功發布且仍有效時，semu VM window 顯示新的齒輪角度
 ```
 
-到這裡，3D Display 主線已經將 application image 的可見區域寫進 GBM desktop BO，再沿著既有 DRM／KMS framebuffer 與 scanout binding 發布到 semu VM window。 長時間存在的 X11 Window、application Pixmap、screen Pixmap、GBM desktop BO、DRM／KMS framebuffer 與 scanout binding 都會留給下一幀重複使用
+到這裡，3D Display 主線已經將 application image 的可見區域寫進 GBM desktop BO，再沿著既有 DRM/KMS framebuffer 與 scanout binding 發布到 semu VM window。 長時間存在的 X11 Window、application Pixmap、screen Pixmap、GBM desktop BO、DRM/KMS framebuffer 與 scanout binding 都會留給下一幀重複使用
 
 本文的固定路徑會持續更新同一份 GBM desktop BO，再以 Damage Region 與 `RESOURCE_FLUSH` 發布變動。 其他顯示路徑也可能準備多份 scanout buffers，再以 page flip 讓 CRTC 在適當時機改選下一個 DRM/KMS framebuffer
 
@@ -7259,7 +7263,7 @@ VirGL 3D 主線會讓 guest Mesa 建立 commands，再由 host renderer 執行 r
 
 softpipe 與 llvmpipe 都是 Mesa 的 Gallium software drivers。 它們接住相同的 Gallium operations，並使用 CPU 完成 vertex processing、rasterization 與 fragment processing，再把結果寫進 system memory 中的 color buffer。 softpipe 採用較直接的同步實作，適合用來理解 Gallium driver contract。 llvmpipe 會使用 LLVM JIT 與多個 worker threads 提高 throughput，也會以真正的 fence 表示非同步工作何時完成
 
-drisw 負責的是另一段工作。 softpipe 或 llvmpipe 決定「怎麼算出 pixels」，drisw 則銜接 Mesa software-rendering path 與 X11 loader callbacks，決定「怎麼把算好的 pixels 交給 X11 drawable」。 在這條 2D 對照路徑中，這次交付最後會形成 `PutImage` 或 `ShmPutImage` request
+drisw 負責的是另一段工作。 softpipe 或 llvmpipe 決定「怎麼算出 pixels」，drisw 則銜接 Mesa software-rendering path 與 GLX loader 提供的 X11 drawable callbacks，決定「怎麼把算好的 pixels 交給 X11 drawable」。 在這條 2D 對照路徑中，這次交付最後會形成 `PutImage` 或 `ShmPutImage` request
 
 Software renderer 並不是只為舊硬體保留的 legacy path。 它在下列情境仍然有明確用途：
 
@@ -7280,7 +7284,7 @@ Software renderer 並不是只為舊硬體保留的 legacy path。 它在下列�
 
 Xorg 將 DRM fd 交給 `gbm_create_device()` 後，GBM 會先選出一個 backend，讓後續的 `gbm_bo_create()` 能把尺寸、pixel format 與 usage flags 轉成實際的 buffer 配置。 不同 backend 與 capability 可能讓 front BO 經過不同建立路徑。 本節的目標是先看懂 Xorg 到 kernel 的分層，因此下方 callgraph 會選擇 Mesa DRI backend 直接建立 dumb BO 的分支
 
-DRI 的全名是 Direct Rendering Infrastructure，是一組銜接 Mesa loader、rendering driver 與視窗系統的介面。 `libgbm` 的 DRI backend 位於 `src/gbm/backends/dri/`，負責將單次 GBM buffer 建立要求交給可用的 driver 路徑。 在本節選定的分支中，`GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT` 會讓 DRI backend 進入 `create_dumb()`，向 DRM 建立基礎線性 buffer
+前面的 Big picture 已將 DRI（Direct Rendering Infrastructure）介紹成銜接視窗系統與 Mesa rendering driver 的基礎設施。 `libgbm` 的 DRI backend 位於 `src/gbm/backends/dri/`，負責將單次 GBM buffer 建立要求交給可用的 driver 路徑。 在本節選定的分支中，`GBM_BO_USE_WRITE | GBM_BO_USE_SCANOUT` 會讓 DRI backend 進入 `create_dumb()`，向 DRM 建立基礎線性 buffer
 
 如果這次 device 建立失敗，Xorg 才會呼叫 `gbm_create_device_by_name(ms->drmmode.fd, "dumb")`。 這個 helper 會暫時將 `GBM_BACKEND` 設為 `dumb`，再重新呼叫 `gbm_create_device()`，形成另一次 fallback 嘗試
 
@@ -7574,7 +7578,7 @@ struct gbm_surface;
 :::tip
 [`Mesa: src/gbm/main/gbm.h:41`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gbm/main/gbm.h#L41-58) 將 GBM 定義為向平台底層 memory manager 請求 buffer 的抽象。 GBM backend 也位於 userspace
 
-Linux kernel 公開 DRM device node 與 UAPI。 Xorg 開啟 device node 取得 fd，GBM backend 透過這個 fd 配置、匯入、匯出或 mapping buffer。 Xorg 另外透過 libdrm 與同一個 DRM device fd 建立 KMS framebuffer，並設定 display state
+Linux kernel 公開 DRM device node 與 UAPI。 Xorg 開啟 device node 取得 fd，GBM backend 透過這個 fd 配置、匯入、匯出或 mapping buffer。 Xorg 另外透過 libdrm 與同一個 DRM device fd 建立 DRM/KMS framebuffer，並設定 display state
 
 呼叫端會將 DRM fd、尺寸、pixel format 與 `GBM_BO_USE_SCANOUT`、`GBM_BO_USE_WRITE` 等用途交給 GBM。 GBM backend 會配置符合需求的 buffer，再回傳 `struct gbm_bo`。 呼叫端可透過 GBM API 查詢 stride、handle 與前文介紹過的 modifier
 
@@ -7636,7 +7640,7 @@ miModifyPixmapHeader(PixmapPtr pPixmap, int width, int height, int depth,
 
 Xorg modesetting 保存 `drmmode_rec::front_bo` pointer，並負責在關閉 Screen 時呼叫 `gbm_bo_destroy()`。 Pointer 指向的是 Mesa `libgbm` 配置的 userspace wrapper，不會直接傳入 kernel。 Wrapper 內的 GEM handle 屬於 Xorg 開啟的 DRM file namespace，kernel 會透過這個 handle 找到並持有相應的 GEM object
 
-Screen Pixmap、GBM BO 與 KMS framebuffer 會以不同方式連到同一個 guest GEM backing：
+Screen Pixmap、GBM BO 與 DRM/KMS framebuffer 會以不同方式連到同一個 guest GEM backing：
 
 ```callgraph
 Xorg modesetting：drmmode_rec::front_bo
@@ -7652,17 +7656,17 @@ Linux DRM：GEM dumb BO 與 guest shmem backing
   ├─ screen Pixmap
   │    └─ devPrivate.ptr 借用同一個 GEM BO 的 CPU mapping
   │
-  └─ KMS framebuffer
+  └─ DRM/KMS framebuffer
        └─ base.obj[0] 另外持有一筆 GEM object reference
 ```
 
-這些 objects 沒有各自保存一份 pixels。 Screen `PixmapRec` 透過 mapping 存取 guest GEM backing，GBM BO 透過 GEM handle 引用它，KMS framebuffer 則保存供 scanout 使用的 format／layout 與 GEM reference。 後面的 vGPU 2D／drisw 比較支線會另外建立一份由 `sw_displaytarget` 表示的 Mesa client-side storage
+這些 objects 沒有各自保存一份 pixels。 Screen `PixmapRec` 透過 mapping 存取 guest GEM backing，GBM BO 透過 GEM handle 引用它，DRM/KMS framebuffer 則保存供 scanout 使用的 format／layout 與 GEM reference。 後面的 vGPU 2D／drisw 比較支線會另外建立一份由 `sw_displaytarget` 表示的 Mesa client-side storage
 
 `virtio_gpu` 另外為這個 GEM object 建立 host-side 2D resource ID，並以 `RESOURCE_ATTACH_BACKING` 登記可供 transfer 使用的 guest pages。 Host resource 內的 pixels 要等後續 `TRANSFER_TO_HOST_2D` 才會更新
 
 由於這條 2D 對照組態將 `AccelMethod` 設為 `none`，所以 `gbm_create_best_bo()` 會要求一份可供 CPU mapping 的 front BO。 Xorg 自己定義的 `gbm_bo_get_map()` helper 取出先前由公開 `gbm_bo_map()` 建立的 mapping 位址，`miModifyPixmapHeader()` 再將這個位址寫入 screen `PixmapRec` 的 `devPrivate.ptr`。 後面不論哪個 Window 產生新內容，X server 最後都要讓這份 X Screen 像素儲存區反映可見結果
 
-稍後建立的 KMS framebuffer 會引用同一個 GEM BO。 此時 Xorg 已經準備好 X Screen 像素儲存區，KMS 尚未把它選成 scanout source
+稍後建立的 DRM/KMS framebuffer 會引用同一個 GEM BO。 此時 Xorg 已經準備好 X Screen 像素儲存區，KMS 尚未把它選成 scanout source
 
 ##### 未 redirect 的 X11 Windows 如何連到 mapped screen Pixmap
 
@@ -7824,7 +7828,7 @@ semu SDL display backend：在 event loop 中消費 display queue
 
 當 scanout 仍繫結該 resource，且 payload 建立成功時，semu 會擷取 `SET_SCANOUT` 所記錄的完整 source view，再把這份 snapshot 排入 display queue。 這個 flush rectangle 不會再次裁切 payload。 Linux `virtio_gpu` driver 收到 flush command 的 response 時，畫面仍可能只停在 display queue 中。 等 SDL event loop 成功更新 texture 並執行 `SDL_RenderPresent()`，使用者才會看見新內容
 
-Xorg 完成這次 dirty update 後，長時間存在的 screen Pixmap、front BO、KMS framebuffer 與 scanout 繫結都會繼續供下一幀使用。 vGPU 2D 對照路徑到這裡已經從 X11 image request 走到使用者看見更新後的畫面
+Xorg 完成這次 dirty update 後，長時間存在的 screen Pixmap、front BO、DRM/KMS framebuffer 與 scanout 繫結都會繼續供下一幀使用。 vGPU 2D 對照路徑到這裡已經從 X11 image request 走到使用者看見更新後的畫面
 
 現在回到本文的 VirGL 3D 主線。 第一幀出現在桌面後，使用者接著把 `xterm` 移到 `glxgears` 前方。 Window 的 geometry 與 stacking 隨之改變，Xorg 也要重新計算齒輪視窗目前仍可顯示的範圍
 
@@ -8367,27 +8371,29 @@ AMD 的 radeonsi、Intel 的 iris、軟體 drivers softpipe 與 llvmpipe，以�
 
 前面的 Display 章節已將 `glxgears` 的 GLX drawable 對應到 application Window，並介紹了 DRI3 buffer pool。 現在回到 application，查看 OpenGL default framebuffer 第一次需要 color attachment 時，Mesa 如何從 pool 選擇 back buffer
 
-`glXMakeCurrent()` 建立並繫結 drawable state，不會立即配置所有 image buffers。 等 framebuffer validation 需要 attachments 時，DRI frontend 才透過 image loader 取得 buffers。 DRI3 loader 會以 `loader_dri3_drawable::buffers[]` 找出可重用的槽位，無可用 image 時再呼叫 `dri3_alloc_render_buffer()` 配置新的 back buffer
+`glXMakeCurrent()` 建立並繫結 drawable state，不會立即配置所有 image buffers。 等 framebuffer validation 需要 attachments 時，DRI frontend 才會呼叫 GLX DRI3 loader 提供的 image-loader callback 取得 buffers。 DRI3 loader 會以 `loader_dri3_drawable::buffers[]` 找出可重用的槽位，無可用 image 時再呼叫 `dri3_alloc_render_buffer()` 配置新的 back buffer
 
 ```callgraph
 OpenGL default framebuffer 需要 color attachment
   │
   │  framebuffer validation 要求 drawable buffers
   ↓
-Mesa DRI frontend image loader
+Mesa DRI frontend
   │
-  └─ [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:2192]
-       loader_dri3_get_buffers(...)
-         ↓
-       [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:2027]
-       dri3_get_buffer(...)
-         │
-         ├─ 重用 loader_dri3_drawable::buffers[] 裡可用的 image
-         └─ 沒有可用 image
-              ↓
-            [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:1416]
-            dri3_alloc_render_buffer(...)
-              └─ 建立 DRI image／Gallium pipe_resource 所引用的 back buffer
+  │  呼叫 GLX DRI3 loader 提供的 image-loader callback
+  ↓
+[Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:2192]
+loader_dri3_get_buffers(...)
+  ↓
+[Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:2027]
+dri3_get_buffer(...)
+  │
+  ├─ 重用 loader_dri3_drawable::buffers[] 裡可用的 image
+  └─ 沒有可用 image
+       ↓
+     [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:1416]
+     dri3_alloc_render_buffer(...)
+       └─ 建立 DRI image／Gallium pipe_resource 所引用的 back buffer
 ```
 
 這裡的 back buffer 是 DRI3 buffer pool 裡的一筆 entry，DRI image 與 Gallium `pipe_resource` 則是 Mesa 從不同層級引用它的 objects。 Xorg application Pixmap 如何經 DRI3 引用同一份 application image storage，以及這份 storage 為什麼不是 GBM desktop BO，已由 Display 章節完成定義
@@ -8484,7 +8490,7 @@ Software renderer 不只用在舊系統，也可用於 CI、headless 測試、�
 
 圖中加入 Mesa client-side color buffer。 軟體 renderer 以 guest CPU 執行 OpenGL work，算好的 pixels 先寫入這份 buffer。 Mesa 會用一個 `sw_displaytarget` 表示這份可由 CPU 存取、之後又能交給 X11 drawable 的 storage
 
-建立 `sw_displaytarget` 的 DRI 軟體 winsys 位於 Gallium 軟體 driver 與 GLX loader 之間。 winsys 是 Gallium driver 用來連接作業系統或視窗系統的介面。 在這條軟體路徑中，它會管理 display target，並依 loader 提供的 pixel 交付 callbacks 選擇 backing storage
+建立 `sw_displaytarget` 的 DRI 軟體 winsys 位於 Gallium 軟體 driver 與 GLX loader 之間。 前面介紹的 winsys 在這條軟體路徑中會管理 display target，並依 GLX loader 提供的 pixel 交付 callbacks 選擇 backing storage
 
 可使用 SHM put-image callback 時，winsys 會優先配置 SysV SHM segment。 配置失敗或 callback 不可用時，則改用 aligned heap memory。 Rendering 期間，softpipe 會直接將 pixels 寫入選定的 backing，不需要先將每個 draw 送進 virtio-gpu
 
@@ -8776,7 +8782,7 @@ symlink 的檔名是 selection key，實際 inode 可以共同指向同一個聚
 
 對本章的 GLX direct 路徑而言，還有一個更重要的建置時條件。 `libgallium_dri` 不一定要等到 application 第一次建立 context 才由名稱查找。 下一小節所示的 `src/glx/meson.build` 會在 `with_dri` 時把這個 Meson target 加到 `libglx` 的 link 集合
 
-在這個固定 commit 與設定分支下，GLX vendor 函式庫可以已經帶有 Gallium DRI 實作。 通用 DRI loader 的 `dlopen` 規則仍然存在，但不能不看呼叫端就把它套在每條 GLX 呼叫路徑上
+在這個固定 commit 與設定分支下，GLX vendor 函式庫可以已經帶有 Gallium DRI 實作。 Mesa 共用的 DRI driver-loading utility 仍保留依 driver name 執行 `dlopen()` 的規則，但不能不看呼叫端就把它套在每條 GLX 呼叫路徑上
 
 #### 執行期函式庫、DRI driver 與 loader 的關係
 
@@ -9465,7 +9471,7 @@ struct glx_screen
 
 Xorg 的 display state 先成立，GLX client 才利用 `Display *` 與 Root Window 找到正確的 X Screen 與 rendering device。 這條主線建立的 `dri3_screen` 會讓後續 context 使用 VirGL `pipe_screen`，並讓 drawable setup 與 swap 進入 DRI3 callbacks
 
-Display 章節已經區分 application image 與 GBM desktop BO。 從 GLX client 這一側來看，application image 屬於 GLX drawable 的 DRI3 buffer pool。 被選為 back buffer 的 image 會成為 OpenGL framebuffer attachment，swap 時再成為 Present request 的來源。 GBM desktop BO 則屬於 Xorg 的 X Screen，並由 DRM／KMS framebuffer 引用
+Display 章節已經區分 application image 與 GBM desktop BO。 從 GLX client 這一側來看，application image 屬於 GLX drawable 的 DRI3 buffer pool。 被選為 back buffer 的 image 會成為 OpenGL framebuffer attachment，swap 時再成為 Present request 的來源。 GBM desktop BO 則屬於 Xorg 的 X Screen，並由 DRM/KMS framebuffer 引用
 
 GLX context 可以先建立，等 `glXMakeCurrent()` 第一次把它綁到 application Window 時，Mesa 才為這個 XID 找出或建立 DRI3 drawable。 以下程式碼來自 [`Mesa: src/glx/dri3_glx.c:172`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/dri3_glx.c#L172-L210) 的 `dri3_create_drawable()`，用來顯示 GLX drawable identity 如何接到 DRI3 loader state：
 
@@ -10479,7 +10485,7 @@ State Tracker reuse 或建立 `gl_framebuffer`。 draw 與 read 相同時，read
 
 Mesa core 的 bind 分支先設定 context TLS，再選擇 `newCtx` 的 `GLApi` dispatch。 draw 與 read 都存在時，兩個 winsys 欄位各取得 reference。 unbind 分支安裝 no-op dispatch、釋放 references，再清掉 context TLS
 
-以下程式碼來自 [Mesa: src/mesa/main/context.c:1451](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/main/context.c#L1485-1507) 的 `_mesa_make_current()`。 兩條分支可觀察 unbind 如何先安裝 no-op dispatch、放掉 `WinSysDrawBuffer`／`WinSysReadBuffer` references，再清除 context TLS。 bind 則先發布 `newCtx` 與 `GLApi` table，之後才讓兩個 winsys 欄位取得新 framebuffer references：
+以下程式碼來自 [Mesa: src/mesa/main/context.c:1451](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/main/context.c#L1451-1507) 的 `_mesa_make_current()`。 兩條分支可觀察 unbind 如何先安裝 no-op dispatch、放掉 `WinSysDrawBuffer`／`WinSysReadBuffer` references，再清除 context TLS。 bind 則先發布 `newCtx` 與 `GLApi` table，之後才讓兩個 winsys 欄位取得新 framebuffer references：
 
 ```c
 GLboolean
@@ -17560,7 +17566,9 @@ State Tracker 的一般 finish 呼叫端位於 [Mesa: src/mesa/state_tracker/st_
 
 現在讓同一個齒輪 draw 分別交給 softpipe、llvmpipe 與 radeonsi。 對 application 而言，呼叫的仍是同一組 OpenGL operations，State Tracker 也仍透過 Gallium callbacks 送出 draw 與 flush。 但 `draw_vbo()` 回傳時，每種 driver 留下的結果並不相同
 
-即使 application 執行緒已經從 draw 回傳，下一幀齒輪的 pixels 也可能還沒產生完畢。 如果 application 隨即改寫同一份 resource，或呼叫 `glFinish()` 等待結果，Mesa 就必須知道 pending work 留在哪裡，以及要等哪一個 fence 完成後才能安全重用 resource。 接下來先看全貌章節使用的 softpipe，再比較 llvmpipe 與 radeonsi 如何執行相同 inputs、保存 pending work，並回傳可供呼叫端等待的 fence
+即使 application 執行緒已經從 draw 回傳，下一幀齒輪的 pixels 也可能還沒產生完畢。 如果 application 隨即改寫同一份 resource，或呼叫 `glFinish()` 等待結果，Mesa 就必須知道 pending work 留在哪裡，以及要等哪一個 fence 完成後才能安全重用 resource
+
+為了看清同一套 Gallium contract 如何容納不同執行模型，本章先比較實作較短的 softpipe、加入 worker queue 的 llvmpipe，以及原生硬體 driver radeonsi。 VirGL 的虛擬 GPU 實作會在後面的專章接回固定主線
 
 | 實作 | draw callback 內的主要動作 | draw 回傳後仍可能存在的工作 | flush fence |
 | --- | --- | --- | --- |
@@ -18707,7 +18715,7 @@ radeonsi 的 `draw_vbo` 已把 draw packets、shader state 與 BO references 累
 
 前文 [Mesa: src/mesa/state_tracker/st_cb_flush.c:63](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/state_tracker/st_cb_flush.c#L63) 的 `st_flush()` 已顯示 State Tracker 會呼叫 `st->pipe->flush`
 
-以下程式碼分別節錄同一個檔案的 [Mesa: src/gallium/drivers/radeonsi/si_fence.c:581](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/radeonsi/si_fence.c#L581-590) 與 [Mesa: src/gallium/drivers/radeonsi/si_fence.c:591](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/radeonsi/si_fence.c#L591-600)
+以下程式碼分別節錄同一個檔案的 [Mesa: src/gallium/drivers/radeonsi/si_fence.c:581](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/radeonsi/si_fence.c#L581-590) 與 [Mesa: src/gallium/drivers/radeonsi/si_fence.c:591](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/radeonsi/si_fence.c#L591-598)
 
 `si_init_fence_functions()` 把 `pipe_context::flush` 註冊成 `si_flush_from_st`。 `si_init_screen_fence_functions()` 則安裝 screen fence callbacks，讓呼叫端可以透過 `pipe_screen` 保存並等待提交時產生的 fence：
 
@@ -18779,19 +18787,19 @@ si_flush_gfx_cs(struct si_context *ctx, unsigned flags,
 
 前面已經追到 Mesa driver 如何接住齒輪的 OpenGL work。 當 `glxgears` 準備把這些工作畫進 application Window 時，driver 還需要知道這個 X11 drawable 目前使用哪些 buffers。 一幀完成後，Mesa 也要沿著相反方向，把可呈現的 buffer 或算好的 pixels 交回 X11 視窗系統
 
-DRI（Direct Rendering Infrastructure）在這裡提供 GLX loader 與 Mesa DRI frontend 共同遵循的 userspace 介面。 GLX loader 掌握 X11 drawable、buffer pool 與呈現狀態，DRI frontend 則掌握 Mesa context、drawable attachments 與 driver screen。 兩側透過具有版本資訊的 extension callback tables 交換各自管理的資料
+前面概觀中的 DRI（Direct Rendering Infrastructure）在這裡展開成 GLX loader 與 Mesa DRI frontend 共同遵循的 userspace 介面。 GLX loader 掌握 X11 drawable、buffer pool 與呈現狀態，DRI frontend 則掌握 Mesa context、drawable attachments 與 driver screen。 兩側透過具有版本資訊的 extension callback tables 交換各自管理的資料
 
 這組關係會先在 screen 建立期間成形。 GLX loader 準備 extension tables 與 screen-level 輸入，DRI frontend 繫結這些 tables，再建立 Gallium `pipe_screen`。 等 context 與 drawable 建立完成後，rendering 與 swap 才會在執行期間沿著 callbacks 往返兩側。 接下來會依照這個順序，先看 ABI 與 screen 建立，再追蹤同一個齒輪 Window 的 drawable callback 流程
 
 ### DRI extension 是具版本協商機制的雙向 ABI
 
-在本文的軟體路徑中，`drisw` 需要向 GLX loader 查詢 drawable 的位置與尺寸。 一幀完成後，它又要反過來呼叫 loader 提供的 `putImage` callbacks，把 pixels 交回 X11 drawable。 GLX loader 與 DRI frontend／driver 各自保存私有 objects，不能直接讀取對方的 C struct
+先以 vGPU 2D 對照中的 `drisw` 查看這組雙向 callback。 `drisw` 需要向 GLX loader 查詢 drawable 的位置與尺寸。 一幀完成後，它又要反過來呼叫 loader 提供的 `putImage` callbacks，把 pixels 交回 X11 drawable。 GLX loader 與 DRI frontend／driver 各自保存私有 objects，不能直接讀取對方的 C struct
 
 Mesa 因此以 DRI extensions 提供雙向 callback tables。 每一張 table 都帶有名稱與版本，讓 loader 與 driver 在建立 screen 時找出雙方都支援的介面，再依 callback 方向交換 drawable information、buffers 與完成的 pixels。 這套具版本協商機制的介面就是兩側共同遵循的 ABI。 以下先看共同 header 與兩類 loader extension，下一節再沿著 screen 建立流程追蹤 tables 的準備與繫結
 
 #### 共同 extension header
 
-DRI loader 與 driver 可能來自不同的建置，因此 extension table 不能只靠 C struct 的目前大小協商能力。 以下程式碼來自 [`Mesa: include/GL/internal/dri_interface.h:96`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/include/GL/internal/dri_interface.h#L96)，用來確認共同 header 如何以 `name` 與 `version` 支援只能向尾端擴充的 ABI（append-only ABI）
+GLX loader 與 DRI frontend／driver 可能來自不同的建置，因此 extension table 不能只靠 C struct 的目前大小協商能力。 以下程式碼來自 [`Mesa: include/GL/internal/dri_interface.h:96`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/include/GL/internal/dri_interface.h#L96)，用來確認共同 header 如何以 `name` 與 `version` 支援只能向尾端擴充的 ABI（append-only ABI）
 
 ```c
 ...
@@ -19287,7 +19295,7 @@ dri2_init_screen(struct dri_screen *screen, bool driver_name_is_inferred)
 
 `driver_name_is_inferred` 保留 loader 判定 driver 名稱的來源資訊，讓建立 screen 的路徑能區分明確指定與推導結果。 對 VirGL 而言，pipe-loader descriptor 最終會選到 `virtio_gpu` 對應的 `create_screen` callback，再由後續的 winsys 與 renderer capability set（capset）初始化填入共用的 `pipe_screen` callbacks
 
-DRM fd 的 ownership 分成外部 fd 與 driver 長期 reference。 GLX loader 取得 fd 並交給 DRI frontend，driver screen 或 winsys 會用 `dup()` 為長期使用建立另一個 fd。 這兩個 fd 位於目前行程的 file descriptor table，並共同引用 kernel 在 `open()` DRM device node 時建立的同一筆 open file description
+DRM fd 的 ownership 分成外部 fd 與 driver 長期 reference。 GLX loader 取得 fd 並交給 DRI frontend，driver screen 或 winsys 會用 `dup()` 為長期使用建立另一個 fd。 Open file description 是 kernel 為一次 `open()` 建立的底層開啟狀態，`dup()` 產生的 fd numbers 會共同引用它，因此也會共用其下的 `drm_file` state
 
 ```callgraph
 Mesa Gallium DRI 硬體 screen
@@ -20590,7 +20598,7 @@ dri_create_image(struct dri_screen *screen,
 }
 ```
 
-Softpipe 收到帶有 `PIPE_BIND_SCANOUT` 的 resource template 後，必須在一般 heap storage 與軟體 display target 間分流。 以下兩段程式碼來自 [`Mesa: src/gallium/drivers/softpipe/sp_texture.c:130`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/softpipe/sp_texture.c#L130-195)，用來確認 scanout resource 如何進入 `winsys->displaytarget_create()`：
+Softpipe 收到帶有 `PIPE_BIND_SCANOUT` 的 resource template 後，必須在一般 heap storage 與軟體 display target 間分流。 以下兩段程式碼來自 [`Mesa: src/gallium/drivers/softpipe/sp_texture.c:130`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/softpipe/sp_texture.c#L130-195)，用來確認 Gallium scanout resource 如何進入 `winsys->displaytarget_create()`：
 
 ```c
 // [Mesa: src/gallium/drivers/softpipe/sp_texture.c:130]
@@ -20798,10 +20806,10 @@ GBM userspace 呼叫端
             ├─ 尺寸或 modifier／flags 組合無效：`errno = EINVAL; return NULL`
             └─ `gbm->v0.bo_create(..., modifiers, count)`
                  └─ 回到前面的 BO 配置分流
-                      // 最終結果：`gbm_bo` 管理一份實際 storage
+                      // 最終結果：`gbm_bo` 管理一筆已配置 buffer 的 backend reference
 ```
 
-`gbm_surface` 管理組態與 modifier 副本，GBM BO 則管理一份實際 storage，可能是 mapped dumb BO，也可能是 DRI image。 Xorg 的 BO 建立函式直接建立 `gbm_bo`。 這條 `gbm_surface` 路徑沒有建立 image，也沒有保存或管理 BO queue
+`gbm_surface` 管理組態與 modifier 副本，GBM BO 則管理一筆已配置 buffer 的 backend object。 底層可以是 mapped dumb BO storage，也可以是 DRI image 所引用的 driver storage。 Xorg 的 BO 建立函式直接建立 `gbm_bo`。 這條 `gbm_surface` 路徑沒有建立 image，也沒有保存或管理 BO queue
 
 至此，libgbm 內部已將 Xorg 提供的 BO 條件交給選定的 Mesa driver。 `kms_swrast` 與 dumb BO 對照路徑也在這裡結束。 下一章回到本文固定的 VirGL 3D rendering 主線，追蹤 VirGL driver 如何建立 resources 並提交 commands
 
@@ -23039,7 +23047,7 @@ Mesa VirGL DRM winsys
 
 ## Linux DRM rendering：Mesa 的 VirGL work 如何進入 virtio-gpu 3D
 
-前一章停在 Mesa VirGL winsys 呼叫 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE` 與 `DRM_IOCTL_VIRTGPU_EXECBUFFER`。 對 application 而言，這些呼叫只是使用 render node fd 發出的 DRM ioctls。 要讓 VirGL command stream 跨過 guest userspace，Linux `virtio_gpu` driver 還要為這條 DRM connection 建立 context，把 userspace handles 解析成 kernel objects，處理 submission dependencies，再將 work 轉成 virtio-gpu 3D commands
+前一章停在 Mesa VirGL winsys 呼叫 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE` 與 `DRM_IOCTL_VIRTGPU_EXECBUFFER`。 對 application 而言，這些呼叫只是使用 render node fd 發出的 DRM ioctls。 要讓 VirGL command stream 跨過 guest userspace，Linux `virtio_gpu` driver 還要為這條 DRM connection 建立 context，把 userspace handles 解析成 kernel objects，等待這筆 submission 依賴的 input fences 與既有 BO fences，再將 work 轉成 virtio-gpu 3D commands
 
 本章沿著 ioctl 進入 kernel 後的執行順序，依次查看 render node、DRM file context、resource、execbuffer 與 fence。 Display 章已完整追蹤 primary node、DRM/KMS framebuffer 與 display topology，因此這裡只處理 rendering。 本章的輸入是 Mesa 準備好的 VirGL command stream、BO handle list 與同步條件，輸出則是 controlq 上的 `VIRTIO_GPU_CMD_SUBMIT_3D`，以及完成後回到 Mesa 的 fence
 
@@ -23473,7 +23481,7 @@ void virtio_gpu_dequeue_ctrl_func(struct work_struct *work)
 
 `virtio_gpu_fence_event_process()` 會在相同 fence context 中找出已完成的 fences，呼叫 `dma_fence_signal_locked()` 喚醒 waiters。 Userspace 持有的 output fd 指向同一筆 `sync_file`，所以 Mesa VirGL winsys 後續對 fd 執行 `sync_wait()` 時，便能觀察到這次 submission 已完成
 
-這條 fence 只描述 VirGL submission 的 completion。 Present 何時不再使用 application Pixmap，以及 desktop image 何時完成 display update，屬於 Display 章介紹的 X11 Present 與 KMS 邊界，不由這筆 execbuffer fence 取代
+這條 fence 只描述目前這一筆 VirGL submission 的 completion。 Present 何時不再使用 application Pixmap，以及 GBM desktop BO 的更新何時經 display path 發布，屬於 Display 章介紹的 X11 Present 與 KMS 邊界，不由這筆 execbuffer fence 取代
 
 ```callgraph
 virtio-gpu device 完成 fenced SUBMIT_3D
@@ -23519,7 +23527,7 @@ drisw／swrast loader callback
   ↓
 PutImage／ShmPutImage request
   ↓
-Xorg Damage wrapper 與 fb layer
+Xorg Damage wrapper 與 Xorg fb layer
   │
   │  套用 X11 Window origin 與 composite clip
   ↓
@@ -23538,7 +23546,9 @@ semu 發布目前的 scanout
 這條路徑沒有 EXECBUFFER／SUBMIT_3D／virglrenderer
 ```
 
-兩條路徑都要更新 Display，但需要移動的資料不同。 2D dumb BO 由 guest CPU 與 Xorg 寫入 guest backing，所以 `RESOURCE_FLUSH` 前還要執行 `TRANSFER_TO_HOST_2D`。 3D non-dumb resource 已由 host renderer 寫入，KMS 等待對應的 rendering fence 後，便能以 `RESOURCE_FLUSH` 發布既有 scanout resource
+兩條路徑都要更新 Display，但需要移動的資料不同。 2D dumb BO 由 guest CPU 與 Xorg 寫入 guest backing，所以 `RESOURCE_FLUSH` 前還要執行 `TRANSFER_TO_HOST_2D`
+
+3D 主線的 GBM desktop BO 對應 classic VirGL resource，pixels 已由 host renderer 寫入。 DRM atomic helper 等待這份 BO 的 implicit rendering fence 後，Linux `virtio_gpu` driver 再以 `RESOURCE_FLUSH` 發布目前 scanout 綁定的 resource
 
 到這裡，固定主線中的 Mesa VirGL work 已經由 DRM render node 進入 Linux `virtio_gpu` driver，並轉成 controlq 上的 `SUBMIT_3D`。 下一章沿虛擬裝置另一側繼續往下看，確認 semu 如何把這批 commands 交給 virglrenderer
 
@@ -24130,928 +24140,39 @@ VirGL 在 guest 與 host 有兩個可分別驗證的介面。 Guest 端從 Galli
 
 ## 完整 OpenGL 工作流程
 
-最後回到開頭的 `glxgears` 情境，從使用者按下 Enter 開始，依時間重走一次代表性的 OpenGL 工作流程。 Application 建立齒輪 X11 Window 與 current GLX context，準備 shader／resource state，由 Mesa 產生一幀 rendering，再以 `glXSwapBuffers()` 交給 X server
+最後回到開頭的 `glxgears` 情境，從使用者按下 Enter 開始，依時間重走一次代表性的 OpenGL 工作流程。 Application 建立齒輪 X11 Window 與 current GLX context，準備 display list、matrix 與 vertex state，由 Mesa 產生一幀 rendering，再以 `glXSwapBuffers()` 交給 X server
 
 固定的 DRI3／VirGL 3D 主線包含兩筆 rendering submission。 第一筆來自 `glxgears` 行程，VirGL 會把 draw work 經 execbuffer 交給 Linux `virtio_gpu` driver，讓 host renderer 寫入 application image
 
-`glXSwapBuffers()` 接著以 X11 Window XID 與 back-buffer Pixmap XID 發出 Present request。 Xorg 的 glamor 再使用 Xorg 自己的 Mesa／VirGL context 提交第二筆 work，把 application image 的可見區域複製進 GBM desktop BO，最後接回 Display 章的 Damage、KMS 與 `RESOURCE_FLUSH` 路徑
+`glXSwapBuffers()` 接著以 X11 Window XID 與 application Pixmap XID 發出 Present request。 這個 application Pixmap 就是 back buffer 對應的 X Pixmap。 Xorg 的 glamor 再使用 Xorg 自己的 Mesa／VirGL context 提交第二筆 work，把 application image 的可見區域複製進 GBM desktop BO，最後接回 Display 章的 Damage、KMS 與 `RESOURCE_FLUSH` 路徑
 
 vGPU 2D 對照則由 softpipe 在 application 行程中算出 pixels，再由 drisw 以 `XPutImage()` 或 `XShmPutImage()` 交給 X11 drawable。 這條路徑會在相同的 OpenGL 與 X11 邊界完成一幀，但不會建立 VirGL command stream，也不會產生兩筆 host GPU submission
 
-前面的全貌章節主要追蹤 pixels、renderer work 與 owner。 這一次改沿函式、object references、失敗清理與各個工作的完成時點重走同一條時間線，並以 `glShaderSource()`、resource objects 與 `glDrawArrays()` 放大 Mesa 內部的代表性工作
+前面的模組章節已分別追蹤 context、shader、resource、draw、flush 與 swap。 接下來先把各階段的輸出接成一條成功主線，再集中回答前文尚未統一處理的失敗清理與銷毀問題。 章末總圖會將兩組 VirGL submissions、vGPU 2D 對照與不同完成時點放回同一條時間線
 
-### Context 初始化流程
+### 成功主線：把各層輸出接成一幀
 
-X11 Window 建立後，GLX application 會先建立 OpenGL context，後面的 rendering、swap、同步與銷毀流程都會使用這組 context objects。 固定範例中的 `glxgears` 呼叫 legacy `glXCreateContext()`
+故事從 application 建立 GLX context 開始。 GLX 與 DRI 會建立 client-side `glx_context`、`dri_context`，再由 State Tracker 與 Gallium 建立 `st_context`、`pipe_context`。 `glXMakeCurrent()` 成功後，GLX 與 Mesa 的 thread-local state 會指向這組 current context，draw／read drawable 也會接到同一個 application Window
 
-Mesa 在 client 行程內建立 renderer context 時，會將 legacy render type 轉成 attribute pair，並重用 `dri_create_context_attribs()` 底下的 DRI／State Tracker／Gallium 建立函式。 跨到 X server 時，固定主線仍會發出 legacy CreateContext request，再用 `IsDirect` reply round trip 確認結果
+固定範例中的 `glxgears` 會先以 compatibility API 建立齒輪 display lists，每一幀再更新 matrix state 並重播 draw commands。 前文的 programmable-pipeline 支線則使用 shader、program、buffer、texture、sampler、VAO 與 framebuffer objects，讓我們能另外追蹤 GLSL compiler 如何產生 linked NIR
 
-Context 建立成功時，這組 context object graph 已可供 application 繫結。 固定範例接著呼叫 `glXMakeCurrent()`，將同一個 Window 同時設為 draw 與 read drawable。 函式成功回傳後，呼叫端執行緒會在 GLX TLS 看到該 `glx_context`，Mesa GLAPI stub 也會透過這個執行緒的 dispatch table 到達新的 `gl_context`。 current state 建立完成後，外層時間線便進入 rendering
+兩條 OpenGL 路徑最後都會由 State Tracker 將 resources、views 與 rendering state 整理成 Gallium contract 使用的表示。 到這個階段，driver 已取得執行 draw 所需的 shader state、resource references 與 render target
 
-#### Application 到 Mesa GLX 入口
+`glDrawArrays()` 等 OpenGL draw calls 會先經 frontend 驗證，再由 State Tracker 建立 Gallium draw information。 固定主線中的 VirGL driver 會將 draw state、resource handles 與 operations 編碼進 guest userspace 的 command buffer。 Draw call 回傳只表示這批 work 已完成 API 驗證並進入 driver，尚不表示 host renderer 已執行 commands
 
-第一個問題是 `glXCreateContext()` 進入哪一套 userspace 實作。 固定主線載入 Mesa `libGL`，因此 `glXCreateContext(dpy, visual, ...)` 會直接進入 Mesa 提供的 legacy context 建立函式。 若改用前面的 GLVND 比較組態，外層 dispatch layer 會先從 `visual->screen` 找出 Mesa vendor，再進入同一套 Mesa GLX 程式碼
+`glXSwapBuffers()` 會先要求 flush application drawable。 VirGL winsys 此時透過 DRM render node 提交 command buffer，Linux `virtio_gpu` driver 再將這筆 execbuffer 轉成 `SUBMIT_3D`。 Kernel 接受 submission 後，flush 便能回到 `glXSwapBuffers()`，host renderer 則可繼續執行這筆 work。 對應的 VirGL fence signal 後，才表示 application image 的 rendering 已完成
 
-Mesa GLX 接著完成三件事。 它先建立 client-side `glx_context` 與內層 renderer objects，再將 legacy CreateContext request 送往 X server，最後以 `__glXIsDirect()` 的 reply 確認 server-side resource 已成立。 三者都成功後，Mesa `libGL` 才將新的 `GLXContext` 回傳給 application
+Flush 回傳後，同一次 `glXSwapBuffers()` 會將 application Window 與 application Pixmap 交給 Xorg Present。 Present copy 進入 Damage wrapper 時，wrapper 會先記錄目的地 Damage Region，再呼叫下層的 glamor CopyArea。 Glamor 會使用另一組 Mesa／VirGL context，提交第二筆 rendering work，將 application image 的可見區域寫入 GBM desktop BO
 
-在 GLVND 比較組態中，`glXCreateContextAttribsARB()` generated wrapper 會從既有 FBConfig mapping 找到 vendor，呼叫其 `CreateContextAttribsARB` 函式，再加入 context mapping。 這個比較支線與 legacy 主線使用不同的公開輸入與 X server request，進入 Mesa DRI frontend 後才共用下層 renderer 建立函式
+稍後進入 BlockHandler 時，Xorg 會依先前記錄的 Damage Region 發出 `DIRTYFB`。 Kernel atomic helper 會等待 GBM desktop BO 的 implicit rendering fence，再由 `virtio_gpu` primary-plane update 發出 `RESOURCE_FLUSH`，沿著既有 scanout binding 發布更新後的桌面
 
-固定主線的 ownership 分成兩個行程。 Mesa GLX 擁有 application 行程內的 `glx_context` wrapper 與內層 renderer object references，X server 則以 context XID 管理 server-side GLX resource。 GLVND 組態會在 Mesa 外側另行擁有 vendor dispatch infrastructure 與 context mapping。 Context 此時尚未繫結 application 執行緒或 drawable，所以 current dispatch 還沒有改變
+vGPU 2D 對照會在 Gallium driver 之後改走另一條交付方式。 softpipe 或 llvmpipe 使用 guest CPU 算出 pixels，drisw 再以 `XPutImage()` 或 `XShmPutImage()` 將結果交給 X11 drawable。 這條路徑不建立 application VirGL command stream，也不需要 Xorg glamor 再提交一筆 host 3D copy
 
-#### DRI／State Tracker／Gallium driver
-
-現在進入前一小節的 Mesa vendor 呼叫，查看 direct context objects 如何在函式回傳前建立完成。 `dri_create_context_attribs()` 先把 GLX profile、version、flags、reset strategy、release behavior 與 sharing 條件轉成 DRI attributes。 Gallium DRI frontend 的 `dri_create_context()` 再把 visual 與 `st_share` 交給 `st_api_create_context()`
-
-以下程式碼來自 [`Mesa: src/mesa/state_tracker/st_manager.c:964`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/state_tracker/st_manager.c#L964) 的 `st_api_create_context()`，用來確認 `pipe_context` 與 `st_context` 的建立順序，以及第二步失敗時由誰回收先建立的 driver context：
-
-```c
-struct st_context *
-st_api_create_context(struct pipe_frontend_screen *fscreen,
-                      const struct st_context_attribs *attribs,
-                      enum st_context_error *error,
-                      struct st_context *shared_ctx)
-{
-...
-   pipe = fscreen->screen->context_create(fscreen->screen, NULL,
-                                          PIPE_CONTEXT_PREFER_THREADED |
-                                          lod_bias_flag |
-                                          attribs->context_flags);
-   if (!pipe) {
-      *error = ST_CONTEXT_ERROR_NO_MEMORY;
-      return NULL;
-   }
-
-   st_visual_to_context_mode(&attribs->visual, &mode);
-   if (attribs->visual.color_format == PIPE_FORMAT_NONE)
-      mode_ptr = NULL;
-   st = st_create_context(attribs->profile, pipe, mode_ptr, shared_ctx,
-                          &attribs->options, no_error,
-                          !!fscreen->validate_egl_image);
-   if (!st) {
-      *error = ST_CONTEXT_ERROR_NO_MEMORY;
-      pipe->destroy(pipe);
-      return NULL;
-   }
-...
-}
-```
-
-`fscreen->screen` 是 DRI screen 先前建立的 `pipe_screen`，此處只借用它呼叫 callback。 新 `pipe_context` 屬於此次 context 建立，一旦 `st_create_context()` 成功，就由 `st_context::pipe` 長期持有。 DRI frontend 再把成功的 `st_context` 存入 `dri_context::st`，並以 `frontend_context` 建立反向連結
-
-在 VirGL screen 上，`context_create` slot 是前文已驗證的 [`Mesa: src/gallium/drivers/virgl/virgl_context.c:1709`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/virgl/virgl_context.c#L1709) `virgl_context_create()`。 它建立 `virgl_context`、command buffer、uploader、transfer queue 與整張 `pipe_context` callback table。 這是 application 行程中的 Gallium rendering context
-
-Linux `virtio_gpu` driver 另在 DRM file 層保存 `ctx_id`。 本文的 semu 組態會在第一個 3D resource create 或 execbuffer request 到達時，才以 `CTX_CREATE` 建立這筆 virtio-gpu context。 兩者位於不同層，也具有不同的生命週期
-
-sharing 也有清楚邊界。 DRI `sharedContextPrivate` 只用來找到舊 `dri_context::st`，State Tracker 再由 `shared_ctx` 取得 Mesa share group。 新 context 可共用 texture、buffer 與 shader namespace，卻不共用 `pipe_context` command buffer、current draw/read framebuffer 或執行緒區域 dispatch pointer
-
-失敗順序反映 ownership 順序。 driver 無法建立 `pipe_context` 時，State Tracker 尚無需回收。 `pipe_context` 已成功而 `st_create_context()` 失敗時，片段立即呼叫 `pipe->destroy(pipe)`。 之後的 version check 失敗則由 `st_destroy_context()` 回收已組好的 Mesa core 與 pipe state，錯誤會逐層轉成 DRI 再轉成 GLX error
-
-這條路徑會先使用 DRI screen 已建立的 `pipe_screen`，再依序建立 driver `pipe_context`、Mesa core `gl_context`、`st_context` 與 CSO 快取。 外層的 `dri_context` 與 `glx_context` 保存對應 references，失敗時則按相反方向清理已建立的 objects。 這些 objects 此時還沒有 drawable reference，command buffer 也尚未因 application draw 而增加內容
-
-#### Make-current 與 TLS dispatch
-
-固定範例的公開入口是 `glXMakeCurrent(dpy, drawable, context)`。 它會把同一個 drawable 同時當作 draw 與 read target，再呼叫共用的內部 `MakeContextCurrent()` 實作，將「存在的 context」變成「呼叫執行緒的 current context」。 direct GLX 路徑先找 draw 與 read drawable，DRI frontend 取得對應 `dri_drawable` reference，State Tracker 依 drawable identity 建立或重用 winsys framebuffer，最後呼叫 `_mesa_make_current()`
-
-以下程式碼來自 [`Mesa: src/mesa/main/context.c:1451`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/main/context.c#L1451) 的 `_mesa_make_current()`，用來追蹤執行緒區域 current context、GLAPI dispatch table 與 draw／read framebuffer references 的更新順序：
-
-```c
-GLboolean
-_mesa_make_current(struct gl_context *newCtx,
-                   struct gl_framebuffer *drawBuffer,
-                   struct gl_framebuffer *readBuffer)
-{
-...
-   if (!newCtx) {
-      _mesa_glapi_set_dispatch(NULL);  /* none current */
-      /* We need old ctx to correctly release Draw/ReadBuffer
-       * and avoid a surface leak in st_renderbuffer_delete.
-       * Therefore, first drop buffers then set new ctx to NULL.
-       */
-      if (curCtx) {
-         _mesa_reference_framebuffer(&curCtx->WinSysDrawBuffer, NULL);
-         _mesa_reference_framebuffer(&curCtx->WinSysReadBuffer, NULL);
-      }
-      _mesa_glapi_set_context(NULL);
-      assert(_mesa_get_current_context() == NULL);
-   }
-   else {
-      _mesa_glapi_set_context((void *) newCtx);
-      assert(_mesa_get_current_context() == newCtx);
-      _mesa_set_dispatch(newCtx, newCtx->GLApi);
-
-      if (drawBuffer && readBuffer) {
-         assert(_mesa_is_winsys_fbo(drawBuffer));
-         assert(_mesa_is_winsys_fbo(readBuffer));
-         _mesa_reference_framebuffer(&newCtx->WinSysDrawBuffer, drawBuffer);
-         _mesa_reference_framebuffer(&newCtx->WinSysReadBuffer, readBuffer);
-...
-      }
-      ...
-   }
-   ...
-   return GL_TRUE;
-}
-```
-
-程式碼特別顯示 unbind 時的先後。 Mesa 先將 dispatch 改為無 current table，接著用舊 `curCtx` 解除 draw/read framebuffer reference，最後才清 current-context pointer。 如果提前丟掉 `curCtx`，State Tracker renderbuffer 清理就失去解除 surface reference 所需的 context
-
-bind 分支則先安裝 `newCtx`，再依 `newCtx->GLApi` 選擇 dispatch table，之後才接上 winsys framebuffer。 GLX 外層的 [`Mesa: src/glx/glxcurrent.c:106`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/glxcurrent.c#L106) `MakeContextCurrent()` 只在 backend bind 成功後更新 `__glX_tls_Context`，所以失敗的 bind 不會向 application 公布一個半完成 current state
-
-失敗要依 unbind 前後分成兩組。 Context XID 已失效，或 draw／read 只有一個為 `None` 時，函式在取得 lock 前就回傳，舊 current context 仍然有效
-
-完成這些檢查後，GLX 會先 unbind `oldGC` 並執行 `__glXSetCurrentContextNull()`，才檢查新 context 是否已在其他執行緒 current，並呼叫 backend bind。 因此 `BadAccess`、drawable lookup、winsys framebuffer 配置或 visual compatibility 在這個階段失敗時，呼叫端執行緒會留下 null current state
-
-make-current 是否完成，可以由三個相互呼應的 state 確認：GLX TLS 指向新 `glx_context`，Mesa GLAPI TLS 指向新 `gl_context`，`Dispatch.Current` 指向該 context 對應的 API table。 之後 `glShaderSource()` 或 `glDrawArrays()` 才能在不帶 `Display *` 與 `GLXContext` 參數的情況下，取得這次 OpenGL 操作使用的 `gl_context`
-
-```callgraph
-Application 選擇 GLX context 建立入口
-=================================================
-[Mesa: src/glx/glxcmds.c:393] glXCreateContext(dpy, vis, shareList, allowDirect)
-  │
-  │  // 固定 glxgears 主線
-  ↓
-[Mesa: src/glx/glxcmds.c:293] CreateContext(...)
-  │
-  └─ [Mesa: src/glx/dri_common.c:609] dri_common_create_context(...)
-       └─ 將 legacy render type 整理成 context attribute pair
-  ↓
-[Mesa: src/glx/dri_common.c:795] dri_create_context_attribs(...)
-  │
-  │  `glXCreateContextAttribsARB()` 比較支線也在這裡合流
-  ├─ 驗證 profile、version、flags 與 sharing 條件
-  └─ `glx_context->driContext = dri_screen->createContextAttribs(...)`
-       ↓
-Mesa Gallium DRI frontend
-=================================================
-[Mesa: src/gallium/frontends/dri/dri_context.c:46] dri_create_context(...)
-  │
-  └─ [Mesa: src/mesa/state_tracker/st_manager.c:964]
-       st_api_create_context(&screen->base, &attribs, &ctx_err, st_share)
-       ├─ driver `pipe_screen->context_create(...)` 失敗
-       │    └─ 回收已配置的 context wrapper，回傳 error
-       └─ 成功
-            ├─ 建立 `pipe_context`
-            ├─ 建立 `gl_context`
-            ├─ 建立 `st_context`
-            └─ 建立 `cso_context`
-  ↓
-Mesa legacy GLX request／X server resource
-=================================================
-[Mesa: src/glx/glxcmds.c:334] GetReq(GLXCreateContext, req)
-  │
-  ├─ 配置 context XID
-  └─ 排入 Visual ID、screen、share XID 與 `isDirect`
-       ↓
-[Xorg: glx/vnd_dispatch_stubs.c:58] dispatch_CreateContext(client)
-  │
-  ├─ 建立 context XID → server GLX vendor mapping
-  └─ [Xorg: glx/glxcmds.c:383] __glXDisp_CreateContext(...)
-       └─ DoCreateContext(...)
-            ├─ 建立 server-side `__GLXcontext`
-            └─ `__glXAddContext(glxc)`
-  ↓
-[Mesa: src/glx/glxcmds.c:381] __glXIsDirect(dpy, gc->xid, &error)
-  │
-  ├─ protocol error 或 direct flag 不一致
-  │    └─ 銷毀 client-side context object graph，回傳 NULL
-  └─ 成功
-       └─ Mesa `libGL` 將 `GLXContext` 回傳給 application
-  ↓
-Application make-current request
-=================================================
-[Mesa: src/glx/glxcurrent.c:185]
-glXMakeCurrent(dpy, drawable, gc)
-  │
-  │  draw = drawable; read = drawable;
-  ↓
-[Mesa: src/glx/glxcurrent.c:106] MakeContextCurrent(dpy, draw, read, gc, opcode)
-  │
-  ├─ `gc->xid == None` 或 draw／read 只有一個為零
-  │    └─ unbind 前回傳 `False`，舊 current state 保持有效
-  │
-  ├─ `oldGC != dummyContext`
-  │    └─ `oldGC->vtable->unbind(oldGC); oldGC->currentDpy = NULL`
-  │         ↓
-  ├─ `__glXSetCurrentContextNull()`
-  │    └─ 後續失敗都留下 null current state
-  │
-  ├─ `gc->currentDpy != NULL`
-  │    └─ 送 `BadAccess` 並回傳 `False`
-  │
-  └─ `gc->vtable->bind(gc, draw, read)`
-       ├─ 失敗：`ret = GL_FALSE`
-       └─ 成功：[Mesa: src/gallium/frontends/dri/dri_context.c:304] dri_make_current(ctx, draw, read)
-  ↓
-[Mesa: src/mesa/state_tracker/st_manager.c:1146] st_api_make_current(st, stdrawi, streadi)
-  │
-  ├─ framebuffer 建立失敗
-  │    └─ `return false`
-  └─ 成功
-       ├─ [Mesa: src/mesa/main/context.c:1451] _mesa_make_current(st->ctx, stdraw, stread)
-       ├─ 設定 GLAPI context／dispatch TLS
-       └─ GLX 將 `gc`、draw 與 read identity 寫入執行緒的 current state
-            // 後續 OpenGL 入口才能經 dispatch table 到達新 `gl_context`
-```
-
-### Shader 與 resource 初始化流程
-
-GLX application 已建立 current context，接下來要準備這一幀使用的 shader 與 resource。 為了看清這些 object 如何成為 driver state，以下另外追蹤一組包含 vertex／fragment GLSL、shader／program、buffer、VAO、texture、sampler 與 FBO 的 OpenGL 操作，觀察 OpenGL object name、繫結、format 與 source 如何成為 shader state、Gallium resource、sampler view 與 render-target surface
-
-各個 object 有自己的建立時點。 shader create callback 可以在 link 或首次需要 variant 時產生 driver handle，resource storage 可在定義 image 或 buffer data 時建立，State Tracker 則等到驗證 atom 執行才把 current 繫結組成 `pipe_context` state。 Driver state 準備完成後，這些路徑會匯回外層 rendering 流程
-
-#### Shader source、compile、link 與 NIR
-
-這條 shader 初始化流程中，第一個長期持有 source 的 object 是 `gl_shader`。 `glShaderSource()` 先將 application 提供的多段文字複製並合併成 Mesa 自己配置的 source，再由前文已驗證的 [`Mesa: src/mesa/main/shaderapi.c:1193`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/main/shaderapi.c#L1193) `set_shader_source()` 替換 `gl_shader::Source`
-
-傳入的字串與字串陣列始終由 application 擁有。 API 回傳後可以修改或釋放，之後的 compiler 只讀 Mesa 的內部副本
-
-以下程式碼來自 [`Mesa: src/mesa/main/shaderapi.c:1237`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/main/shaderapi.c#L1237) 的 `_mesa_compile_shader()`，用來比較 source 缺失與進入 GLSL compiler 兩條路徑如何更新 `gl_shader` state：
-
-```c
-void
-_mesa_compile_shader(struct gl_context *ctx, struct gl_shader *sh)
-{
-...
-   if (!sh->Source) {
-      /* If the user called glCompileShader without first calling
-       * glShaderSource, we should fail to compile, but not raise a GL_ERROR.
-       */
-      sh->CompileStatus = COMPILE_FAILURE;
-   } else {
-      if (ctx->_Shader->Flags & (GLSL_DUMP | GLSL_SOURCE)) {
-         _mesa_log("GLSL source for %s shader %d:\n",
-                 _mesa_shader_stage_to_string(sh->Stage), sh->Name);
-         _mesa_log_direct(sh->Source);
-      }
-
-      MESA_TRACE_FUNC();
-
-      ensure_builtin_types(ctx);
-
-      /* this call will set the shader->CompileStatus field to indicate if
-       * compilation was successful.
-       */
-      _mesa_glsl_compile_shader(ctx, sh, NULL, false, false, false);
-      ...
-   }
-...
-}
-```
-
-compile 成功時的 NIR 仍屬於單一 `gl_shader`。 application 接著 attach shader 到 `gl_shader_program`，`glLinkProgram()` 才檢查所有 attached shader 的 compile status，依 stage 合併 compilation unit，檢查跨 stage 介面，並將 NIR clone 到 linked `gl_program`。 同一個 shader object 因而可被不同 program attach，各次 link 可各自改寫 clone 而不破壞原始 shader 的 NIR
-
-State Tracker 的 [`Mesa: src/mesa/state_tracker/st_glsl_to_nir.cpp:438`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/state_tracker/st_glsl_to_nir.cpp#L438) `st_link_glsl_to_nir()` 再依 `pipe_screen` caps 做 common lowering，整理 program resources、stream output 與 parameter，並將 `pipe_shader_state::type` 設為 `PIPE_SHADER_IR_NIR`。 `st_create_nir_shader()` 依 NIR stage 選擇 `create_vs_state`、`create_fs_state` 與其他 callback，driver 在該邊界取得交付 NIR 的 ownership，State Tracker 保存的則是 callback 回傳的 opaque handle
-
-失敗必須保留可查詢的 state。 compile 失敗後 `gl_shader` 仍存在，application 可查 `CompileStatus` 與 `InfoLog`，重新指定 source 再 compile。 link 失敗則將 program `LinkStatus` 設為失敗，不安裝這次未完成的 executable。 driver shader create 回傳空值時，新 variant 不可當成有效 handle，已轉移或 clone 的 NIR 也要依 callback 的 ownership 規則回收
-
-Program 初始化要到下列條件都成立才完成：program `LinkStatus` 成功、每個使用中 stage 的 `gl_program::nir` 都已完成 link，而且 State Tracker 能為目前 driver 建立對應 shader state。 這時 program 才有可供 draw 驗證使用的各 stage `gl_program`，以及對應的 driver shader handles 或 state
-
-#### Buffer、VAO、texture、sampler 與 FBO
-
-Application 呼叫 `glGenBuffers()` 或 `glCreateBuffers()` 時，先取得的是 OpenGL object name。 等到 `glBufferData()`、texture image definition 或 framebuffer setup 發生後，Mesa 才會逐步建立實際的 driver storage 與 attachment state。 因此，OpenGL object name 已存在不代表 Gallium resource 已經配置完成
-
-沿著這組操作往下看時，需要分開追蹤 OpenGL object name，以及 driver 用來表示實際 storage 的 `pipe_resource`。 VAO、sampler 與 FBO 主要保存繫結或 reference，buffer 與 texture 才會連到真正承載資料的 `pipe_resource`
-
-texture object 保存 target、image state 與 `pipe_resource` storage，sampler object 只保存 filtering、wrap、LOD 與 compare state。 將 sampler 繫結到 texture unit 不會複製 texture storage。 FBO 再以 attachment reference 指向 texture image 或 renderbuffer，State Tracker 在 framebuffer atom 將這些 attachment 轉成 `pipe_surface`
-
-以下程式碼來自 [`Mesa: src/mesa/state_tracker/st_atom_framebuffer.c:111`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/state_tracker/st_atom_framebuffer.c#L111) 的 `st_update_framebuffer_state()`，用來追蹤 current GL draw framebuffer 如何轉成 Gallium framebuffer 尺寸、samples 與 attachment state：
-
-```c
-void
-st_update_framebuffer_state( struct st_context *st )
-{
-   struct gl_context *ctx = st->ctx;
-   struct pipe_framebuffer_state framebuffer = {0};
-   struct gl_framebuffer *fb = st->ctx->DrawBuffer;
-   struct gl_renderbuffer *rb;
-   GLuint i;
-
-   /* Window framebuffer changes are received here. */
-   st_manager_validate_framebuffers(st);
-
-   st_flush_bitmap_cache(st);
-   st_invalidate_readpix_cache(st);
-
-   st->state.fb_orientation = _mesa_fb_orientation(fb);
-
-   /**
-    * Quantize the derived default number of samples:
-    *
-    * A query to the driver of supported MSAA values the
-    * hardware supports is done as to legalize the number
-    * of application requested samples, NumSamples.
-    * See commit eb9cf3c for more information.
-    */
-   fb->DefaultGeometry._NumSamples =
-      framebuffer_quantize_num_samples(st, fb->DefaultGeometry.NumSamples);
-
-   framebuffer.width  = _mesa_geometric_width(fb);
-   framebuffer.height = _mesa_geometric_height(fb);
-   framebuffer.samples = _mesa_geometric_samples(fb);
-   framebuffer.layers = _mesa_geometric_layers(fb);
-   framebuffer.resolve = fb->resolve;
-...
-}
-```
-
-後續迴圈對每個 color draw buffer 取 `gl_renderbuffer`，必要時更新 render-to-texture surface，再把 `rb->surface` 填入 `framebuffer.cbufs`。 depth/stencil attachment 以同樣原則形成 `zsbuf`，最後透過 CSO 快取呼叫 `set_framebuffer_state`。 current FBO 的 application identity 不會傳給 driver，driver 只看到 Gallium surface 與幾何資訊
-
-buffer 與 VAO 也在 draw atom 做類似轉換。 前文的 [`Mesa: src/mesa/main/arrayobj.c:885`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/main/arrayobj.c#L885) `bind_vertex_array()` 用 `_mesa_reference_vao()` 替換 `ctx->Array.VAO`，`st_atom_array.cpp` 再依 current VAO 組成 vertex elements 與 vertex buffers。 texture sampler-view atom 從 texture unit 取 texture object 與 sampler state，建立或重用 `pipe_sampler_view`，再以 `set_sampler_views` 與 `bind_sampler_states` 交給 driver
-
-ownership 由 reference graph 維持，而非只看 OpenGL object name。 `glDeleteBuffers()` 或 `glDeleteTextures()` 移除 namespace entry 並解除 application-visible 繫結，VAO、FBO、sampler view 或其他 context 若仍持有 reference，底層 `pipe_resource` 可繼續存活。 surface 與 sampler view 也會持有 resource reference，所以銷毀 view 時才解除該邊
-
-失敗可在不同階段發生。 OpenGL object name 或 object wrapper 配置失敗會記錄 `GL_OUT_OF_MEMORY`。 `pipe_screen::resource_create` 回傳空值時，OpenGL object 仍沒有 storage。 FBO attachment 雖然都有 object，format、尺寸或 sample count 不相容時仍可以 incomplete，draw 驗證會在 driver callback 前停下。 sampler view 配置失敗則留下未建立 view 的繫結結果
-
-這個初始化階段完成時，draw 會用到的 OpenGL object names 已登記在正確的 context 或 share group namespace，storage 已有有效的 `pipe_resource`，VAO 與 FBO 持有所需 reference，而 State Tracker 驗證能從 current state 建立 driver views。 此處仍不要求 command buffer 已提交
-
-#### VirGL resource／shader command
-
-VirGL 路徑將上一節的 Gallium object 轉成 guest command stream 中的 identity。 `virgl_resource_create_front()` 先建立 `virgl_resource` wrapper、計算 layout 與 bind flags，再呼叫 winsys `resource_create`。 固定 semu 主線使用 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE` 產生 `virgl_hw_res`
-
-支援 blob resource 的比較路徑也會產生相同的 winsys wrapper，因此後續 command 都透過同一個 `virgl_winsys` callback 取得 handle
-
-以下程式碼來自 [`Mesa: src/gallium/drivers/virgl/virgl_encode.c:710`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/virgl/virgl_encode.c#L710) 的 `virgl_emit_shader_header()`，用來確認 VirGL shader object handle、stage 與 token metadata 在 VirGL command stream 中的 layout：
-
-```c
-static void virgl_emit_shader_header(struct virgl_context *ctx,
-                                     uint32_t handle, uint32_t len,
-                                     uint32_t type, uint32_t offlen,
-                                     uint32_t num_tokens)
-{
-   virgl_encoder_write_cmd_dword(ctx, VIRGL_CMD0(VIRGL_CCMD_CREATE_OBJECT, VIRGL_OBJECT_SHADER, len));
-   virgl_encoder_write_dword(ctx->cbuf, handle);
-   virgl_encoder_write_dword(ctx->cbuf, type);
-   virgl_encoder_write_dword(ctx->cbuf, offlen);
-   virgl_encoder_write_dword(ctx->cbuf, num_tokens);
-}
-```
-
-VirGL shader object handle 不是 resource handle，也不是 kernel BO handle。 它只是 VirGL command protocol 中辨識 shader object 的 32-bit token。 State Tracker 得到的 opaque shader state 會以 `void *` 承載這個整數 handle，bind 與 delete command 再將它轉回整數寫入 command stream
-
-resource 使用兩個 handle，用途仍需分開。 前文的 [`Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.h:40`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/winsys/virgl/drm/virgl_drm_winsys.h#L40) 證明 `virgl_hw_res` 同時有 `res_handle` 與 `bo_handle`
-
-`res_handle` 由 `virgl_drm_emit_res()` 寫進 renderer 可見的 command slot，正常配置時 `bo_handle` 也會加入 execbuffer 的 BO handle list。 同一個 resource 因此在 renderer command 與 execbuffer BO handle list 中各有一個 handle，但 command dword 本身不證明 list entry 已配置成功
-
-ownership 邊界位於 command 與 resource reference 之間。 resource state command 不擁有 `pipe_resource`
-
-例如 sampler view、vertex buffer、uniform buffer 與 framebuffer surface 的 VirGL wrapper 會持有 Gallium reference。 BO handle list 配置成功時，winsys 另將 `virgl_hw_res` 加入 VirGL command buffer（`vctx->cbuf`）的 resource reference list，保護期只到 execbuffer ioctl 回傳
-
-`virgl_drm_clear_res_list()` 隨後立即解除 command buffer 持有的 userspace resource references。 提交成功後，kernel 會依該次 submission 保留執行所需的 BO references。 若呼叫端要求 output fence，則另由 `virgl_drm_fence` 持有一個只在該行程內有效的 fd。 這份 open-file reference 會讓 kernel `sync_file` 保持有效
-
-失敗包含 resource 配置、BO handle list 擴充與 shader encoding 三條支線。 winsys resource ioctl 失敗時 `resource_create` 回傳空值，`res_handle` 與 `bo_handle` 都不可使用。 relocation／BO handle list `REALLOC` 失敗時，winsys 只記錄訊息，已寫入的 command dword 不會回復，encoder 也收不到錯誤
-
-`virgl_shader_encoder()` 在固定 checkout 並沒有一條完整的「失敗就釋放所有暫時 token」路徑。 `nir_to_tgsi_options()` 的結果未檢查空值。 NIR 路徑的 transform 回傳空值時會遺留 `ntt_tokens`，encode 失敗時則遺留 `new_tokens`。 這三項是固定版本的失敗／清理缺口
-
-command buffer 空間不足時可先 flush 舊的 VirGL command buffer（`vctx->cbuf`），再繼續 encoding。 這是 command buffer 分段，不是 shader compile 失敗
-
-當 VirGL resource 已有 guest `virgl_hw_res`、shader 已有 VirGL shader object handle，而且相關 create／bind state 已編碼或可在首次 draw 時重新送出後，VirGL resource 與 shader command 的準備工作才完成。 這些 commands 還在 guest `virgl_cmd_buf`，不會因 encoder 函式回傳就自動跨越 Linux UAPI
-
-```callgraph
-Mesa OpenGL shader 與 link 階段
-=================================================
-[Mesa: src/mesa/main/shaderapi.c:1193] set_shader_source(shader, source, source_hash)
-  │
-  ├─ 前一輪 compile 因快取命中而跳過，且還沒有 fallback
-  │    └─ 舊 `Source` 移到 `FallbackSource`，新 source 成為目前輸入
-  └─ 一般路徑
-       └─ `free(shader->Source); shader->Source = source`
-            // Mesa 將內部副本裝進 `gl_shader`。 application 仍擁有原字串
-  ↓
-後續 application `glCompileShader()` 階段
-  ↓
-[Mesa: src/mesa/main/shaderapi.c:1237] _mesa_compile_shader(ctx, shader)
-  │
-  ├─ `shader->Source == NULL`
-  │    └─ `CompileStatus = COMPILE_FAILURE`
-  └─ source 存在
-       └─ `_mesa_glsl_compile_shader(...)` 產生該 shader 的 NIR 與 info log
-  ↓
-後續 application attach + `glLinkProgram()` 階段
-  ↓
-[Mesa: src/mesa/state_tracker/st_glsl_to_nir.cpp:766] st_link_shader(ctx, prog)
-  │
-  ├─ attached shader 的 `CompileStatus` 失敗
-  │    └─ `linker_error(...)`，保留可查詢的 program info log
-  └─ `prog->data->LinkStatus` 仍成功
-       ├─ `link_shaders_init(ctx, prog)`
-       │    ├─ 重設 `LinkStatus`／`Validated`
-       │    └─ 沒有 attached shader：記錄 link error 並停止
-       └─ `st_link_glsl_to_nir(ctx, prog)`
-            ├─ `gl_nir_link_glsl(...)` 建立各 stage 的 linked program 並完成 NIR link
-            ├─ 依 `pipe_screen` capabilities 執行 post-link lowering
-            └─ 每個使用中的 stage：
-                 ↓
-               [Mesa: src/mesa/state_tracker/st_program.c:1535]
-               st_finalize_program(st, gl_program, true)
-                 │
-                 └─ st_precompile_shader_variant(st, gl_program, true)
-                      │  // link／finalize 階段固定建立 default variant
-                      ↓
-                    [Mesa: src/mesa/state_tracker/st_program.c:490]
-                    st_create_nir_shader(st, state)
-                      └─ [Mesa: src/mesa/state_tracker/st_program.c:542]
-                           依 NIR stage 呼叫 `pipe->create_*_state`
-       ↓
-[Mesa: src/gallium/drivers/virgl/virgl_context.c:769] virgl_create_vs_state(ctx, state)
-  └─ [Mesa: src/gallium/drivers/virgl/virgl_context.c:695] virgl_shader_encoder(ctx, state, stage)
-  │
-  ├─ NIR conversion 失敗
-  │    └─ `ntt_tokens = tokens = nir_to_tgsi_options(...)` 後沒有 `NULL` check
-  │         // 本文固定版本的缺口：空 `tokens` 仍會傳進 `virgl_tgsi_transform()`
-  ├─ `new_tokens = virgl_tgsi_transform(...)` 回傳 `NULL`
-  │    └─ 直接 `return NULL`，沒有 `FREE(ntt_tokens)`
-  │         // 本文固定版本的清理缺口：遺留 NIR-to-TGSI tokens
-  ├─ `ret = virgl_encode_shader_state(...)` 且 `ret != 0`
-  │    ├─ `FREE(ntt_tokens)`
-  │    └─ `return NULL`，沒有 `FREE(new_tokens)`
-  │         // 本文固定版本的清理缺口：遺留 transformed tokens
-  └─ encode 成功
-       ├─ `FREE(ntt_tokens); FREE(new_tokens)`
-       └─ `return (void *)(uintptr_t)handle`
-            // 最終結果：State Tracker 保存 driver opaque handle，create-object command 留在 `vctx->cbuf`
-
-Mesa State Tracker framebuffer 繫結
-=================================================
-[Mesa: src/mesa/state_tracker/st_atom_framebuffer.c:111] st_update_framebuffer_state(st)
-  │
-  ├─ 對每個 color／depth attachment 建立或參照 `pipe_surface`
-  └─ `cso_set_framebuffer(st->cso_context, &framebuffer)`
-       // FBO storage 轉成 driver 可見的 render-target surfaces
-  ↓
-[Mesa: src/gallium/auxiliary/cso_cache/cso_context.c:775] cso_set_framebuffer(cso, fb)
-  │
-  ├─ 快取中的 framebuffer 與 `fb` 相同：不重送 callback
-  └─ state 改變：`pipe->set_framebuffer_state(pipe, fb)`
-       ↓
-[Mesa: src/gallium/drivers/virgl/virgl_context.c:463] virgl_set_framebuffer_state(ctx, state)
-  │
-  ├─ attachment 改變：刪除舊 surface handle，為新 `pipe_surface` 編碼 object
-  ├─ `util_copy_framebuffer_state()` 保存 resource references
-  ├─ [Mesa: src/gallium/drivers/virgl/virgl_encode.c:895] virgl_encoder_set_framebuffer_state(...)
-  └─ `virgl_attach_res_framebuffer(vctx)`
-       // 最終結果：surface handles 寫入 `vctx->cbuf`，相關 `virgl_hw_res` 加入本次提交的 reference list
-```
-
-Link／finalize 會先建立沒有額外 key 的 default driver variant。 後續 draw-time state 驗證若遇到需要不同 lowering 或 driver state 的 key，才會另外查找或建立更多 variants
-
-### Draw、flush 與 command 提交流程
-
-application 已準備好 current OpenGL state 與 draw inputs，外層時間線來到 rendering。 以下選擇 `glDrawArrays()` 具體觀察驗證與 driver 交接：GLAPI stub 依 current context 的執行緒區域 dispatch table 進入 `_mesa_DrawArrays()`，Mesa core 更新 dirty derived state 並執行 API 驗證，State Tracker 再處理這次 draw 依賴的 atoms，最後組成 Gallium `pipe_draw_info`
-
-固定的 VirGL 3D 主線會把這份 Gallium draw description 編進 guest command buffer。 代表性的 explicit `glFlush()` 路徑再將 State Tracker 延遲工作、VirGL transfer queue、command bytes 與 BO list 推到 ioctl UAPI
-
-vGPU 2D 對照使用相同的 Gallium draw description，但由 softpipe 在 guest CPU 執行 draw。 算好的 pixels 會留在 Mesa client-side color buffer，後續 flush／pixel 交付才會將它們交給 X server。 llvmpipe 是另一種 CPU renderer，會以 worker 執行緒與 `lp_fence` 平行處理 rasterization
-
-#### GLAPI 入口到 State Tracker
-
-以下程式碼來自 [`Mesa: src/mesa/main/draw.c:1369`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/main/draw.c#L1369) 的 `_mesa_DrawArrays()`，用來追蹤公開 draw 入口在 driver 交接前執行的 frontend state update 與 API 驗證：
-
-```c
-void GLAPIENTRY
-_mesa_DrawArrays(GLenum mode, GLint start, GLsizei count)
-{
-   GET_CURRENT_CONTEXT(ctx);
-   FLUSH_FOR_DRAW(ctx);
-
-   _mesa_set_varying_vp_inputs(ctx, ctx->VertexProgram._VPModeInputFilter &
-                               ctx->Array._DrawVAO->_EnabledWithMapMode);
-   if (ctx->NewState)
-      _mesa_update_state(ctx);
-
-   if (!_mesa_is_no_error_enabled(ctx) &&
-       !_mesa_validate_DrawArrays(ctx, mode, count))
-      return;
-
-   if (0)
-      check_draw_arrays_data(ctx, start, count);
-
-   _mesa_draw_arrays(ctx, mode, start, count, 1, 0);
-
-   if (0)
-      print_draw_arrays(ctx, mode, start, count);
-}
-```
-
-驗證只在不是 no-error context 時呼叫，但 no-error 不會繞過後續建立 draw state 所需的資料轉換。 普通 context 上，`_mesa_validate_DrawArrays()` 檢查 mode、count、program、VAO、framebuffer 完整性與 draw 合法性快取。 其中任一條件失敗就記錄對應 OpenGL error 並回傳，driver 不會看到這次 draw
-
-`_mesa_draw_arrays()` 是下一個層次。 前文已驗證的 [`Mesa: src/mesa/main/draw.c:1142`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/main/draw.c#L1142) 先略過 zero-count 或 zero-instance draw，再以 stack-local `pipe_draw_info` 保存 primitive mode、index 形態、instance count、min/max index 與 start instance。 `pipe_draw_start_count_bias` 另存 start 與 count，讓同一組 Gallium draw callbacks 可處理單筆或多筆 draw
-
-`ST_PIPELINE_RENDER_STATE_MASK(mask)` 列出這條 pipeline 需要的 State Tracker atoms。 `st_prepare_draw()` 先 assert Mesa core `NewState` 已清為零，清掉 bitmap 與 readpix 快取，再以 `st_validate_state(st, mask)` 只執行 dirty 而且 active 的 atom。 framebuffer、shader、sampler view、vertex buffer 與其他 CSO 因而在 `DrawGallium` 前已經轉成 driver state
-
-ownership 邊界位於 call stack。 這些 `pipe_draw_info` 與 state mask 只在 stack 借給下層。 driver 若需在 callback 回傳後保留資訊，必須複製必要欄位或將它們編碼進 driver 所擁有的 work queue。 VAO、FBO、shader 與 resource 的生命週期則由 context 與 Gallium reference graph 維持，不由這兩個 stack struct 擁有
-
-各個失敗分支停止的位置可以精確劃分。 驗證失敗或 zero-count 提前回傳時，這次 API 呼叫已完成，而 driver work 數量為零。 `st_prepare_draw()` 與 `ctx->Driver.DrawGallium()` 回傳時，必要 state 已交給 `pipe_context` 且 driver callback 已被呼叫。 command 提交由 flush callback 推進，rendering 是否完成則由 fence 或 driver 的同步機制確認
-
-#### Gallium driver draw
-
-`st_draw_gallium()` 只取 `st_context::cso_context` 並呼叫 `cso_draw_vbo()`。 CSO helper 處理必要 fallback 與已快取的繫結，最終以相同 `pipe_draw_info` 呼叫 current `pipe_context::draw_vbo` callback。 callback table 在 context 建立時已經固定，State Tracker 不用依 driver name 分支
-
-固定主線中的 VirGL callback 會產生可提交的 command stream，與 software drivers 直接安排 CPU rendering 的完成邊界不同
-
-以下程式碼來自 [`Mesa: src/gallium/drivers/virgl/virgl_context.c:1011`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/virgl/virgl_context.c#L1011) 的 `virgl_draw_vbo()` 收尾，用來追蹤第一筆 draw 如何重新送出 draw resource state、編碼 draw 並清理暫存 index-buffer reference：
-
-```c
-static void
-virgl_draw_vbo(
-   struct pipe_context *ctx,
-   const struct pipe_draw_info *dinfo,
-   unsigned drawid_offset,
-   const struct pipe_draw_indirect_info *indirect,
-   const struct pipe_draw_start_count_bias *draws,
-   unsigned num_draws)
-{
-...
-   if (info.index_size) {
-      ...
-      virgl_hw_set_index_buffer(vctx, &ib);
-   }
-
-   if (!vctx->num_draws)
-      virgl_reemit_draw_resources(vctx);
-   vctx->num_draws++;
-
-   virgl_hw_set_vertex_buffers(vctx);
-
-   virgl_encoder_draw_vbo(vctx, &info, drawid_offset, indirect, &draws[0]);
-
-   pipe_resource_reference(&ib.buffer, NULL);
-
-}
-```
-
-`virgl_reemit_draw_resources()` 解決的是 command buffer 邊界，不是再次驗證 OpenGL state。 當新的 VirGL command buffer（`vctx->cbuf`）尚沒有 draw，driver 要重新送出目前的 draw resource state，包括 framebuffer、shader、sampler 與 constant buffer，確保這份 command stream 自足。 後續 draw 只要 dirty state callback 已寫入差異，就不用每次完整送出 draw resource state
-
-index-buffer reference 顯示這段函式如何維持 resource 的生命週期。 `ib.buffer` 可指向 application resource，也可指向 uploader 產生的暫時 resource。 `virgl_hw_set_index_buffer()` 與 draw encoder 使用它期間，`ib.buffer` 持有的 reference 會防止 storage 消失
-
-command 寫完後，`pipe_resource_reference(&ib.buffer, NULL)` 只解除 `ib.buffer` 持有的 reference，VirGL command buffer 的 resource list 仍保護提交時所需的 `virgl_hw_res`
-
-VirGL draw 也有「無作業」與「錯誤」的差別。 zero count、zero instance 或 trimming 後無完整 primitive 時，callback 可正常提前回傳。 driver 不支援的 primitive 若可由 primitive-conversion utility（`primconvert`）轉換，會走 conversion 路徑而不是立即失敗。 encoder 空間不足時可先提交舊的 VirGL command buffer，再將這次 draw 寫到新的 VirGL command buffer
-
-在軟體路徑中，draw callback 回傳前已把 CPU raster work 交給各 driver 的 pipeline。 在 VirGL 路徑中，`virgl_encoder_draw_vbo()` 回傳只表示 command 與 renderer resource handle 已寫進 guest VirGL command buffer。 這個 callback 不執行 execbuffer ioctl，所以圖上必須把 draw encoding 與 command 提交分成兩個節點
-
-vGPU 2D 對照中，[`Mesa: src/gallium/drivers/softpipe/sp_draw_arrays.c:61`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/softpipe/sp_draw_arrays.c#L61) 的 `softpipe_draw_vbo()` 會取得 CPU-visible vertex／index storage，更新 derived state，呼叫 draw module，再解除 mapped input
-
-[`Mesa: src/gallium/drivers/llvmpipe/lp_draw_arrays.c:54`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/llvmpipe/lp_draw_arrays.c#L54) 的 `llvmpipe_draw_vbo()` 也會準備 mapped inputs 與 sampling／image state，後端則使用 compiled pipeline 與 rasterizer workers 在 CPU 產生結果。 兩者都不會把 draw 編成 VirGL command stream
-
-#### Flush 到 ioctl UAPI
-
-OpenGL `glFlush()` 的 API 保證是將先前 work 推向 driver，但不強制呼叫端等到工作完成
-
-`_mesa_Flush()` 取得 current context 並確認不在 Begin／End 之間，接著呼叫 `_mesa_flush()`。 固定版本的 [`Mesa: src/mesa/main/context.c:1608`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/main/context.c#L1608) `_mesa_flush()` 先執行 `FLUSH_VERTICES(ctx, 0, 0)`，再直接呼叫 `st_glFlush()`。 這條 API 呼叫路徑不經 `ctx->Driver.Flush`
-
-State Tracker 的 `st_glFlush()` 接著呼叫 `st_flush()`，依序清理可回收的 zombie object、排空 bitmap 快取，再呼叫 `st->pipe->flush`，最後執行 `st_manager_flush_frontbuffer()`。 前文 [`Mesa: src/mesa/state_tracker/st_cb_flush.c:50`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/state_tracker/st_cb_flush.c#L50) 的已驗證片段表達 `st_flush()` 內部的前三個步驟
-
-VirGL `pipe_context::flush` 指向 `virgl_flush_from_st()`。 `virgl_flush_eq()` 先檢查 VirGL command buffer（`vctx->cbuf`）與 transfer queue 是否都為空，有 draw 時先 unmap uploader，再用 `virgl_transfer_queue_clear()` 排空 pending transfer。 這些 transfer 可成為 encoded `TRANSFER3D`，也可依是否支援 encoded transfer 而先呼叫獨立 transfer ioctl，但兩條都在主要 command 提交前完成
-
-`virgl_drm_winsys_submit_cmd()` 將 VirGL command buffer 的 dword 數量轉成 byte size，把 command buffer storage 位址填入 `command`，把 winsys 收集的 kernel BO handles 填入 `bo_handles`。 若有 input `sync_file`，`fence_fd` 作為輸入並設定 flag。 呼叫端要求 Gallium fence 時，同一欄位會在 ioctl 成功後被改成 output fd
-
-以下程式碼來自 [`Linux: include/uapi/drm/virtgpu_drm.h:77`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/include/uapi/drm/virtgpu_drm.h#L77) 的 `struct drm_virtgpu_execbuffer`，用來確認 command bytes、BO handle list 與 fence fd 如何組成一次 guest 提交。 `flags` 與 in/out `fence_fd` 決定 `sync_file` 的傳遞方向，其餘 ring／syncobj 欄位則擴充 queue 與 synchronization 資訊：
-
-```c
-/* fence_fd is modified on success if VIRTGPU_EXECBUF_FENCE_FD_OUT flag is set. */
-struct drm_virtgpu_execbuffer {
-	__u32 flags;
-	__u32 size;
-	__u64 command; /* void* */
-	__u64 bo_handles;
-	__u32 num_bo_handles;
-	__s32 fence_fd; /* in/out fence fd (see VIRTGPU_EXECBUF_FENCE_FD_IN/OUT) */
-	__u32 ring_idx; /* command ring index (see VIRTGPU_EXECBUF_RING_IDX) */
-	__u32 syncobj_stride; /* size of @drm_virtgpu_execbuffer_syncobj */
-	__u32 num_in_syncobjs;
-	__u32 num_out_syncobjs;
-	__u64 in_syncobjs;
-	__u64 out_syncobjs;
-};
-```
-
-ownership 邊界位於 ioctl 呼叫。 command bytes 與 BO 陣列都由 userspace winsys 持有，呼叫期間以 UAPI pointer 借給 Linux 邊界。 `bo_handles` 裡是 DRM file namespace 中的 kernel BO handle，command dword 內則是 renderer resource handle。 前文已驗證的雙重清單在這裡同時出現，卻不可互相代用
-
-Ioctl 入口是 [`Linux: include/uapi/drm/virtgpu_drm.h:237`](https://github.com/torvalds/linux/blob/0e35b9b6ec0ffcc5e23cbdec09f5c622ad532b53/include/uapi/drm/virtgpu_drm.h#L237) `DRM_IOCTL_VIRTGPU_EXECBUFFER`。 Mesa winsys 從 `drmIoctl()` 回傳值確認 request 是否成功交給 UAPI，kernel 接著擁有 command 驗證、排程與 transport 責任
-
-失敗時 winsys 記錄 errno，清掉已消費的 input fence fd、command dword count 與 resource list。 只有 ioctl 成功而且呼叫端要求 fence 時，winsys 才會建立 `pipe_fence_handle`。 支援 fence fd 的介面包裝 output fd，legacy 介面則建立前文的 busy-resource fence。 這條失敗路徑並不自動把 OpenGL context 轉成 context-lost dispatch，兩者的邊界會在後面單獨處理
-
-`glFlush()` 回傳只表示 Mesa 已要求 winsys 嘗試透過 UAPI 提交已編碼的 work。 Winsys 的整數錯誤會在 `void virgl_submit_cmd()` 直接呼叫點被丟棄，因此這個 API 回傳本身不能證明 ioctl 成功。 要等待 rendering 完成，application 必須使用 `glFinish()` 或可查詢的 sync object，State Tracker 才會要求 fence 並透過 `pipe_screen::fence_finish` 等待。 單純非阻塞 flush 甚至可以不取得 fence
-
-```callgraph
-Mesa OpenGL draw 入口
-=================================================
-[Mesa: src/mesa/main/draw.c:1369] _mesa_DrawArrays(mode, start, count)
-  │
-  ├─ 若 `ctx->NewState != 0`
-  │    └─ `_mesa_update_state(ctx)`
-  │         // 先更新 core derived state，供後續驗證使用
-  │
-  ├─ 若不是 no-error context 且 `_mesa_validate_DrawArrays()` 失敗
-  │    └─ `return`，這次 API 不產生 driver work
-  └─ 成功
-       └─ [Mesa: src/mesa/main/draw.c:1142] `_mesa_draw_arrays(ctx, mode, start, count, 1, 0)`
-            ├─ 建立 `pipe_draw_info` 與 `pipe_draw_start_count_bias`
-            └─ `ctx->Driver.DrawGallium(...)`
-  ↓
-Mesa State Tracker 與 Gallium
-=================================================
-[Mesa: src/mesa/state_tracker/st_draw.c:75] st_prepare_draw(ctx, state_mask)
-  │
-  ├─ 若 bitmap 快取非空，先 flush 快取
-  ├─ `st_validate_state(st, state_mask)` 發送 dirty atoms
-  └─ `st_context_add_work(st)` 標記 context 已有 work
-  ↓
-[Mesa: src/mesa/state_tracker/st_draw.c:93] st_draw_gallium(ctx, info, ..., draws, num_draws)
-  └─ `cso_draw_vbo(st->cso_context, info, ..., draws, num_draws)`
-       └─ driver `pipe_context.draw_vbo`
-  ↓
-[Mesa: src/gallium/drivers/virgl/virgl_context.c:1011] virgl_draw_vbo(ctx, dinfo, ..., draws, num_draws)
-  │
-  ├─ 若 count／instance count 為零，提前回傳
-  ├─ 若 primitive 需轉換，交給 `util_primconvert_draw_vbo()`
-  └─ 否則寫入 `VIRGL_CCMD_DRAW_VBO`
-       // 此時 draw 可能仍只在 guest command buffer
-
-Mesa flush 與 Linux UAPI 交接
-=================================================
-後續 `glFlush()`／`glFinish()` 或由 swap 觸發的 flush 階段
-  ↓
-[Mesa: src/mesa/state_tracker/st_cb_flush.c:51] st_flush(st, fence, flags)
-  └─ `st->pipe->flush(st->pipe, fence, flags)`
-  ↓
-[Mesa: src/gallium/drivers/virgl/virgl_context.c:1121] virgl_flush_from_st(ctx, fence, flags)
-  └─ [Mesa: src/gallium/drivers/virgl/virgl_context.c:1086] virgl_flush_eq(...)
-       ├─ command 與 transfer queue 都空且不需 fence：`return`
-       └─ 排空 transfer queue。 `virgl_submit_cmd(vws, cbuf, fence)`
-  ↓
-[Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.c:954] virgl_drm_winsys_submit_cmd(qws, cbuf, fence)
-  │
-  ├─ `eb.command = cbuf->buf`
-  ├─ `eb.bo_handles = cbuf->res_hlist`
-  └─ `DRM_IOCTL_VIRTGPU_EXECBUFFER`
-       ├─ 失敗：回傳 `-1` 給 `void virgl_submit_cmd()`，結果隨即被丟棄
-       │    └─ 記錄偵錯訊息、清除 command／resource list，不建立 output fence
-       └─ 成功：work 已交給 Linux virtio-gpu UAPI，fence 依要求回到 Gallium
-```
-
-### Swap 與呈現邊界
-
-Application 完成 draw 後呼叫 `glXSwapBuffers()`，希望剛算好的內容出現在視窗裡。 不過 swap 函式回傳，只表示這一幀已越過某個交接點，尚不能直接推論使用者已經看到畫面，或原本的 buffer 已經可以安全重用
-
-固定的 VirGL／DRI3 主線會先 flush application context 的 rendering work，再以 X11 Window XID、back-buffer Pixmap XID 與同步條件發出 Present request。 vGPU 2D 的 drisw 對照則會把 CPU 算好的 pixels 交給 X11 drawable。 接下來沿著 direct GLX swap callback、indirect request 與 Mesa 呼叫 X11 client API 的邊界，分別確認每一層完成了什麼
-
-#### Direct GLX swap callback
-
-以下程式碼來自 [`Mesa: src/glx/glxcmds.c:668`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/glxcmds.c#L668) 的 `__glXSwapBuffers()` direct 分支，用來追蹤 drawable lookup、current-context flush 條件與 direct GLX swap callback（`driScreen.swapBuffers`）的交接：
-
-```c
-void
-__glXSwapBuffers(Display * dpy, GLXDrawable drawable)
-{
-   struct glx_context *gc = __glXGetCurrentContext();
-   GLXContextTag tag;
-   CARD8 opcode;
-   xcb_connection_t *c;
-
-#if defined(GLX_DIRECT_RENDERING)
-   {
-      __GLXDRIdrawable *pdraw = GetGLXDRIDrawable(dpy, drawable);
-
-      if (pdraw != NULL) {
-         Bool flush = gc != &dummyContext && drawable == gc->currentDrawable;
-
-         if (pdraw->psc->driScreen.swapBuffers(pdraw, 0, 0, 0, flush) == -1)
-             __glXSendError(dpy, GLXBadCurrentWindow, 0, X_GLXSwapBuffers, false);
-         return;
-      }
-   }
-#endif
-...
-}
-```
-
-`pdraw` 是 drawable table 中既有的 client-side object，此函式只在呼叫期間借用，不取得新 ownership。 `pdraw->psc` 指回 GLX screen，`driScreen.swapBuffers` 是 screen setup 時註冊的 direct GLX swap callback。 不同 DRI loader 路徑可使用不同 callback 實作，但公開 GLX 程式碼不需要辨識 driver 名稱
-
-`flush` 由兩個布林條件共同決定。 `gc != &dummyContext` 表示執行緒具有真實的 current context，`drawable == gc->currentDrawable` 則表示這次 swap 的 XID 正是該 context 的 current draw drawable。 application 先前是否呼叫過 `glFlush()` 不參與這項判斷
-
-MSC（media stream counter）是 display refresh 的序列計數。 普通 `glXSwapBuffers()` 傳給 callback 的 target MSC、divisor 與 remainder 都是零，表示呼叫端沒有要求在特定 refresh sequence 呈現這一幀。 Callback 接著依 drawable 的 swap policy 與可用 back buffer 處理這次交付
-
-direct 失敗在這個邊界有明確的同步表示：callback 回傳 `-1` 時，Mesa GLX 發出 `GLXBadCurrentWindow`。 回傳其他值只能說 callback 接受並處理這次 request，不能由此推導實體 display 已更新
-
-Direct GLX swap callback 以非 `-1` 回傳時，只能確認它已取得 `pdraw`、timing arguments 與 `flush` flag，並完成 callback 自己負責的工作。 若 swap 前必須等待 rendering 完成，要由 callback 依 loader 與 driver 的同步規則處理，公開 GLX 分支本身不等 fence
-
-#### Indirect GLX request
-
-`GetGLXDRIDrawable()` 找不到 client-side direct drawable 時，`__glXSwapBuffers()` 才進入 indirect GLX request 分支。 因此這條路不可簡化成「只要 current context 是 indirect 就會走」。 真正的分流 key 是該 `Display *` 與 `GLXDrawable` 能否找到本地 DRI drawable
-
-以下程式碼來自 [`Mesa: src/glx/glxcmds.c:690`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/glxcmds.c#L690) 的 `__glXSwapBuffers()` indirect GLX request 分支，用來追蹤 context tag、drawable XID 與 XCB request 的建立條件：
-
-```c
-void
-__glXSwapBuffers(Display *dpy, GLXDrawable drawable)
-{
-...
-   opcode = __glXSetupForCommand(dpy);
-   if (!opcode) {
-      return;
-   }
-
-   /*
-    ** The calling thread may or may not have a current context.  If it
-    ** does, send the context tag so the server can do a flush.
-    */
-   if ((gc != &dummyContext) && (dpy == gc->currentDpy) &&
-       ((drawable == gc->currentDrawable)
-        || (drawable == gc->currentReadable))) {
-      tag = gc->currentContextTag;
-   }
-   else {
-      tag = 0;
-   }
-
-   c = XGetXCBConnection(dpy);
-   xcb_glx_swap_buffers(c, tag, drawable);
-   xcb_flush(c);
-}
-```
-
-Context tag 是先前 make-current protocol 取得、用來連結後續 GLX request 與 server-side current state 的 token，其 identity 與 Mesa `gl_context` pointer、GLX context XID 分屬不同 namespace。 Display 相同且 drawable 是 current draw 或 current read drawable 時，request 傳送這個 tag。 其他情況傳送零，使 server 不會把無關 context 的 pending render commands 納入這次 swap
-
-`xcb_glx_swap_buffers()` 只接收 XCB connection、context tag 與 drawable XID。 ownership 邊界位於 XCB connection machinery。 request buffer 由它持有，Mesa 不為這次呼叫建立 local DRI drawable 或 `pipe_resource`。 `xcb_flush()` 將已排入的 request bytes 推向 X connection。 這只表示 request bytes 已離開 XCB client buffer，尚不表示 swap 已完成
-
-失敗在 indirect GLX request 分支不一定以函式回傳值同步呈現。 公開 `glXSwapBuffers()` 的回傳型態是 `void`，`xcb_glx_swap_buffers()` 在此使用 unchecked request，protocol error 可依 X11 error handling 路徑稍後抵達。 `__glXSetupForCommand()` 失敗則在 request 建立前就停止
-
-到這裡只能確定含有 drawable XID 與可選 context tag 的 GLX request bytes 已離開 XCB client buffer。 本文前面的 Display 章已經沿 direct DRI3／Present path 追蹤 X server 如何安排呈現，indirect GLX request 的 server-side dispatch 則留給本系列的 Xorg／GLX 專篇展開
-
-#### Direct loader 到 X11 request 邊界
-
-Direct callback 並沒有規定所有 loader 都要用同一種資料交付方式。 固定的 VirGL／DRI3 主線會選出可呈現的 Pixmap，並為 X server 之後釋放這份 Pixmap 的時點準備 idle fence，最後呼叫 XCB Present API。 vGPU 2D 的 drisw 對照則會沿前面「GLX loader 與 DRI frontend 的 drawable 雙向 callback 流程」追過的 `softpipe_flush_frontbuffer()`、DRI 軟體 winsys 與 swrast loader callbacks，最後讓 Mesa GLX 呼叫 `XPutImage()` 或 `XShmPutImage()`
-
-這兩條路徑都必須保留 application Window 的 XID。 `drisw` 把它當成 `XPutImage()`／`XShmPutImage()` 的 target drawable。 DRI3 helper 則把 Window XID 與 back-buffer Pixmap XID 一起交給 Present request。 Direct rendering 改變的是 rendering 結果如何產生與交付，沒有讓 Window XID 變成 Mesa object
-
-以下程式碼來自 [`Mesa: src/glx/glxclient.h:92`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/glxclient.h#L92) 的 `struct __GLXDRIscreenRec`，用來比較 direct drawable 的 swap、時間線查詢、等待與 swap-interval callbacks：
-
-```c
-struct __GLXDRIscreenRec {
-
-   void (*deinitScreen)(struct glx_screen *psc);
-
-   __GLXDRIdrawable *(*createDrawable)(struct glx_screen *psc,
-				       XID drawable,
-				       GLXDrawable glxDrawable,
-				       int type,
-				       struct glx_config *config);
-
-   int64_t (*swapBuffers)(__GLXDRIdrawable *pdraw, int64_t target_msc,
-			  int64_t divisor, int64_t remainder, Bool flush);
-   void (*copySubBuffer)(__GLXDRIdrawable *pdraw,
-			 int x, int y, int width, int height, Bool flush);
-   int (*getDrawableMSC)(struct glx_screen *psc, __GLXDRIdrawable *pdraw,
-			 int64_t *ust, int64_t *msc, int64_t *sbc);
-   int (*waitForMSC)(__GLXDRIdrawable *pdraw, int64_t target_msc,
-		     int64_t divisor, int64_t remainder, int64_t *ust,
-		     int64_t *msc, int64_t *sbc);
-   int (*waitForSBC)(__GLXDRIdrawable *pdraw, int64_t target_sbc, int64_t *ust,
-		     int64_t *msc, int64_t *sbc);
-   int (*setSwapInterval)(__GLXDRIdrawable *pdraw, int interval);
-   int (*getSwapInterval)(__GLXDRIdrawable *pdraw);
-   void (*bindTexImage)(__GLXDRIdrawable *pdraw, int buffer, const int *attribs);
-
-   int maxSwapInterval;
-};
-```
-
-DRI3 screen setup 會在 [`Mesa: src/glx/dri3_glx.c:538`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/dri3_glx.c#L538) 將 `dri3_swap_buffers()` 寫入這個 callback slot。 Callback 會把 DRI drawable、timing arguments 與 flush flag 交給 `loader_dri3_swap_buffers_msc()`
-
-Display 章的「`glXSwapBuffers()` 將 X11 Window XID 與 Pixmap XID 交給 Present」已經沿這個 helper 展開完整的 request fields、idle fence 與 Present copy path。 放回目前的 OpenGL workflow 時，要接起兩筆 rendering submission。 第一筆由 application 的 Mesa context 產生 application image，第二筆則由 Xorg 的 glamor Mesa context 將這份 image 複製進 GBM desktop BO
-
-```callgraph
-Application submission：產生 application image
-=================================================
-[Mesa: src/glx/glxcmds.c:668] __glXSwapBuffers(dpy, drawable)
-  │
-  └─ pdraw->psc->driScreen.swapBuffers(...)
-       ↓
-[Mesa: src/glx/dri3_glx.c:361] dri3_swap_buffers(...)
-  │
-  └─ [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:1003]
-       loader_dri3_swap_buffers_msc(...)
-       ├─ flush_drawable(...)
-       │    ↓
-       │  State Tracker flush
-       │    ↓
-       │  Mesa VirGL driver／winsys
-       │    ↓
-       │  DRM_IOCTL_VIRTGPU_EXECBUFFER
-       │    ↓
-       │  Linux virtio-gpu SUBMIT_3D
-       │    ↓
-       │  semu／virglrenderer／host renderer
-       │    └─ application image 已完成
-       │
-       └─ xcb_present_pixmap(...)
-            ├─ X11 Window XID
-            ├─ application Pixmap XID
-            └─ Present idle fence
-
-Xorg glamor submission：更新 GBM desktop BO
-=================================================
-Xorg Present 處理 Window XID 與 Pixmap XID
-  ↓
-Present copy／CopyArea
-  │
-  │  使用 X11 Window 的位置與可見範圍
-  ↓
-Xorg glamor FBO copy
-  │
-  │  source：application Pixmap 所引用的 application image
-  │  destination：screen Pixmap 所引用的 GBM desktop BO
-  ↓
-Xorg 行程的 Mesa／VirGL context
-  ↓
-第二筆 DRM_IOCTL_VIRTGPU_EXECBUFFER／SUBMIT_3D
-  ↓
-host renderer 將可見區域寫進 GBM desktop BO
-  ↓
-Damage／DIRTYFB
-  │
-  │  KMS 取得 GBM desktop BO 的 implicit rendering fence
-  ↓
-RESOURCE_FLUSH
-  ↓
-semu VM window 顯示更新後的桌面
-```
-
-三種通知回答不同問題。 VirGL execbuffer 的 `sync_file` fence 表示某一筆 rendering submission 何時完成。 Present idle fence 表示 X server 何時不再使用 application Pixmap，application 此時才可重用該 buffer。 Present CompleteNotify 則回報 Present request 的完成模式與呈現時序。 它們分屬不同的 identity namespace，也不能互相替代
-
-`flush` 的值由呼叫端依 current context 與 drawable 的關係決定，callback 只消費該值。 `pdraw` 則是可追回 GLX screen 與 DRI drawable 的 client object，不取代 XID。 target MSC 與 swap interval 描述呈現時間，swap buffer count（SBC）用來辨識 swap sequence。 這些 counters 和 VirGL execbuffer 的 fence fd 表示不同的事件，不能互相替代
-
-direct GLX swap callback 回傳失敗可在 client 當下轉成 GLX error。 indirect request 的 error 則經 X11 協定的 error 機制回到 application。 在兩條路徑上，drawable 若已銷毀、identity 無效或 storage 不可用，都不應以「swap 函式是 void」來推導必然成功
-
-DRI3 會透過 Present event、SBC／MSC query 或 wait API，讓 client 判斷某一幀是否已經完成呈現。 `glXSwapBuffers()` 回傳時，只能確定 direct GLX swap callback 已回傳，或 indirect request 已 flush 到 X connection。 Direct request 進入 Xorg 後的 Present、glamor copy、Damage 與 display state update 已在前面的 Display 章展開
-
-```callgraph
-Application 與 Mesa GLX swap dispatch
-=================================================
-[Mesa: src/glx/glxcmds.c:668] __glXSwapBuffers(dpy, drawable)
-  │
-  │  `gc = __glXGetCurrentContext()`
-  │  // current context 只用來決定 flush flag 與 indirect context tag
-  │
-  ├─ 若 [Mesa: src/glx/glxcmds.c:678] GetGLXDRIDrawable(dpy, drawable) 回傳 `pdraw`
-  │    ├─ `flush = gc != &dummyContext && drawable == gc->currentDrawable`
-  │    └─ 進入下方獨立的 direct GLX swap callback 流程
-  │
-  └─ 若沒有 direct drawable
-       └─ 進入下方獨立的 XCB／X server request 邊界
-
-Mesa direct GLX swap callback 流程與回傳規則
-=================================================
-[Mesa: src/glx/glxclient.h:92] struct __GLXDRIscreenRec
-  ├─ `swapBuffers(pdraw, target_msc, divisor, remainder, flush)` 接受 direct drawable state
-  └─ `getDrawableMSC`／`waitForMSC`／`waitForSBC` 是另外的 query／wait operations
-  ↓
-[Mesa: src/glx/dri3_glx.c:538] `psp->swapBuffers = dri3_swap_buffers`
-  └─ [Mesa: src/glx/dri3_glx.c:361] dri3_swap_buffers(...)
-       └─ [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:1003] loader_dri3_swap_buffers_msc(...)
-            ├─ `draw->vtable->flush_drawable(draw, flush_flags)`
-            │    ↓
-            │  [Mesa: src/glx/dri3_glx.c:130] glx_dri3_flush_drawable(...)
-            │    ↓
-            │  [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:822] loader_dri3_flush(...)
-            │    ↓
-            │  [Mesa: src/gallium/frontends/dri/dri_drawable.c:459] dri_flush(...)
-            │    └─ st_context_flush(...)
-            │         └─ 固定 VirGL 主線：virgl_flush_from_st() → EXECBUFFER
-            ├─ 選出 back-buffer Pixmap 與 Present idle fence
-            └─ [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:1192] xcb_present_pixmap(...)
-                 // 最終結果：Mesa 已呼叫 XCB Present request API
-  ↓
-回到 [Mesa: src/glx/glxcmds.c:668] __glXSwapBuffers(...)
-  ├─ callback 回傳 `-1`：送出 `GLXBadCurrentWindow`
-  └─ 其他結果：direct 分支 `return`
-
-vGPU 2D 對照：Mesa GLX drisw 的 direct GLX swap callback 流程與回傳規則
-=================================================
-[Mesa: src/glx/drisw_glx.c:556] driswSwapBuffers(...)
-  └─ softpipe／DRI 軟體 winsys／swrast loader 雙向 callback 流程
-       └─ [Mesa: src/glx/drisw_glx.c:199] swrastXPutImage(...)
-            ├─ `XPutImage(...)`
-            └─ `XShmPutImage(...)`
-                 // 完整原始程式碼路徑位於前面的 drawable 雙向 callback 流程
-
-Indirect XCB / X server request 邊界
-=================================================
-[Mesa: src/glx/glxcmds.c:690] `opcode = __glXSetupForCommand(dpy)`
-  ├─ 若 `opcode == 0`，`return`
-  ├─ 若 drawable 是 current draw／read，`tag = gc->currentContextTag`
-  └─ 否則 `tag = 0`
-  ↓
-[Mesa: src/glx/glxcmds.c:708] XGetXCBConnection(dpy)
-  ├─ `xcb_glx_swap_buffers(c, tag, drawable)`
-  └─ `xcb_flush(c)`
-       // 以 XID 與 context tag 交付 X server。 此節點不隸屬 __GLXDRIscreenRec
-```
+因此，成功主線至少包含四個不同的完成時點。 OpenGL draw 回傳表示 API 與 driver draw callback 已完成，flush 回傳表示 work 已要求提交，VirGL fence 表示對應 rendering submission 已完成，Present 與 display path 的同步則決定 Pixmap 何時可重用，以及更新後的 GBM desktop BO 何時發布到 VM window
 
 ### 失敗與銷毀流程
 
-Application 完成最後一次 swap，並依需求等待 rendering 或呈現後，便會進入正常的銷毀流程。 application 先解除 current context，再銷毀 GLX context 與 drawable。 Mesa 依最後一個 reference 釋放 frontend objects、State Tracker、Gallium context 與 screen resources。 這條路徑讓 context、render 與 swap 使用過的 objects 回到各自明確的釋放位置
+Application 完成最後一次 swap，並依需求等待 rendering 或呈現後，便會進入正常的銷毀流程。 application 先解除 current context，再銷毀 GLX context 與 drawable。 Mesa 會依 ownership 與 object references 釋放 frontend objects、State Tracker 與 Gallium context。 DRI screen 與 `pipe_screen` 則由 loader 在稍後獨立啟動的 screen teardown 流程銷毀
 
 Context 建立、shader compile／link、resource create／map、VirGL execbuffer 與 fence 各有自己的失敗分支。 以下分別從對應的原始程式碼位置追蹤錯誤如何改變 object state、哪一層負責清理，以及 application 還能查詢的 status、log、OpenGL error 或 context loss 結果。 各分支完成後再回到尚未建立、仍可重試或準備銷毀的外層 state
 
@@ -25112,7 +24233,7 @@ glXCreateContextAttribsARB(Display *dpy, GLXFBConfig config,
 
 version、profile、sharing compatibility 或 no-error mode 不相容時，失敗甚至可在 `dri_context` 或 `pipe_context` 建立前發生。 這類路徑只需釋放 attributes 與 GLX wrapper 配置，不應呼叫尚未存在的 driver destroy callback。 sharing context 是借用來找 share group，失敗不能銷毀舊 context
 
-Context 建立要同時滿足下列條件才成功：client 行程內的 Mesa GLX、DRI、State Tracker 與 Gallium objects 已建立，對應入口的 X server resource 確認已成功，而且外層 vendor mapping 新增成功。 Legacy 入口用 `IsDirect` round trip 完成確認，ARB 入口則使用 checked request。 其中任一步失敗，application 都應收到空 `GLXContext` 或對應 GLX error，不得設成 current
+固定主線的 context 建立要同時滿足下列條件才成功：client 行程內的 Mesa GLX、DRI、State Tracker 與 Gallium objects 已建立，而且對應入口已確認 X server resource 建立成功。 Legacy 入口用 `IsDirect` round trip 完成確認，ARB 入口則使用 checked request。 GLVND 比較組態還要在外層成功新增 vendor mapping。 各組態需要的其中一步失敗時，application 都應收到空 `GLXContext` 或對應 GLX error，不得設成 current
 
 #### Shader compile／link 失敗
 
@@ -25414,191 +24535,93 @@ VirGL pipe_screen 快取（以 open file description 為等價條件）
             // 最終結果：VirGL pipe_screen 快取項目已銷毀
 ```
 
-完整工作流程因而有六個代表不同完成程度的時間點。 context 建立以相關 objects 與 GLX XID 都建立為準。 make-current 以 GLX 與 GLAPI TLS 都安裝成功為準。 shader／resource 初始化以 program executable、storage 與 driver state 可用為準。 draw 在 VirGL 路徑只代表 command 已編碼，flush 只代表已要求透過 UAPI 提交，fence 完成才代表對應 work 已完成
-
-swap 另以 direct GLX swap callback 或 indirect request 作為將一幀交給視窗系統的邊界。 若要知道這一幀是否已完成呈現，application 還要使用相應的 query、wait API 或 event。 context 銷毀流程則以 current references 已清除與 context object graph 已拆除為準，shared objects 會依最後一個 reference 釋放
-
-Screen 的銷毀是 loader 稍後另外啟動的一條流程。 VirGL winsys 是否真正銷毀，只取決於對應的 `virgl_screen::refcnt` 是否歸零
-
-下方總圖固定從 Mesa `libGL` 的公開入口開始。 GLVND 組態會在 Mesa 外側增加 vendor selection 與 handle mapping，但不改變 Mesa GLX 進入 DRI、State Tracker 與 Gallium 後的 object graph
+完成失敗與銷毀分析後，現在回到一幀成功完成的主線。 第一筆 VirGL submission 由 application context 產生，目標是 application image。 第二筆 VirGL submission 由 Xorg glamor context 產生，目標是 GBM desktop BO
 
 ```callgraph
-Application 與 Mesa GLX context setup
+Application rendering submission
 =================================================
-[Application] glXCreateContext(dpy, visual, share, direct)
-  ↓
-[Mesa libGL 公開入口]
-[Mesa: src/glx/glxcmds.c:393] glXCreateContext(...)
-  └─ [Mesa: src/glx/glxcmds.c:293] CreateContext(...)
-       └─ [Mesa: src/glx/dri_common.c:609] dri_common_create_context(...)
-            └─ [Mesa: src/glx/dri_common.c:795] dri_create_context_attribs(...)
-                 ├─ 失敗：回傳 `NULL`
-                 └─ 成功：建立 GLX／DRI／State Tracker／Gallium context object graph
-                      ↓
-                    [Mesa: src/glx/glxcmds.c:334] 排入 legacy CreateContext request
-                      ↓
-                    [Xorg: glx/vnd_dispatch_stubs.c:58] dispatch_CreateContext(...)
-                      ├─ 建立 XID → server GLX vendor mapping
-                      └─ [Xorg: glx/glxcmds.c:252] DoCreateContext(...)
-                           └─ 建立並登記 server-side `__GLXcontext`
-                      ↓
-                    [Mesa: src/glx/glxcmds.c:381] __glXIsDirect(...)
-                      ├─ error／direct flag 不一致：銷毀 client-side context，回傳 `NULL`
-                      └─ 成功：Mesa `libGL` 將 `GLXContext` 交給 application
-  ↓
-[Application] glXMakeCurrent(dpy, drawable, context)
-  ↓
-[Mesa: src/glx/glxcurrent.c:185] glXMakeCurrent(dpy, drawable, context)
+GLX context 已成為 application thread 的 current context
   │
-  │  draw = drawable; read = drawable;
-  ↓
-[Mesa: src/glx/glxcurrent.c:106] MakeContextCurrent(...)
-  ├─ unbind 前驗證失敗：舊 current context 保持有效
-  ├─ unbind 後 BadAccess／backend bind 失敗：GLAPI TLS 保持 null context
-  └─ 成功：`current_context = gc`，draw／read framebuffer 可供驗證
-
-Application 準備 rendering work：兩個原始程式碼範例
-=================================================
-  ├─ 固定的 glxgears compatibility／display-list 主線
-  │    ├─ 初始化：glNewList() → glBegin()／glVertex*() → glEnd() → glEndList()
-  │    └─ 每一幀：更新 matrix state，再呼叫 glCallList()
-  │         └─ Mesa compatibility frontend 重播 display list 並形成 draw work
+  ├─ 固定的 glxgears 主線
+  │    └─ compatibility state、display list 與 vertex data
   │
-  └─ programmable pipeline 的代表性 source-reading 支線
-       ├─ Shader／program 路徑
-       │    ↓
-       │  [Mesa: src/mesa/main/shaderapi.c:1193]
-       │  set_shader_source(shader, source, source_hash)
-       │    └─ 安裝 Mesa 內部副本
-       │    ↓
-       │  [Mesa: src/mesa/main/shaderapi.c:1237] _mesa_compile_shader(ctx, shader)
-       │    ├─ 失敗：`CompileStatus = COMPILE_FAILURE`
-       │    └─ 成功：NIR 與 info log 保存於 `gl_shader`
-       │    ↓
-       │  [Mesa: src/mesa/state_tracker/st_glsl_to_nir.cpp:766]
-       │  st_link_shader(ctx, program)
-       │    ├─ 失敗：保留 program info log，不安裝新 executable
-       │    └─ 成功：linked `gl_program`、NIR 與 default driver shader state 可用
-       │
-       ├─ Resource／繫結路徑
-       │    ├─ buffer storage 與 VAO 保存 vertex input
-       │    ├─ texture storage 與 sampler 繫結建立 `pipe_resource`／view
-       │    └─ FBO attachments 準備 render-target surfaces
-       │
-       └─ [Mesa: src/mesa/main/draw.c:1369] _mesa_DrawArrays(mode, start, count)
-            ├─ 驗證失敗或 count 為零：`return`，沒有 driver work
-            └─ [Mesa: src/mesa/main/draw.c:1142]
-               `_mesa_draw_arrays()` 建立 `pipe_draw_info` 與 draw range
-                 └─ `ctx->Driver.DrawGallium(...)` 交給 State Tracker
-
-兩個範例在 State Tracker／Gallium draw 邊界匯合
-=================================================
-Mesa State Tracker 驗證當下的 program、vertex、sampler 與 framebuffer state
+  └─ programmable-pipeline 對照
+       └─ GLSL／NIR、program 與 resource state
   ↓
-Gallium driver 接住 `pipe_context::draw_vbo`
+Mesa OpenGL frontend
   │
-  ├─ 固定的 VirGL 3D 主線
-  │    └─ [Mesa: src/gallium/drivers/virgl/virgl_context.c:1011]
-  │       virgl_draw_vbo(...)
-  │         └─ draw state 與 resource handle 寫入 `virgl_cmd_buf`
-  │              // API 回傳時 command 可能仍在 guest userspace
+  │  驗證 API state，找出目前 framebuffer 與 bound objects
+  ↓
+Mesa State Tracker
   │
-  └─ vGPU 2D／softpipe 對照
-       └─ [Mesa: src/gallium/drivers/softpipe/sp_draw_arrays.c:61]
-          softpipe_draw_vbo(...)
-            └─ guest CPU 執行 draw pipeline，pixels 寫入 `sw_displaytarget`
+  │  將 OpenGL state、resources 與 draw 整理成 Gallium contract
   ↓
-兩條 driver 路徑都回到 application rendering loop
-  ↓
-[Application] glXSwapBuffers(dpy, drawable)
-  ↓
-[Mesa: src/glx/glxcmds.c:668] __glXSwapBuffers(dpy, drawable)
+Gallium VirGL driver
   │
-  ├─ 固定的 VirGL／DRI3 主線
-  │    ↓
-  │  [Mesa: src/glx/dri3_glx.c:361] dri3_swap_buffers(...)
-  │    ↓
-  │  [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:1003]
-  │  loader_dri3_swap_buffers_msc(...)
-  │    ├─ draw->vtable->flush_drawable(draw, flush_flags)
-  │    │    └─ dri_flush(...)
-  │    │         └─ st_context_flush(...)
-  │    │              ↓
-  │    │            [Mesa: src/gallium/drivers/virgl/virgl_context.c:1121]
-  │    │            virgl_flush_from_st(...)
-  │    │              └─ virgl_submit_cmd(vws, cbuf, fence)
-  │    │                   ↓
-  │    │                 [Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.c:954]
-  │    │                 virgl_drm_winsys_submit_cmd(...)
-  │    │                   ├─ ioctl 失敗：回傳 `-1`，direct caller 丟棄結果，不建立 output fence
-  │    │                   └─ ioctl 成功：command bytes、BO handles 與可選 fence 交給 Linux UAPI
-  │    │
-  │    └─ flush_drawable 回傳後呼叫 xcb_present_pixmap(...)
-  │         ├─ wait_fence = None
-  │         ├─ idle_fence = back->sync_fence
-  │         └─ Window XID + application Pixmap XID
-  │              ↓
-  │            Xorg Present／glamor copy
-  │              ↓
-  │            Xorg Mesa／VirGL context 的第二筆 EXECBUFFER／SUBMIT_3D
-  │              ↓
-  │            application image 的可見區域寫入 GBM desktop BO
-  │              ↓
-  │            Damage／DIRTYFB／RESOURCE_FLUSH
-  │              ↓
-  │            semu VM window 顯示更新後的桌面
+  │  將 draw state、resource handles 與 operations 編碼成 command stream
+  ↓
+glXSwapBuffers() 開始 flush application drawable
+  ↓
+Mesa VirGL DRM winsys
   │
-  ├─ vGPU 2D／drisw 對照
-  │    ↓
-  │  [Mesa: src/glx/drisw_glx.c:556] driswSwapBuffers(...)
-  │    └─ driSwapBuffers(...)
-  │         ↓
-  │       [Mesa: src/gallium/frontends/dri/drisw.c:226] drisw_swap_buffers_with_damage(...)
-  │         ├─ st_context_flush(..., ST_FLUSH_FRONT, ...)
-  │         ├─ 等待 rendering fence 完成
-  │         └─ softpipe_flush_frontbuffer(...)
-  │              └─ XPutImage()／XShmPutImage()
-  │                   │
-  │                   │  // pixels 抵達 X11 request 邊界
-  │                   ↓
-  │                 Xorg Damage wrapper／fbPutImage
-  │                   ↓
-  │                 screen Pixmap／mapped dumb front BO
-  │                   ↓
-  │                 DIRTYFB
-  │                   ↓
-  │                 TRANSFER_TO_HOST_2D
-  │                   ↓
-  │                 RESOURCE_FLUSH
-  │                   ↓
-  │                 semu VM window 顯示更新後的桌面
+  │  透過 DRM render node 提交 execbuffer
+  ↓
+Linux virtio_gpu driver
   │
-  └─ 沒有 direct drawable
-       └─ `xcb_glx_swap_buffers(c, tag, drawable); xcb_flush(c)`
-            // indirect GLX request 抵達 X server boundary
-  ↓
-Mesa GLX 呈現交接完成
-=================================================
-`glXSwapBuffers()` 回傳
-  └─ 只表示 direct swap callback 已回傳，或 indirect request 已送進 X connection
-       // 呈現完成與 buffer 可重用仍由 Present events、SBC／MSC 與同步 objects 表達
-  ↓
-Mesa client context 銷毀流程
-=================================================
-[Mesa: src/gallium/frontends/dri/dri_context.c:250] dri_destroy_context(ctx)
-  └─ [Mesa: src/mesa/state_tracker/st_context.c:866] st_destroy_context(ctx->st)
-       └─ `st->pipe->destroy(st->pipe)` 釋放由 context 持有的 state
-            // 最終結果：context destroy 不呼叫 screen destroy
-
-後續獨立的 loader screen 銷毀流程
-=================================================
-[Mesa: src/gallium/frontends/dri/dri_util.c:194] driDestroyScreen(screen)
-  └─ `dri_destroy_screen(screen)`
-  ↓
-[Mesa: src/gallium/frontends/dri/dri_screen.c:593] dri_destroy_screen(screen)
-  ├─ 釋放 State Tracker screen data 與 loader device
-  └─ `pipe_screen->destroy(pipe_screen)`
-       ├─ 非 VirGL 快取包裝層：直接執行 driver screen destroy
-       └─ VirGL 快取包裝層：同一 open file description 的 `refcnt` 歸零才銷毀 winsys 與 fd
-            // 這條獨立銷毀流程不由 `dri_destroy_context()` 觸發
+  │  將 submission 轉成 SUBMIT_3D
+  ├─ Kernel 接受 submission
+  │    └─ flush 回傳到 glXSwapBuffers()，接著進入下一張圖的 Present request
+  │
+  └─ controlq 將 SUBMIT_3D 交給 semu
+       ↓
+     semu → virglrenderer → host renderer
+       ├─ host renderer 將結果寫入 application image
+       └─ VirGL fence 回報這筆 rendering submission 已完成
 ```
+
+```callgraph
+Swap 與 Xorg display submission
+=================================================
+flush drawable 已回傳到 glXSwapBuffers()
+  │
+  └─ Present(application Window, application Pixmap)
+       │
+       │  Window 提供目的地 metadata
+       │  Pixmap 引用 application image
+       ↓
+     Xorg Present 選擇 copy path
+       ↓
+     Damage wrapper 記錄目的地 Damage Region
+       ↓
+     Xorg glamor CopyArea
+       │
+       │  以 Xorg 自己的 Mesa／VirGL context 建立第二筆 rendering work
+       ↓
+     Xorg VirGL submission
+       │
+       │  提交將 application image 的可見區域寫進 GBM desktop BO 的 work
+       │  implicit rendering fence 隨 GBM desktop BO 交給後續使用者
+       ↓
+     稍後由 Xorg BlockHandler 發出 DIRTYFB
+       ↓
+     DRM atomic helper 建立並提交 atomic state
+       ├─ 等待 GBM desktop BO 的 implicit rendering fence
+       └─ virtio_gpu primary-plane update 發出 RESOURCE_FLUSH
+       ↓
+     semu 依既有 scanout binding 發布更新後的 VM window
+```
+
+vGPU 2D 對照會在 Gallium driver 之後分流。 software driver 直接使用 guest CPU 寫出 pixels，drisw 將它們交給 X11 drawable，Xorg 再更新 mapped dumb front BO。 這條路徑需要 `TRANSFER_TO_HOST_2D` 與 `RESOURCE_FLUSH`，不會經過 application VirGL submission 或 Xorg glamor 的第二筆 host 3D copy
+
+這些步驟有不同的完成條件：
+
+- context 建立完成，表示 GLX、DRI、State Tracker 與 Gallium context objects 已成立
+- make-current 完成，表示 GLX 與 Mesa 的 thread-local state 已指向這組 context 與 drawable
+- draw 回傳，表示 API 驗證與 driver draw callback 已完成，VirGL commands 仍可能只位於 guest userspace
+- flush 回傳，表示這批 work 已要求提交，不代表 host renderer 已執行完成
+- VirGL fence signal，表示對應的 rendering submission 已完成
+- Present idle／complete 與 Display path 的更新，分別表示 Pixmap reuse 與畫面發布進度，不由 VirGL fence 取代
+
+銷毀流程也沿著 ownership 分層結束。 Application 先解除 current context，再銷毀 GLX／DRI／State Tracker／Gallium context object graph。 Shared OpenGL objects 等最後一個 reference 消失才釋放，DRI screen 與 VirGL `pipe_screen` 則由 loader 在更晚的階段獨立銷毀
+
+到這裡，可以重述並回答開頭區分 rendering 與 display 時提出的兩個問題。 第一，齒輪的 pixels 由誰產生？ Application 的 Mesa／VirGL context 會提交第一筆 rendering work，host renderer 再將結果寫入 application image。 第二，這張 application image 如何成為使用者看見的桌面？ Xorg glamor 會提交第二筆 Mesa／VirGL work，將可見區域寫入 GBM desktop BO，再由 DRM／KMS 與 virtio-gpu Display path 發布到 semu VM window
