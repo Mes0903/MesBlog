@@ -5361,9 +5361,66 @@ XOpenDisplay(register _Xconst char *display)
 
 - Xlib／libX11 提供歷史悠久、以 `Display` 與函式呼叫為中心的 API，許多既有程式與教學材料都採用這一層。 它替呼叫端暫存 requests、整理 replies 與 events，也會隱藏多數 sequence number、cookie 與等待 reply 的時機，因此呼叫端較不方便自行組織多筆非同步 request／reply
 - XCB／libxcb 的 API 更貼近 protocol，會明確回傳 request cookie，呼叫端可自行決定何時等待 reply。 這讓非同步處理與批次送出更直接，代價是程式必須處理較多 protocol-level 細節
-- GTK、Qt 等較高階 GUI toolkit 會再提供 widget、layout 與輸入處理。 Application 可以把大部分 Window 與 event 細節交給 toolkit，但追原始 X11 request 時還要穿過額外的抽象層
+- GTK、Qt 等 GUI toolkit 會提供 widgets、layout 與輸入處理，再由各自的 platform backend 對接 X11
 
-這些選擇可以共存。 [`libX11: configure.ac:81`](https://gitlab.freedesktop.org/xorg/lib/libx11/-/blob/libX11-1.8.7/configure.ac#L78-82) 顯示 libX11 1.8.7 本身就把 `xcb` 列為必要相依項。 本文接著回到固定的 Xt／Xlib 主線。 `twm` 經 Xt 進入 Xlib，`glxgears` 稍後則會直接呼叫 Xlib，兩者都由 libX11 建立 connection state
+#### 題外話：一般 GUI application 如何透過 GTK、GSK 與 GDK 使用 X11
+
+本文固定追蹤的 `glxgears` 會直接使用 Xlib 與 GLX，`twm` 則經 Xt／Xlib 操作 X11 objects。 一般 GUI application 常從 application window、button、text entry 與 list 等 widgets 開始。 為了把這些高階 UI objects 接到本文的 Xorg 與 Mesa 路徑，[GTK 4](https://docs.gtk.org/gtk4/overview.html) 會將 widget、window-system integration 與 widget rendering 分給不同元件
+
+GTK 負責 application window、widget tree、layout、signals 與輸入控制等高階 GUI 功能。 Application 改變的是 widget state，例如更新 label 文字或讓 button 進入 pressed state。 等畫面需要更新時，GTK 才會走訪 widget tree，準備下一幀的內容
+
+GDK 與 GSK 會從兩個方向接住這些工作。 `GdkDisplay` 表示 application 與目前 window system 的 connection，top-level `GdkSurface` 表示一個可顯示的頂層表面，GDK input objects 則保存輸入裝置與 events。 GSK（GTK Scene Kit）負責將 widgets 描述的內容整理成 scene graph，再交給 graphics backend 執行 rendering。 兩者不是依序包裝彼此的單一路徑：
+
+```callgraph
+GTK 4 application 更新 widget state
+  ↓
+GTK widgets、layout 與 callbacks
+  │
+  ├─ Window 與 input branch
+  │    ↓
+  │  GdkDisplay／top-level GdkSurface／GDK input objects
+  │    ↓
+  │  GDK X11 backend
+  │    │
+  │    │  ↓ 向 Xorg 傳送 X11 requests
+  │    │  ↑ 從 Xorg 接收 X11 events
+  │    ↓
+  │  Xorg
+  │
+  └─ Widget rendering branch
+       ↓
+     GTK snapshot
+       │
+       │  走訪 widget tree，建立下一幀的 drawing description
+       ↓
+     GskRenderNode tree
+       ↓
+     GskRenderer 選出一種 backend
+       ↓
+     selected GSK renderer
+       ├─ OpenGL
+       │    └─ OpenGL vendor 是 Mesa 時，進入本文後面的 Mesa path
+       ├─ Vulkan
+       └─ Cairo
+       │
+       │  選中的 backend 將結果送往 renderer 關聯的 surface
+       ↓
+     GdkSurface render target
+```
+
+選用 X11 backend 時，[GDK X11 backend](https://docs.gtk.org/gdk4/x11.html) 會讓 GTK application 成為 X11 client，並把 top-level `GdkSurface` 對接到 X11 Window。 Mouse、keyboard 與 configure 等 X11 events 會經由這個 backend 轉成 GDK events，再交回 GTK。 X11 的 expose／frame notification 則會觸發 surface redraw
+
+GTK 4 的 child widgets 通常共用 top-level surface。 Button 與 label 等 child widgets 會由 GTK 組成同一份 scene graph，不會各自建立一個 X11 Window
+
+需要重畫時，GTK 會在 paint phase 建立 snapshot，再沿 widget hierarchy 呼叫各 widget 的 `snapshot()` operation。 [GTK 4 drawing model](https://docs.gtk.org/gtk4/drawing-model.html) 將產生的 `GskRenderNode` tree 視為一份 scene graph，其中可以包含 text、gradient、texture 與 clip nodes
+
+[`GskRenderer::render()`](https://docs.gtk.org/gsk4/method.Renderer.render.html) 會用選定的 OpenGL、Vulkan 或 Cairo backend，將這棵 scene graph 畫到 renderer 對應的 surface。 當 GTK 選到 OpenGL renderer，而且 OpenGL implementation 是 Mesa 時，這條 rendering branch 便會接回本文後面介紹的 Mesa frontend 與 driver layers
+
+Application 也可以在 [`GtkGLArea`](https://docs.gtk.org/gtk4/class.GLArea.html) 的 render callback 中直接發出 OpenGL calls。 `GtkGLArea` 會準備自己的 `GdkGLContext`，以及接住這個 widget OpenGL output 的 OpenGL framebuffer
+
+Application 將內容畫進這份 framebuffer 後，GTK 會把完成的結果當成 texture，整合回更大的 widget scene graph。 GDK backend 與執行期組態會決定 `GdkGLContext` 底下以 GLX 或 EGL 建立 context
+
+前面介紹的 Xlib、XCB 與 GUI toolkit API 層級可以共存。 [`libX11: configure.ac:81`](https://gitlab.freedesktop.org/xorg/lib/libx11/-/blob/libX11-1.8.7/configure.ac#L78-82) 顯示 libX11 1.8.7 本身就把 `xcb` 列為必要相依項。 本文接著回到固定的 Xt／Xlib 主線。 `twm` 經 Xt 進入 Xlib，`glxgears` 稍後則會直接呼叫 Xlib，兩者都由 libX11 建立 connection state
 
 ### `twm` 在 Root Window 登記 window-management events
 
