@@ -21347,11 +21347,13 @@ Mesa VirGL screen capability stage
        └─ `pipe_context` 持有 `virgl_cmd_buf`、capability-derived callbacks 與 transfer queue
 ```
 
-### 建立 resource：`DRM_IOCTL_VIRTGPU_RESOURCE_CREATE` 與 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE_BLOB`
+### 建立 resource：固定的 classic 路徑與 blob 對照
 
 VirGL screen 與 rendering context 建立完成後，application 便能開始準備 vertex buffer、texture 與 render target。 當 OpenGL frontend 定義這些 storage 時，State Tracker 會把需求轉成 Gallium resource template。 這份 template 只描述尺寸、format 與用途，還不是一份可以 map、傳送或提交的實際 resource
 
-VirGL driver 接下來必須算出各層的 stride、offset 與總大小，再請 winsys 找到可重用的 storage，或建立新的 virtio-gpu resource。 一條路徑使用 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE`，另一條則使用 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE_BLOB` 建立 blob resource。 這個建立結果會影響後面的 map、transfer、command reference 與銷毀流程，因此要先看兩條路徑如何分流
+VirGL driver 接下來必須算出各層的 stride、offset 與總大小，再請 winsys 找到可重用的 storage，或建立新的 virtio-gpu resource。 本文固定的 semu 組態使用 classic resource 路徑，以 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE` 建立 3D resource
+
+Mesa 也提供 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE_BLOB` 路徑，讓支援 blob resource 的裝置配置可 map 或 coherent 的 host-visible storage。 這個建立結果會影響後面的 map、transfer、command reference 與銷毀流程，因此先從兩條路徑共同使用的 Gallium layout 與 winsys 交接開始
 
 #### Gallium resource layout 與 winsys 交接
 
@@ -21533,7 +21535,7 @@ alloc:
 
 這個分流發生在 `virgl_winsys.resource_create` 實作內，上游 `virgl_resource_create_front()` 不會直接選 ioctl。 快取命中時也不產生新 `res_handle` 或 `bo_handle`，而是重新取得既有 `virgl_hw_res` 的 reference
 
-#### `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE` 路徑
+#### 固定主線：`DRM_IOCTL_VIRTGPU_RESOURCE_CREATE`
 
 以下程式碼來自 [`Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.c:248`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/winsys/virgl/drm/virgl_drm_winsys.c#L248)，用來觀察 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE` 路徑如何準備 stride 與快取參數
 
@@ -21628,7 +21630,7 @@ virgl_drm_winsys_resource_create(
 
 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE` 完成後，`virgl_hw_res` 已保存 kernel 回傳的 `createcmd.res_handle` 與 `createcmd.bo_handle`。 此時還沒有 draw command 引用它。 稍後 encoder 寫入 `res_handle` 時，winsys 才會同步建立該 command buffer 的 BO reference 清單
 
-#### Blob resource ioctl
+#### 對照：Blob resource ioctl
 
 以下程式碼來自 [`Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.c:168`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/winsys/virgl/drm/virgl_drm_winsys.c#L168)，用來觀察 blob resource 路徑如何準備 renderer command、ioctl arguments 與快取參數
 
@@ -21742,14 +21744,14 @@ Mesa VirGL resource frontend
   ├─ 若 resource 可快取且找到 compatible、idle entry
   │    └─ 重設 reference 後回傳舊 `virgl_hw_res`
   │
-  ├─ 若 flags 需要 persistent／coherent mapping
-  │    └─ [Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.c:168] create_blob()
-  │         ├─ `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE_BLOB`
+  ├─ 固定 semu 主線：一般 resource
+  │    └─ [Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.c:248] create_classic()
+  │         ├─ `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE`
   │         └─ 失敗時釋放 wrapper 並回傳 `NULL`
   │
-  └─ 其他 resource
-       └─ [Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.c:248] create_classic()
-            ├─ `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE`
+  └─ blob 對照：flags 需要 persistent／coherent mapping，而且裝置支援 blob resource
+       └─ [Mesa: src/gallium/winsys/virgl/drm/virgl_drm_winsys.c:168] create_blob()
+            ├─ `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE_BLOB`
             └─ 失敗時釋放 wrapper 並回傳 `NULL`
   ↓
 成功的 `virgl_hw_res`
@@ -23491,13 +23493,169 @@ Linux sync_file 變成 signaled
 Mesa VirGL winsys：sync_wait(...)
 ```
 
-到這裡，Mesa 送出的 VirGL work 已經由 DRM render node 進入 Linux `virtio_gpu` driver，並轉成 controlq 上的 `SUBMIT_3D`。 下一章沿虛擬裝置另一側繼續往下看，確認 semu 如何把這批 commands 交給 virglrenderer
+### 對照：vGPU 2D 為什麼不需要 VirGL command submission
+
+固定的 VirGL 3D 主線需要 `EXECBUFFER` 與 `SUBMIT_3D`，是因為 guest Mesa 交給虛擬裝置的是尚待 host renderer 執行的 command stream。 Display 章的 vGPU 2D 對照採用 `softpipe + drisw + AccelMethod=none`。 softpipe 已經讓 guest CPU 算出 pixels，drisw 要交付的是 client-side color buffer 的 pixels，而不是一批 VirGL commands
+
+因此，這條 2D 路徑不需要 application render node 上的 `EXECBUFFER`、virtio-gpu 3D context、`SUBMIT_3D`、virglrenderer 或 host GPU rendering。 drisw 會經由 swrast loader callback 發出 `PutImage` 或 `ShmPutImage` request。 Xorg 再套用 X11 Window 的位置與可見範圍，將 pixels 複製進 screen Pixmap 所引用的 mapped dumb front BO
+
+softpipe 不會直接寫入 Xorg 的 dumb BO。 Application color buffer 與桌面 storage 仍是兩份不同的 storage
+
+```callgraph
+vGPU 2D 的 application rendering 與 pixel 交付
+=================================================
+OpenGL frontend
+  ↓
+Mesa State Tracker
+  ↓
+softpipe
+  │
+  │  guest CPU 執行 rendering
+  │  llvmpipe 也可在這一層以 CPU workers 執行相同職責
+  ↓
+application client-side color buffer
+  ↓
+drisw／swrast loader callback
+  ↓
+PutImage／ShmPutImage request
+  ↓
+Xorg Damage wrapper 與 fb layer
+  │
+  │  套用 X11 Window origin 與 composite clip
+  ↓
+screen Pixmap／mapped dumb front BO
+  ↓
+DIRTYFB
+  ↓
+TRANSFER_TO_HOST_2D
+  │
+  │  將 dirty pixels 從 guest backing 複製到 host-side 2D resource
+  ↓
+RESOURCE_FLUSH
+  ↓
+semu 發布目前的 scanout
+
+這條路徑沒有 EXECBUFFER／SUBMIT_3D／virglrenderer
+```
+
+兩條路徑都要更新 Display，但需要移動的資料不同。 2D dumb BO 由 guest CPU 與 Xorg 寫入 guest backing，所以 `RESOURCE_FLUSH` 前還要執行 `TRANSFER_TO_HOST_2D`。 3D non-dumb resource 已由 host renderer 寫入，KMS 等待對應的 rendering fence 後，便能以 `RESOURCE_FLUSH` 發布既有 scanout resource
+
+到這裡，固定主線中的 Mesa VirGL work 已經由 DRM render node 進入 Linux `virtio_gpu` driver，並轉成 controlq 上的 `SUBMIT_3D`。 下一章沿虛擬裝置另一側繼續往下看，確認 semu 如何把這批 commands 交給 virglrenderer
 
 ## virglrenderer：host 行程接收 VirGL commands
 
 前一章已經把 guest Mesa 的 execbuffer request 追到 Linux `virtio_gpu` driver，並確認 kernel 如何在 controlq 送出 `VIRTIO_GPU_CMD_SUBMIT_3D`。 接下來的工作會跨到 host 上的虛擬機監視器（virtual machine monitor，VMM）。 semu 的 virtio-gpu 裝置模型取得這批 commands 後，會呼叫另一個專案提供的 `virglrenderer` 函式庫，建立 host-side renderer state 並執行 commands
 
-這一章觀察 VMM 與 virglrenderer 之間的公開函式庫介面。 我們會先看 VMM 如何初始化 renderer 並提供 host GL context callbacks，再看 context、resource、command、transfer 與 fence API。 semu 如何從 controlq 取出每一種 request、保存裝置狀態與安排 renderer thread，則會留給後續的 virtio-gpu 專文展開
+這一章先接住 controlq 上的 3D request，確認 semu 如何把虛擬裝置工作交給擁有 host OpenGL context 的執行緒，再觀察 VMM 與 virglrenderer 之間的公開函式庫介面。 各個 virtio-gpu command handler 的完整驗證與裝置狀態機會留給後續的 virtio-gpu 專文展開，本章只保留從 request queue 到 virglrenderer API 的必要邊界
+
+### semu 將 controlq request 交給 host OpenGL context owner
+
+Linux `virtio_gpu` driver 將 `SUBMIT_3D`、`RESOURCE_CREATE_3D` 與其他 3D commands 放進 controlq 後，semu 的 virtio-gpu command dispatcher 會選到對應 handler。 這些 handlers 位於處理 virtqueue 的路徑上，但 virglrenderer 的 OpenGL context 由 SDL／main thread 擁有。 因此 handler 不會直接呼叫需要 host GL context 的 renderer API，而是複製 request 所需資料，再將一筆 renderer request 排入 queue
+
+以下程式碼來自 [`semu: virtio-gpu-virgl.c:1477`](https://github.com/Mes0903/Mes-semu-dev/blob/288d75407f2526eb78b610dfa84f0c3eec763554/virtio-gpu-virgl.c#L1477-L1518) 的 `vgpu_virgl_submit_ctrl_work()`，用來顯示 controlq handler 如何保存 delayed response token，並把 3D work 交給 renderer request queue：
+
+```c
+static bool
+vgpu_virgl_submit_ctrl_work(virtio_gpu_state_t *vgpu,
+                            const struct virtq_desc *response_desc,
+                            struct vgpu_virgl_ctrl_work *work,
+                            uint32_t response_type,
+                            uint32_t *plen)
+{
+    uint32_t generation = virtio_gpu_ctrl_generation(vgpu);
+    uint32_t token = vgpu_virgl_next_token();
+    if (!virtio_gpu_defer_ctrl_response_token(vgpu, &work->hdr, response_desc,
+                                              response_type, generation,
+                                              token)) {
+        ...
+        return false;
+    }
+
+    ...
+    struct vgpu_renderer_request request = {
+        .type = VGPU_RENDERER_REQ_CTRL,
+        .token = {.id = token, .generation = generation},
+        .command_type = work->hdr.type,
+        .payload = work,
+        .payload_size = sizeof(*work),
+        .release_payload = vgpu_virgl_release_ctrl_payload,
+    };
+    if (!vgpu_renderer_submit(&request)) {
+        ...
+        return false;
+    }
+
+    *plen = VIRTIO_GPU_RESPONSE_DEFERRED;
+    return true;
+}
+```
+
+`work` 保存已從 guest descriptors 取出的 command、command bytes 或 backing iovecs。 `virtio_gpu_defer_ctrl_response_token()` 讓 semu 延後寫回這筆 controlq response，直到 owner thread 執行 renderer work 並回報結果。 `vgpu_renderer_submit()` 則只把 request 放進 queue，不在目前的 handler call stack 執行 rendering
+
+SDL／main thread 會排空這個 queue。 以下程式碼分別來自 [`semu: window-sw.c:1241`](https://github.com/Mes0903/Mes-semu-dev/blob/288d75407f2526eb78b610dfa84f0c3eec763554/window-sw.c#L1241-L1257) 的 `window_drain_renderer_queue()` 與 [`semu: virtio-gpu-virgl.c:2774`](https://github.com/Mes0903/Mes-semu-dev/blob/288d75407f2526eb78b610dfa84f0c3eec763554/virtio-gpu-virgl.c#L2774-L2805) 的 `vgpu_virgl_execute_renderer_request()`，用來顯示 owner thread 如何取出 work，再依 request type 執行 control command 或推進 fence polling：
+
+```c
+// [semu: window-sw.c:1241-1257]
+static void
+window_drain_renderer_queue(void)
+{
+    ...
+    struct vgpu_renderer_request request;
+    while (vgpu_renderer_pop_request(&request)) {
+        ...
+        vgpu_virgl_execute_renderer_request(&request);
+        ...
+    }
+}
+
+// [semu: virtio-gpu-virgl.c:2774-2805]
+void
+vgpu_virgl_execute_renderer_request(
+    const struct vgpu_renderer_request *request)
+{
+    ...
+    switch (request->type) {
+    case VGPU_RENDERER_REQ_POLL:
+        virgl_renderer_poll();
+        ...
+        break;
+    case VGPU_RENDERER_REQ_CTRL:
+        vgpu_virgl_execute_ctrl_request(
+            request, (struct vgpu_virgl_ctrl_work *) request->payload);
+        ...
+        break;
+    ...
+    }
+}
+```
+
+```callgraph
+Linux virtio-gpu driver 將 3D request 放進 controlq
+  ↓
+semu virtio-gpu command dispatcher
+  │
+  │  解析 command type，將 guest request 複製進 `vgpu_virgl_ctrl_work`
+  ↓
+[semu: virtio-gpu-virgl.c:1477] vgpu_virgl_submit_ctrl_work(...)
+  │
+  ├─ 保存 delayed controlq response token
+  └─ vgpu_renderer_submit(VGPU_RENDERER_REQ_CTRL)
+       ↓
+renderer request queue
+  ↓
+[semu: window-sw.c:1241] window_drain_renderer_queue()
+  │
+  │  SDL／main thread 是 host OpenGL context owner
+  ↓
+[semu: virtio-gpu-virgl.c:2774] vgpu_virgl_execute_renderer_request(...)
+  ↓
+[semu: virtio-gpu-virgl.c:2453] vgpu_virgl_execute_ctrl_request(...)
+  │
+  │  依 RESOURCE_CREATE_3D、CTX_ATTACH_RESOURCE、SUBMIT_3D 等 command type
+  │  呼叫對應的 virglrenderer API
+  ↓
+virglrenderer
+```
 
 ### VMM 提供 callback 並初始化 renderer
 
@@ -23550,20 +23708,12 @@ struct virgl_renderer_callbacks {
 ...
 ```
 
-以下程式碼來自 [`virglrenderer: src/virglrenderer.h:169`](https://gitlab.freedesktop.org/virgl/virglrenderer/-/blob/dc35e4db03144f81637c5ad061f61d3334b078fe/src/virglrenderer.h#L169) 的初始化與輪詢宣告，用來確認 renderer 初始化所需的呼叫端 state，以及 VMM 如何主動推進 fence 通知：
+以下程式碼來自 [`virglrenderer: src/virglrenderer.h:172`](https://gitlab.freedesktop.org/virgl/virglrenderer/-/blob/dc35e4db03144f81637c5ad061f61d3334b078fe/src/virglrenderer.h#L172-L173) 的初始化與輪詢宣告，用來確認 renderer 初始化所需的呼叫端 state，以及 VMM 如何主動推進 fence 通知：
 
 ```c
-/* Blob allocations must be done by guest from dedicated heap (Host visible memory). */
-#define VIRGL_RENDERER_USE_GUEST_VRAM (1 << 14)
-
-VIRGL_EXPORT int virgl_renderer_init(void *cookie, int flags, struct virgl_renderer_callbacks *cb);
+VIRGL_EXPORT int virgl_renderer_init(void *cookie, int flags,
+                                     struct virgl_renderer_callbacks *cb);
 VIRGL_EXPORT void virgl_renderer_poll(void); /* force fences */
-
-/* we need to give qemu the cursor resource contents */
-VIRGL_EXPORT void *virgl_renderer_get_cursor_data(uint32_t resource_id, uint32_t *width, uint32_t *height);
-
-VIRGL_EXPORT void virgl_renderer_get_rect(int resource_id, struct iovec *iov, unsigned int num_iovs,
-                                          uint32_t offset, int x, int y, int width, int height);
 ```
 
 `virgl_renderer_init()` 的 `int` 回傳值讓呼叫端判斷初始化是否成立。 公開宣告只固定輸入與回傳型態。 renderer 內部資料結構的 layout、初始化子系統與失敗清理都留在 ABI 後方
@@ -23644,11 +23794,80 @@ VIRGL_EXPORT void virgl_renderer_ctx_detach_resource(int ctx_id, int res_handle)
 
 `ctx_id`、`res_handle` 與 command `buffer` 在公開 header 中各有獨立參數。 這讓 VMM 擁有的呼叫端能依虛擬裝置 state 呼叫函式庫，也要求呼叫端在建立、attach、提交、detach 與 destroy 時傳入正確的 identity
 
-resource 建立有兩個公開入口。 `virgl_renderer_resource_create()` 接收 `virgl_renderer_resource_create_args` 與可選的 iovecs，`virgl_renderer_resource_create_blob()` 則接收另一組 blob arguments
+固定 semu 主線會把 Linux 送來的三個 controlq commands 分別映射到三個 virglrenderer calls。 以下程式碼來自 [`semu: virtio-gpu-virgl.c:2453`](https://github.com/Mes0903/Mes-semu-dev/blob/288d75407f2526eb78b610dfa84f0c3eec763554/virtio-gpu-virgl.c#L2453-L2549) 的 `vgpu_virgl_execute_ctrl_request()`，用來顯示 classic resource 如何先建立 renderer object，再安裝 guest backing，最後與 context 關聯：
+
+```c
+static void
+vgpu_virgl_execute_ctrl_request(
+    const struct vgpu_renderer_request *request,
+    struct vgpu_virgl_ctrl_work *work)
+{
+    ...
+    switch (request->command_type) {
+    case VIRTIO_GPU_CMD_CTX_ATTACH_RESOURCE:
+        virgl_renderer_ctx_attach_resource(
+            work->cmd.ctx_resource.hdr.ctx_id,
+            work->cmd.ctx_resource.resource_id);
+        break;
+
+    case VIRTIO_GPU_CMD_RESOURCE_CREATE_3D: {
+        const struct virtio_gpu_resource_create_3d *cmd =
+            &work->cmd.resource_create_3d;
+        struct virgl_renderer_resource_create_args args = {
+            .handle = cmd->resource_id,
+            .target = cmd->target,
+            .format = cmd->format,
+            .bind = cmd->bind,
+            .width = cmd->width,
+            .height = cmd->height,
+            ...
+        };
+        int ret = virgl_renderer_resource_create(&args, NULL, 0);
+        ...
+        break;
+    }
+
+    case VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING: {
+        const struct virtio_gpu_res_attach_backing *cmd =
+            &work->cmd.attach_backing;
+        ...
+        int ret = virgl_renderer_resource_attach_iov(
+            cmd->resource_id, work->iov, work->iov_count);
+        ...
+        break;
+    }
+    ...
+    }
+}
+```
+
+`RESOURCE_CREATE_3D` 先以 resource ID、format、bind 與尺寸建立 host renderer resource。 這時傳入的 iovec 是空值，guest backing 會等後續 `RESOURCE_ATTACH_BACKING` 到達後，才由 semu 將 guest memory entries 轉成 host iovecs，交給 `virgl_renderer_resource_attach_iov()`。 Linux 建立 GEM handle 時產生的 `CTX_ATTACH_RESOURCE` 最後會呼叫 `virgl_renderer_ctx_attach_resource()`，讓同一個 resource ID 可由該 context 的 commands 引用
+
+```callgraph
+固定 semu classic resource 主線
+=================================================
+VIRTIO_GPU_CMD_RESOURCE_CREATE_3D
+  ↓
+virgl_renderer_resource_create(&args, NULL, 0)
+  │
+  │  建立 renderer resource identity，尚未安裝 guest backing
+  ↓
+VIRTIO_GPU_CMD_RESOURCE_ATTACH_BACKING
+  │
+  │  guest memory entries → host iovecs
+  ↓
+virgl_renderer_resource_attach_iov(resource_id, iov, iov_count)
+  ↓
+VIRTIO_GPU_CMD_CTX_ATTACH_RESOURCE
+  ↓
+virgl_renderer_ctx_attach_resource(ctx_id, resource_id)
+```
+
+virglrenderer 另外提供 blob resource 入口，作為支援 `VIRTIO_GPU_F_RESOURCE_BLOB` 之裝置的比較路徑。 `virgl_renderer_resource_create_blob()` 接收另一組 blob arguments。 本文固定的 semu 不公布這個 feature，因此不會呼叫這個入口
 
 [`virglrenderer: src/virglrenderer.h:408`](https://gitlab.freedesktop.org/virgl/virglrenderer/-/blob/dc35e4db03144f81637c5ad061f61d3334b078fe/src/virglrenderer.h#L408) 的 blob args 明確帶 `res_handle`、`ctx_id`、`blob_mem`、flags、blob id、size 與 iovecs。 [`virglrenderer: src/virglrenderer.h:420`](https://gitlab.freedesktop.org/virgl/virglrenderer/-/blob/dc35e4db03144f81637c5ad061f61d3334b078fe/src/virglrenderer.h#L420) 則公開 `virgl_renderer_resource_create_blob()`
 
-兩個入口使用不同的參數形式，呼叫端依虛擬裝置提供的 resource 類型選擇公開函式
+兩個入口使用不同的參數形式，支援 blob resource 的其他虛擬裝置可以依 resource 類型選擇公開函式
 
 ### Transfer、fence 與輪詢
 
@@ -23685,7 +23904,90 @@ VIRGL_EXPORT void virgl_renderer_resource_detach_iov(int res_handle, struct iove
 VIRGL_EXPORT int virgl_renderer_create_fence(int client_fence_id, uint32_t ctx_id);
 ```
 
-以下程式碼來自 [`virglrenderer: src/virglrenderer.h:79`](https://gitlab.freedesktop.org/virgl/virglrenderer/-/blob/dc35e4db03144f81637c5ad061f61d3334b078fe/src/virglrenderer.h#L79) 的 per-context fence callbacks，用來確認 fence 完成通知的順序、callback 收到哪些 ID，以及多筆通知能否合併：
+Transfer API 描述要在 guest backing 與 renderer resource 之間搬移的 resource range。 `virgl_renderer_submit_cmd()` 交付 VirGL command stream。 Fence request 則以 fence ID 標記先前排入 renderer 的 work，讓 semu 能在 work 完成後再寫回原本延遲的 controlq response
+
+本文的 semu 沒有協商 `CONTEXT_INIT`，所以 guest command header 不會帶 `VIRTIO_GPU_FLAG_INFO_RING_IDX`。 固定主線會走 legacy ctx0 fence：semu 先為 virglrenderer 配置一個單調遞增的 local fence ID，保存 local ID 與 guest fence ID 的 mapping，再呼叫 `virgl_renderer_force_ctx_0()` 與 `virgl_renderer_create_fence()`
+
+以下程式碼來自 [`semu: virtio-gpu-virgl.c:1393`](https://github.com/Mes0903/Mes-semu-dev/blob/288d75407f2526eb78b610dfa84f0c3eec763554/virtio-gpu-virgl.c#L1393-L1455) 的 `vgpu_virgl_complete_ctrl_work()`，用來追蹤固定的 ctx0 fence 路徑如何建立 mapping、建立 renderer fence，再要求 owner thread 推進 polling：
+
+```c
+static void
+vgpu_virgl_complete_ctrl_work(
+    const struct vgpu_renderer_request *request,
+    struct vgpu_virgl_ctrl_work *work,
+    uint32_t response_type,
+    void *response,
+    size_t response_size)
+{
+    ...
+    if (response_type == VIRTIO_GPU_RESP_OK_NODATA &&
+        (work->hdr.flags & VIRTIO_GPU_FLAG_FENCE)) {
+        ...
+        uint64_t guest_fence_id = work->hdr.fence_id;
+        uint64_t renderer_fence_id =
+            context_fence ? vgpu_virgl_next_context_renderer_fence()
+                          : vgpu_virgl_next_ctx0_renderer_fence();
+        ...
+        if (!vgpu_virgl_record_pending_fence(
+                request->token.generation, context_fence, fence_ctx_id,
+                fence_ring_idx, renderer_fence_id, guest_fence_id)) {
+            ...
+        }
+
+        if (work->hdr.flags & VIRTIO_GPU_FLAG_INFO_RING_IDX) {
+            ret = virgl_renderer_context_create_fence(...);
+        } else {
+            virgl_renderer_force_ctx_0();
+            ret = virgl_renderer_create_fence((int) renderer_fence_id, 0);
+        }
+
+        if (!ret) {
+            vgpu_virgl_request_poll();
+            ...
+            return;
+        }
+        ...
+    }
+    ...
+}
+```
+
+`VIRTIO_GPU_FLAG_INFO_RING_IDX` 分支是支援 context-specific rings 的比較路徑。 固定組態進入 `else`，以 ctx0 建立 legacy fence。 `vgpu_virgl_request_poll()` 不會直接在 controlq handler 呼叫 virglrenderer，而是把 `VGPU_RENDERER_REQ_POLL` 放進相同的 renderer request queue。 SDL／main thread 取出這筆 request 後才呼叫 `virgl_renderer_poll()`
+
+virglrenderer 判斷 fence 已完成時，會呼叫 semu 初始化時登記的 `write_fence()` callback。 semu 以 renderer-local ID 找回 guest fence ID，將 completion 放回 virtio-gpu completion queue，最後才以原本的 guest fence ID 完成 controlq response。 Linux 取回 response 後，便能 signal 前一章介紹的 `dma_fence` 與 `sync_file`
+
+```callgraph
+固定 semu fence completion 主線
+=================================================
+fenced VIRTIO_GPU_CMD_SUBMIT_3D 完成 command dispatch
+  ↓
+[semu: virtio-gpu-virgl.c:1393] vgpu_virgl_complete_ctrl_work(...)
+  │
+  ├─ 配置 renderer-local fence ID
+  ├─ 保存 renderer fence ID → guest fence ID mapping
+  ├─ virgl_renderer_force_ctx_0()
+  └─ virgl_renderer_create_fence(renderer_fence_id, 0)
+       ↓
+[semu: virtio-gpu-virgl.c:431] vgpu_virgl_request_poll()
+  │
+  └─ vgpu_renderer_submit(VGPU_RENDERER_REQ_POLL)
+       ↓
+renderer request queue
+  ↓
+SDL／main thread
+  ↓
+[semu: virtio-gpu-virgl.c:2774] vgpu_virgl_execute_renderer_request(...)
+  └─ virgl_renderer_poll()
+       ↓
+[semu: virtio-gpu-virgl.c:497] vgpu_virgl_write_fence(cookie, renderer_fence_id)
+  │
+  ├─ 找回 guest fence ID
+  └─ 完成延遲的 controlq response
+       ↓
+Linux virtio-gpu driver signal dma_fence／sync_file
+```
+
+支援 `CONTEXT_INIT` 與 multiple rings 的其他 VMM 組態可以使用 virglrenderer 的 per-context fence API。 以下程式碼來自 [`virglrenderer: src/virglrenderer.h:79`](https://gitlab.freedesktop.org/virgl/virglrenderer/-/blob/dc35e4db03144f81637c5ad061f61d3334b078fe/src/virglrenderer.h#L79) 的 per-context fence callback，用來顯示比較路徑還會帶 `ctx_id`、`ring_idx` 與 64-bit fence ID：
 
 ```c
 ...
@@ -23705,7 +24007,7 @@ VIRGL_EXPORT int virgl_renderer_create_fence(int client_fence_id, uint32_t ctx_i
 ...
 ```
 
-以下程式碼來自 [`virglrenderer: src/virglrenderer.h:454`](https://gitlab.freedesktop.org/virgl/virglrenderer/-/blob/dc35e4db03144f81637c5ad061f61d3334b078fe/src/virglrenderer.h#L454) 的 context-fence 與輪詢 exports，用來觀察 VMM 如何建立 fence、整合 event loop，並接管 fixed mapping 的清理責任：
+以下程式碼來自 [`virglrenderer: src/virglrenderer.h:454`](https://gitlab.freedesktop.org/virgl/virglrenderer/-/blob/dc35e4db03144f81637c5ad061f61d3334b078fe/src/virglrenderer.h#L454-L460) 的 context-fence 與輪詢 exports，用來觀察比較路徑如何建立與推進 per-context fence：
 
 ```c
 #define VIRGL_RENDERER_FENCE_FLAG_MERGEABLE      (1 << 0)
@@ -23716,25 +24018,13 @@ VIRGL_EXPORT int virgl_renderer_context_create_fence(uint32_t ctx_id,
 
 VIRGL_EXPORT void virgl_renderer_context_poll(uint32_t ctx_id); /* force fences */
 VIRGL_EXPORT int virgl_renderer_context_get_poll_fd(uint32_t ctx_id);
-
-/* Map a resource to an specific userspace address. If successful, the
- * mapping is owned by the caller and is its responsibility to unmap
- * the resource by its own means (i.e. overriding the map with
- * anonymous memory or calling munmap).
- *
- * Returns -EOPNOTSUPP if mapping the resource using this mechanism is
- * not supported. In that case, you can still try mapping the resource
- * using virgl_renderer_resource_map().
- */
-VIRGL_EXPORT int
-virgl_renderer_resource_map_fixed(uint32_t res_handle, void *addr);
 ```
 
-Transfer、command submission 與 fence 是 VMM 依不同 virtio-gpu commands 分別呼叫的公開 API。 Transfer API 描述要在 guest backing 與 renderer resource 之間搬移的 resource range，command submission API 交付 VirGL command stream，fence request 則用 fence ID 標記它之前排入的工作。 VMM event loop 稍後呼叫 polling API，讓 virglrenderer 檢查完成進度，再透過 `write_fence` 或 `write_context_fence` callback 回報相應的 fence ID
+這組 per-context API 不屬於本文固定的 semu callgraph。 它保留在此處，是為了說明 `write_context_fence()` 為何也存在於公開 callback table，以及協商 `CONTEXT_INIT` 後 fence identity 會多出哪些維度
 
-### Resource query、extension command 與 renderer 生命週期
+### Resource query 與 renderer 生命週期
 
-以下程式碼來自 [`virglrenderer: src/virglrenderer.h:377`](https://gitlab.freedesktop.org/virgl/virglrenderer/-/blob/dc35e4db03144f81637c5ad061f61d3334b078fe/src/virglrenderer.h#L377)，用來確認 VMM 可使用哪些 resource-query、輪詢、extension 與 renderer 生命週期入口：
+以下程式碼來自 [`virglrenderer: src/virglrenderer.h:377`](https://gitlab.freedesktop.org/virgl/virglrenderer/-/blob/dc35e4db03144f81637c5ad061f61d3334b078fe/src/virglrenderer.h#L377-L386)，用來確認 VMM 可使用哪些 resource-query 與 renderer 生命週期入口：
 
 ```c
 VIRGL_EXPORT int virgl_renderer_resource_get_info(int res_handle,
@@ -23747,17 +24037,11 @@ VIRGL_EXPORT void virgl_renderer_cleanup(void *cookie);
 
 /* reset the rendererer - destroy all contexts and resource */
 VIRGL_EXPORT void virgl_renderer_reset(void);
-
-VIRGL_EXPORT int virgl_renderer_get_poll_fd(void);
-
-VIRGL_EXPORT int virgl_renderer_execute(void *execute_args, uint32_t execute_size);
 ```
 
-`resource_get_info()` 與 `resource_get_info_ext()` 以 `res_handle` 查詢公開 metadata。 `cleanup()` 接收 cookie，`reset()` 操作全部 context 與 resource
+`resource_get_info()` 與 `resource_get_info_ext()` 以 `res_handle` 查詢公開 metadata。 固定 semu 會在 `SET_SCANOUT` 與 `RESOURCE_FLUSH` 的 Display publication 路徑使用 resource info，該流程已在 Display 章追到 VM window。 `cleanup()` 接收 cookie，`reset()` 則操作全部 contexts 與 resources
 
-`get_poll_fd()` 回傳可放進 event loop 的 fd。 `execute()` 則以 pointer 加 byte size 接收擴充參數
-
-這組 API 顯示 VMM 可以建立哪些 virglrenderer objects、交付哪些 commands 與 transfers，以及函式庫會透過哪些 callbacks 回報 fence 已完成。 Guest `DRM_IOCTL_VIRTGPU_EXECBUFFER` 與這組公開 API 之間的 command 傳遞及轉換，由 kernel virtio-gpu driver、virtqueue 與 VMM 的虛擬裝置實作共同完成
+這組 API 配合前面的 context、resource、command、transfer 與 fence interfaces，界定 semu 可以交給 virglrenderer 的工作，以及函式庫會透過哪些 callbacks 回報 fence completion。 Guest `DRM_IOCTL_VIRTGPU_EXECBUFFER` 與 virglrenderer 公開 API 之間的 command 傳遞，則由 Linux `virtio_gpu` driver、controlq、semu renderer request queue 與 SDL／main thread 串起來
 
 ```callgraph
 VMM 呼叫端建立 virglrenderer 並提供 callbacks
@@ -23771,8 +24055,9 @@ VMM 呼叫端建立 virglrenderer 並提供 callbacks
   │    ├─ 成功：回傳 0
   │    └─ 失敗：回傳 negative errno
   ├─ `write_fence(cookie, fence)`
+  │    └─ 固定 semu ctx0 fence 完成時使用
   └─ `write_context_fence(cookie, ctx_id, ring_idx, fence_id)`
-       // host OpenGL context 由呼叫端建立，fence 完成後再呼叫 write_fence() 回報
+       └─ 支援 per-context rings 的比較路徑使用
   ↓
 [virglrenderer: src/virglrenderer.h:172] virgl_renderer_init(cookie, flags, cb)
   │
@@ -23788,18 +24073,19 @@ VMM 呼叫端建立 virglrenderer 並提供 callbacks
   │  `handle` 是後續 command 提交、attach、transfer 與 fence API 使用的 context identity
   ↓
 resource 建立方式
-  ├─ [virglrenderer: src/virglrenderer.h:278] virgl_renderer_resource_create(args, iov, num_iovs)
-  │    ├─ `args->handle`：`virgl_renderer_resource_create()` 建立的 resource ID
-  │    └─ target、format、bind、尺寸與 optional iovec backing
+  ├─ 固定 semu classic 主線
+  │    ├─ [virglrenderer: src/virglrenderer.h:278] virgl_renderer_resource_create(args, NULL, 0)
+  │    │    └─ `args->handle`、target、format、bind 與尺寸建立 renderer resource
+  │    ├─ [virglrenderer: src/virglrenderer.h:331] virgl_renderer_resource_attach_iov(...)
+  │    │    └─ 後續 RESOURCE_ATTACH_BACKING 安裝 guest backing iovecs
+  │    └─ [virglrenderer: src/virglrenderer.h:339] virgl_renderer_ctx_attach_resource(...)
+  │         └─ 後續 CTX_ATTACH_RESOURCE 關聯 ctx_id 與 res_handle
   │
-  └─ [virglrenderer: src/virglrenderer.h:408] struct virgl_renderer_resource_create_blob_args
-       └─ [virglrenderer: src/virglrenderer.h:420] virgl_renderer_resource_create_blob(args)
-            ├─ `res_handle` + `ctx_id`
-            └─ `blob_mem` + flags + blob id + size + iovecs
-  ↓
-[virglrenderer: src/virglrenderer.h:339] virgl_renderer_ctx_attach_resource(ctx_id, res_handle)
-  │
-  │  // 呼叫端明確關聯兩個分別建立的公開 identity
+  └─ blob resource 比較路徑
+       └─ [virglrenderer: src/virglrenderer.h:408] struct virgl_renderer_resource_create_blob_args
+            └─ [virglrenderer: src/virglrenderer.h:420] virgl_renderer_resource_create_blob(args)
+                 ├─ `res_handle` + `ctx_id`
+                 └─ `blob_mem` + flags + blob id + size + iovecs
   ↓
 
 Command、transfer 與 fence 完成通知的交接
@@ -23817,21 +24103,14 @@ VMM 的 virtio-gpu command dispatcher
   │    └─ [virglrenderer: src/virglrenderer.h:315] virgl_renderer_transfer_write_iov(...)
   │         └─ resource handle + context id + level／stride／box／offset + iovecs
   │
-  └─ 收到要涵蓋先前工作的 fence request
-       ├─ [virglrenderer: src/virglrenderer.h:335] virgl_renderer_create_fence(client_fence_id, ctx_id)
-       │    └─ 完成後呼叫 `write_fence(cookie, fence)` 回報 fence ID
-       └─ [virglrenderer: src/virglrenderer.h:455] virgl_renderer_context_create_fence(...)
-            └─ 保存 ctx_id、ring_idx 與 fence_id，等待後續完成通知
+  └─ 固定 semu 收到要涵蓋先前工作的 fence request
+       ├─ [virglrenderer: src/virglrenderer.h:335] virgl_renderer_create_fence(renderer_fence_id, 0)
+       ├─ renderer request queue 排入 POLL request
+       ├─ SDL／main thread 呼叫 [virglrenderer: src/virglrenderer.h:173] virgl_renderer_poll()
+       └─ `write_fence(cookie, renderer_fence_id)` 回報完成
+            └─ semu 換回 guest fence ID，完成 controlq response
 
-VMM 稍後在 event loop 推進 fence completion
-  │
-  ├─ [virglrenderer: src/virglrenderer.h:388] virgl_renderer_get_poll_fd()
-  │    └─ 將 renderer completion fd 納入 VMM event loop
-  └─ [virglrenderer: src/virglrenderer.h:460] virgl_renderer_context_poll(ctx_id)
-       └─ 已完成的 context fence 透過 write_context_fence() callback 回報
-            // poll 是 VMM 稍後主動呼叫的入口，不是 create_fence() 的 callee
-
-呼叫端可見的輪詢入口與函式庫生命週期 API
+呼叫端可見的函式庫生命週期 API
 =================================================
 呼叫端選擇 object 銷毀方式
   ├─ 逐一拆除公開 identity
@@ -23851,9 +24130,13 @@ VirGL 在 guest 與 host 有兩個可分別驗證的介面。 Guest 端從 Galli
 
 ## 完整 OpenGL 工作流程
 
-最後回到開頭的 `glxgears` 情境，從使用者按下 Enter 開始，依時間重走一次代表性的 OpenGL 工作流程。 Application 建立齒輪 Window 與 current GLX context，準備 shader／resource state，由 Mesa 產生一幀 rendering，再以 `glXSwapBuffers()` 交給 X server
+最後回到開頭的 `glxgears` 情境，從使用者按下 Enter 開始，依時間重走一次代表性的 OpenGL 工作流程。 Application 建立齒輪 X11 Window 與 current GLX context，準備 shader／resource state，由 Mesa 產生一幀 rendering，再以 `glXSwapBuffers()` 交給 X server
 
-2D drisw 基準路徑會在 application 行程內算出齒輪 pixels，透過 `XPutImage()` 或 `XShmPutImage()` 將 pixels 交給 X drawable。 VirGL 3D 路徑則會在 rendering 階段把 renderer work 經 execbuffer 交給 DRM／kernel。 DRI3 呈現路徑再以 GLX drawable 與 back-buffer Pixmap 交付同一幀，並以 Present idle fence 表示 X server 何時不再使用該 Pixmap
+固定的 DRI3／VirGL 3D 主線包含兩筆 rendering submission。 第一筆來自 `glxgears` 行程，VirGL 會把 draw work 經 execbuffer 交給 Linux `virtio_gpu` driver，讓 host renderer 寫入 application image
+
+`glXSwapBuffers()` 接著以 X11 Window XID 與 back-buffer Pixmap XID 發出 Present request。 Xorg 的 glamor 再使用 Xorg 自己的 Mesa／VirGL context 提交第二筆 work，把 application image 的可見區域複製進 GBM desktop BO，最後接回 Display 章的 Damage、KMS 與 `RESOURCE_FLUSH` 路徑
+
+vGPU 2D 對照則由 softpipe 在 application 行程中算出 pixels，再由 drisw 以 `XPutImage()` 或 `XShmPutImage()` 交給 X11 drawable。 這條路徑會在相同的 OpenGL 與 X11 邊界完成一幀，但不會建立 VirGL command stream，也不會產生兩筆 host GPU submission
 
 前面的全貌章節主要追蹤 pixels、renderer work 與 owner。 這一次改沿函式、object references、失敗清理與各個工作的完成時點重走同一條時間線，並以 `glShaderSource()`、resource objects 與 `glDrawArrays()` 放大 Mesa 內部的代表性工作
 
@@ -23915,7 +24198,9 @@ st_api_create_context(struct pipe_frontend_screen *fscreen,
 
 `fscreen->screen` 是 DRI screen 先前建立的 `pipe_screen`，此處只借用它呼叫 callback。 新 `pipe_context` 屬於此次 context 建立，一旦 `st_create_context()` 成功，就由 `st_context::pipe` 長期持有。 DRI frontend 再把成功的 `st_context` 存入 `dri_context::st`，並以 `frontend_context` 建立反向連結
 
-在 VirGL screen 上，`context_create` slot 是前文已驗證的 [`Mesa: src/gallium/drivers/virgl/virgl_context.c:1709`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/virgl/virgl_context.c#L1709) `virgl_context_create()`。 它建立 `virgl_context`、command buffer、uploader、transfer queue 與整張 `pipe_context` callback table。 這是 Gallium rendering context，與前文「VirGL guest driver 與 winsys」章節的 `virgl_init_context()` 所建立的 DRM file context 分屬不同生命週期
+在 VirGL screen 上，`context_create` slot 是前文已驗證的 [`Mesa: src/gallium/drivers/virgl/virgl_context.c:1709`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/virgl/virgl_context.c#L1709) `virgl_context_create()`。 它建立 `virgl_context`、command buffer、uploader、transfer queue 與整張 `pipe_context` callback table。 這是 application 行程中的 Gallium rendering context
+
+Linux `virtio_gpu` driver 另在 DRM file 層保存 `ctx_id`。 本文的 semu 組態會在第一個 3D resource create 或 execbuffer request 到達時，才以 `CTX_CREATE` 建立這筆 virtio-gpu context。 兩者位於不同層，也具有不同的生命週期
 
 sharing 也有清楚邊界。 DRI `sharedContextPrivate` 只用來找到舊 `dri_context::st`，State Tracker 再由 `shared_ctx` 取得 Mesa share group。 新 context 可共用 texture、buffer 與 shader namespace，卻不共用 `pipe_context` command buffer、current draw/read framebuffer 或執行緒區域 dispatch pointer
 
@@ -24181,7 +24466,9 @@ ownership 由 reference graph 維持，而非只看 OpenGL object name。 `glDel
 
 #### VirGL resource／shader command
 
-VirGL 路徑將上一節的 Gallium object 轉成 guest command stream 中的 identity。 `virgl_resource_create_front()` 先建立 `virgl_resource` wrapper、計算 layout 與 bind flags，再呼叫 winsys `resource_create`。 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE` 與 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE_BLOB` 都會產生 `virgl_hw_res`，但後續 command 都透過同一個 `virgl_winsys` callback 取得 handle
+VirGL 路徑將上一節的 Gallium object 轉成 guest command stream 中的 identity。 `virgl_resource_create_front()` 先建立 `virgl_resource` wrapper、計算 layout 與 bind flags，再呼叫 winsys `resource_create`。 固定 semu 主線使用 `DRM_IOCTL_VIRTGPU_RESOURCE_CREATE` 產生 `virgl_hw_res`
+
+支援 blob resource 的比較路徑也會產生相同的 winsys wrapper，因此後續 command 都透過同一個 `virgl_winsys` callback 取得 handle
 
 以下程式碼來自 [`Mesa: src/gallium/drivers/virgl/virgl_encode.c:710`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/virgl/virgl_encode.c#L710) 的 `virgl_emit_shader_header()`，用來確認 VirGL shader object handle、stage 與 token metadata 在 VirGL command stream 中的 layout：
 
@@ -24311,9 +24598,9 @@ Link／finalize 會先建立沒有額外 key 的 default driver variant。 後�
 
 application 已準備好 current OpenGL state 與 draw inputs，外層時間線來到 rendering。 以下選擇 `glDrawArrays()` 具體觀察驗證與 driver 交接：GLAPI stub 依 current context 的執行緒區域 dispatch table 進入 `_mesa_DrawArrays()`，Mesa core 更新 dirty derived state 並執行 API 驗證，State Tracker 再處理這次 draw 依賴的 atoms，最後組成 Gallium `pipe_draw_info`
 
-固定的 2D drisw 基準路徑由 softpipe 在 guest CPU 執行這份 draw。 算好的 pixels 會留在 Mesa client-side color buffer，後續 flush／pixel 交付才會將它們交給 X server。 llvmpipe 是另一條 CPU rendering 比較支線，會以 worker 執行緒與 `lp_fence` 平行處理 rasterization
+固定的 VirGL 3D 主線會把這份 Gallium draw description 編進 guest command buffer。 代表性的 explicit `glFlush()` 路徑再將 State Tracker 延遲工作、VirGL transfer queue、command bytes 與 BO list 推到 ioctl UAPI
 
-切到 VirGL 3D 後，相同的 Gallium draw description 會改由 driver 編進 guest command buffer。 代表性的 explicit `glFlush()` 路徑再將 State Tracker 延遲工作、VirGL transfer queue、command bytes 與 BO list 推到 ioctl UAPI
+vGPU 2D 對照使用相同的 Gallium draw description，但由 softpipe 在 guest CPU 執行 draw。 算好的 pixels 會留在 Mesa client-side color buffer，後續 flush／pixel 交付才會將它們交給 X server。 llvmpipe 是另一種 CPU renderer，會以 worker 執行緒與 `lp_fence` 平行處理 rasterization
 
 #### GLAPI 入口到 State Tracker
 
@@ -24359,9 +24646,7 @@ ownership 邊界位於 call stack。 這些 `pipe_draw_info` 與 state mask 只�
 
 `st_draw_gallium()` 只取 `st_context::cso_context` 並呼叫 `cso_draw_vbo()`。 CSO helper 處理必要 fallback 與已快取的繫結，最終以相同 `pipe_draw_info` 呼叫 current `pipe_context::draw_vbo` callback。 callback table 在 context 建立時已經固定，State Tracker 不用依 driver name 分支
 
-軟體 driver 與 VirGL 判定 draw 工作完成的方式不同。 [`Mesa: src/gallium/drivers/softpipe/sp_draw_arrays.c:61`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/softpipe/sp_draw_arrays.c#L61) `softpipe_draw_vbo()` 直接取得 CPU-visible vertex/index storage，更新 derived state，呼叫 draw module，再解除 mapped input
-
-[`Mesa: src/gallium/drivers/llvmpipe/lp_draw_arrays.c:54`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/llvmpipe/lp_draw_arrays.c#L54) 的 `llvmpipe_draw_vbo()` 亦建立 mapped inputs 與 sampling／image state，backend 使用 llvmpipe compiled pipeline 與 rasterizer worker 機制直接在 CPU 生產 rasterized 結果。 VirGL 分支則產生可提交的 command stream
+固定主線中的 VirGL callback 會產生可提交的 command stream，與 software drivers 直接安排 CPU rendering 的完成邊界不同
 
 以下程式碼來自 [`Mesa: src/gallium/drivers/virgl/virgl_context.c:1011`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/virgl/virgl_context.c#L1011) 的 `virgl_draw_vbo()` 收尾，用來追蹤第一筆 draw 如何重新送出 draw resource state、編碼 draw 並清理暫存 index-buffer reference：
 
@@ -24403,6 +24688,10 @@ command 寫完後，`pipe_resource_reference(&ib.buffer, NULL)` 只解除 `ib.bu
 VirGL draw 也有「無作業」與「錯誤」的差別。 zero count、zero instance 或 trimming 後無完整 primitive 時，callback 可正常提前回傳。 driver 不支援的 primitive 若可由 primitive-conversion utility（`primconvert`）轉換，會走 conversion 路徑而不是立即失敗。 encoder 空間不足時可先提交舊的 VirGL command buffer，再將這次 draw 寫到新的 VirGL command buffer
 
 在軟體路徑中，draw callback 回傳前已把 CPU raster work 交給各 driver 的 pipeline。 在 VirGL 路徑中，`virgl_encoder_draw_vbo()` 回傳只表示 command 與 renderer resource handle 已寫進 guest VirGL command buffer。 這個 callback 不執行 execbuffer ioctl，所以圖上必須把 draw encoding 與 command 提交分成兩個節點
+
+vGPU 2D 對照中，[`Mesa: src/gallium/drivers/softpipe/sp_draw_arrays.c:61`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/softpipe/sp_draw_arrays.c#L61) 的 `softpipe_draw_vbo()` 會取得 CPU-visible vertex／index storage，更新 derived state，呼叫 draw module，再解除 mapped input
+
+[`Mesa: src/gallium/drivers/llvmpipe/lp_draw_arrays.c:54`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/llvmpipe/lp_draw_arrays.c#L54) 的 `llvmpipe_draw_vbo()` 也會準備 mapped inputs 與 sampling／image state，後端則使用 compiled pipeline 與 rasterizer workers 在 CPU 產生結果。 兩者都不會把 draw 編成 VirGL command stream
 
 #### Flush 到 ioctl UAPI
 
@@ -24505,7 +24794,7 @@ Mesa flush 與 Linux UAPI 交接
 
 Application 完成 draw 後呼叫 `glXSwapBuffers()`，希望剛算好的內容出現在視窗裡。 不過 swap 函式回傳，只表示這一幀已越過某個交接點，尚不能直接推論使用者已經看到畫面，或原本的 buffer 已經可以安全重用
 
-在 2D drisw 路徑中，Mesa 會把 CPU 算好的 pixels 交回 X drawable。 切到 VirGL／DRI3 時，Mesa 交付的是可呈現的 buffer 與同步條件。 接下來沿著 direct GLX swap callback、indirect request 與 Mesa 呼叫 X11 client API 的兩個邊界，分別確認每一層完成了什麼
+固定的 VirGL／DRI3 主線會先 flush application context 的 rendering work，再以 X11 Window XID、back-buffer Pixmap XID 與同步條件發出 Present request。 vGPU 2D 的 drisw 對照則會把 CPU 算好的 pixels 交給 X11 drawable。 接下來沿著 direct GLX swap callback、indirect request 與 Mesa 呼叫 X11 client API 的邊界，分別確認每一層完成了什麼
 
 #### Direct GLX swap callback
 
@@ -24592,7 +24881,7 @@ Context tag 是先前 make-current protocol 取得、用來連結後續 GLX requ
 
 #### Direct loader 到 X11 request 邊界
 
-Direct callback 並沒有規定所有 loader 都要用同一種資料交付方式。 固定組態的 drisw 路徑會沿前面「GLX loader 與 DRI frontend 的 drawable 雙向 callback 流程」追過的 `softpipe_flush_frontbuffer()`、DRI 軟體 winsys 與 swrast loader callbacks，最後讓 Mesa GLX 呼叫 `XPutImage()` 或 `XShmPutImage()`。 VirGL／DRI3 路徑則會選出可呈現的 Pixmap，並為 X server 之後釋放這份 Pixmap 的時點準備 idle fence，最後呼叫 XCB Present API
+Direct callback 並沒有規定所有 loader 都要用同一種資料交付方式。 固定的 VirGL／DRI3 主線會選出可呈現的 Pixmap，並為 X server 之後釋放這份 Pixmap 的時點準備 idle fence，最後呼叫 XCB Present API。 vGPU 2D 的 drisw 對照則會沿前面「GLX loader 與 DRI frontend 的 drawable 雙向 callback 流程」追過的 `softpipe_flush_frontbuffer()`、DRI 軟體 winsys 與 swrast loader callbacks，最後讓 Mesa GLX 呼叫 `XPutImage()` 或 `XShmPutImage()`
 
 這兩條路徑都必須保留 application Window 的 XID。 `drisw` 把它當成 `XPutImage()`／`XShmPutImage()` 的 target drawable。 DRI3 helper 則把 Window XID 與 back-buffer Pixmap XID 一起交給 Present request。 Direct rendering 改變的是 rendering 結果如何產生與交付，沒有讓 Window XID 變成 Mesa object
 
@@ -24630,29 +24919,72 @@ struct __GLXDRIscreenRec {
 
 DRI3 screen setup 會在 [`Mesa: src/glx/dri3_glx.c:538`](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/glx/dri3_glx.c#L538) 將 `dri3_swap_buffers()` 寫入這個 callback slot。 Callback 會把 DRI drawable、timing arguments 與 flush flag 交給 `loader_dri3_swap_buffers_msc()`
 
-Display 章的「`glXSwapBuffers()` 將 Window XID 與 Pixmap XID 交給 Present」已經沿這個 helper 展開完整的 request fields、idle fence 與 Present copy path。 放回目前的 OpenGL workflow 時，只需接上兩個邊界：direct GLX callback 先要求 State Tracker 將 application rendering work 交給 VirGL，再把 application Window XID 與 back-buffer Pixmap XID 交給 Present
+Display 章的「`glXSwapBuffers()` 將 X11 Window XID 與 Pixmap XID 交給 Present」已經沿這個 helper 展開完整的 request fields、idle fence 與 Present copy path。 放回目前的 OpenGL workflow 時，要接起兩筆 rendering submission。 第一筆由 application 的 Mesa context 產生 application image，第二筆則由 Xorg 的 glamor Mesa context 將這份 image 複製進 GBM desktop BO
 
 ```callgraph
-[Mesa: src/glx/glxcmds.c:668] __glXSwapBuffers(...)
+Application submission：產生 application image
+=================================================
+[Mesa: src/glx/glxcmds.c:668] __glXSwapBuffers(dpy, drawable)
   │
   └─ pdraw->psc->driScreen.swapBuffers(...)
        ↓
 [Mesa: src/glx/dri3_glx.c:361] dri3_swap_buffers(...)
   │
-  └─ loader_dri3_swap_buffers_msc(...)
+  └─ [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:1003]
+       loader_dri3_swap_buffers_msc(...)
        ├─ flush_drawable(...)
-       │    └─ State Tracker → VirGL → DRM_IOCTL_VIRTGPU_EXECBUFFER
+       │    ↓
+       │  State Tracker flush
+       │    ↓
+       │  Mesa VirGL driver／winsys
+       │    ↓
+       │  DRM_IOCTL_VIRTGPU_EXECBUFFER
+       │    ↓
+       │  Linux virtio-gpu SUBMIT_3D
+       │    ↓
+       │  semu／virglrenderer／host renderer
+       │    └─ application image 已完成
+       │
        └─ xcb_present_pixmap(...)
-            └─ 進入前文已展開的 DRI3／Present display path
+            ├─ X11 Window XID
+            ├─ application Pixmap XID
+            └─ Present idle fence
+
+Xorg glamor submission：更新 GBM desktop BO
+=================================================
+Xorg Present 處理 Window XID 與 Pixmap XID
+  ↓
+Present copy／CopyArea
+  │
+  │  使用 X11 Window 的位置與可見範圍
+  ↓
+Xorg glamor FBO copy
+  │
+  │  source：application Pixmap 所引用的 application image
+  │  destination：screen Pixmap 所引用的 GBM desktop BO
+  ↓
+Xorg 行程的 Mesa／VirGL context
+  ↓
+第二筆 DRM_IOCTL_VIRTGPU_EXECBUFFER／SUBMIT_3D
+  ↓
+host renderer 將可見區域寫進 GBM desktop BO
+  ↓
+Damage／DIRTYFB
+  │
+  │  KMS 取得 GBM desktop BO 的 implicit rendering fence
+  ↓
+RESOURCE_FLUSH
+  ↓
+semu VM window 顯示更新後的桌面
 ```
 
-Present idle fence XID 與 VirGL execbuffer 使用的 `sync_file` fd 分屬不同 identity namespace。 前者回報 X server 已釋放 Pixmap，後者只在該行程內有效，用來表示 guest rendering submission 的完成狀態
+三種通知回答不同問題。 VirGL execbuffer 的 `sync_file` fence 表示某一筆 rendering submission 何時完成。 Present idle fence 表示 X server 何時不再使用 application Pixmap，application 此時才可重用該 buffer。 Present CompleteNotify 則回報 Present request 的完成模式與呈現時序。 它們分屬不同的 identity namespace，也不能互相替代
 
 `flush` 的值由呼叫端依 current context 與 drawable 的關係決定，callback 只消費該值。 `pdraw` 則是可追回 GLX screen 與 DRI drawable 的 client object，不取代 XID。 target MSC 與 swap interval 描述呈現時間，swap buffer count（SBC）用來辨識 swap sequence。 這些 counters 和 VirGL execbuffer 的 fence fd 表示不同的事件，不能互相替代
 
 direct GLX swap callback 回傳失敗可在 client 當下轉成 GLX error。 indirect request 的 error 則經 X11 協定的 error 機制回到 application。 在兩條路徑上，drawable 若已銷毀、identity 無效或 storage 不可用，都不應以「swap 函式是 void」來推導必然成功
 
-DRI3 會透過 Present event、SBC／MSC query 或 wait API，讓 client 判斷某一幀是否已經完成呈現。 `glXSwapBuffers()` 回傳時，只能確定 direct GLX swap callback 已回傳，或 indirect request 已 flush 到 X connection。 Direct request 進入 Xorg 後的 copy 與 display state update 已在前面的 Display 章展開
+DRI3 會透過 Present event、SBC／MSC query 或 wait API，讓 client 判斷某一幀是否已經完成呈現。 `glXSwapBuffers()` 回傳時，只能確定 direct GLX swap callback 已回傳，或 indirect request 已 flush 到 X connection。 Direct request 進入 Xorg 後的 Present、glamor copy、Damage 與 display state update 已在前面的 Display 章展開
 
 ```callgraph
 Application 與 Mesa GLX swap dispatch
@@ -24686,7 +25018,7 @@ Mesa direct GLX swap callback 流程與回傳規則
             │    ↓
             │  [Mesa: src/gallium/frontends/dri/dri_drawable.c:459] dri_flush(...)
             │    └─ st_context_flush(...)
-            │         └─ VirGL 比較支線：virgl_flush_from_st() → EXECBUFFER
+            │         └─ 固定 VirGL 主線：virgl_flush_from_st() → EXECBUFFER
             ├─ 選出 back-buffer Pixmap 與 Present idle fence
             └─ [Mesa: src/gallium/frontends/dri/loader_dri3_helper.c:1192] xcb_present_pixmap(...)
                  // 最終結果：Mesa 已呼叫 XCB Present request API
@@ -24695,7 +25027,7 @@ Mesa direct GLX swap callback 流程與回傳規則
   ├─ callback 回傳 `-1`：送出 `GLXBadCurrentWindow`
   └─ 其他結果：direct 分支 `return`
 
-Mesa GLX drisw 的 direct GLX swap callback 流程與回傳規則
+vGPU 2D 對照：Mesa GLX drisw 的 direct GLX swap callback 流程與回傳規則
 =================================================
 [Mesa: src/glx/drisw_glx.c:556] driswSwapBuffers(...)
   └─ softpipe／DRI 軟體 winsys／swrast loader 雙向 callback 流程
@@ -25165,16 +25497,16 @@ Mesa State Tracker 驗證當下的 program、vertex、sampler 與 framebuffer st
   ↓
 Gallium driver 接住 `pipe_context::draw_vbo`
   │
-  ├─ 固定的 drisw／softpipe 路徑
-  │    └─ [Mesa: src/gallium/drivers/softpipe/sp_draw_arrays.c:61]
-  │       softpipe_draw_vbo(...)
-  │         └─ guest CPU 執行 draw pipeline，pixels 寫入 `sw_displaytarget`
+  ├─ 固定的 VirGL 3D 主線
+  │    └─ [Mesa: src/gallium/drivers/virgl/virgl_context.c:1011]
+  │       virgl_draw_vbo(...)
+  │         └─ draw state 與 resource handle 寫入 `virgl_cmd_buf`
+  │              // API 回傳時 command 可能仍在 guest userspace
   │
-  └─ VirGL 3D 比較支線
-       └─ [Mesa: src/gallium/drivers/virgl/virgl_context.c:1011]
-          virgl_draw_vbo(...)
-            └─ draw state 與 resource handle 寫入 `virgl_cmd_buf`
-                 // API 回傳時 command 可能仍在 guest userspace
+  └─ vGPU 2D／softpipe 對照
+       └─ [Mesa: src/gallium/drivers/softpipe/sp_draw_arrays.c:61]
+          softpipe_draw_vbo(...)
+            └─ guest CPU 執行 draw pipeline，pixels 寫入 `sw_displaytarget`
   ↓
 兩條 driver 路徑都回到 application rendering loop
   ↓
@@ -25182,19 +25514,7 @@ Gallium driver 接住 `pipe_context::draw_vbo`
   ↓
 [Mesa: src/glx/glxcmds.c:668] __glXSwapBuffers(dpy, drawable)
   │
-  ├─ 固定的 drisw／softpipe 路徑
-  │    ↓
-  │  [Mesa: src/glx/drisw_glx.c:556] driswSwapBuffers(...)
-  │    └─ driSwapBuffers(...)
-  │         ↓
-  │       [Mesa: src/gallium/frontends/dri/drisw.c:226] drisw_swap_buffers_with_damage(...)
-  │         ├─ st_context_flush(..., ST_FLUSH_FRONT, ...)
-  │         ├─ 等待 rendering fence 完成
-  │         └─ softpipe_flush_frontbuffer(...)
-  │              └─ XPutImage()／XShmPutImage()
-  │                   // pixels 抵達 X11 request 邊界
-  │
-  ├─ VirGL／DRI3 比較支線
+  ├─ 固定的 VirGL／DRI3 主線
   │    ↓
   │  [Mesa: src/glx/dri3_glx.c:361] dri3_swap_buffers(...)
   │    ↓
@@ -25215,8 +25535,43 @@ Gallium driver 接住 `pipe_context::draw_vbo`
   │    │
   │    └─ flush_drawable 回傳後呼叫 xcb_present_pixmap(...)
   │         ├─ wait_fence = None
-  │         └─ idle_fence = back->sync_fence
-  │              // Present 接手 Pixmap，idle fence 回報何時可重用 buffer
+  │         ├─ idle_fence = back->sync_fence
+  │         └─ Window XID + application Pixmap XID
+  │              ↓
+  │            Xorg Present／glamor copy
+  │              ↓
+  │            Xorg Mesa／VirGL context 的第二筆 EXECBUFFER／SUBMIT_3D
+  │              ↓
+  │            application image 的可見區域寫入 GBM desktop BO
+  │              ↓
+  │            Damage／DIRTYFB／RESOURCE_FLUSH
+  │              ↓
+  │            semu VM window 顯示更新後的桌面
+  │
+  ├─ vGPU 2D／drisw 對照
+  │    ↓
+  │  [Mesa: src/glx/drisw_glx.c:556] driswSwapBuffers(...)
+  │    └─ driSwapBuffers(...)
+  │         ↓
+  │       [Mesa: src/gallium/frontends/dri/drisw.c:226] drisw_swap_buffers_with_damage(...)
+  │         ├─ st_context_flush(..., ST_FLUSH_FRONT, ...)
+  │         ├─ 等待 rendering fence 完成
+  │         └─ softpipe_flush_frontbuffer(...)
+  │              └─ XPutImage()／XShmPutImage()
+  │                   │
+  │                   │  // pixels 抵達 X11 request 邊界
+  │                   ↓
+  │                 Xorg Damage wrapper／fbPutImage
+  │                   ↓
+  │                 screen Pixmap／mapped dumb front BO
+  │                   ↓
+  │                 DIRTYFB
+  │                   ↓
+  │                 TRANSFER_TO_HOST_2D
+  │                   ↓
+  │                 RESOURCE_FLUSH
+  │                   ↓
+  │                 semu VM window 顯示更新後的桌面
   │
   └─ 沒有 direct drawable
        └─ `xcb_glx_swap_buffers(c, tag, drawable); xcb_flush(c)`
