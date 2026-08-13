@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="820" viewBox="0 0 1200 820" role="img" aria-labelledby="title desc">
+  <title id="title">virtio-gpu 2D and 3D rendering results with a separate display path</title>
+  <desc id="desc">The guest CPU computes pixels in the 2D path. The host renderer writes an application renderer resource in the 3D VirGL path. A separate Xorg and glamor display path copies the application image into the GBM desktop buffer, binds it with SET_SCANOUT, and publishes updates with RESOURCE_FLUSH.</desc>
+
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2779bd"/>
+    </marker>
+    <marker id="arrow-orange" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c55a16"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#197a64"/>
+    </marker>
+    <filter id="shadow" x="-15%" y="-20%" width="130%" height="150%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <style>
+      .font { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      .ink { fill: #17263b; }
+      .muted { fill: #52637a; }
+      .panel-title { font-size: 25px; font-weight: 700; letter-spacing: -0.2px; }
+      .panel-subtitle { font-size: 15px; }
+      .lane { font-size: 11px; font-weight: 700; letter-spacing: 0.8px; }
+      .node-title { font-size: 16px; font-weight: 700; }
+      .node-copy { font-size: 13px; }
+      .token { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 13px; font-weight: 700; }
+      .result { font-size: 15px; font-weight: 700; }
+      .arrow-label { font-size: 12px; font-weight: 600; }
+    </style>
+  </defs>
+
+  <rect width="1200" height="820" fill="#ffffff"/>
+
+  <g class="font">
+    <text x="36" y="48" class="ink" font-size="31" font-weight="750" letter-spacing="-0.5">virtio-gpu: pixel production and display delivery</text>
+    <text x="36" y="76" class="muted" font-size="16">2D and 3D produce different application images. Display delivery is a separate consumer path.</text>
+
+    <!-- 2D software rendering -->
+    <rect x="30" y="106" width="545" height="300" rx="24" fill="#f2f8fe" stroke="#7ab9eb" stroke-width="2"/>
+    <text x="56" y="143" class="panel-title ink">2D / software rendering</text>
+    <text x="56" y="167" class="panel-subtitle muted">Renderer work stays in the guest.</text>
+
+    <rect x="56" y="188" width="104" height="24" rx="12" fill="#d8edfc"/>
+    <text x="108" y="204" text-anchor="middle" class="lane" fill="#21679d">GUEST CPU</text>
+
+    <rect x="56" y="225" width="205" height="96" rx="16" fill="#ffffff" stroke="#7ab9eb" stroke-width="2" filter="url(#shadow)"/>
+    <text x="158.5" y="257" text-anchor="middle" class="node-title ink">softpipe / llvmpipe</text>
+    <text x="158.5" y="282" text-anchor="middle" class="node-copy muted">rasterizes on the guest CPU</text>
+    <text x="158.5" y="301" text-anchor="middle" class="node-copy muted">and computes pixel values</text>
+
+    <path d="M 271 273 H 322" fill="none" stroke="#2779bd" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow-blue)"/>
+    <text x="296" y="258" text-anchor="middle" class="arrow-label" fill="#21679d">writes</text>
+
+    <rect x="332" y="225" width="217" height="96" rx="16" fill="#ffffff" stroke="#7ab9eb" stroke-width="2" filter="url(#shadow)"/>
+    <text x="440.5" y="254" text-anchor="middle" class="node-title ink">Application pixels</text>
+    <text x="440.5" y="279" text-anchor="middle" class="node-copy muted">stored in guest memory</text>
+    <text x="440.5" y="298" text-anchor="middle" class="node-copy muted">as client-side image data</text>
+
+    <rect x="56" y="345" width="493" height="38" rx="10" fill="#dff0fd"/>
+    <circle cx="77" cy="364" r="6" fill="#2779bd"/>
+    <text x="94" y="369" class="result" fill="#1f5f91">Result: the guest CPU computes and writes application pixels.</text>
+
+    <!-- 3D VirGL rendering -->
+    <rect x="625" y="106" width="545" height="300" rx="24" fill="#fff7ee" stroke="#f0a15f" stroke-width="2"/>
+    <text x="651" y="143" class="panel-title ink">3D / VirGL rendering</text>
+    <text x="651" y="167" class="panel-subtitle muted">The guest submits commands; the host renderer produces pixels.</text>
+
+    <rect x="651" y="188" width="118" height="24" rx="12" fill="#fde8d4"/>
+    <text x="710" y="204" text-anchor="middle" class="lane" fill="#a54810">GUEST USERSPACE</text>
+    <rect x="798" y="188" width="145" height="24" rx="12" fill="#fde8d4"/>
+    <text x="870.5" y="204" text-anchor="middle" class="lane" fill="#a54810">VIRTIO TRANSPORT</text>
+    <rect x="974" y="188" width="166" height="24" rx="12" fill="#fde8d4"/>
+    <text x="1057" y="204" text-anchor="middle" class="lane" fill="#a54810">HOST RENDERER</text>
+
+    <rect x="651" y="225" width="128" height="82" rx="15" fill="#ffffff" stroke="#f0a15f" stroke-width="2" filter="url(#shadow)"/>
+    <text x="715" y="256" text-anchor="middle" class="node-title ink">Mesa VirGL</text>
+    <text x="715" y="280" text-anchor="middle" class="node-copy muted">encodes commands</text>
+
+    <path d="M 789 266 H 814" fill="none" stroke="#c55a16" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow-orange)"/>
+
+    <rect x="824" y="225" width="132" height="82" rx="15" fill="#ffffff" stroke="#f0a15f" stroke-width="2" filter="url(#shadow)"/>
+    <text x="890" y="257" text-anchor="middle" class="token ink">SUBMIT_3D</text>
+    <text x="890" y="280" text-anchor="middle" class="node-copy muted">carries renderer work</text>
+
+    <path d="M 966 266 H 984" fill="none" stroke="#c55a16" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow-orange)"/>
+
+    <rect x="994" y="225" width="150" height="82" rx="15" fill="#ffffff" stroke="#f0a15f" stroke-width="2" filter="url(#shadow)"/>
+    <text x="1069" y="253" text-anchor="middle" class="node-title ink">virglrenderer</text>
+    <text x="1069" y="277" text-anchor="middle" class="node-copy muted">executes with host GL</text>
+    <text x="1069" y="295" text-anchor="middle" class="node-copy muted">on the host renderer</text>
+
+    <path d="M 1069 317 V 334" fill="none" stroke="#c55a16" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow-orange)"/>
+
+    <rect x="791" y="341" width="353" height="47" rx="11" fill="#fde8d4" stroke="#f0a15f" stroke-width="1.5"/>
+    <circle cx="812" cy="364.5" r="6" fill="#c55a16"/>
+    <text x="829" y="361" class="result" fill="#963f0e">Application renderer resource</text>
+    <text x="829" y="379" class="node-copy" fill="#963f0e">The host renderer writes the application pixels here.</text>
+
+    <!-- Independent display delivery -->
+    <rect x="30" y="450" width="1140" height="335" rx="24" fill="#f2faf7" stroke="#58ae98" stroke-width="2"/>
+    <text x="56" y="489" class="panel-title ink">Display delivery</text>
+    <text x="292" y="489" class="panel-subtitle muted">separate from rendering</text>
+    <text x="56" y="515" class="panel-subtitle muted">The application image is copied into the desktop scanout storage before virtio-gpu publishes it.</text>
+
+    <rect x="56" y="538" width="149" height="24" rx="12" fill="#d9f0e9"/>
+    <text x="130.5" y="554" text-anchor="middle" class="lane" fill="#12604f">APPLICATION IMAGE</text>
+    <rect x="243" y="538" width="189" height="24" rx="12" fill="#d9f0e9"/>
+    <text x="337.5" y="554" text-anchor="middle" class="lane" fill="#12604f">X SERVER COMPOSITION</text>
+    <rect x="470" y="538" width="167" height="24" rx="12" fill="#d9f0e9"/>
+    <text x="553.5" y="554" text-anchor="middle" class="lane" fill="#12604f">DESKTOP STORAGE</text>
+    <rect x="675" y="538" width="303" height="24" rx="12" fill="#d9f0e9"/>
+    <text x="826.5" y="554" text-anchor="middle" class="lane" fill="#12604f">KMS + VIRTIO-GPU DISPLAY COMMANDS</text>
+    <rect x="1016" y="538" width="118" height="24" rx="12" fill="#d9f0e9"/>
+    <text x="1075" y="554" text-anchor="middle" class="lane" fill="#12604f">DISPLAY</text>
+
+    <rect x="56" y="579" width="149" height="112" rx="15" fill="#ffffff" stroke="#58ae98" stroke-width="2" filter="url(#shadow)"/>
+    <text x="130.5" y="612" text-anchor="middle" class="node-title ink">Application image</text>
+    <text x="130.5" y="638" text-anchor="middle" class="node-copy muted">DRI3 Pixmap storage</text>
+    <text x="130.5" y="658" text-anchor="middle" class="node-copy muted">shared with Xorg</text>
+    <text x="130.5" y="678" text-anchor="middle" class="node-copy muted">without becoming scanout</text>
+
+    <path d="M 215 635 H 239" fill="none" stroke="#197a64" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow-green)"/>
+
+    <rect x="249" y="579" width="177" height="112" rx="15" fill="#ffffff" stroke="#58ae98" stroke-width="2" filter="url(#shadow)"/>
+    <text x="337.5" y="609" text-anchor="middle" class="node-title ink">Xorg Present</text>
+    <text x="337.5" y="630" text-anchor="middle" class="node-title ink">+ glamor</text>
+    <text x="337.5" y="657" text-anchor="middle" class="node-copy muted">copies / composites</text>
+    <text x="337.5" y="677" text-anchor="middle" class="node-copy muted">the application image</text>
+
+    <path d="M 436 635 H 466" fill="none" stroke="#197a64" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow-green)"/>
+    <text x="451" y="619" text-anchor="middle" class="arrow-label" fill="#12604f">writes</text>
+
+    <rect x="476" y="579" width="155" height="112" rx="15" fill="#ffffff" stroke="#58ae98" stroke-width="2" filter="url(#shadow)"/>
+    <text x="553.5" y="612" text-anchor="middle" class="node-title ink">GBM desktop BO</text>
+    <text x="553.5" y="638" text-anchor="middle" class="node-copy muted">X Screen pixel storage</text>
+    <text x="553.5" y="658" text-anchor="middle" class="node-copy muted">and KMS framebuffer</text>
+    <text x="553.5" y="678" text-anchor="middle" class="node-copy muted">backing resource</text>
+
+    <path d="M 641 635 H 671" fill="none" stroke="#197a64" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow-green)"/>
+
+    <rect x="681" y="579" width="132" height="112" rx="15" fill="#ffffff" stroke="#58ae98" stroke-width="2" filter="url(#shadow)"/>
+    <text x="747" y="612" text-anchor="middle" class="token ink">SET_SCANOUT</text>
+    <text x="747" y="640" text-anchor="middle" class="node-copy muted">selects the resource</text>
+    <text x="747" y="660" text-anchor="middle" class="node-copy muted">and source rectangle</text>
+    <text x="747" y="680" text-anchor="middle" class="node-copy muted">when binding changes</text>
+
+    <path d="M 823 635 H 841" fill="none" stroke="#197a64" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow-green)"/>
+
+    <rect x="851" y="579" width="140" height="112" rx="15" fill="#ffffff" stroke="#58ae98" stroke-width="2" filter="url(#shadow)"/>
+    <text x="921" y="612" text-anchor="middle" class="token ink">RESOURCE_FLUSH</text>
+    <text x="921" y="640" text-anchor="middle" class="node-copy muted">publishes updated</text>
+    <text x="921" y="660" text-anchor="middle" class="node-copy muted">desktop contents</text>
+    <text x="921" y="680" text-anchor="middle" class="node-copy muted">for dirty updates</text>
+
+    <path d="M 1001 635 H 1013" fill="none" stroke="#197a64" stroke-width="3" stroke-linecap="round" marker-end="url(#arrow-green)"/>
+
+    <rect x="1023" y="579" width="111" height="112" rx="15" fill="#ffffff" stroke="#58ae98" stroke-width="2" filter="url(#shadow)"/>
+    <text x="1078.5" y="610" text-anchor="middle" class="node-title ink">semu</text>
+    <text x="1078.5" y="632" text-anchor="middle" class="node-copy muted">display backend</text>
+    <text x="1078.5" y="657" text-anchor="middle" class="node-title ink">VM window</text>
+    <text x="1078.5" y="679" text-anchor="middle" class="node-copy muted">shows the desktop</text>
+
+    <rect x="56" y="718" width="1078" height="43" rx="11" fill="#d9f0e9"/>
+    <circle cx="79" cy="739.5" r="6" fill="#197a64"/>
+    <text x="96" y="745" class="result" fill="#115d4c">Rendering creates the application image. Xorg copies it into the desktop BO, which display commands bind and publish.</text>
+  </g>
+</svg>
