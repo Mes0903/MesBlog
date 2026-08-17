@@ -2506,7 +2506,7 @@ modesetting driver 接著呼叫 userspace 函式庫 libdrm，向 kernel 查詢�
 
 DRM UAPI 定義了 userspace 與 kernel 共同使用的 ioctl request numbers、argument structures 與回傳格式。 每個 request number 都表示著一項固定操作，對應的 UAPI structure 則用來傳入查詢條件、更新內容或接收 kernel 回傳的結果
 
-libdrm 發出的 ioctl 進入 kernel 後，會由 DRM core 接住。 DRM core 是 DRM 內由各個裝置 drivers 共用的 kernel 程式碼，位於 ioctl 入口與裝置專屬 DRM driver 之間。 它會處理 ioctl 的分派與呼叫權限檢查，也會管理共用的 DRM objects。 `virtio_gpu`、`amdgpu` 與 `i915` 等裝置專屬的 DRM drivers 會建立各自裝置的 objects 並登記 callbacks，再把共用操作轉成該裝置能夠執行的工作
+libdrm 發出的 ioctl 進入 kernel 後，會先進入 DRM core 的 ioctl 分派邏輯。 DRM core 是 DRM 內由各個裝置 drivers 共用的 kernel 程式碼，位於 ioctl 入口與裝置專屬 DRM driver 之間。 它會處理 ioctl 的分派與呼叫權限檢查，也會管理共用的 DRM objects。 `virtio_gpu`、`amdgpu` 與 `i915` 等裝置專屬的 DRM drivers 會建立各自裝置的 objects 並登記 callbacks，再把共用操作轉成該裝置能夠執行的工作
 
 #### KMS 將 pixel storage 接到顯示輸出
 
@@ -5915,7 +5915,7 @@ XOpenDisplay(register _Xconst char *display)
 
 GTK 負責 application window、widget tree、layout、signals 與輸入控制等高階 GUI 功能。 Application 改變的是 widget state，例如更新 label 文字或讓 button 進入 pressed state。 等畫面需要更新時，GTK 才會走訪 widget tree，準備下一幀的內容
 
-GDK 與 GSK 會從兩個方向接住這些工作。 `GdkDisplay` 表示 application 與目前 window system 的 connection，top-level `GdkSurface` 表示一個可顯示的頂層表面，GDK input objects 則保存輸入裝置與 events。 GSK（GTK Scene Kit）負責將 widgets 描述的內容整理成 scene graph，再交給 graphics backend 執行 rendering。 兩者不是依序包裝彼此的單一路徑：
+GDK 與 GSK 分別負責視窗系統整合與 rendering。 `GdkDisplay` 表示 application 與目前 window system 的 connection，top-level `GdkSurface` 表示一個可顯示的頂層表面，GDK input objects 則保存輸入裝置與 events。 GSK（GTK Scene Kit）負責將 widgets 描述的內容整理成 scene graph，再交給 graphics backend 執行 rendering。 兩者不是依序包裝彼此的單一路徑：
 
 ```callgraph
 GTK 4 application 更新 widget state
@@ -5962,7 +5962,7 @@ GTK 4 的 child widgets 通常共用 top-level surface。 Button 與 label 等 c
 
 [`GskRenderer::render()`](https://docs.gtk.org/gsk4/method.Renderer.render.html) 會用選定的 OpenGL、Vulkan 或 Cairo backend，將這棵 scene graph 畫到 renderer 對應的 surface。 當 GTK 選到 OpenGL renderer，而且 OpenGL implementation 是 Mesa 時，這條 rendering branch 便會接回本文後面介紹的 Mesa frontend 與 driver layers
 
-Application 也可以在 [`GtkGLArea`](https://docs.gtk.org/gtk4/class.GLArea.html) 的 render callback 中直接發出 OpenGL calls。 `GtkGLArea` 會準備自己的 `GdkGLContext`，以及接住這個 widget OpenGL output 的 OpenGL framebuffer
+Application 也可以在 [`GtkGLArea`](https://docs.gtk.org/gtk4/class.GLArea.html) 的 render callback 中直接發出 OpenGL calls。 `GtkGLArea` 會準備自己的 `GdkGLContext`，以及供這個 widget 寫入 OpenGL rendering 結果的 framebuffer
 
 Application 將內容畫進這份 framebuffer 後，GTK 會把完成的結果當成 texture，整合回更大的 widget scene graph。 GDK backend 與執行期組態會決定 `GdkGLContext` 底下以 GLX 或 EGL 建立 context
 
@@ -6474,11 +6474,11 @@ application Window 進入桌面後，Xorg 已經知道它的 parent、geometry �
 
 #### DRI、DRI3 與 Present 各自處理哪一段交接
 
-前面的 Big picture 已經將 DRI（Direct Rendering Infrastructure）放在視窗系統與 Mesa rendering driver 之間。 DRI 是銜接 X11 direct-rendering application、Mesa 與 Linux DRM device 的 userspace 架構。 它讓 application 行程中的 Mesa 取得 rendering device，並與 X server 協調 drawable buffers
+前面的 Big picture 已經將 DRI（Direct Rendering Infrastructure）放在視窗系統與 Mesa rendering driver 之間。 DRI 是銜接 X11 direct-rendering application、Mesa、X server 與 Linux DRM 的整套基礎設施。 其中的 userspace 部分會讓 application 行程中的 Mesa 取得 rendering device，並與 X server 協調 drawable buffers
 
 在這組分工中，DRI 處理 userspace 端的交接，Linux DRM 則提供 device nodes、ioctls 與 kernel objects
 
-DRI3 則是 X11 protocol 中的一個 extension。 它讓 direct-rendering client 向 Xorg 取得 DRM device fd，也讓 client 以 dma-buf fd、stride、offset 與 modifier 建立 X Pixmap。 DRI3 傳遞的是 device 與 buffer 的引用方式，不負責建立 OpenGL context，也不負責決定 Pixmap 何時出現在 Window。 前一項工作由 GLX 或 EGL 這類視窗系統介面處理，後一項工作則由 Present extension 處理
+DRI3 則是 X11 協定中的一項 extension。 它讓 direct-rendering client 向 Xorg 取得 DRM device fd，也讓 client 以 dma-buf fd、stride、offset 與 modifier 建立 X Pixmap。 DRI3 傳遞的是 device 與 buffer 的引用方式，不負責建立 OpenGL context，也不負責決定 Pixmap 何時出現在 Window。 前一項工作由 GLX 或 EGL 這類視窗系統介面處理，後一項工作則由 Present extension 處理
 
 ```callgraph
 GLX 或 EGL
@@ -7866,7 +7866,9 @@ VirGL 3D 主線會讓 guest Mesa 建立 commands，再由 host renderer 執行 r
 
 #### softpipe／llvmpipe 負責算出 pixels，drisw 負責交給 X11 drawable
 
-softpipe 與 llvmpipe 都是 Mesa 的 Gallium software drivers。 它們接住相同的 Gallium operations，並使用 CPU 完成 vertex processing、rasterization 與 fragment processing，再把結果寫進 system memory 中的 color buffer。 softpipe 採用較直接的同步實作，適合用來理解 Gallium driver contract。 llvmpipe 會使用 LLVM JIT 與多個 worker threads 提高 throughput，也會以真正的 fence 表示非同步工作何時完成
+softpipe 與 llvmpipe 都是 Mesa 的 Gallium software drivers。 它們實作同一套 Gallium callbacks，因此都能處理 State Tracker 送出的 Gallium operations。 兩者會使用 CPU 完成 vertex processing、rasterization 與 fragment processing，再把結果寫進 system memory 中的 color buffer
+
+softpipe 採用較直接的同步實作，適合用來理解 Gallium driver contract。 llvmpipe 會使用 LLVM JIT 與多個 worker threads 提高 throughput，也會以真正的 fence 表示非同步工作何時完成
 
 drisw 負責的是另一段工作。 softpipe 或 llvmpipe 決定「怎麼算出 pixels」，drisw 則銜接 Mesa software-rendering path 與 GLX loader 提供的 X11 drawable callbacks，決定「怎麼把算好的 pixels 交給 X11 drawable」。 在這條 2D 對照路徑中，這次交付最後會形成 `PutImage` 或 `ShmPutImage` request
 
@@ -8754,7 +8756,9 @@ EGL 也能服務不同的 client graphics APIs。 Application 先以 `eglBindAPI
 - Windows 使用 WGL。 Application 先替與視窗相關聯的 device context（HDC）選擇並設定 pixel format，再以 `wglCreateContext()` 建立 `HGLRC` context handle，透過 `wglMakeCurrent()` 設定 current context，最後以 Win32／GDI `SwapBuffers()` 交換視窗 buffers
 - macOS 的低階 OpenGL 介面是 CGL。 Application 可以用 `CGLChoosePixelFormat()` 取得 `CGLPixelFormatObj`，再以 `CGLCreateContext()`、`CGLSetCurrentContext()` 與 `CGLFlushDrawable()` 管理 `CGLContextObj`。 Cocoa 等較高層框架負責將這個 OpenGL context 接到 application window／view
 
-GLX、EGL、WGL 與 CGL 面對的原生平台與 object 名稱不同，但都位在 OpenGL application 與視窗系統的交界。 將 context 設為目前執行緒的 context 後，後續 `glClear()`、`glDrawArrays()` 等 OpenGL calls 才能依這筆 current context 分派到對應的 OpenGL 實作：
+GLX、EGL、WGL 與 CGL 面對的原生平台與 object 名稱不同，但都位在 OpenGL application 與視窗系統的交界
+
+將 context 設為目前執行緒的 context 後，後續 `glClear()`、`glDrawArrays()` 等 OpenGL calls 才能依這筆 current context 分派到對應的 OpenGL 實作：
 
 ```callgraph
 視窗系統 connection／window metadata
@@ -9040,7 +9044,7 @@ while (window_is_open) {
 - State Tracker 與 Gallium（Mesa 路徑）
   - Mesa OpenGL frontend 驗證 API 呼叫後，State Tracker 會將 OpenGL state 與 operations 轉成 Gallium 使用的形式。 Gallium 則提供 State Tracker 與不同 rendering drivers 共同遵守的介面與框架，例如由 `pipe_context` 定義的 rendering callbacks
 - Gallium driver（Mesa 路徑）
-  - 實作 Gallium 定義的介面，接住 State Tracker 轉換後的 rendering work，再決定要由 CPU 直接算出 pixels、建立實體 GPU commands，或編碼成虛擬 GPU protocol
+  - 實作 Gallium 定義的介面，處理 State Tracker 轉換後的 rendering work，再決定要由 CPU 直接算出 pixels、建立實體 GPU commands，或編碼成虛擬 GPU protocol
 
 本文接下來固定追蹤 Mesa 提供的 OpenGL vendor 路徑。 OpenGL 呼叫會依序經過 Mesa OpenGL frontend、State Tracker 與 Gallium 介面，最後由 current context 使用的 Gallium driver 接手 rendering work
 
@@ -9050,7 +9054,7 @@ AMD 的 radeonsi、Intel 的 iris、軟體 drivers softpipe 與 llvmpipe，以�
 - iris、radeonsi 等原生硬體 driver 會在 userspace 編譯 shader、配置 GPU resources 並建立 GPU commands，接著透過 kernel driver 將工作交給實體 GPU 執行
 - VirGL guest driver 會把 Gallium rendering state 與 commands 編碼成 VirGL protocol，經 virtio-gpu 傳給 host，再由 host 上的 virglrenderer 交給 host 圖形堆疊執行
 
-而如果 OpenGL vendor 是 NVIDIA proprietary OpenGL 堆疊，API 呼叫則會由 NVIDIA 的 userspace 函式庫接住，再配合 NVIDIA kernel module。 這條路徑就不會經過 Mesa OpenGL frontend、State Tracker 或 Gallium。 因此，系統有沒有安裝 Mesa，與該 OpenGL context 是否由 Mesa 實作，是兩個不同的問題
+而如果 OpenGL vendor 是 NVIDIA proprietary OpenGL 堆疊，OpenGL API 呼叫會進入 NVIDIA 的 userspace 函式庫，再由這些函式庫配合 NVIDIA kernel module 執行 rendering。 這條路徑就不會經過 Mesa OpenGL frontend、State Tracker 或 Gallium。 因此，系統有沒有安裝 Mesa，與該 OpenGL context 是否由 Mesa 實作，是兩個不同的問題
 
 本文固定的 vGPU 3D 組態使用 Mesa DRI3 loader 與 VirGL Gallium driver。 `glClear()` 與後續的齒輪 draw calls 會經過 Mesa OpenGL frontend、State Tracker 與 Gallium，再由 VirGL 編碼成 host renderer 可以執行的 commands
 
@@ -9437,7 +9441,7 @@ libgl = shared_library(
 
 Application 呼叫 `eglInitialize()`、`eglCreateContext()` 等 EGL API 時，不會經過前一節的 GLX 公開入口，而會從 EGL shared object 進入 Mesa。 `with_glvnd=false` 時，Mesa 會直接產生 `libEGL.so.1`。 `with_glvnd=true` 時，系統的 GLVND `libEGL.so.1` 提供公開 dispatch，Mesa 則安裝 `libEGL_mesa.so.0` 與 vendor JSON，讓 GLVND 找到 Mesa EGL vendor implementation
 
-`eglMakeCurrent()` 完成後，`glClear()`、`glDrawArrays()` 等 OpenGL calls 仍會經過另一條 OpenGL dispatch 邊界。 Application 可以從 GL shared object 取得這些 API functions，也可以對 extension functions 使用 `eglGetProcAddress()`； 它們不會因 application 使用 EGL 建立 context，就變成 EGL API 的一部分
+`eglMakeCurrent()` 完成後，`glClear()`、`glDrawArrays()` 等 OpenGL calls 仍會經過另一條 OpenGL dispatch 邊界。 Application 可以從 GL shared object 取得這些 API functions，也可以對 extension functions 使用 `eglGetProcAddress()`。 它們不會因 application 使用 EGL 建立 context，就變成 EGL API 的一部分
 
 `src/egl/` 同時包含 EGL 公開 API 的共用 objects 與多種 platform backends。 本文只追蹤 X11 backend。 Application 的 X11 connection 會先被包裝成 EGL display，後續 `eglInitialize()` 再進入 X11 platform backend。 這個 backend 的實作位於 `platform_x11.c` 與 `platform_x11_dri3.c`，會建立 DRI screen 與 X11 DRI3 loader state
 
@@ -10325,7 +10329,7 @@ vGPU 2D 比較支線的 GLX screen 建立路徑
                  ↓
                [Mesa: src/gallium/frontends/dri/drisw.c:597] drisw_init_screen(...)
                  └─ 建立軟體 `pipe_screen`
-                      // 比較支線由 softpipe 接住 Gallium callbacks
+                      // 比較支線使用 softpipe 實作的 Gallium callbacks
 ```
 
 #### GLX object 先保存 X11 identity，再接 DRI object
@@ -11347,7 +11351,9 @@ Indirect GLX unbind
 
 兩條路徑的差異集中在 Mesa 的視窗系統 frontends。 GLX frontend 直接使用 libX11 `Display *` connection、X Screen number、FBConfig 與 GLX drawable
 
-EGL 共用 frontend 先保存 EGL display、config、context 與 surface 等公開 objects，再把 X11 connection 交給 X11 platform backend。 這個 backend 會取得 DRI3 device、建立 DRI screen，並提供 X11 surface operations。 EGL context 建立則會從共用 frontend 接到相同的 DRI context functions
+EGL 共用 frontend 先保存 EGL display、config、context 與 surface 等公開 objects，再把 X11 connection 交給 X11 platform backend
+
+這個 backend 會取得 DRI3 device、建立 DRI screen，並提供 X11 surface operations。 EGL context 建立則會從共用 frontend 接到相同的 DRI context functions
 
 進入這些共同邊界後，Mesa OpenGL frontend、State Tracker、Gallium 與 VirGL 不需要知道上層使用 GLX 或 EGL
 
@@ -11615,7 +11621,7 @@ dri3_swap_buffers_with_damage(_EGLDisplay *disp, _EGLSurface *draw,
 
 EGL 與 GLX 會準備各自的 image-loader table，再把 drawable buffer operations 交給 DRI frontend。 兩張 tables 的版本與 callbacks 不完全相同，後面的「Loader 與 DRI」章會把它們放在同一個 ABI 邊界比較。 在目前的 swap 路徑中，兩者都會進入 `loader_dri3_swap_buffers_msc()`
 
-這個共用 helper 會 flush drawable、選出 back buffer，並以 XCB 送出 Present request。 Xorg 收到後會依 Window、Pixmap、可見範圍與 Present 條件決定走 copy 或 flip。 因此 `eglSwapBuffers()` 表示 application 將一幀交給原生視窗系統的邊界； 實際更新方式由 Xorg 選擇
+這個共用 helper 會 flush drawable、選出 back buffer，並以 XCB 送出 Present request。 Xorg 收到後會依 Window、Pixmap、可見範圍與 Present 條件決定走 copy 或 flip。 因此 `eglSwapBuffers()` 表示 application 將一幀交給原生視窗系統的邊界，實際更新方式則由 Xorg 選擇
 
 ```callgraph
 [Mesa: src/egl/main/eglapi.c:1419] eglSwapBuffers(display, surface)
@@ -11639,7 +11645,7 @@ Xorg Present／glamor 與後續 Display path
 
 至此，GLX 與 EGL 都已經從公開視窗系統 API 各自建立 DRI context、DRI3 drawable 與 buffer pool，並進入相同的 DRI frontend、`loader_dri3_helper` 實作與 Present 邊界
 
-本章以 X11 DRI3 作為 EGL source-reading 的停止點。 Wayland、Android、GBM／DRM、device 與 surfaceless platform backends 會沿用 EGL 共用 objects，但各自具有不同的原生 display、surface、buffer sharing 與呈現路徑； 完整 EGLImage、EGLSync 與 OpenGL ES 路徑也由對應專篇展開
+本章以 X11 DRI3 作為 EGL source-reading 的停止點。 Wayland、Android、GBM／DRM、device 與 surfaceless platform backends 會沿用 EGL 共用 objects，但各自具有不同的原生 display、surface、buffer sharing 與呈現路徑。 完整 EGLImage、EGLSync 與 OpenGL ES 路徑也由對應專篇展開
 
 ## Mesa OpenGL frontend
 
@@ -15819,7 +15825,9 @@ State Tracker 如何執行 active dirty atoms、將 operations 送進 Gallium ca
 
 前兩章已經讓 GLSL program 完成 link，也讓 Mesa OpenGL frontend 把這一幀的 state、objects 與 draw arguments 整理完成。 齒輪 draw 接下來要跨進 driver-neutral 的 Gallium 介面。 State Tracker 位在這個轉換點：它從 `gl_context` 讀取目前使用中的 framebuffer、shader、texture 與 vertex state，只更新 dirty 且本次 draw 會用到的項目，再把它們整理成 `pipe_*` structures 與 callback arguments
 
-這一步要解決的是「OpenGL 已經知道要畫什麼，但不同 Gallium drivers 需要共同輸入」的問題。 本文固定的 VirGL 3D 路徑與 drisw／softpipe 比較支線此刻都會經過相同的 State Tracker。 我們先固定即將出現的 Gallium objects，再回到 context 建立階段，確認 `st_context` 如何接住 Mesa core 與 Gallium。 接著沿 program link 與 draw 兩條既有路徑，追蹤 NIR lowering、driver variant、state atoms、resources、draw、flush 與 finish
+這一步要解決的是「OpenGL 已經知道要畫什麼，但不同 Gallium drivers 需要共同輸入」的問題。 本文固定的 VirGL 3D 路徑與 drisw／softpipe 比較支線此刻都會經過相同的 State Tracker
+
+我們先固定即將出現的 Gallium objects，再回到 context 建立階段，確認 `st_context` 如何建立 Mesa core 與 Gallium 之間的 context 關係。 接著沿 program link 與 draw 兩條既有路徑，追蹤 NIR lowering、driver variant、state atoms、resources、draw、flush 與 finish
 
 ### 先固定 State Tracker 使用的 Gallium objects
 
@@ -15833,7 +15841,7 @@ State Tracker 會把 OpenGL objects 與 operations 轉成一組以 `pipe_` 開�
 
 這些 objects 不會取代 `gl_context`、OpenGL texture 或 framebuffer。 State Tracker 會同時保留上層 OpenGL state 與下層 Gallium references，依目前 operation 將前者轉成後者
 
-### st_context 接住 Mesa core 與 Gallium
+### st_context 連接 Mesa core 與 Gallium
 
 在追 application 的 draw 如何穿過 State Tracker 以前，先回到 GLX context 剛建立的時刻。 此時 DRI frontend 正拿著 `pipe_frontend_screen`、context attributes，以及可能用來分享 OpenGL objects 的既有 context，準備建立這條 rendering 路徑後續都會使用的 state
 
@@ -17643,7 +17651,7 @@ cso_draw_vbo_default(struct pipe_context *pipe,
 
 #### Flush dispatch
 
-flush 的問題是先排空 State Tracker 自己延遲的工作，再要求 pipe_context 提交截至目前的 command。 `st_glFlush()` 接住 OpenGL frontend 的非等待要求，`st_context_flush()` 則服務帶有 `ST_FLUSH_*` flags 的 frontend request。 兩條路最後都收斂到 `st_flush()` 與 `pipe->flush()`
+flush 的問題是先排空 State Tracker 自己延遲的工作，再要求 pipe_context 提交截至目前的 command。 `st_glFlush()` 處理 OpenGL frontend 發出的非等待 flush，`st_context_flush()` 則服務帶有 `ST_FLUSH_*` flags 的 frontend request。 兩條路最後都收斂到 `st_flush()` 與 `pipe->flush()`
 
 以下程式碼來自 [Mesa: src/mesa/state_tracker/st_cb_flush.c:50](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/state_tracker/st_cb_flush.c#L50)，用來顯示 `st_flush()` 在提交 commands 前先呼叫 `st_context_free_zombie_objects()` 與 `st_flush_bitmap_cache()`，然後才把可選的 `fence` output slot 與 `flags` 交給 `st->pipe->flush()`
 
@@ -18629,7 +18637,7 @@ fence_reference 的 ptr 是由呼叫端持有的 destination slot，fence argume
 
 State Tracker 的一般 finish 呼叫端位於 [Mesa: src/mesa/state_tracker/st_cb_flush.c:73](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/state_tracker/st_cb_flush.c#L73)。 它先以 `st_flush()` 取得 fence，再以無限 timeout 呼叫 `fence_finish()`，最後在 [Mesa: src/mesa/state_tracker/st_cb_flush.c:82](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/mesa/state_tracker/st_cb_flush.c#L82) 以 `fence_reference()` 將呼叫端持有的 fence pointer 設為 `NULL`
 
-到這裡，我們只知道 driver 必須接住哪些 callbacks，以及每個 object 與 fence reference 由誰持有。 下一章回到 softpipe，逐一看它如何把公開 base 放進私有 structs，並在 CPU draw、mapping 與 flush 路徑履行這些規則
+到這裡，我們只知道 driver 必須實作哪些 callbacks，以及每個 object 與 fence reference 由誰持有。 下一章回到 softpipe，逐一看它如何把公開 base 放進私有 structs，並在 CPU draw、mapping 與 flush 路徑履行這些規則
 
 ## Gallium driver 如何實作共用介面
 
@@ -19014,7 +19022,7 @@ explicit flush 的 State Tracker 呼叫端位於 [Mesa: src/mesa/main/bufferobj.
 
 softpipe 註冊的是 [Mesa: src/gallium/auxiliary/util/u_transfer.c:119](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/auxiliary/util/u_transfer.c#L119) 的 no-op，其他 driver 可以在 callback 中把指定 box 從暫存副本寫回 storage
 
-以下程式碼來自 [Mesa: src/gallium/drivers/softpipe/sp_texture.c:355](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/softpipe/sp_texture.c#L355)，用來顯示 `softpipe_transfer_map()` 配置私有 transfer 後，以 `pipe_resource_reference()` 接住 storage、by-value 複製 `box`，再從 `softpipe_resource` 的 per-level layout 填入 `stride` 與 `layer_stride`
+以下程式碼來自 [Mesa: src/gallium/drivers/softpipe/sp_texture.c:355](https://gitlab.freedesktop.org/mesa/mesa/-/blob/eaa4b57774d1f8825dcdfc280ceb8adbecfd19d3/src/gallium/drivers/softpipe/sp_texture.c#L355)，用來顯示 `softpipe_transfer_map()` 配置私有 transfer 後，以 `pipe_resource_reference()` 讓它持有 `pipe_resource` reference、by-value 複製 `box`，再從 `softpipe_resource` 的 per-level layout 填入 `stride` 與 `layer_stride`
 
 ```c
 static void *
@@ -19923,7 +19931,7 @@ State Tracker 只依 `pipe_context` 與 `pipe_screen` callbacks 決定何時持�
 
 ## Loader 與 DRI
 
-前面已經追到 Mesa driver 如何接住齒輪的 OpenGL work。 當 GLX application 準備把這些工作畫進 application Window 時，driver 還需要知道這個 X11 drawable 目前使用哪些 buffers。 EGL X11 application 也會遇到相同問題，只是上層以 EGL surface 取代 GLX drawable wrapper。 一幀完成後，Mesa 必須沿著相反方向，把可呈現的 buffer 或算好的 pixels 交回 X11 視窗系統
+前面已經追到 Mesa driver 如何透過 Gallium 介面處理齒輪的 rendering work。 當 GLX application 準備把這些工作畫進 application Window 時，driver 還需要知道這個 X11 drawable 目前使用哪些 buffers。 EGL X11 application 也會遇到相同問題，只是上層以 EGL surface 取代 GLX drawable wrapper。 一幀完成後，Mesa 必須沿著相反方向，把可呈現的 buffer 或算好的 pixels 交回 X11 視窗系統
 
 前面概觀中的 DRI（Direct Rendering Infrastructure）在這裡展開成視窗系統 loader 與 Mesa DRI frontend 共同遵循的 userspace 介面。 GLX loader 與 EGL X11 loader 各自掌握公開介面的 objects、X11 drawable、buffer pool 與呈現狀態，DRI frontend 則掌握 Mesa context、drawable attachments 與 driver screen。 兩側透過具有版本資訊的 extension callback tables 交換各自管理的資料
 
@@ -21089,7 +21097,7 @@ loader_dri3_get_buffers(struct dri_drawable *driDrawable,
 
 `dri3_update_drawable()` 可以發現尺寸或 drawable state 改變，`dri3_update_max_num_back()` 則依交換模式調整 back-buffer 數量。 這些都是 loader 責任，Gallium driver 不應固定 Present queue 深度
 
-成功回傳後，frontend 取得 opaque image references。 Gallium DRI 實作會從具體 `dri_image` 的 `texture` 欄位取得既有 `pipe_resource`，用 `pipe_resource_reference()` 保存它，並以 `handle_in_fence()` 接住 image 的輸入同步條件。 State Tracker 隨後才為 resource 建立 surface 並綁到 framebuffer
+成功回傳後，frontend 取得 opaque image references。 Gallium DRI 實作會從具體 `dri_image` 的 `texture` 欄位取得既有 `pipe_resource`，用 `pipe_resource_reference()` 保存它，並呼叫 `handle_in_fence()`，讓後續 rendering 遵守 image 的輸入同步條件。 State Tracker 隨後才為 resource 建立 surface 並綁到 framebuffer
 
 呈現不在 `getBuffers` 內發生。 這個 callback 只確保 draw 所需的 attachment identity 與 current drawable state 一致
 
@@ -21975,7 +21983,7 @@ GBM userspace 呼叫端
 
 ## VirGL guest driver 與 winsys
 
-本文固定的 `glxgears` 主線會使用 3D VirGL。 Application 建立 X11 Window、GLX context 並送出 OpenGL rendering 後，Mesa 內接住 Gallium callbacks 的是 VirGL guest driver，rendering 則會經虛擬 GPU 路徑交給 host renderer 執行
+本文固定的 `glxgears` 主線會使用 3D VirGL。 Application 建立 X11 Window、GLX context 並送出 OpenGL rendering 後，Mesa 內負責實作 Gallium callbacks 的是 VirGL guest driver，rendering 則會經虛擬 GPU 路徑交給 host renderer 執行
 
 VirGL guest driver 會把齒輪這一幀的 Gallium resources、shader state 與 draw 編成 VirGL command stream，winsys 再準備 DRM BO handle list 與 fence information，最後以 `DRM_IOCTL_VIRTGPU_EXECBUFFER` 跨進 DRM／kernel。 Resource handle、GEM BO handle、DRM file context 與 Gallium context 分屬不同 namespaces 與生命週期，因此本章會沿 screen 建立、capset、context、resource、command encoding、transfer queue、command 提交與 fence，逐步確認每次交出的實際 object
 
@@ -24783,7 +24791,7 @@ semu 發布目前的 scanout
 
 前一章已經把 guest Mesa 的 execbuffer request 追到 Linux `virtio_gpu` driver，並確認 kernel 如何在 controlq 送出 `VIRTIO_GPU_CMD_SUBMIT_3D`。 接下來的工作會跨到 host 上的虛擬機監視器（virtual machine monitor，VMM）。 semu 的 virtio-gpu 裝置模型取得這批 commands 後，會呼叫另一個專案提供的 `virglrenderer` 函式庫，建立 host-side renderer state 並執行 commands
 
-這一章先接住 controlq 上的 3D request，確認 semu 如何把虛擬裝置工作交給擁有 host OpenGL context 的執行緒，再觀察 VMM 與 virglrenderer 之間的公開函式庫介面。 各個 virtio-gpu command handler 的完整驗證與裝置狀態機會留給後續的 virtio-gpu 專文展開，本章只保留從 request queue 到 virglrenderer API 的必要邊界
+這一章先從 controlq 上的 3D request 開始，確認 semu 如何把虛擬裝置工作交給擁有 host OpenGL context 的執行緒，再觀察 VMM 與 virglrenderer 之間的公開函式庫介面。 各個 virtio-gpu command handler 的完整驗證與裝置狀態機會留給後續的 virtio-gpu 專文展開，本章只保留從 request queue 到 virglrenderer API 的必要邊界
 
 ### semu 將 controlq request 交給 host OpenGL context owner
 
