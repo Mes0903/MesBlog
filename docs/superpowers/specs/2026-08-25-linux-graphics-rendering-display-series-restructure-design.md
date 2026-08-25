@@ -1,8 +1,8 @@
-# Linux graphics 系列的 Rendering／Display 重構設計
+# Learn graphic stack by virtio-gpu：Rendering／Display 系列重構設計
 
 ## 目標
 
-目前的系列 PLAN 已經按照 Mesa、Xorg、Linux DRM／KMS、virtio-gpu 與 Wayland 等主要 owner 拆分文章。 這次重構會在這個基礎上加入一套所有文章共用的閱讀座標：一張畫面從 application 產生內容到顯示裝置發布結果時，會同時推進 Rendering 與 Display 兩項工作
+這個系列稱為「Learn graphic stack by virtio-gpu」。 現有 PLAN 已經按照 Mesa、Xorg、Linux DRM／KMS、virtio-gpu 與 Wayland 等主要 owner 拆分文章。 這次重構會在這個基礎上加入一套所有文章共用的閱讀座標：一張畫面從 application 產生內容到顯示裝置發布結果時，會同時推進 Rendering 與 Display 兩項工作
 
 - Rendering 負責解讀 graphics API、建立 rendering state 與 resources、產生 commands，最後算出 application image 或 compositor output image
 - Display 負責管理視窗或 surface 的位置與可見狀態、安排 composition、選擇 scanout image，最後把結果發布到顯示輸出
@@ -10,13 +10,55 @@
 
 系列文章仍以 owner 為單位。 每篇只展開該 owner 內的 Rendering 與 Display 工作，再透過公開介面把結果交給下一個 owner。 這樣可以沿著同一條畫面路徑理解不同專案，也能讓 Mesa／OpenGL、Mesa／Vulkan、X11、Wayland、DRM／KMS 與 virtio-gpu 各自形成可獨立閱讀的文章
 
-本次設計也會把 hipEGL 與 Unified HMI／RVGPU／DDFW 規劃成獨立的專案文章。 這兩篇會先指出專案位於整體架構的哪個位置，再說明它們如何改變既有路徑，不會把專案特有的架構塞進核心 owner 文章
+Unified HMI／RVGPU／DDFW 會另外形成一篇專案文章。 這個案例會展示 virtio-gpu 如何出現在原生 Linux、Wayland 與分散式顯示環境中，再說明 DDFW 如何從 control plane 管理 application lifecycle 與 layout
 
 ## 這次不會直接修改的內容
 
 這份規格只決定系列架構、文章責任、內容搬移方式與圖片系統。 後續撰寫實作計畫以前，不會修改 `MesBlog/src/ComputerGraphic/Mesa/README.md` 的正文
 
 目前已經逐段校過的 Big Picture 與 `## 本文的固定追蹤組態` 會作為重構基準。 後續調整會先建立內容與圖片清冊，再搬移既有段落。 已驗證的敘事、程式碼片段、callgraph、來源連結與技術結論不會因新的文章架構而直接消失
+
+## virtio-gpu 如何貫穿整個系列
+
+Virtio-gpu 是這個系列反覆使用的具體案例。 它同時提供 Rendering 與 Display 所需的介面，也會經過 Mesa、window system、Linux DRM／KMS、guest driver、device model 與 host renderer。 讀者可以沿著同一組 resources、commands、buffers 與 fences，觀察各個 owner 如何完成自己負責的工作
+
+每篇核心文章會先說明該 owner 提供的通用架構，再沿 virtio-gpu 固定組態追蹤一條代表性路徑：
+
+- Mesa／OpenGL 使用 VirGL driver 說明 OpenGL work 如何變成虛擬 GPU commands
+- Linux DRM／KMS 使用 `virtio_gpu` driver 說明 render submission 與 virtual display state 如何經過 DRM core
+- X11／Xorg 使用 modesetting、glamor、DRI3 與 Present，把 application image 寫進 virtio-gpu scanout storage
+- Wayland／compositor 使用 virtio-gpu DRM device 作為 display backend 範例，說明 client buffer、composition 與 output publication
+- Mesa／Vulkan 使用 Venus 說明 Vulkan commands 與 WSI image 如何進入 virtio-gpu 路徑
+- virtio-gpu 專篇再完整展開 2D／3D protocol、Linux guest driver、VMM device model、virglrenderer 與 host display backend
+
+Virtio-gpu 在其餘五篇核心文章中，是連接該篇 owner 與下一層的代表性案例。 第四篇則完整分析 virtio-gpu 內部。 這項分工可以維持共同主線，也能避免每篇都重複介紹相同的 device probe、resource lifecycle 與 protocol commands
+
+### 第四篇以 Virtio 1.4 建立完整的 protocol 基礎
+
+第四篇不會直接從 GPU commands 開始。 要知道 Linux `virtio_gpu` driver 與 device model 如何交換 requests，讀者必須先理解所有 virtio devices 共用的 device model、初始化流程、virtqueue 與 transport。 因此本文會以 [Virtio 1.4 specification](https://docs.oasis-open.org/virtio/virtio/v1.4/virtio-v1.4.html) 作為 protocol coverage 的基準，依序納入下列內容：
+
+| Virtio 1.4 範圍 | 在第四篇回答的問題 |
+| --- | --- |
+| Chapter 2, Basic Facilities of a Virtio Device | Device status、feature bits、notifications、reset、device configuration、split／packed virtqueues、driver notifications、shared memory regions、object export、device groups、administration virtqueues 與 device parts 如何組成共通 device model |
+| Chapter 3, General Initialization And Device Operation | Driver 如何從辨識裝置、協商 features、建立 queues 走到 `DRIVER_OK`，裝置運作期間如何回報 configuration change，最後如何 cleanup、reset 與 suspend |
+| Chapter 4, Virtio Transport Options | PCI、MMIO 與 Channel I/O 如何將相同的 virtio device model 映射到不同 bus／transport。 三種 transport 都會說明，固定的 semu／RISC-V 主線則沿 virtio-mmio 原始程式碼展開 |
+| Section 5.7, GPU Device | Device ID、controlq／cursorq、feature bits、device configuration、initialization、2D／3D operations 與 VGA compatibility 如何把共通 virtio model 具體化成 virtio-gpu |
+
+這四個範圍中的每個 subsection 都要進入 coverage ledger。 每一筆會記錄該 subsection 定義的 object 或 requirement、它要解決的問題、固定組態是否使用，以及對應的 Linux／semu／QEMU 實作位置。 固定組態沒有使用的 optional facility 仍會交代其角色與未進入主線的原因，不能因為沒有對應 callgraph 就從文章省略
+
+Specification 的章節順序只用來檢查內容是否完整，不會直接成為正文目錄。 正文仍會沿固定案例的執行順序前進：transport 先讓 Linux 找到 device，driver 再更新 status、協商 features 與建立 virtqueues，最後才透過 queues 交換 virtio-gpu requests
+
+每個主要概念都要先說明當下的需求，再依序解釋 driver 使用的 object、device 看見的 wire layout、雙方如何改變 ownership／state，以及對應的 Linux 與 semu／QEMU 原始程式碼。 沒有進入固定主線的 optional clauses 則放進相鄰支線，說明它們會替換或擴充主線中的哪個步驟
+
+Specification 提供的是 driver 與 device 之間必須遵循的 protocol contract，不能單獨解釋一項 graphics operation 最後如何在 host 執行。 例如 `VIRTIO_GPU_CMD_SUBMIT_3D` 會攜帶 renderer-specific command stream，但 Virtio specification 不會定義 VirGL command payload 內的 opcodes、state objects 與 drawing semantics。 因此第四篇會在 specification boundary 之後繼續沿既有材料展開：
+
+1. Mesa VirGL encoder 如何產生 command stream
+2. Linux `virtio_gpu` driver 如何將 payload 放進 `SUBMIT_3D` 並送入 virtqueue
+3. semu／QEMU device model 如何處理 virtio-gpu command 與 renderer context／resource identity
+4. virglrenderer 如何解碼 VirGL payload、管理 renderer objects，再呼叫 host OpenGL
+5. Host completion 如何經 virglrenderer、device model、used buffer 與 interrupt 回到 guest fence
+
+第四篇會沿用目前 2D 與 3D 放在同一個 device／resource model 中比較的架構。 共通 virtio 層先建立 transport 與 request lifecycle，virtio-gpu 層再分別展開 Display 使用的 2D／scanout commands，以及 Rendering 使用的 VirGL 3D commands。 Vulkan／Venus 等其他 renderer protocol 若出現在 Virtio 1.4 的 capability 或 context 定義中，本篇會說明其 protocol 位置，完整 command semantics 則留給對應的 Mesa／Vulkan 專篇
 
 ## 共用的二維閱讀座標
 
@@ -92,7 +134,7 @@ X11 window manager、DDFW 與其他 policy controller 使用對應 owner 顏色�
 | Mesa／OpenGL | GLX／EGL setup、OpenGL frontend、shader compiler、State Tracker、Gallium 與 driver | drawable image、DRI、dma-buf、swap 與 present call | 說明 Mesa 如何把 image 與同步資訊交給 X11／Wayland，停在 window-system protocol 與 DRM UAPI |
 | Linux DRM／KMS | render node、ioctl、GEM／TTM、dma-buf、scheduler、fence 與 syncobj | BO、framebuffer、reservation 與 fence | framebuffer、plane、CRTC、encoder、connector、atomic commit、vblank 與 driver callback |
 | X11／Xorg | X11 drawing requests、Pixmap、pixman／glamor 與 Xorg 自己的 composition rendering | GLX、DRI3、Present、Window／Pixmap pair 與 Damage | X Screen、Window tree、screen Pixmap、composition、output update，停在 DRM UAPI |
-| virtio-gpu | context、3D resource、EXECBUFFER、`SUBMIT_3D` 與 virglrenderer | resource ID、fence、host resource | display information、scanout、cursor、`RESOURCE_FLUSH` 與 host display backend |
+| virtio 1.4／virtio-gpu | Virtio 共通 device model 與 transport、context、3D resource、EXECBUFFER、`SUBMIT_3D`、VirGL payload 與 virglrenderer | virtqueue request、resource ID、fence、host resource | display information、scanout、cursor、`RESOURCE_FLUSH` 與 host display backend |
 | Wayland／compositor | Client buffer consumer、compositor renderer 與 composition | `wl_surface` attach／damage／commit、linux-dmabuf 與 explicit sync | surface state、scene graph、output image 與 DRM backend handoff |
 | Mesa／Vulkan | Vulkan runtime、SPIR-V／NIR、driver、command buffer 與 queue submission | WSI surface、swapchain、acquire／present 與 semaphore | 說明 WSI 如何把 image 交給 native window system，停在 X11／Wayland 公開介面 |
 
@@ -101,18 +143,6 @@ X11 window manager、DDFW 與其他 policy controller 使用對應 owner 顏色�
 ### 專案文章
 
 專案文章使用同一張系列總圖，但會新增 project-specific 節點與 boundary
-
-#### hipEGL
-
-hipEGL 會獨立成篇，先標出它在 Mesa Gallium driver 所在的位置，再沿實際專案拆開下列工作：
-
-- EGL 或 headless application 建立 rendering environment
-- Mesa Gallium frontend 將 work 交給 `hipegl` driver
-- HIP compute renderer 在 AMD Instinct GPU 上產生 image
-- Headless 使用情境在 image、readback 或其他 consumer 結束，不必進入可見的 Display path
-- 專案目前使用 TCP 與 SDL2 viewer 時，再把 image 交給另一台主機的 Display backend
-
-正文必須區分目前已實作的路徑與 roadmap。 Gallium driver skeleton、HIP renderer、TCP transport 與 SDL2 viewer 只依目前 local checkout 的實作狀態描述
 
 #### Unified HMI／RVGPU／DDFW
 
@@ -128,16 +158,15 @@ DDFW 會以虛線 control-plane overlay 表示。 Pixel、buffer 與 command dat
 
 ### 建議篇次
 
-核心六篇沿用既有編號，專案文章新增在後面：
+核心六篇沿用既有編號，Unified HMI 專案文章新增在後面：
 
 1. Mesa／OpenGL
 2. Linux DRM／KMS
 3. X11／Xorg／GLX／DRI3／Present
-4. virtio-gpu 2D／3D
+4. Virtio 1.4／virtio-gpu 2D／3D
 5. Wayland／compositor／linux-dmabuf
 6. Mesa／Vulkan／WSI／Venus
-7. hipEGL
-8. Unified HMI／RVGPU／DDFW
+7. Unified HMI／RVGPU／DDFW
 
 篇次只表示寫作與發布順序。 每篇開頭仍要用共用總圖建立足以單獨閱讀的上下文
 
@@ -215,15 +244,18 @@ Agent 只需要交付 SVG，不要求建立或維護 Excalidraw 原始檔。 使
 
 | ID | 圖片 | 回答的問題 | 主要使用位置 |
 | --- | --- | --- | --- |
-| `G00` | Rendering／Display 全系列時間圖 | 一張 image 如何跨 owner 產生、交接、合成與發布 | 系列 PLAN 與每篇開頭 |
+| `G00` | Rendering／Display 全系列時間圖 | 一張 image 如何沿 virtio-gpu 案例跨 owner 產生、交接、合成與發布 | 系列 PLAN 與每篇開頭 |
 | `M01` | Mesa／OpenGL owner slice | OpenGL work 如何變成 application image，Mesa 如何交出 drawable buffer | Mesa／OpenGL |
 | `D01` | DRM rendering 與 KMS display | render submission、BO、fence 與 atomic display 如何在 kernel 交會 | DRM／KMS |
 | `X01` | X11 Window、Pixmap 與 screen storage | X11 metadata、application image 與 desktop image 如何區分 | X11／Xorg |
 | `W01` | Wayland surface commit 與 composition | Client buffer 如何進入 compositor，再成為 output image | Wayland／compositor |
-| `V01` | virtio-gpu Rendering／Display | 3D context/resource/submission 與 scanout/flush 如何共享 device | virtio-gpu |
+| `V01` | Virtio 共通 device lifecycle | Status、feature negotiation、queue setup、operation、reset 與 suspend 如何沿時間前進 | virtio-gpu |
+| `V02` | Virtio transport 對照 | PCI、MMIO 與 Channel I/O 如何承載相同的 device model，固定 semu 主線位於哪一條 transport | virtio-gpu |
+| `V03` | Virtqueue request lifecycle | Descriptor ownership、notification、device consumption、used buffer、interrupt 與 completion 如何循環 | virtio-gpu |
+| `V04` | virtio-gpu Rendering／Display | 3D context／resource／submission 與 scanout／flush 如何共享 device | virtio-gpu |
+| `V05` | Virtio-gpu／VirGL protocol boundary | `SUBMIT_3D` 外層 header、opaque payload、VirGL decode 與 host renderer 如何接續 | virtio-gpu |
 | `VK01` | Vulkan WSI 交接 | Swapchain image 如何從 Rendering 交給 native window system | Mesa／Vulkan |
-| `P01` | hipEGL 在整體架構中的位置 | Headless Gallium driver 與 HIP renderer 在哪裡結束 Rendering | hipEGL |
-| `P02` | Unified HMI 資料路徑與 control plane | RVGPU、Wayland 與 DDFW 各自負責哪一段 | Unified HMI |
+| `P01` | Unified HMI 資料路徑與 control plane | RVGPU、Wayland 與 DDFW 各自負責哪一段 | Unified HMI |
 
 第一批只建立能顯著改善跨層理解的圖片。 Struct layout、單一函式或已能由短 callgraph 說清楚的內容不另畫 SVG
 
@@ -287,7 +319,9 @@ Mesa 文章現有的 `glx-object-stage-*`、`glx-action-stage-*`、`glx-lifecycl
 
 ### 設計與 PLAN
 
-- 系列總 PLAN 與八篇文章 PLAN 都要列出 Rendering、交接與 Display 的責任
+- 系列總 PLAN 與七篇文章 PLAN 都要列出 Rendering、交接與 Display 的責任
+- 第四篇的 Virtio 1.4 coverage ledger 必須逐項涵蓋 Chapters 2、3、4 與 Section 5.7，不可只列出固定組態實際走過的 clauses
+- 第四篇必須明確標出 Virtio specification boundary，並在其後追蹤 VirGL payload、virglrenderer 與 host renderer，不能把 `SUBMIT_3D` 當成 3D 路徑的終點
 - 每篇文章要明確標示輸入 owner、輸出 owner 與停止點
 - 每個 project-specific 元件都要先放回總圖，再展開專案內部
 - H2／H3 搬移清冊不可有未指定新位置的條目
