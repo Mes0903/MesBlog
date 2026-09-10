@@ -310,11 +310,6 @@ export default sidebar([
           "Power-Method/",
         ],
       },
-      // {
-      //   text: "機率論",
-      //   collapsible: true,
-      //   children: ["Math/Probability/"],
-      // }
       {
         text: "離散數學",
         collapsible: true,
@@ -336,7 +331,8 @@ export default sidebar([
       "FeelWithTheHeart/",
       "AboutTranslation/",
       "TheStubborn/",
-      "2026-OSS-NA/"
+      "2026-OSS-NA/",
+      "NTNU-Transfer/"
     ],
   },
 ]);
