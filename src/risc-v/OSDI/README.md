@@ -56,31 +56,31 @@ label 可以想成幫一段位址取了一個名字，方便我們後續使用
 
 operation 總共有四種變化：
 
-+ instruction（指令）
+- instruction（指令）
     直接對應二進位的機器指令字符串
-+ pseudo-instruction（偽指令）
+- pseudo-instruction（偽指令）
     為了提高寫程式的效率，可以用一條偽指令指示組譯器產生多條實際的 instruction
-+ directive（指示/偽操作）
+- directive（指示/偽操作）
     通過類似 instruction 的形式（以 「.」 開頭），通知組譯器如何控制程式碼的產生，不對應具體的指令，是由組譯器定義的
-+ macro
+- macro
     採用 .macro/.endm 自定義的 macro
 
 ### 指令的操作對象
 
 指令的操作對象可以分兩大類：
 
-+ 暫存器
-    + RV32I 中共有 32 個通用暫存器，x0~x31，還有一些特權暫存器，其中 x0 是 0 暫存器，不可寫（但可以做為 `rd`），讀出來的值永遠為 0
+- 暫存器
+    - RV32I 中共有 32 個通用暫存器，x0~x31，還有一些特權暫存器，其中 x0 是 0 暫存器，不可寫（但可以做為 `rd`），讀出來的值永遠為 0
       > Register x0 can be used as the destination if the result is not required.
-    + 在 RISC-V 中，Hart 在執行算術邏輯運算時操作的數據需要直接來自暫存器
-+ 記憶體
-    + Hart 可以執行在暫存器和記憶體之間的數據讀寫操作
-    + 讀寫操作使用 Byte 為基本單位尋址
-    + RV32 可以存取最多 $2^{32}$ 個 Byte 的記憶體空間
+    - 在 RISC-V 中，Hart 在執行算術邏輯運算時操作的數據需要直接來自暫存器
+- 記憶體
+    - Hart 可以執行在暫存器和記憶體之間的數據讀寫操作
+    - 讀寫操作使用 Byte 為基本單位尋址
+    - RV32 可以存取最多 $2^{32}$ 個 Byte 的記憶體空間
 
 ### 指令編碼格式
 
-![](./image/1.png)
+![（RISC-V 指令格式）](./image/riscv-instruction-formats.png)
 
 指令最後會被翻譯為機器指令，裡面的 32 bits 都有對應的意思，以 32 bits 對齊，每個 32 bits 會照上面的圖被劃分為不同的區域（field）
 
@@ -88,7 +88,7 @@ operation 總共有四種變化：
 
 對於 opcode 的部分有另一張表規定了其內容意義：
 
-![](./image/2.png)
+![（RISC-V opcode 對照表）](./image/riscv-opcode-table.png)
 
 opcode 的前兩位永遠為 11，而第 2~4 位是一組的，5~6 位是一組的，我們用一個例子來學習這個表格是怎麼看得：
 
@@ -102,21 +102,21 @@ opcode 的前兩位永遠為 11，而第 2~4 位是一組的，5~6 位是一組�
 
 RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`，則需要先將其倒反過來為：`00 95 05 b3`，寫為二進制的話為 `00000000-10010101-00000101-10110011`，到標準中查表可知此指令為 `add x11, x10, x9`
 
-![](./image/3.png)
+![（RISC-V opcode 範例）](./image/riscv-opcode-example.png)
 
 指令格式有 6 種，也就是第一張圖裡面的 R、I、S 那些：
 
-+ R-type (register)
+- R-type (register)
     每條指令中有三個 fields，用於指定 3 個暫存器參數
-+ I-type (Immediate)
+- I-type (Immediate)
     每條指令除了帶有兩個暫存器參數以外，還帶有一個常數參數（寬度為 12 bits）
-+ S-type (Store)
+- S-type (Store)
     每條指令除了帶有兩個暫存器參數以外，還帶有一個常數參數（寬度為 12 bits，但 fields 的組成方式不同於 I-type）
-+ B-type (Branch)
+- B-type (Branch)
     每條指令除了帶有兩個暫存器參數外，還有一個常數參數（寬度為 12 bits，但取值為 2 的倍數）
-+ U-type (Upper)
+- U-type (Upper)
     每條指令含有一個暫存器參數和一個常數參數（寬度為 20 bits，用來表示一個常數的高 20 位）
-+ J-type (Jump)
+- J-type (Jump)
     每條指令內有一個暫存器參數和一個常數參數（寬度為 20 bits）
 
 ### 算術運算指令（Arithmetic Instruction）
@@ -129,14 +129,14 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：R-type
 
-![](./image/4.png)
+![（R-type 指令格式）](./image/riscv-r-type-format.png)
 
 對應意義：
-+ opcode(7)：0110011 (OP)
-+ funct3 為 000，funct7 為 0000000
-+ rs1（5）：第一個 operand（source register 1）
-+ rs2（5）：第二個 operand（source register 2）
-+ rd（5）：destination register，用於存放加出來的結果
+- opcode(7)：0110011 (OP)
+- funct3 為 000，funct7 為 0000000
+- rs1（5）：第一個 operand（source register 1）
+- rs2（5）：第二個 operand（source register 2）
+- rd（5）：destination register，用於存放加出來的結果
 
 #### SUB
 
@@ -154,15 +154,15 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：I-type
 
-![](./image/5.png)
+![（I-type 指令格式）](./image/riscv-i-type-format.png)
 
 對應意義：
 
-+ opcode (7)：0b0010011 (OP-IMM)
-+ funct3（3）：和 opcode 一起決定最終指令
-+ rs1（5）：第一個 opecrand（source register 1）
-+ rd（5）：destination register，用於存放加出來的結果
-+ imm（12）：immediate，常數，要注意只有 12 bits，所以範圍是有限的
+- opcode (7)：0b0010011 (OP-IMM)
+- funct3（3）：和 opcode 一起決定最終指令
+- rs1（5）：第一個 opecrand（source register 1）
+- rd（5）：destination register，用於存放加出來的結果
+- imm（12）：immediate，常數，要注意只有 12 bits，所以範圍是有限的
 
 在運算前 `imm` 會被 sign-extension 為一個 32 位的數，可以表達的範圍為 $-2^{11} ~ 2^{11}$，也就是 $[-2048, 2047)$
 
@@ -178,12 +178,12 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：U-type
 
-![](./image/6.png)
+![（U-type 指令格式）](./image/riscv-u-type-format.png)
 
 對應意義：
-+ opcode (7)：0b0110111 (LUI)
-+ rd（5）：destination register，用於存放加出來的結果
-+ imm（20）：immediate，常數
+- opcode (7)：0b0110111 (LUI)
+- rd（5）：destination register，用於存放加出來的結果
+- imm（20）：immediate，常數
 
 假設我們今天要載入 `0x12345678`，那步驟為：
 
@@ -569,7 +569,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：J-type
 > 例：jal x1, label
 
-![](./image/7.png)
+![（J-type 指令格式）](./image/riscv-j-type-format.png)
 
 調用函式時地址的計算方法為先對 20 bits 寬的 `IMM` 乘以 2，然後進行 sign-extension，最後與 PC 相加，因此跳躍的範圍是以 PC 為基準，上下加減 1 MB
 
@@ -582,7 +582,7 @@ JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實�
 格式：I-type
 > 例：`jalr x0, 0(x5)`
 
-![](./image/8.png)
+![（JALR 指令格式）](./image/riscv-jalr-format.png)
 
 調用函式時地址的計算方法為先對 12 bits 寬的 `IMM` 進行 sign-extension，然後將其與 RS1 的值相加，得到最終的結果後將其最低位設為 0（用以確保對齊），因此跳躍的範圍是以 RS1 為基準，上下加減 2KB
 
@@ -598,39 +598,39 @@ RISC-V 中，每一個 privilege level 都對應到一組特定的暫存器，�
 
 首先要看的是 Machine 模式下的 CSR 列表，因為 CPU 一上電時默認是在 machine 模式下，有點類似 x86 的 real mode：
 
-![](./image/1.png)
+![（Machine 模式的 CSR 清單）](./image/machine-csr-list.png)
 
 可以看見前面有與 Hart ID 相關的暫存器，像是 `mvendorid`、`marchid` 等，那接下來要看怎麼讀：
 
-![](./image/2.png)
+![（CSR 指令格式）](./image/csr-instruction-formats.png)
 
 我們關心的是前兩個，先看 CSRRW（Atomic Read/Write CSR）：
 
-+ CSRRW
-    + 會先讀出 CSR 中的值，將其按 XLEN 位的寬度進行 zero-extensio 後寫入 RD，然後 RS1 中的值寫入 CSR
-    + 為原子操作（atomically）
-    + 如果 RD 是 x0，則不讀 CSR
-    + 語法：`CSRRW RD, CSR, RS1`
-    + 例子：`csrrw t6, mscratch, t6` 為 `t6 = mscratch; mscratch = t6`（交換值）
-+ CSRW
-    + 由 CSRRW 來的 pseudo-instruction
-    + 用來寫 CSR
-    + 語法為：`csrw csr, rs`
-    + 等價指令為：`csrrw x0, csr, rs`
+- CSRRW
+    - 會先讀出 CSR 中的值，將其按 XLEN 位的寬度進行 zero-extensio 後寫入 RD，然後 RS1 中的值寫入 CSR
+    - 為原子操作（atomically）
+    - 如果 RD 是 x0，則不讀 CSR
+    - 語法：`CSRRW RD, CSR, RS1`
+    - 例子：`csrrw t6, mscratch, t6` 為 `t6 = mscratch; mscratch = t6`（交換值）
+- CSRW
+    - 由 CSRRW 來的 pseudo-instruction
+    - 用來寫 CSR
+    - 語法為：`csrw csr, rs`
+    - 等價指令為：`csrrw x0, csr, rs`
 
 接下來是 CSRRS（Atomic Read and Set Bits in CSR）：
 
-+ CSRRS
-    + 會先讀出 CSR 中的值，將其按 XLEN 位的寬度進行 zero-extensio 後寫入 RD，然後逐位檢查 RS1 中的值，如果某一位為 1 則將 CSR 的對應位置設為 1，否則保持不變
-    + 為原子操作（atomically）
-    + 語法為：`CSRRS RD, CSR, RS1`
-    + 例子：`csrrs x5, mie, x6` 為 `x5 = mie; mie |= x6` （做 mask）
+- CSRRS
+    - 會先讀出 CSR 中的值，將其按 XLEN 位的寬度進行 zero-extensio 後寫入 RD，然後逐位檢查 RS1 中的值，如果某一位為 1 則將 CSR 的對應位置設為 1，否則保持不變
+    - 為原子操作（atomically）
+    - 語法為：`CSRRS RD, CSR, RS1`
+    - 例子：`csrrs x5, mie, x6` 為 `x5 = mie; mie |= x6` （做 mask）
 
-+ CSRR
-    + 由 CSRRS 來的 pseudo-instruction
-    + 用來讀取 CSR
-    + 與法為 `csrr rd, csr`
-    + 等價指令為：`csrrs rd, csr, x0`
+- CSRR
+    - 由 CSRRS 來的 pseudo-instruction
+    - 用來讀取 CSR
+    - 與法為 `csrr rd, csr`
+    - 等價指令為：`csrrs rd, csr, x0`
 
 所以一開始就先去讀 machine 模式下存有 Hart ID 的暫存器，這個暫存器為 `mhartid`，它包含了運行當前指令的 Hart 的 ID
 
@@ -693,16 +693,16 @@ UART 全名為 Universal Asynchronous Receiver and Transmitter，是一種 Seria
 
 這邊簡單看一下 UART 的通訊協議：
 
-+ 空閒位：空閒時處於高電位
-+ 起始位：開始發送時發送方（TX） 要先發出一個低電位（0）來表示傳輸字符的開始
-+ 數據位：起始位之後就是要傳輸的數據，數據長度（word length） 可以事 5/6/7/8/9 位，構成一個字符，一般是 8 位。先發送最低位，最後發送最高位
-+ 奇偶檢查位（parity）：分幾種檢查方式：
-    + 無檢查（no parity）
-    + 奇檢驗（odd parity）：如果數據中 1 的數目為偶數，則檢驗位為 1，反之為 0
-    + 偶檢驗（even parity）：如果數據中 1 的數目是偶數，則檢驗位為 0，反之為 1
-    + mark parity：檢驗位始終為 1
-    + space parity：檢驗位始終為 0
-+ 停止位：數據結束的標誌，可以是 1 位、1.5 位、2 位的高電位
+- 空閒位：空閒時處於高電位
+- 起始位：開始發送時發送方（TX） 要先發出一個低電位（0）來表示傳輸字符的開始
+- 數據位：起始位之後就是要傳輸的數據，數據長度（word length） 可以事 5/6/7/8/9 位，構成一個字符，一般是 8 位。先發送最低位，最後發送最高位
+- 奇偶檢查位（parity）：分幾種檢查方式：
+    - 無檢查（no parity）
+    - 奇檢驗（odd parity）：如果數據中 1 的數目為偶數，則檢驗位為 1，反之為 0
+    - 偶檢驗（even parity）：如果數據中 1 的數目是偶數，則檢驗位為 0，反之為 1
+    - mark parity：檢驗位始終為 1
+    - space parity：檢驗位始終為 0
+- 停止位：數據結束的標誌，可以是 1 位、1.5 位、2 位的高電位
 
 在 QEMU 中 UART 記憶體映射的起始位址在 `0x10000000L`，總共提供了 8 個暫存器，每個暫存器是 8 bits 的，根據起始位址我們可以設定使用暫存器的 macro：
 
@@ -889,7 +889,7 @@ extern uint32_t HEAP_SIZE;
 
 這邊使用陣列來實作 page 的管理：
 
-![](./image/3.png)
+![（頁面管理陣列）](./image/page-management-array.png)
 
 前方紅藍的部分為管理對應 page 狀態的區域，後方白色的是一個一個的 page
 
@@ -1082,10 +1082,10 @@ struct context {
 
 多任務可以分成兩種實現方式：協作式與搶占式的多任務，兩者的差別在於交換 context 的方法不一樣
 
-+ 協作式多任務（Cooperative Multitasking）
+- 協作式多任務（Cooperative Multitasking）
     目前正在執行的 task 會主動放棄 Hart，呼叫下一個 task，讓下一個 task 來使用 CPU
     
-+ 搶占式多任務（Preemptive Multitasking）
+- 搶占式多任務（Preemptive Multitasking）
     由 OS 來決定哪個 task 來使用 CPU，OS 可以剝奪當前 task 對處理器的使用，將處理器交給其他的 task
     
 目前主流的 OS 都是使用 Preemtive Multitasking，早期的 OS 才會使用 Cooperative Multitasking 這種方法
@@ -1098,13 +1098,13 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 
 前面提到了一個 task 的本質是一堆指令的序列，假設這邊有 Task A 和 B，在 Cooperative Multitasking 的情況下他們會長這樣：
 
-![](./image/4.png)
+![（協作式多工的任務指令序列）](./image/cooperative-task-sequences.png)
 
 可以看見兩個 Task 內都是由指令序列組成的（Instruction i），中間有一個指令是 `call switch_to`，這就是讓下一個 task 來使用 CPU 的 function
 
 那我們就來看一下這個 `switch_to` 裡面到底做了什麼：
 
-![](./image/5.png)
+![（協作式任務切換流程）](./image/cooperative-switch-overview.png)
 
 步驟是：
 
@@ -1130,19 +1130,19 @@ Cooperative Multitasking 有很大的壞處是「放棄 Hart，讓下一個 task
 
 前面有提到 `call` 這個指令執行的時候是會把下一條指令的位址放到 ra 裡面去的，因此 `i+M` 會被放到 ra 裡面去：
 
-![](./image/6.png)
+![（呼叫 switch_to 後的返回位址）](./image/cooperative-switch-call.png)
 
 接下來就可以開始執行 `switch_to` 的內容，根據前面的步驟，第一步是儲存當前的 context，會將剛剛 `struct context` 內列出的暫存器內容全部從 CPU 儲存起來到 context A 的記憶體中
 
-![](./image/7.png)
+![（協作式切換時儲存任務狀態）](./image/cooperative-switch-save-context.png)
 
 下一步是切換 context，改變 CPU 的 ra 就可以了：
 
-![](./image/8.png)
+![（協作式切換時變更任務狀態）](./image/cooperative-switch-change-context.png)
 
 下一步是 restore，也就是要載入 Task B 的暫存器內容：
 
-![](./image/9.png)
+![（協作式切換時還原任務狀態）](./image/cooperative-switch-restore-context.png)
 
 最後是 return，前面有提到 `ret` 這個指令會跳回到 `ra` 暫存器儲存的記憶體位址，這邊已經被我們改成 Instruction j 了，因此就會切換到 Task B 了
 
@@ -1281,112 +1281,113 @@ csrw    mscratch, a0
 
 因為我們這邊 OS 是寫在 Machine mode 下的，因此就看 Machine mode 下的 CSR：
 
-![](./image/10.png)
+![（Machine 模式的 Trap CSR）](./image/machine-trap-csr-list.png)
 
 然後我們把跟 Trap 有關的整理出來：
 
-+ mtvec (Machine Trap-Vector Base-Address)
-    + 保存發生異常時楚利器需要跳轉到的位址
-+ mepc (Machine Exception Program Counter)
-    + 當 trap 發生時，Hart 會將發生 trap 所對應的指令的位址（pc） 保存在 mepc 中
-+ mcause (Machine Cause)
-    + 當 trap 發生時，Hart 會設置此暫存器通知我們 trap 發生的原因
-+ mtval (Machine Trap Value)
-    + 保存了 exception 發生時的附加信息，如：
-        + 訪問位址出吋時的位址信息
-        + 執行非法指令時的指令本身
-    + 對於其他異常，暫存器的值為 0
-+ mstatus (Machine Status)
-    + 用於跟蹤和控制 Hart 的當前操作狀態
-        + 包括打開和關閉全局中斷
-+ mscratch (Machine Scratch)
-    + Machine mode 下專用的暫存器，我們可以自己定義其用法
-        + 如使用此暫存器保存當前 Hart 上運行的 task 的 context 的位址
-+ mie (Machine Interrupt Enable)
-    + 用於進一步控制（打開和關閉） software interrupt、timer interrupt、external interrupt
-+ mip (Machine Interrupt Pending)
-    + 列出目前已發生等待處理的中斷
+- mtvec (Machine Trap-Vector Base-Address)
+    - 保存發生異常時楚利器需要跳轉到的位址
+- mepc (Machine Exception Program Counter)
+    - 當 trap 發生時，Hart 會將發生 trap 所對應的指令的位址（pc） 保存在 mepc 中
+- mcause (Machine Cause)
+    - 當 trap 發生時，Hart 會設置此暫存器通知我們 trap 發生的原因
+- mtval (Machine Trap Value)
+    - 保存了 exception 發生時的附加信息，如：
+        - 訪問位址出吋時的位址信息
+        - 執行非法指令時的指令本身
+    - 對於其他異常，暫存器的值為 0
+- mstatus (Machine Status)
+    - 用於跟蹤和控制 Hart 的當前操作狀態
+        - 包括打開和關閉全局中斷
+- mscratch (Machine Scratch)
+    - Machine mode 下專用的暫存器，我們可以自己定義其用法
+        - 如使用此暫存器保存當前 Hart 上運行的 task 的 context 的位址
+- mie (Machine Interrupt Enable)
+    - 用於進一步控制（打開和關閉） software interrupt、timer interrupt、external interrupt
+- mip (Machine Interrupt Pending)
+    - 列出目前已發生等待處理的中斷
 
 現在看不懂沒關係，後面會慢慢用到，接下來我們先看一下每個暫存器對應的 bit 的意義
 
 #### mtvec (Machine Trap-Vector Base-Address)
 
-![](./image/11.png)
+![（mtvec 暫存器欄位）](./image/mtvec-register.png)
 
 這裡 WARL 的意思是「Write Any Values，Reads Legal Values」，也就是說這個地方可以隨便我們寫的，而讀出來的值都是合法的
 
-+ Base
-    + trap 入口函式的 base address，必須保證四字節對齊
-    + 這個位址是我們可以自己填的
-+ MODE
-    + 進一步用於控制入口函式的位址配置方式
-        + Direct：所有的 exception 和 interrupt 發生後，PC 都跳轉到 BASE 指定的位址處
-        + Vectored：exception 處理方式同 Direct；但 interrupt 的入口地址以 array 方式排列
+- Base
+    - trap 入口函式的 base address，必須保證四字節對齊
+    - 這個位址是我們可以自己填的
+- MODE
+    - 進一步用於控制入口函式的位址配置方式
+        - Direct：所有的 exception 和 interrupt 發生後，PC 都跳轉到 BASE 指定的位址處
+        - Vectored：exception 處理方式同 Direct；但 interrupt 的入口地址以 array 方式排列
 
-    ![](./image/12.png)
+    ![（mtvec 模式值）](./image/mtvec-mode-values.png)
 
 #### mepc (Machine Exception Program Counter)
 
-![](./image/13.png)
+![（mepc 暫存器欄位）](./image/mepc-register.png)
 
-+ 當 trap 發生時，PC 會被替換為 mtvec 設定的位址，同時 Hart 會將 mepc 設為目前指令或下一條指令的位址，當我們需要退出 trap 時可以呼叫特殊的 mret 指令，該指令會將 mepc 中的值還原為 PC 中（實現返回的效果）
+- 當 trap 發生時，PC 會被替換為 mtvec 設定的位址，同時 Hart 會將 mepc 設為目前指令或下一條指令的位址，當我們需要退出 trap 時可以呼叫特殊的 mret 指令，該指令會將 mepc 中的值還原為 PC 中（實現返回的效果）
 
-+ 在處理 trap 的程式中我們可以修改 mepc 的值達到改變 mret 回傳位址的目的
+- 在處理 trap 的程式中我們可以修改 mepc 的值達到改變 mret 回傳位址的目的
 
 #### mcause (Machine Cause)
 
-![](./image/14.png)
+![（mcause 暫存器欄位）](./image/mcause-register.png)
 
 這裡 WLRL 的意思是「Write/Read Only Legal Values」，表示我們在讀寫的時候需要確保它的值是合法的
 
-+ 當 trap 發生時，hart 會設定該暫存器通知我們 trap 發生的原因
-+ 最高位元 Interrupt 為 1 時標識了目前 trap 為 interrupt，否則是  exception
-+ 剩餘的 Exception Code 用來標識具體的 interrupt 或 exception 的種類
-+ spec 內有附一張表格
-    ![](./image/15.png)
+- 當 trap 發生時，hart 會設定該暫存器通知我們 trap 發生的原因
+- 最高位元 Interrupt 為 1 時標識了目前 trap 為 interrupt，否則是  exception
+- 剩餘的 Exception Code 用來標識具體的 interrupt 或 exception 的種類
+- spec 內有附一張表格
+
+    ![（mcause 的中斷與例外代碼）](./image/mcause-codes.png)
 
 #### mtval (Machine Trap Value)
 
 用來輔助 mcause 用的暫存器
 
-![](./image/16.png)
+![（mtval 暫存器欄位）](./image/mtval-register.png)
 
-+ 當 trap 發生時，除了透過 mcause 可以取得 exception 的種類 code 值外，hart 還提供了 mtval 來提供 exception 的其他資訊來輔助我們執行更進一步的操作
+- 當 trap 發生時，除了透過 mcause 可以取得 exception 的種類 code 值外，hart 還提供了 mtval 來提供 exception 的其他資訊來輔助我們執行更進一步的操作
 
-+ 具體的輔助資訊由特定的硬體實作定義，RISC-V 規範沒有定義具體的值。 但規範定義了一些行為，譬如訪問地址出錯時的地址資訊、或執行非法指令時的指令本身等
+- 具體的輔助資訊由特定的硬體實作定義，RISC-V 規範沒有定義具體的值。 但規範定義了一些行為，譬如訪問地址出錯時的地址資訊、或執行非法指令時的指令本身等
 
 #### mstatus (Machine Status)
 
 用來描述一些狀態信息的，分得很細
 
-![](./image/17.png)
+![（mstatus 暫存器欄位）](./image/mstatus-register.png)
 
 WPRL 的意思是「Reserved Writes Preserve Values，Reads Ignore Values」，也就是說寫是保留值，忽略讀，簡單來說就是盡量不要去動它 
 
 這邊老師挑了比較會用到的來講，分別是第 0~12 bit，其他部分涉及到記憶體訪問的權限、virtual memory 的控制等，暫時先不去管它
 
-+ xIE（x=M/S/U）
-    + 第 0~3 bit
-    + 分別用於開啟（1）或關閉（0）M/S/U 模式下的全域中斷。 當 trap 發生時， hart 會自動將 xIE 設定為 0
-+ xPIE（x=M/S/U）
-    + 第 4~7 bit
-    + 當 trap 發生時用於保存trap 發生之前的xIE值
-+ xPP（x=M/S）
-    + 第 8~12 bit 
-    + 當 trap 發生時用於保存trap 發生之前的權限等級值
-    + 注意沒有 UPP
-        + 因為異常發生時通常都是要從低權限往高權限跳，或是維持原權限，因此不需要 UPP
+- xIE（x=M/S/U）
+    - 第 0~3 bit
+    - 分別用於開啟（1）或關閉（0）M/S/U 模式下的全域中斷。 當 trap 發生時， hart 會自動將 xIE 設定為 0
+- xPIE（x=M/S/U）
+    - 第 4~7 bit
+    - 當 trap 發生時用於保存trap 發生之前的xIE值
+- xPP（x=M/S）
+    - 第 8~12 bit
+    - 當 trap 發生時用於保存trap 發生之前的權限等級值
+    - 注意沒有 UPP
+        - 因為異常發生時通常都是要從低權限往高權限跳，或是維持原權限，因此不需要 UPP
 
 ### Trap 處理流程
 
 Trap 處理的流程主要如下
 
 1. Trap 初始化
-    + 如設置入口位址
+    - 如設置入口位址
 2. Trap 的上半部（Top Half）
-    + 發生在硬體部份，不受我們控制
+    - 發生在硬體部份，不受我們控制
 3. Trap 的下半部（Bottom Half）
-    + 軟體部分，可由我們控制
+    - 軟體部分，可由我們控制
 4. 從 Trap 返回
 
 那接下來就細看一下這四個部分
@@ -1414,10 +1415,11 @@ void trap_init()
 雖然我們沒辦法對這部分做更動，但還是可以看一下硬體部分具體做了什麼
 
 1. 把 mstatus 的 MIE 值複製到 MPIE 中，清除 mstatus 中的 MIE 標誌位，效果是中斷被禁止
-    + 前面有提到 MIE 代表中斷的開或關
-    + MIE 清除的話代表填 0，也就是說中斷目前是被關掉的狀態
+    - 前面有提到 MIE 代表中斷的開或關
+    - MIE 清除的話代表填 0，也就是說中斷目前是被關掉的狀態
 2. 設定 mepc，同時 PC 被設定為 mtvec；需要注意的是，對於exception，mepc 指向導致異常的指令；對於 interrupt，它指向被中斷的指令的下一條指令的位置
-    ![](./image/18.png)
+
+    ![（Trap 上半部的處理流程）](./image/trap-top-half.png)
 3. 根據 trap 的種類設定 mcause，並根據需要為 mtval 設定附加資訊
 4. 將 trap 發生之前的權限模式保存在 mstatus 的 MPP 域中，再把 hart 權限模式改為 M（也就是說無論在任何 Level 下觸發 trap，hart 首先切換到 Machine 模式）
 
@@ -1426,10 +1428,10 @@ void trap_init()
 這邊寫的是一段異常的處理函式，可以把過程總結為五步：
 
 1. 保存 context
-    + 利用 mscratch
+    - 利用 mscratch
 2. 呼叫 C 語言的 trap handler
 3. 從 trap handler 函式返回
-    + mepc 的值可能需要調整
+    - mepc 的值可能需要調整
 4. 恢復上下文
 5. 利用 MRET 指令返回到 trap 前的狀態
 
@@ -1513,20 +1515,20 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 從 trap 返回的話我們需要 MRET 這個指令
 
-![](./image/19.png)
+![（MRET 指令格式）](./image/mret-instruction-format.png)
 
-+ 針對不同權限等級下如何退出 trap 有各自的回傳指令 xRET（x = M/S/U）
-    + 我們這裡用的是 MRET
+- 針對不同權限等級下如何退出 trap 有各自的回傳指令 xRET（x = M/S/U）
+    - 我們這裡用的是 MRET
 
-+ 以在 M 模式下執行 mret 指令為例，會執行以下操作：
-    + 將 Hart 的權限等級設為 `mstatus.MPP`
-        + 也就是回復原本的權限
-    + `mstatus.MPP` 設為 U（如果 hart 不支援U 則為M）
-    + `mstatus.MIE` 設為 `mstatus.MPIE`
-        + 也就是回復中斷的開關
-    + `mstatus.MPIE` 設為 1
-    + pc 設為 mepc
-        + 也就是離開 trap
+- 以在 M 模式下執行 mret 指令為例，會執行以下操作：
+    - 將 Hart 的權限等級設為 `mstatus.MPP`
+        - 也就是回復原本的權限
+    - `mstatus.MPP` 設為 U（如果 hart 不支援U 則為M）
+    - `mstatus.MIE` 設為 `mstatus.MPIE`
+        - 也就是回復中斷的開關
+    - `mstatus.MPIE` 設為 1
+    - pc 設為 mepc
+        - 也就是離開 trap
 
 ### Interrupt
 
@@ -1534,15 +1536,15 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 中斷有分兩種：
 
-+ 本地中斷（Local Interrupt）
-    + software interrupt
-    + timer interrupt
-+ 全局中斷（Global Interrupt）
-    + externel interrupt
+- 本地中斷（Local Interrupt）
+    - software interrupt
+    - timer interrupt
+- 全局中斷（Global Interrupt）
+    - externel interrupt
 
 所以我們也可以說有三種：software、timer 與 externel；每一種下面都會再分 User、Supervisor、Reserved 與 Machine：
 
-![](./image/20.png)
+![（中斷與例外代碼）](./image/interrupt-cause-codes.png)
 
 #### mie 與 mip
 
@@ -1550,21 +1552,21 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 mie 用於控制 Interrupt 的開或關；前面有提到一個 mstatus，那個是控制全局的，一旦關閉，不管是哪種中斷都無法使用，而 mie 是可以設置要單獨關閉 software interrupt 這類的操作：
 
-![](./image/21.png)
+![（mie 暫存器欄位）](./image/mie-register.png)
 
 如果 mie 是用來寫的，那 mip 你可以認為就是拿來讀的，透過讀對應的 bit，我們可以得知當前發生了哪種中斷：
 
-![](./image/22.png)
+![（mip 暫存器欄位）](./image/mip-register.png)
 
 #### PLIC
 
 外部中斷代表的是外部設備所產生的中斷，通常一個 Hart 會有一根引腳來傳遞外部中斷的訊號，然而外部設備很多，那該怎麼辦呢?
 
-![](./image/23.png)
+![（Hart 的中斷輸入）](./image/hart-interrupt-inputs.png)
 
 此時我們就引入了一個叫做 PLIC 的設備，全名為 Platform-Level Interrupt Controller，類似一個 hub：
 
-![](./image/24.png)
+![（PLIC 與 Hart 的連接）](./image/plic-to-harts.png)
 
 左邊是很多不同的外設，它們全都會接到 PLIC 上；而 PLIC 到每一個 Hart 只會接一根引腳
 
@@ -1572,7 +1574,7 @@ mie 用於控制 Interrupt 的開或關；前面有提到一個 mstatus，那個
 
 左邊的這些外設我們將其稱為中斷源：
 
-![](./image/25.png)
+![（PLIC 中斷源）](./image/plic-interrupt-sources.png)
 
 每一個外設我們會給他一個編號，標準內定義了 53 個中斷源，0 號預留不用，因此實際有效的中斷源為 1~53；前面我們有用到 UART，UART 的 id 為 10，下面是 QEMU 的實作：
 
@@ -1621,80 +1623,80 @@ static const MemMapEntry virt_memmap[] = {
 
 至於 PLIC 有哪些 Programmable 的暫存器呢? 剛剛有提到 PLIC 的功能是根據中斷的優先級來篩選一個中斷進來，因此每個中斷源的優先級我們是可以單獨進行設定的：
 
-+ 可以透過 Priority 這個暫存器來設定，他 MMIO 的記憶體映射位址為 `Base + (InterruptID*4)`
-+ 設定的優先級的的值會是一個數字，介於 0~7 之間
-    + 0 表示禁用此中斷源
-    + 1 最低
-    + 7 最高
-+ 如果優先級相同，則根據中斷源的 ID 篩選，ID 較小的優先值較高
+- 可以透過 Priority 這個暫存器來設定，他 MMIO 的記憶體映射位址為 `Base + (InterruptID*4)`
+- 設定的優先級的的值會是一個數字，介於 0~7 之間
+    - 0 表示禁用此中斷源
+    - 1 最低
+    - 7 最高
+- 如果優先級相同，則根據中斷源的 ID 篩選，ID 較小的優先值較高
 
 #### Pending
 
 下一個暫存器是 Pending，這個暫存器可以讓我們知道某一個中斷源是不是發生了
 
-+ 每個 PLIC 有兩個 Pending
-+ 一個 Pending 有 32 bit
-    + 每一個 bit 代表一個中斷源
-    + 0 表示沒有中斷發生，1 表示該中斷源發生了中斷
-+ MMIO 的記憶體映射位址為 `BASE + 0x1000 + (InterruptID/32)`
-+ Pending 暫存器可讀也可寫
-    + 可以利用 claim 清 0
-+ 第一個 Pending 的第 0 位永遠為 0
+- 每個 PLIC 有兩個 Pending
+- 一個 Pending 有 32 bit
+    - 每一個 bit 代表一個中斷源
+    - 0 表示沒有中斷發生，1 表示該中斷源發生了中斷
+- MMIO 的記憶體映射位址為 `BASE + 0x1000 + (InterruptID/32)`
+- Pending 暫存器可讀也可寫
+    - 可以利用 claim 清 0
+- 第一個 Pending 的第 0 位永遠為 0
 
 #### Enable
 
 我們也可以將中斷源設為關閉的，使用的是 Enable 暫存器
 
-+ 一個 Hart 有兩個 Enable 暫存器
-    + 用於針對該 Hart 啟動或關閉某路的中斷源
-+ 一個 Enable 有 32 bit
-    + 每一個 bit 代表一個中斷源
-    + 1 表示 enable 此中斷源，反之則表示關閉了該中斷源
-+ MMIO 的記憶體映射位址為 `BASE + 0x2000 + (hart*0x80)`
+- 一個 Hart 有兩個 Enable 暫存器
+    - 用於針對該 Hart 啟動或關閉某路的中斷源
+- 一個 Enable 有 32 bit
+    - 每一個 bit 代表一個中斷源
+    - 1 表示 enable 此中斷源，反之則表示關閉了該中斷源
+- MMIO 的記憶體映射位址為 `BASE + 0x2000 + (hart*0x80)`
 
 #### Threshold
 
 用來針對某個 Hart 設置中斷源優先級的閥值，如果優先級小於等於這個閥值的話，就算發生了中斷也會被扔掉
 
-+ 每個 Hart 有一個 Threshold
-+ 設為 0 表示接受所有中斷源上發生的中斷
-+ 設為 7 表示丟棄所有中斷源上的中斷
-+ MMIO 的記憶體映射位址為 `BASE + 0x200000 + (hart*0x1000)`
+- 每個 Hart 有一個 Threshold
+- 設為 0 表示接受所有中斷源上發生的中斷
+- 設為 7 表示丟棄所有中斷源上的中斷
+- MMIO 的記憶體映射位址為 `BASE + 0x200000 + (hart*0x1000)`
 
 #### Claim/Complete
 
-+ Claim 和 Complete 是同一個暫存器，每個 Hart 有一個
-+ 對這個暫存器進行讀操作稱為 Claim，即獲取當前發生的最高優先級的中斷源 ID
-    + Claim 成功後會清除對應的 Pending 位
-+ 對這個暫存器進行寫操作稱為 Complete，用來通知 PLIC 對該路中斷的處理已經結束
+- Claim 和 Complete 是同一個暫存器，每個 Hart 有一個
+- 對這個暫存器進行讀操作稱為 Claim，即獲取當前發生的最高優先級的中斷源 ID
+    - Claim 成功後會清除對應的 Pending 位
+- 對這個暫存器進行寫操作稱為 Complete，用來通知 PLIC 對該路中斷的處理已經結束
 
 #### PLIC 操作流程
 
 這邊通過一張圖來了解一下設置這些暫存器到底起到了什麼作用
 
-![](./image/26.png)
+![（PLIC 運作概觀）](./image/plic-overview.png)
 
 左方的這個大正方形是一個 PLIC，上面接了兩個中斷源進來，右邊接了兩個 CPU 出去
 
 這個是用來設置中斷源優先級的：
 
-![](./image/27.png)
+![（設定 PLIC 中斷優先級）](./image/plic-priority-setting.png)
 
 這個是用來設定是否要啟用此中斷源的：
 
-![](./image/28.png)
+![（啟用 PLIC 中斷源）](./image/plic-enable-setting.png)
 
 這個用來設定中斷源的閥值：
 
-![](./image/29.png)
+![（設定 PLIC 優先級門檻）](./image/plic-threshold-setting.png)
 
 這個是 Pending，用來判斷中斷是不是發生了：
 
-![](./image/30.png)
+![（PLIC Pending 狀態）](./image/plic-pending-state.png)
 
 這個是 Claim/Complete：
 
-![](./image/31.png)
+![（PLIC Claim 與 Complete）](./image/plic-claim-complete.png)
 
 #### UART 的例子
 
@@ -1791,7 +1793,7 @@ reg_t trap_handler(reg_t epc, reg_t cause)
 
 `cause_code` 的數字含意見下表，前面也有貼過：
 
-![](./image/32.png)
+![（UART 範例使用的中斷代碼）](./image/uart-cause-codes.png)
 
 `external_interrupt_handler` 的定義如下：
 
@@ -1862,7 +1864,7 @@ void uart_init()
 
 一個 Hart 會有三個 Interrupt 的引腳，剛剛講的屬於 External Interrupt，這邊來講 Timer Interrupt
 
-![](./image/33.png)
+![（CLINT 的中斷線）](./image/clint-interrupt-lines.png)
 
 Timer Interrupt 屬於本地中斷，這代表他不是由外部設備發起的，而是由一個叫做 CLINT 的設備發出來的，其全名為 Core Local Interrupt，主要負責產生 software interrupt 與 timer interrupt
 
@@ -1901,18 +1903,18 @@ static const MemMapEntry virt_memmap[] = {
 
 這是一個 real-time counter，實際上就是一個由石英振盪器觸發的時鐘，會按照一個固定的頻率遞增
 
-+ 全局唯一
-+ 64 bit
-+ RESET 的時候，硬體會自動將 mtime 初始化為 0
-+ MMIO 的位址為 `BASE + 0xbff8`
+- 全局唯一
+- 64 bit
+- RESET 的時候，硬體會自動將 mtime 初始化為 0
+- MMIO 的位址為 `BASE + 0xbff8`
 
 #### mtimecmp
 
-+ timer comapre register
-+ 每個 Hart 一個
-+ 64 bit
-+ RESET 的時候硬體「不會」設定 mtimecmp 的值，需要我們手動設
-+ MMIO 的位址為 `BASE + 0x4000 + (hart*8)`
+- timer comapre register
+- 每個 Hart 一個
+- 64 bit
+- RESET 的時候硬體「不會」設定 mtimecmp 的值，需要我們手動設
+- MMIO 的位址為 `BASE + 0x4000 + (hart*8)`
 
 下面是一個簡單的 mtimecmp 設定函式：
 
@@ -1936,14 +1938,14 @@ void timer_load(int interval)
 
 其他還有一些這裡不會用到的，跟 software interrupt 相關的暫存器，這邊也一起紀錄一下
 
-+ 每個 Hart 有一個
-+ 32 bit
-    + 實際上只用到了最低位
-    + 高 31 位不能用
-+ 最低位映射到 `mip.MSIP`
-    + 當我們一寫 MSIP 的最低位時，會觸發軟中斷，`mip.MSIP` 也會自動設為 1
-        + 需要將 MSIP 再寫入 0，對中斷進行回應，否則此軟中斷會一直發生
-+ MMIO 的位址為 `BASE + (4*hart)`
+- 每個 Hart 有一個
+- 32 bit
+    - 實際上只用到了最低位
+    - 高 31 位不能用
+- 最低位映射到 `mip.MSIP`
+    - 當我們一寫 MSIP 的最低位時，會觸發軟中斷，`mip.MSIP` 也會自動設為 1
+        - 需要將 MSIP 再寫入 0，對中斷進行回應，否則此軟中斷會一直發生
+- MMIO 的位址為 `BASE + (4*hart)`
 
 #### CLINT Time Interrupt
 
@@ -1976,12 +1978,12 @@ w_mie(r_mie() | MIE_MTIE);
 
 OS 裡面的時間管理就是利用硬體的 time counter 完成的
 
-+ 在 OS 中，一個時間單位為一個 tick
-+ tick 的單位由硬體的 time counter 週期決定
-    + 通常為 1~100 ms
-+ tick 週期越小，OS 的精度越高
-    + 但相對的開銷越大（因為 Interrupt 數量比較多）
-+ OS 中通常會維護一個自己的 tick 值，紀錄系統啟動到現在發生的 tick 總數
+- 在 OS 中，一個時間單位為一個 tick
+- tick 的單位由硬體的 time counter 週期決定
+    - 通常為 1~100 ms
+- tick 週期越小，OS 的精度越高
+    - 但相對的開銷越大（因為 Interrupt 數量比較多）
+- OS 中通常會維護一個自己的 tick 值，紀錄系統啟動到現在發生的 tick 總數
 
 ### Preemtive Multitasking
 
@@ -1989,7 +1991,7 @@ OS 裡面的時間管理就是利用硬體的 time counter 完成的
 
 所以我們這邊就來實作搶占式的多任務，首先一樣會有兩個 Task A 和 B：
 
-![](./image/34.png)
+![（搶佔式多工的任務指令序列）](./image/preemptive-task-sequences.png)
 
 可以看見因為式搶占式的多任務，因此 Task 中不會有放棄 CPU 的這個指令
 
@@ -2001,11 +2003,11 @@ OS 裡面的時間管理就是利用硬體的 time counter 完成的
 2. 根據結果去執行對應 handler
 2-1. 如果不是 Timer Interrupt，則按原本 Trap 的方式處理
 2-2. 如果是 Timer Interrupt，呼叫 `switch_to`
-    + `switch_to`
-        + 將目前的 context 資訊存起來
-        + 切換 context
-        + 將下一個 context 資訊載入 CPU
-    + 另外還要維護時鐘
+    - `switch_to`
+        - 將目前的 context 資訊存起來
+        - 切換 context
+        - 將下一個 context 資訊載入 CPU
+    - 另外還要維護時鐘
 3. mret
 
 中斷發生的時候，按照前面的設計，會去走 `trap_vector` 這個入口，裡面會去呼叫 `trap_handler`
@@ -2092,28 +2094,28 @@ switch_to:
 
 接下來用圖來演示一下步驟：
 
-![](./image/35.png)
+![（搶佔式任務切換流程）](./image/preemptive-switch-overview.png)
 
 跟前面一樣，先初始化，並且假設第一個呼叫的任務為 A：
 
-![](./image/36.png)
+![（初始化搶佔式任務切換）](./image/preemptive-switch-initialize.png)
 
 之後就開始執行了，因此 PC 會跟著改變：
 
-![](./image/37.png)
+![（執行任務 A）](./image/preemptive-switch-run-task-a.png)
 
 此時 timer interrupt 發生了，因此將 `i+2` 存入 `mepc`，並開始執行 trap 處理函式，首先要保存 context，因此將 `mepc` 存入 `pc`：
 
-![](./image/38.png)
+![（計時器中斷觸發任務切換）](./image/preemptive-switch-timer-interrupt.png)
 
 接著切換 context：
 
-![](./image/39.png)
+![（搶佔式切換時儲存任務狀態）](./image/preemptive-switch-save-context.png)
 
 然後載入 B 的 context：
 
-![](./image/40.png)
+![（載入任務 B 的狀態）](./image/preemptive-switch-load-task-b.png)
 
 最後執行 `mret` 返回，進到 Task B：
 
-![](./image/41.png)
+![（以 MRET 進入任務 B）](./image/preemptive-switch-resume-task-b.png)

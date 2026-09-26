@@ -46,31 +46,31 @@ label 可以想成幫一段位址取了一個名字，方便我們後續使用
 
 operation 總共有四種變化：
 
-+ instruction（指令）
+- instruction（指令）
     直接對應二進位的機器指令字符串
-+ pseudo-instruction（偽指令）
+- pseudo-instruction（偽指令）
     為了提高寫程式的效率，可以用一條偽指令指示組譯器產生多條實際的 instruction
-+ directive（指示/偽操作）
+- directive（指示/偽操作）
     通過類似 instruction 的形式（以 「.」 開頭），通知組譯器如何控制程式碼的產生，不對應具體的指令，是由組譯器定義的
-+ macro
+- macro
     採用 .macro/.endm 自定義的 macro
 
 ### 指令的操作對象
 
 指令的操作對象可以分兩大類：
 
-+ 暫存器
-    + RV32I 中共有 32 個通用暫存器，x0~x31，還有一些特權暫存器，其中 x0 是 0 暫存器，不可寫（但可以做為 `rd`），讀出來的值永遠為 0
+- 暫存器
+    - RV32I 中共有 32 個通用暫存器，x0~x31，還有一些特權暫存器，其中 x0 是 0 暫存器，不可寫（但可以做為 `rd`），讀出來的值永遠為 0
       > Register x0 can be used as the destination if the result is not required.
-    + 在 RISC-V 中，Hart 在執行算術邏輯運算時操作的數據需要直接來自暫存器
-+ 記憶體
-    + Hart 可以執行在暫存器和記憶體之間的數據讀寫操作
-    + 讀寫操作使用 Byte 為基本單位尋址
-    + RV32 可以存取最多 $2^{32}$ 個 Byte 的記憶體空間
+    - 在 RISC-V 中，Hart 在執行算術邏輯運算時操作的數據需要直接來自暫存器
+- 記憶體
+    - Hart 可以執行在暫存器和記憶體之間的數據讀寫操作
+    - 讀寫操作使用 Byte 為基本單位尋址
+    - RV32 可以存取最多 $2^{32}$ 個 Byte 的記憶體空間
 
 ### 指令編碼格式
 
-![](./image/1.png)
+![（RISC-V 指令格式）](./image/riscv-instruction-formats.png)
 
 指令最後會被翻譯為機器指令，裡面的 32 bits 都有對應的意思，以 32 bits 對齊，每個 32 bits 會照上面的圖被劃分為不同的區域（field）
 
@@ -78,7 +78,7 @@ operation 總共有四種變化：
 
 對於 opcode 的部分有另一張表規定了其內容意義：
 
-![](./image/2.png)
+![（RISC-V opcode 對照表）](./image/riscv-opcode-table.png)
 
 opcode 的前兩位永遠為 11，而第 2~4 位是一組的，5~6 位是一組的，我們用一個例子來學習這個表格是怎麼看得：
 
@@ -92,21 +92,21 @@ opcode 的前兩位永遠為 11，而第 2~4 位是一組的，5~6 位是一組�
 
 RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`，則需要先將其倒反過來為：`00 95 05 b3`，寫為二進制的話為 `00000000-10010101-00000101-10110011`，到標準中查表可知此指令為 `add x11, x10, x9`
 
-![](./image/3.png)
+![（RISC-V opcode 範例）](./image/riscv-opcode-example.png)
 
 指令格式有 6 種，也就是第一張圖裡面的 R、I、S 那些：
 
-+ R-type (register)
+- R-type (register)
     每條指令中有三個 fields，用於指定 3 個暫存器參數
-+ I-type (Immediate)
+- I-type (Immediate)
     每條指令除了帶有兩個暫存器參數以外，還帶有一個常數參數（寬度為 12 bits）
-+ S-type (Store)
+- S-type (Store)
     每條指令除了帶有兩個暫存器參數以外，還帶有一個常數參數（寬度為 12 bits，但 fields 的組成方式不同於 I-type）
-+ B-type (Branch)
+- B-type (Branch)
     每條指令除了帶有兩個暫存器參數外，還有一個常數參數（寬度為 12 bits，但取值為 2 的倍數）
-+ U-type (Upper)
+- U-type (Upper)
     每條指令含有一個暫存器參數和一個常數參數（寬度為 20 bits，用來表示一個常數的高 20 位）
-+ J-type (Jump)
+- J-type (Jump)
     每條指令內有一個暫存器參數和一個常數參數（寬度為 20 bits）
 
 ### 算術運算指令（Arithmetic Instruction）
@@ -119,14 +119,14 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：R-type
 
-![](./image/4.png)
+![（R-type 指令格式）](./image/riscv-r-type-format.png)
 
 對應意義：
-+ opcode(7)：0110011 (OP)
-+ funct3 為 000，funct7 為 0000000
-+ rs1（5）：第一個 operand（source register 1）
-+ rs2（5）：第二個 operand（source register 2）
-+ rd（5）：destination register，用於存放加出來的結果
+- opcode(7)：0110011 (OP)
+- funct3 為 000，funct7 為 0000000
+- rs1（5）：第一個 operand（source register 1）
+- rs2（5）：第二個 operand（source register 2）
+- rd（5）：destination register，用於存放加出來的結果
 
 #### SUB
 
@@ -144,15 +144,15 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：I-type
 
-![](./image/5.png)
+![（I-type 指令格式）](./image/riscv-i-type-format.png)
 
 對應意義：
 
-+ opcode (7)：0b0010011 (OP-IMM)
-+ funct3（3）：和 opcode 一起決定最終指令
-+ rs1（5）：第一個 opecrand（source register 1）
-+ rd（5）：destination register，用於存放加出來的結果
-+ imm（12）：immediate，常數，要注意只有 12 bits，所以範圍是有限的
+- opcode (7)：0b0010011 (OP-IMM)
+- funct3（3）：和 opcode 一起決定最終指令
+- rs1（5）：第一個 opecrand（source register 1）
+- rd（5）：destination register，用於存放加出來的結果
+- imm（12）：immediate，常數，要注意只有 12 bits，所以範圍是有限的
 
 在運算前 `imm` 會被 sign-extension 為一個 32 位的數，可以表達的範圍為 $-2^{11} ~ 2^{11}$，也就是 $[-2048, 2047)$
 
@@ -168,12 +168,12 @@ RISC-V 標準中為 little endian，假設在記憶體中的值為 `b3 05 95 00`
 
 格式：U-type
 
-![](./image/6.png)
+![（U-type 指令格式）](./image/riscv-u-type-format.png)
 
 對應意義：
-+ opcode (7)：0b0110111 (LUI)
-+ rd（5）：destination register，用於存放加出來的結果
-+ imm（20）：immediate，常數
+- opcode (7)：0b0110111 (LUI)
+- rd（5）：destination register，用於存放加出來的結果
+- imm（20）：immediate，常數
 
 假設我們今天要載入 `0x12345678`，那步驟為：
 
@@ -559,7 +559,7 @@ addi x1, x1, -1    # x1 = 0x12345FFF
 格式：J-type
 > 例：jal x1, label
 
-![](./image/7.png)
+![（J-type 指令格式）](./image/riscv-j-type-format.png)
 
 調用函式時地址的計算方法為先對 20 bits 寬的 `IMM` 乘以 2，然後進行 sign-extension，最後與 PC 相加，因此跳躍的範圍是以 PC 為基準，上下加減 1 MB
 
@@ -572,6 +572,6 @@ JAL 指令的下一條指令的地址會寫入 RD，保存為返回位址，實�
 格式：I-type
 > 例：`jalr x0, 0(x5)`
 
-![](./image/8.png)
+![（JALR 指令格式）](./image/riscv-jalr-format.png)
 
 調用函式時地址的計算方法為先對 12 bits 寬的 `IMM` 進行 sign-extension，然後將其與 RS1 的值相加，得到最終的結果後將其最低位設為 0（用以確保對齊），因此跳躍的範圍是以 RS1 為基準，上下加減 2KB
