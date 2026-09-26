@@ -247,15 +247,19 @@ star: true
     - 放榜日期：113 年 8 月 5 日（週一）
     - 資工
         - 10 人
+
         - ![](./image/ncu-cs-department-transfer.png)
     - 電機
         - 19 人
+
         - ![](./image/ncu-ee-department-transfer.png)
     - 資電
         - 1 人
+
         - ![](./image/ncu-eecs-department-transfer.png)
     - 通訊
         - 8 人
+
         - ![](./image/ncu-communications-department-transfer.png)
 
 ## 與老師討論後的 Feedback

@@ -7,48 +7,58 @@ timeline: false
 
 <!-- markdownlint-disable-file MD013 -->
 
-Hello! I'm Mes, from Taiwan. I studied mathematics at National Central University before transferring to the Department of Computer Science and Information Engineering at National Taiwan Normal University. I am still an undergraduate student.
+Hi, I'm Mes from Taiwan. I studied mathematics at National Central University before transferring to the Department of Computer Science and Information Engineering at National Taiwan Normal University, where I'm still an undergraduate. You can also find me on [GitHub](https://github.com/Mes0903) and [LinkedIn](https://www.linkedin.com/in/yung-tse-cheng/).
 
-I love C++. Encouraged by the TCCPP forum, I am still reading the C++ standard and attending WG21 meetings. I hope that one day I can become a member of the C++ committee.
+I love C++. Inspired by the TCCPP forum, I continue to study the C++ standard. I hope to attend WG21 meetings and eventually become a member of the C++ committee.
 
-I previously served for one year as the system and network administrator at the Computing Center of the Department of Mathematics at National Central University. During that period, another administrator and I built our server cluster from scratch with Proxmox. I still occasionally return to the Computing Center to help with server-related issues, and I also help host study groups organized by the center.
+I spent a year as a systems and network manager at the Computing Center of National Central University's Department of Mathematics. Another administrator and I built our server cluster from scratch with Proxmox VE. I still return occasionally to help with server issues and host the center's study group.
 
-After stepping down from that role, I returned to studying the topics I am most interested in: system software, computer graphics, and programming language theory. Because of my own habits and interests, I also often work on translations.
+After stepping down, I returned to the topics that interest me most: system software, computer graphics, and programming language theory. I also translate technical material from time to time.
 
-My dream is to build game consoles. For that reason, I am still working hard on English and Japanese, hoping that in the future I can participate in console development at companies such as Nintendo, Sony, or Valve.
+My dream is to build game consoles. I'm still working on my English and Japanese, and I hope to help develop consoles at Nintendo, Sony, or Valve one day.
 
 ## Work Experience
 
-- System and Network Administrator
-  - July 2023 ~ June 2024
-  - Served as the system and network administrator of the Department of Mathematics at National Central University. During this period, I led a student team under the Higher Education Sprout Project, maintaining the department's web services and server cluster while also developing new systems.
-  - Because the existing system had long-standing legacy issues, I rebuilt the department's server-cluster infrastructure. I migrated the original Kubernetes-based architecture, which was relatively difficult to maintain, to a new and more maintainable architecture centered on Proxmox VE and Docker.
+- Systems and Network Manager
+  - July 2023–June 2024
+  - At National Central University's Department of Mathematics, I led a student team working on Higher Education Sprout projects, maintained the department's web services and server cluster, and developed new systems.
+  - Migrated services from Kubernetes to Proxmox VE and Docker, rebuilding the department's server cluster.
 - Research Assistant
-  - September 2020 ~ June 2023
-  - During this period, I completed several Higher Education Sprout Project and industry-academia collaboration projects. Major projects included:
-    - Developing the IMU (MPU9250) module for an educational robot dog
-    - Developing a [label tool](https://github.com/NcuMathRoboticsLab/MRL_LabelTool) for students in data science courses
-    - Adjusting the problem generation system of "[Ziyou Math Elementary School](https://emath.math.ncu.edu.tw/e_school/)" to make it compatible with the reader architecture
-    - Developing a visual analysis tool for the AI recommendation system of "[Ziyou Math Elementary School](https://emath.math.ncu.edu.tw/e_school/)"
+  - September 2020–June 2023
+  - Completed several Higher Education Sprout and industry collaboration projects, including:
+    - Developing an IMU (MPU9250) module for an educational robot dog
+    - Building a [labeling tool](https://github.com/NcuMathRoboticsLab/MRL_LabelTool) for data science students
+    - Adjusting the question generation system of "[Ziyou Math Elementary School](https://emath.math.ncu.edu.tw/e_school/)" to work with its reader architecture
+    - Building a visualization tool for the AI recommendation system of "[Ziyou Math Elementary School](https://emath.math.ncu.edu.tw/e_school/)"
 
 ## Talks
 
-- OSS-NA 2026: [Demystifying VirtIO-GPU: Building a Graphics Virtualization Bridge From Scratch](https://osselcna2026.sched.com/event/2JQrw/demystifying-virtio-gpu-building-a-graphics-virtualization-bridge-from-scratch-yung-tse-cheng-national-taiwan-normal-university-sheng-wen-colin-cheng-the-university-of-texas-at-austin?iframe=no)  
-  Using virtio-gpu 2D as the example, this talk explained the basic architecture of virtio-gpu. It also walked through what happens when a glx application is launched, then briefly introduced the additional commands that virtio-gpu 3D brings in for graphics acceleration.
+- Open Source Summit North America 2026 (Embedded Linux Conference track)
+  - Talk: [Demystifying VirtIO-GPU: Building a Graphics Virtualization Bridge From Scratch](https://osselcna2026.sched.com/event/2JQrw/demystifying-virtio-gpu-building-a-graphics-virtualization-bridge-from-scratch-yung-tse-cheng-national-taiwan-normal-university-sheng-wen-colin-cheng-the-university-of-texas-at-austin) ([Slides](https://github.com/Mes0903/talks/blob/main/OSSNA-2026-talk/OSS-NA26-Talk.pptx))
+  - Used virtio-gpu 2D and a GLX application to explain the graphics virtualization stack, then introduced the commands virtio-gpu 3D adds for graphics acceleration.
+- COSCUP 2026 (System Software track)
+  - Talk: [How a VM Draws Pixels: Mesa, Gallium, and virtio-gpu 3D](https://coscup.org/2026/en/session/N87PMR/) ([Slides](https://github.com/Mes0903/talks/blob/main/coscup-2026-talk/COSCUP-2026-Mesa-vGPU-3D.pptx))
+  - Explained how a VM's graphics output passes through Mesa, Gallium, and virtio-gpu 3D.
+- Open Source Summit Japan 2026
+  - Talk: Tracing an OpenGL Frame Through AGL’s Remote VirtIO-GPU Stack
+  - Using AGL Unified HMI as an example, traced OpenGL ES draw calls through Mesa, VirtIO-GPU, and RVGPU for remote rendering, then explained Wayland's buffer transfer and DDFW's layout control.
 
 ## Open Source Projects
 
-- [semu](https://github.com/sysprog21/semu): A minimal RISC-V system emulator capable of running the Linux kernel
+- [Linux kernel patch](https://github.com/torvalds/linux/commit/6af3330ec5d5fb8c06c04eb520a71cf73ea5a765): Cleared freed virtio-fs queue pointers after a failed setup to prevent a double-free during probe cleanup.
+- [semu](https://github.com/sysprog21/semu): A minimal RISC-V system emulator capable of running Linux. I implemented VirtIO-GPU 2D/3D graphics and keyboard/mouse input using Linux DRM/KMS, VirGL, and a single-producer, single-consumer event queue.
+- [5568ke](https://github.com/Mes0903/5568ke): A C++20/OpenGL glTF renderer and animation sandbox with scene graphs, keyframe animation, GPU skinning, and ImGui playback controls.
+- [Mase](https://github.com/Mes0903/Mase): A C++17/OpenGL/ImGui visualizer with three maze generators and five pathfinding algorithms, including UCS and A*.
 
 ## Translation and Writing
 
-Because individual article translations are scattered throughout the blog and do not have a separate repository, this section only lists book and article-series translations.
+Shorter article translations are scattered throughout the blog, so this section highlights longer translations and writing series.
 
 - [Cpp-Miner](https://github.com/Mes0903/Cpp-Miner)
-  - A C++ tutorial series I write
-- [OS in 1,000 Lines](https://github.com/nuta/operating-system-in-1000-lines) Traditional Chinese translation
-  - A book that teaches you how to build a small operating system from scratch
+  - My C++ tutorial series on terminology from the C++ standard and modern language features
+- [Operating System in 1,000 Lines](https://github.com/nuta/operating-system-in-1000-lines) Traditional Chinese translation
+  - A guide to building a small operating system from scratch
 - [xv6-riscv-book](https://github.com/Mes0903/xv6-riscv-book-zh-TW)
-  - Course material used by MIT 6.828 and 6.1810 to explain xv6
+  - My Traditional Chinese translation of the xv6 RISC-V book used in MIT 6.828 and 6.1810
 - [glTF Tutorial](https://github.com/Mes0903/glTF-Tutorials-zh-TW)
-  - My Chinese translation and notes for the [glTF-Tutorials](https://github.com/KhronosGroup/glTF-Tutorials) written by the Khronos Group
+  - My Traditional Chinese translation and notes for the [glTF Tutorial](https://github.com/KhronosGroup/glTF-Tutorials) by the Khronos Group

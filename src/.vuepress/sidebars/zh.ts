@@ -242,6 +242,7 @@ export default sidebar([
           "MVPTransformation/",
           "Rasterization/",
           "Shading/",
+          "Geometry/"
         ]
       },
       {
@@ -280,14 +281,17 @@ export default sidebar([
           "Skins/",
         ]
       },
-      {
-        text: "其他",
-        collapsible: true,
-        children: [
-          "glfwInputGuide/",
-        ]
-      },
     ],
+  },
+  {
+    text: "Graphic Stack Related",
+    collapsible: true,
+    prefix: "/GraphicStack/",
+    children: [
+      "rendering-pipeline/",
+      "glfwInputGuide/",
+      "sorting-of-rendering-pipeline/"
+    ]
   },
   {
     text: "數學",
