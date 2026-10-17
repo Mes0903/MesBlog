@@ -242,7 +242,7 @@ export default sidebar([
           "MVPTransformation/",
           "Rasterization/",
           "Shading/",
-          "Geometry/"
+          "Geometry/",
         ]
       },
       {

@@ -1,4 +1,5 @@
 import { hopeTheme } from "vuepress-theme-hope";
+import { DefaultFont } from "@mathjax/src/js/output/svg/DefaultFont.js";
 import zhSidebar from "./sidebars/zh.js";
 import enSidebar from "./sidebars/en.js";
 import fs from "node:fs";
@@ -12,7 +13,6 @@ import path from "node:path";
 type ConsoleWithMathjaxWarningFilter = Console & {
   __mesMathjaxBboldxWarningFiltered?: boolean;
 };
-
 const nodeConsole = console as ConsoleWithMathjaxWarningFilter;
 if (!nodeConsole.__mesMathjaxBboldxWarningFiltered) {
   const warn = nodeConsole.warn.bind(nodeConsole);
@@ -25,6 +25,11 @@ if (!nodeConsole.__mesMathjaxBboldxWarningFiltered) {
 
   nodeConsole.__mesMathjaxBboldxWarningFiltered = true;
 }
+
+// Markdown-it renders formulas synchronously. Preload MathJax 4's dynamic
+// glyph data so valid symbols do not interrupt rendering with a retry error.
+const mathjaxSvgFont = new DefaultFont();
+await mathjaxSvgFont.loadDynamicFiles();
 
 const callgraph = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, "./shiki/callgraph.tmLanguage.json"), "utf-8")
@@ -196,6 +201,10 @@ export default hopeTheme({
       // type: "katex",
       // or install @mathjax/src before enabling it
       type: "mathjax",
+      svg: {
+        // MathJax accepts a font instance; the plugin types only list its class.
+        fontData: mathjaxSvgFont as unknown as typeof DefaultFont,
+      },
     },
 
     highlighter: {
