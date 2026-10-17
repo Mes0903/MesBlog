@@ -1,5 +1,5 @@
 ---
-title: Games101：Homogeneous Coordinates(齊次座標)
+title: Games101：齊次座標（Homogeneous Coordinates）
 date: 2023-09-12
 tag: 
   - computer-graphic
@@ -7,7 +7,7 @@ tag:
 category: computer-graphic
 ---
 
-# Games101：Homogeneous Coordinates（齊次座標）
+# Games101：齊次座標（Homogeneous Coordinates）
 
 一般的轉換可以寫成矩陣的形式，像是
 
@@ -109,7 +109,7 @@ y + t_y\\
 \end{bmatrix}
 $$
 
-可以看見原本點 $(x,y,1)^T$ 經過平移後仍然是一個點（第三個元素為 $1$) 
+可以看見原本點 $(x,y,1)^T$ 經過平移後仍然是一個點（第三個元素為 $1$）
 
 這邊要提一下，第三個維度是有設計過的，在 $1$ 是點 $0$ 是向量的狀態下，會有下面這些性質：
 
@@ -132,7 +132,7 @@ $$
 
 也就是說兩點相加的結果會變為兩點的中點，因為 $w$ 為 2   
 
-## Affine Transform（仿射轉換）
+## 仿射轉換（Affine Transform）
 
 使用齊次的優點就是可以將這類的轉換：
 
@@ -179,7 +179,7 @@ $$
 
 也可以簡單看幾個二維的線性轉換：
 
-- Scale Transform
+- 伸縮轉換（Scale Transform）
     $$
     S(s_x, s_y) =
     \begin{bmatrix}
@@ -189,7 +189,7 @@ $$
     \end{bmatrix}
     $$
 
-- Rotation Transform
+- 旋轉轉換（Rotation Transform）
     $$
     R(\alpha) =
     \begin{bmatrix}
@@ -199,7 +199,7 @@ $$
     \end{bmatrix}
     $$
 
-- Translation Transform
+- 平移轉換（Translation Transform）
     $$
     T(t_x, t_y) =
     \begin{bmatrix}
@@ -227,7 +227,7 @@ $$
 R_{-\theta} = R^{-1}_{\theta}
 $$
 
-## Inverse Transform（逆轉換）
+## 逆轉換（Inverse Transform）
 
 如果我們對一個點進行仿射操作後想要讓他回到操作前的樣子，那可以直接將點乘上原先的逆矩陣，舉個例子，將 $(1,1)^T$ 平移到 $(3,4)^T$：
 
@@ -292,7 +292,7 @@ $$
 
 如此一來便可以回到操作前的狀態了
 
-## Composition（組合）
+## 組合（Composition）
 
 我們可以將不同的轉換先依序相乘組合成一個矩陣，這樣跟把轉換矩陣一個一個乘上去的結果會一樣，在寫的時候要注意轉換的順序
 

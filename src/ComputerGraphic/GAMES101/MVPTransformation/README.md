@@ -1,5 +1,5 @@
 ---
-title: Games101：MVP Transformation
+title: Games101：MVP 轉換（MVP Transformation）
 date: 2025-03-14
 tag: 
   - computer-graphic
@@ -7,23 +7,23 @@ tag:
 category: computer-graphic
 ---
 
-# Games101：MVP Transformation
+# Games101：MVP 轉換（MVP Transformation）
 
 我們的最終目的是將三維的世界顯示在二維的螢幕上，在現實生活中我們可以透過相機拍照來達到這個效果，而在電腦內我們就要試著把這個過程變成一個轉換寫出來
 
-首先我們要決定場景、物品要擺在哪裡，這個我們稱為 model transformation。 這會將物體從自己的座標系轉換到世界座標系（世界空間）中
+首先我們要決定場景、物品要擺在哪裡，這個我們稱為模型轉換（model transformation）。 這會將物體從自己的座標系轉換到世界座標系（世界空間）中
 
-接下來要找一個好的位置，橋一個好的角度來放相機，這個我們稱為 view transformation。 這會將物體從世界空間轉換到相機空間（camera space），也有人稱之為視圖空間（view space），是以相機為原點的座標系
+接下來要找一個好的位置，橋一個好的角度來放相機，這個我們稱為視圖轉換（view transformation）。 這會將物體從世界空間轉換到相機空間（camera space），也有人稱之為視圖空間（view space），是以相機為原點的座標系
 
-這兩步完成後我們就可以準備拍照了，所以要將三維的東西投影到二維，這個動作我們稱為 projection transformation。 這會將物體從相機空間轉換到剪裁空間（clip space）中，其會將相機視角外的物體裁剪掉，並保留深度的效果
+這兩步完成後我們就可以準備拍照了，所以要將三維的東西投影到二維，這個動作我們稱為投影轉換（projection transformation）。 這會將物體從相機空間轉換到剪裁空間（clip space）中，其會將相機視角外的物體裁剪掉，並保留深度的效果
 
 下面這張是圖來自 Learn OpenGL：
 
 ![（img src：https://learnopengl.com/Getting-started/Coordinate-Systems）](./image/coordinate_system.png)
 
-這三個轉換我們常合起來簡稱為 MVP 轉換。 而前兩個變換通常會一起做，也因此會被合稱為 model-view transformation，接下來我們就來詳細看一下這三個轉換
+這三個轉換我們常合起來簡稱為 MVP 轉換。 而前兩個變換通常會一起做，也因此會被合稱為模型視圖轉換（model-view transformation），接下來我們就來詳細看一下這三個轉換
 
-## Model-View Transformation
+## 模型視圖轉換（Model-View Transformation）
 
 先來看 model-view transformation，我們的目的是要生出一個以相機為原點的座標系。 首先先講 model transoformation，由於 model transformation 一般來說比較隨意，所以老師也沒多提，這邊補充一下
 
@@ -167,14 +167,14 @@ $$
 
 接著只要把它與 model matrix 組合起來就可以了。 至此，我們就成功完成 model-view transformation 了
 
-## Projection Transformation
+## 投影轉換（Projection Transformation）
 
 將相機擺好後我們就要將相機面向的東西全部投影到感光元件上，換句話說我們要將面前 3D 的東西全部投影到一個 2D 平面上，這個 3D -> 2D 的轉換就是 Projection Transformation 在做的事情
 
 我們有兩種不同的投影方式：
 
-- Orthographic projection（正交投影 / 平行投影）
-- Perspective projection（透视投影）
+- 正交投影／平行投影（Orthographic projection）
+- 透視投影（Perspective projection）
 
 虎書裡面給了一個比較不直觀的例子：
 
@@ -194,7 +194,7 @@ $$
 
 而對於正交投影，其實就是假設相機離的無限遠。 以我們上面透視投影的例子來說，將相機拿得越來越遠，近平面與遠平面看起來就會越來越接近，當我們把相機拿到無限遠時，就會發現近平面與遠平面變的一樣大了。 因此在投影出來的結果就會看到，無論物體有多遠，投影到近平面上是不會有近大遠小的效果的
 
-### Orthographic projection（正交投影）
+### 正交投影（Orthographic projection）
 
 那我們就從正交投影開始講，其非常好理解，只要不管遠近，統一將物體擠到某個平面上去就可以了，那這要怎麼做呢?
 
@@ -244,7 +244,7 @@ $$
 - 伸縮為長度為 2 的立方體是因為目標立方體覆蓋各軸的 $-1$ 至 $1$  
 :::
 
-### Perspective projection（透視投影）
+### 透視投影（Perspective projection）
 
 理解的正交投影後，透視投影並不難，透視投影是用得最廣泛的一種投影，如前面所說的它滿足近大遠小的性質，帶來平行線不再平行的視覺效果
 
@@ -458,7 +458,7 @@ $$
 
 可以到這邊看更多：https://www.songho.ca/opengl/gl_projectionmatrix.html
 
-## FOV of Frustum
+## 視錐體的視角（FOV of Frustum）
 
 這邊補充一下我們如何定義一個四角錐，前面提到立方體可以用 X、Y、Z 軸的覆蓋，也就是六個數字去表示一個立方體
 
@@ -466,7 +466,7 @@ $$
 
 ![](./image/Frustum.png)
 
-我們可以給螢幕定義一個寬高比，這被稱為 aspect ration，值為寬度除以高度。 另外還有一個概念，如果有玩過相機的可能會知道，叫做視角，英文叫 field of view，表示可以看到的角度範圍
+我們可以給螢幕定義一個寬高比，這被稱為 aspect ration，值為寬度除以高度。 另外還有一個概念，如果有玩過相機的可能會知道，叫做視角（field of view），表示可以看到的角度範圍
 
 以上圖為例，我們可以在螢幕的中間畫出兩條紅線來，各連到上下兩邊的中心點，而這兩條紅線所夾的角度就被稱為視角
 
@@ -476,13 +476,13 @@ $$
 
 左上角的右邊那條線為近平面，與相機的距離為 $|n|$，而垂直可視角度為 $fovY$，如此一來馬上就可以知道這個三角形的三角函數關係了
 
-## Viewport Transformation
+## 視埠轉換（Viewport Transformation）
 
 到目前為止，MVP 就已經做完了，無論用的是正交投影還是透視投影，此時所有的物體就都已經被擺到了 -1 ~ 1 的立方體裡，下一步我們需要將它畫到螢幕上
 
 因此我們需要先把螢幕的概念定義好，在圖學中螢幕被抽象的認為是一個二維陣列，陣列的每個元素是一個像素，假設你的螢幕是 `1920x1080` 的，那就表示有這麼多的像素形成了一個二維陣列
 
-換句話說螢幕可以被表示成一個坐標系，這個坐標系我們通常稱其為螢幕空間（screen space），虎書內有自己的一套坐標定義方式，而這邊（GAMES101） 我們有另一套定義方式：
+換句話說螢幕可以被表示成一個坐標系，這個坐標系我們通常稱其為螢幕空間（screen space），虎書內有自己的一套坐標定義方式，而這邊（GAMES101）我們有另一套定義方式：
 
 ![](./image/screen.png)
 
